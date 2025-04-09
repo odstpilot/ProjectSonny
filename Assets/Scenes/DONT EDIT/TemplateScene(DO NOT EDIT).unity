@@ -3238,7 +3238,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 2.8125
+  orthographic size: 5.453125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -3402,6 +3402,7 @@ GameObject:
   - component: {fileID: 714753420}
   - component: {fileID: 714753419}
   - component: {fileID: 714753418}
+  - component: {fileID: 714753422}
   m_Layer: 0
   m_Name: ExampleEnemyNavigation
   m_TagString: Untagged
@@ -3511,6 +3512,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &714753422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 714753417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3436e942f42b5fa4c90a5f10b28c4510, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 206885919}
 --- !u!1 &896553217
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
     public object CanvasCont;
     public CanvasCont CurrentCanvas;
     public bool testHP;
+    public Vector3 StartingPos;
 
     public Rigidbody2D rb; // Rigidbody2D for physics-based movement
     public Animator animator; // Animator for controlling animations
@@ -35,7 +36,7 @@ public class PlayerController : MonoBehaviour
         if (movement.x != 0 || movement.y != 0)
         {
             animator.SetBool("Moving", true);
-            Debug.Log("ffff");
+          
         }
         else
         {
@@ -81,8 +82,29 @@ public class PlayerController : MonoBehaviour
        else
        {
             CurrentCanvas.ChangeHealth(hp);
+           
         }
         
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag == "Enemy")
+        {
+            ResetPos();
+            
+            if (collision.gameObject.GetComponent<Warden>() != null)
+            {
+                collision.gameObject.GetComponent<Warden>().Reset();
+            }
+           
+        }
+    }
+   
+
+    public void ResetPos()
+    {
+        transform.position = StartingPos;
     }
 }
 

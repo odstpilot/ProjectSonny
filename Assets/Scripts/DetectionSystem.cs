@@ -8,6 +8,7 @@ public class DetectionSystem : MonoBehaviour
     public Transform target; // The player
     public List<Transform> patrolPoints; // Assign in inspector
     private NavMeshAgent agent;
+    private Vector3 StartingPos;
 
     private int patrolIndex = 0;
     private bool patrolForward = true;
@@ -115,4 +116,5 @@ public class DetectionSystem : MonoBehaviour
             agent.SetDestination(patrolPoints[patrolIndex].position);
         }
     }
+   
 }

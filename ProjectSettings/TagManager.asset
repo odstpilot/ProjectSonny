@@ -60,3 +60,6 @@ TagManager:
   - name: Decor
     uniqueID: 1289281589
     locked: 0
+  - name: Fade
+    uniqueID: 231576213
+    locked: 0

@@ -2,7 +2,13 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float moveSpeed = 5f; // Speed of the player
+    public float moveSpeed = 5f;
+    public float sprintMultiplier = 1.5f;
+    public float stamina = 100f;
+    public float maxStamina = 100f;
+    public float staminaDrain = 25f;
+    public float staminaRegen = 15f;
+
     public float hp;
     public float MaxHP;
     public object CanvasCont;
@@ -10,53 +16,66 @@ public class PlayerController : MonoBehaviour
     public bool testHP;
     public Vector3 StartingPos;
 
-    public Rigidbody2D rb; // Rigidbody2D for physics-based movement
-    public Animator animator; // Animator for controlling animations
+    public Rigidbody2D rb;
+    public Animator animator;
     public SpriteRenderer spriteRenderer;
 
-    private Vector2 movement; // To store movement input
+    [Header("Footstep Settings")]
+    public AudioClip[] footstepClips;
+    public float baseStepRate = 0.4f; // Normal walking step interval
+    private float stepTimer;
+    [SerializeField] private AudioSource audioSource;
+    private Vector2 movement;
+    private float currentSpeed;
 
     private void Start()
     {
-        hp = MaxHP; //Temp
-        //CanvasCont. = GetComponent<Canvas>();
+        hp = MaxHP;
         CurrentCanvas = GameObject.Find("CanvasCont").GetComponent<CanvasCont>();
         testHP = false;
+        stepTimer = baseStepRate;
     }
 
     void Update()
     {
-        // Get movement input
-        movement.x = Input.GetAxisRaw("Horizontal"); // A/D or Left/Right Arrow
-        movement.y = Input.GetAxisRaw("Vertical");   // W/S or Up/Down Arrow
-
-        // Normalize movement vector to avoid faster diagonal movement
+        movement.x = Input.GetAxisRaw("Horizontal");
+        movement.y = Input.GetAxisRaw("Vertical");
         movement = movement.normalized;
 
+        bool isMoving = movement != Vector2.zero;
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && stamina > 0 && isMoving;
 
-        if (movement != Vector2.zero)
+        if (isSprinting)
         {
-            if (Mathf.Abs(movement.x) > Mathf.Abs(movement.y))
-            {
-                // Horizontal is dominant
-                if (movement.x > 0)
-                    animator.SetInteger("Direction", 4); // Right
-                else
-                    animator.SetInteger("Direction", 3); // Left
-            }
-            else
-            {
-                // Vertical is dominant
-                if (movement.y > 0)
-                    animator.SetInteger("Direction", 1); // Up
-                else
-                    animator.SetInteger("Direction", 2); // Down
-            }
+            currentSpeed = moveSpeed * sprintMultiplier;
+            stamina -= staminaDrain * Time.deltaTime;
+            stamina = Mathf.Clamp(stamina, 0, maxStamina);
         }
         else
         {
-            animator.SetInteger("Direction", 0); // Idle
+            currentSpeed = moveSpeed;
+            if (!Input.GetKey(KeyCode.LeftShift) || !isMoving)
+            {
+                stamina += staminaRegen * Time.deltaTime;
+                stamina = Mathf.Clamp(stamina, 0, maxStamina);
+            }
         }
+
+        // Directional animation
+        if (isMoving)
+        {
+            if (Mathf.Abs(movement.x) > Mathf.Abs(movement.y))
+                animator.SetInteger("Direction", movement.x > 0 ? 4 : 3);
+            else
+                animator.SetInteger("Direction", movement.y > 0 ? 1 : 2);
+        }
+        else
+        {
+            animator.SetInteger("Direction", 0);
+        }
+
+        // Footstep sound handling
+        HandleFootsteps(isMoving, isSprinting);
 
         if (testHP)
         {
@@ -68,50 +87,56 @@ public class PlayerController : MonoBehaviour
         {
             CurrentCanvas.Death();
         }
-        
     }
 
     void FixedUpdate()
     {
-        // Move the player
-        rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
+        rb.MovePosition(rb.position + movement * currentSpeed * Time.fixedDeltaTime);
     }
 
     public void TakeDamage(float damage)
     {
-        hp-= damage;
+        hp -= damage;
         testHP = false;
 
         if (hp <= 0)
-        {
             CurrentCanvas.Death();
-        }
-       else
-       {
+        else
             CurrentCanvas.ChangeHealth(hp);
-           
-        }
-        
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.tag == "Enemy")
+        if (collision.gameObject.CompareTag("Enemy"))
         {
             ResetPos();
             CurrentCanvas.Death();
-            if (collision.gameObject.GetComponent<Warden>() != null)
-            {
-                collision.gameObject.GetComponent<Warden>().Reset();
-            }
-           
+            if (collision.gameObject.TryGetComponent<Warden>(out var warden))
+                warden.Reset();
         }
     }
-   
 
     public void ResetPos()
     {
         transform.position = StartingPos;
     }
-}
 
+    void HandleFootsteps(bool isMoving, bool isSprinting)
+    {
+        if (!isMoving || footstepClips.Length == 0 || audioSource == null) return;
+
+        stepTimer -= Time.deltaTime;
+
+        float stepRate = isSprinting ? baseStepRate * 0.6f : baseStepRate;
+
+        if (stepTimer <= 0f)
+        {
+            AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];
+            audioSource.pitch = isSprinting ? 1.2f : 1f;
+            audioSource.PlayOneShot(clip);
+            stepTimer = stepRate;
+        }
+    }
+
+
+}

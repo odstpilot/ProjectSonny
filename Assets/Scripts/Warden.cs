@@ -8,6 +8,8 @@ public class Warden : MonoBehaviour
     public Transform target; // The player
     private NavMeshAgent agent;
     public Vector3 StartingPos;
+    public Transform spriteTransform; // Drag the child sprite GameObject here in the Inspector
+    private bool facingRight = true;
 
     private bool isChasingPlayer = false;
     private Vector3 lastKnownPosition;
@@ -89,6 +91,7 @@ public class Warden : MonoBehaviour
                 }
             }
         }
+        UpdateFacingDirection();
     }
 
     void CheckForPlayer()
@@ -177,6 +180,32 @@ public class Warden : MonoBehaviour
             Debug.Log("AGHHHHHHHHHHHHHHHHHHH");
 
         }
+    }
+    void UpdateFacingDirection()
+    {
+        // Check agent direction if moving
+        if (agent.hasPath && agent.velocity.magnitude > 0.1f)
+        {
+            Vector3 direction = agent.steeringTarget - transform.position;
+
+            if (direction.x > 0 && !facingRight)
+            {
+                Flip(true);
+                Debug.Log("jj");
+            }
+            else if (direction.x < 0 && facingRight)
+            {
+                Flip(false);
+            }
+        }
+    }
+
+    void Flip(bool faceRight)
+    {
+        facingRight = faceRight;
+        Vector3 scale = spriteTransform.localScale;
+        scale.x = Mathf.Abs(scale.x) * (faceRight ? -1 : 1); // Flip if facing right
+        spriteTransform.localScale = scale;
     }
 }
 

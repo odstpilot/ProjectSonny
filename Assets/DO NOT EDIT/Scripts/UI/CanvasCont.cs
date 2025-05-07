@@ -1,13 +1,11 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class CanvasCont : MonoBehaviour
 {
-    // Start is called before the first frame update
     public GameObject aliveCanvas;
     public GameObject deadCanvas;
-    // public GameObject pauseCanvas; //For this you must keep track of what canvas is currently active, and track player input)
+    public RobotQuoteManager text;
 
     void Start()
     {
@@ -16,17 +14,27 @@ public class CanvasCont : MonoBehaviour
         deadCanvas.SetActive(false);
     }
 
-    // Update is called once per frame
     public void Death()
+    {
+        Debug.Log("hh");
+        StartCoroutine(ShowDeathScreen());
+        text.DisplayRandomQuote();
+
+    }
+
+    private IEnumerator ShowDeathScreen()
     {
         aliveCanvas.SetActive(false);
         deadCanvas.SetActive(true);
+
+        yield return new WaitForSeconds(5f); // wait for 5 seconds
+
+        deadCanvas.SetActive(false);
+        aliveCanvas.SetActive(true);
     }
 
     public void ChangeHealth(float hp)
     {
-        
-            aliveCanvas.GetComponent<LiveCanvas>().ChangeHP(hp);
-        
+        aliveCanvas.GetComponent<LiveCanvas>().ChangeHP(hp);
     }
 }

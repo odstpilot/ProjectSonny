@@ -63,6 +63,16 @@ public class PlayerController : MonoBehaviour
             TakeDamage(5);
             testHP = false;
         }
+
+        if (hp <= 0)
+        {
+            CurrentCanvas.Death();
+        }
+        else
+        {
+            CurrentCanvas.ChangeHealth(hp);
+
+        }
     }
 
     void FixedUpdate()
@@ -93,7 +103,7 @@ public class PlayerController : MonoBehaviour
         if (collision.gameObject.tag == "Enemy")
         {
             ResetPos();
-            
+            CurrentCanvas.Death();
             if (collision.gameObject.GetComponent<Warden>() != null)
             {
                 collision.gameObject.GetComponent<Warden>().Reset();

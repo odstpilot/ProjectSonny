@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/TitleScreen.unity
     guid: 5e5006cd90541a742a80a2e1e1296dc8
   - enabled: 1
-    path: Assets/Scenes/DONT EDIT/TemplateScene(DO NOT EDIT).unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
+    path: Assets/Scenes/DONT EDIT/PotrolScene.unity
+    guid: 0ebd2072fd4429749b8665564b047635
+  - enabled: 1
+    path: Assets/Scenes/DONT EDIT/Map.unity
+    guid: ec65ccca53fcd184bb2b3a59bdcbcff4
   m_configObjects: {}

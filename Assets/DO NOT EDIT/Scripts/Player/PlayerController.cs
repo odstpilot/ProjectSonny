@@ -33,34 +33,35 @@ public class PlayerController : MonoBehaviour
         // Normalize movement vector to avoid faster diagonal movement
         movement = movement.normalized;
 
-        if (movement.x != 0 || movement.y != 0)
+
+        if (movement != Vector2.zero)
         {
-            animator.SetBool("Moving", true);
-          
+            if (Mathf.Abs(movement.x) > Mathf.Abs(movement.y))
+            {
+                // Horizontal is dominant
+                if (movement.x > 0)
+                    animator.SetInteger("Direction", 4); // Right
+                else
+                    animator.SetInteger("Direction", 3); // Left
+            }
+            else
+            {
+                // Vertical is dominant
+                if (movement.y > 0)
+                    animator.SetInteger("Direction", 1); // Up
+                else
+                    animator.SetInteger("Direction", 2); // Down
+            }
         }
         else
         {
-            animator.SetBool("Moving", false);
+            animator.SetInteger("Direction", 0); // Idle
         }
 
-        // Update animator parameters
-        animator.SetFloat("X", movement.x);
-        animator.SetFloat("Y", movement.y);
-        //animator.SetFloat("speed", movement.sqrMagnitude); // Used for idle animation
-
-        if (movement.x > 0)
-        {
-            spriteRenderer.flipX = true; // Flip sprite to face right
-        }
-        else if (movement.x < 0)
-        {
-            spriteRenderer.flipX = false; // Flip sprite to face left (default)
-        }
-        if(testHP)
+        if (testHP)
         {
             TakeDamage(5);
             testHP = false;
-
         }
     }
 

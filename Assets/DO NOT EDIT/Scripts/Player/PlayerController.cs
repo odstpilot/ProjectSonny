@@ -68,11 +68,7 @@ public class PlayerController : MonoBehaviour
         {
             CurrentCanvas.Death();
         }
-        else
-        {
-            CurrentCanvas.ChangeHealth(hp);
-
-        }
+        
     }
 
     void FixedUpdate()

@@ -9,6 +9,8 @@ public class PlayerController : MonoBehaviour
     public float staminaDrain = 25f;
     public float staminaRegen = 15f;
 
+    public AudioSource deathSound;
+
     public float hp;
     public float MaxHP;
     public object CanvasCont;
@@ -109,6 +111,20 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Enemy"))
         {
+            ResetPos();
+            CurrentCanvas.Death();
+            if (collision.gameObject.TryGetComponent<Warden>(out var warden))
+                warden.Reset();
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            if (deathSound != null)
+                deathSound.Play();
+
             ResetPos();
             CurrentCanvas.Death();
             if (collision.gameObject.TryGetComponent<Warden>(out var warden))

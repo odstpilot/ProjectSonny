@@ -111,7 +111,7 @@ public class Warden : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, detectionDistance);
             Debug.DrawRay(origin, rayDirection * detectionDistance, Color.red, 0.1f);
 
-            if (hit.collider != null && hit.collider.gameObject.name == "Player")
+            if (hit.collider != null && hit.collider.CompareTag("Player"))
             {
                 lastKnownPosition = target.position;
                 playerInSight = true;

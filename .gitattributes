@@ -1,0 +1,33 @@
+# Unity YAML assets -- merge with Unity's semantic merge tool (UnityYAMLMerge /
+# "Smart Merge") instead of git's line-based merge. Git treats a scene as plain
+# text and will happily interleave two edits into a file Unity cannot open; that
+# is exactly how conflict markers once got committed into Map.unity.
+#
+# This needs a ONE-TIME local git config in every clone -- see TEAM-SETUP.md.
+# Without it these files fall back to the normal git merge, same as before.
+*.unity            merge=unityyamlmerge
+*.prefab           merge=unityyamlmerge
+*.mat              merge=unityyamlmerge
+*.anim             merge=unityyamlmerge
+*.controller       merge=unityyamlmerge
+*.overrideController merge=unityyamlmerge
+*.physicMaterial2D merge=unityyamlmerge
+*.playable         merge=unityyamlmerge
+
+# Binary assets -- never diff or merge these, and never run EOL conversion on
+# them. Note some .asset files ARE binary (e.g. the baked NavMesh), so .asset is
+# deliberately NOT given a text/eol attribute anywhere in this file.
+*.wav  binary
+*.mp3  binary
+*.ogg  binary
+*.aif  binary
+*.ttf  binary
+*.otf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.psd  binary
+*.gif  binary
+*.fbx  binary
+*.blend binary
+*.unitypackage binary

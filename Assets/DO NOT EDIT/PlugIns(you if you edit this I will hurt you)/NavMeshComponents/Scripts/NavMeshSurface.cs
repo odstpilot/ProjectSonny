@@ -5,6 +5,14 @@ using UnityEngine.AI;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
+// Unity 6 deprecated the editor-only UnityEditor.AI.NavMeshBuilder and moved
+// CollectSourcesInStage onto UnityEditor.AI.NavMeshEditorHelpers. This alias lets the
+// same call sites compile on 2022.3 LTS and on Unity 6 without touching behaviour.
+#if UNITY_6000_0_OR_NEWER
+using NavMeshSourceCollector = UnityEditor.AI.NavMeshEditorHelpers;
+#else
+using NavMeshSourceCollector = UnityEditor.AI.NavMeshBuilder;
+#endif
 #endif
 
 namespace NavMeshPlus.Components
@@ -353,12 +361,12 @@ namespace NavMeshPlus.Components
             {
                 if (m_CollectObjects == CollectObjects.All)
                 {
-                    UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(
+                    NavMeshSourceCollector.CollectSourcesInStage(
                         null, m_LayerMask, m_UseGeometry, m_DefaultArea, markups, gameObject.scene, sources);
                 }
                 else if (m_CollectObjects == CollectObjects.Children)
                 {
-                    UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(
+                    NavMeshSourceCollector.CollectSourcesInStage(
                         transform, m_LayerMask, m_UseGeometry, m_DefaultArea, markups, gameObject.scene, sources);
                 }
                 else if (m_CollectObjects == CollectObjects.Volume)
@@ -366,7 +374,7 @@ namespace NavMeshPlus.Components
                     Matrix4x4 localToWorld = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
                     var worldBounds = GetWorldBounds(localToWorld, new Bounds(m_Center, m_Size));
 
-                    UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(
+                    NavMeshSourceCollector.CollectSourcesInStage(
                         worldBounds, m_LayerMask, m_UseGeometry, m_DefaultArea, markups, gameObject.scene, sources);
                 }
                 for (int i = 0; i < NevMeshExtensions.Count; ++i)

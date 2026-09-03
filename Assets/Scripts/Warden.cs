@@ -29,7 +29,6 @@ public class Warden : MonoBehaviour
     public int maxRandomSearches = 4;
     public float randomSearchRadius = 5f;
     public float memoryPointSaveChance = 0.3f; // 30% chance to save a memory point
-    public bool test;
 
     void Start()
     {
@@ -37,10 +36,9 @@ public class Warden : MonoBehaviour
         agent.updateUpAxis = false;
         agent.updateRotation = false;
         active = false;
-        
     }
 
-    public void ActivateRobot()
+    void ActivateRobot()
     {
         active = true;
         lastKnownPosition = GameObject.FindGameObjectWithTag("Player").transform.position;
@@ -49,16 +47,6 @@ public class Warden : MonoBehaviour
 
     void Update()
     {
-        if(test)
-        {
-            ActivateRobot();
-            test = false;
-        }
-        if (agent.hasPath)
-        {
-            Debug.Log("NavMesh Destination: " + agent.destination);
-            Debug.Log("NavMesh Steering Target: " + agent.steeringTarget);
-        }
         if (active)
         {
             CheckForPlayer();
@@ -74,7 +62,7 @@ public class Warden : MonoBehaviour
                 isSearchingRandomly = false;
                 randomSearchesRemaining = maxRandomSearches;
                 agent.SetDestination(lastKnownPosition);
-                Debug.Log("mmmm");
+
                 // Occasionally save a memory point
                 if (Random.value < memoryPointSaveChance)
                 {
@@ -109,7 +97,7 @@ public class Warden : MonoBehaviour
     void CheckForPlayer()
     {
         playerInSight = false;
-        
+
         Vector2 origin = transform.position;
         Vector2 dirToPlayer = (target.position - transform.position).normalized;
         float angleOffset = -coneAngle / 2f;
@@ -123,16 +111,11 @@ public class Warden : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(origin, rayDirection, detectionDistance);
             Debug.DrawRay(origin, rayDirection * detectionDistance, Color.red, 0.1f);
 
-            if (hit.collider != null && hit.collider.gameObject.name == "Player")
+            if (hit.collider != null && hit.collider.CompareTag("Player"))
             {
                 lastKnownPosition = target.position;
                 playerInSight = true;
                 break;
-                Debug.Log("lll");
-            }
-            if (hit.collider != null)
-            {
-                
             }
         }
     }

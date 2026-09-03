@@ -27,7 +27,7 @@ public class CanvasCont : MonoBehaviour
         aliveCanvas.SetActive(false);
         deadCanvas.SetActive(true);
 
-        yield return new WaitForSeconds(5f); // wait for 5 seconds
+        yield return new WaitForSeconds(3f); // wait for 5 seconds
 
         deadCanvas.SetActive(false);
         aliveCanvas.SetActive(true);

@@ -9,9 +9,9 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/Menus/TitleScreen.unity
     guid: 5e5006cd90541a742a80a2e1e1296dc8
   - enabled: 1
-    path: Assets/_Project/Scenes/Levels/PatrolScene.unity
+    path: Assets/_Project/Scenes/Levels/PatrolScene (TEST(.unity
     guid: 0ebd2072fd4429749b8665564b047635
   - enabled: 1
-    path: Assets/_Project/Scenes/Levels/Map.unity
+    path: Assets/_Project/Scenes/Levels/Map (DEMO).unity
     guid: ec65ccca53fcd184bb2b3a59bdcbcff4
   m_configObjects: {}

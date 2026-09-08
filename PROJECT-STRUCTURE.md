@@ -30,9 +30,13 @@ Assets/
     Audio/
       Music/             full-length tracks
       SFX/               one-shots, footsteps, radio static, the Magnetic pack
-    Prefabs/
-      Characters/        Player, Ghost, Warden, PatrolBots
-      Level/             patrol routes, level-transition triggers
+    Prefabs/           drag these into your scene instead of rebuilding them
+      Characters/        Player, Ghost, Warden, PatrolBots, WeepingAngel
+      Level/             SecurityCamera, Door, Keycard, Teleporter, Alarm,
+                         patrol routes, level-transition triggers
+      Player/            MainCamera rig, Flashlight, CameraFlash
+      Systems/           AudioPlayer, GhostManager, GlobalLight2D
+      UI/                CanvasCont - the player HUD (health + death canvas)
     Scenes/
       Levels/            Map, PatrolScene            <- shipping levels
       Menus/             TitleScreen, StartScreen    <- shipping menus
@@ -64,11 +68,33 @@ Assets/
 | button, icon, or HUD image     | `_Project/Art/UI/`                     |
 | sound effect                   | `_Project/Audio/SFX/`                  |
 | prefab of an enemy or the player | `_Project/Prefabs/Characters/`        |
+| prefab of a door, pickup, or camera | `_Project/Prefabs/Level/`          |
 | scene you are just messing with | `_Project/Scenes/Workspaces/<You>.unity` |
 
 If a file genuinely does not fit any of these, ask in chat before inventing a
 new top-level folder. Folders are cheap; a second folder that means the same
 thing as an existing one is not.
+
+## Building a scene from prefabs
+
+`_Project/Prefabs/` holds the pieces the game is made of, pulled out of
+`Map.unity` so you do not have to rebuild them by hand. To put a working level
+together in your workspace scene, drag in:
+
+- `Player/MainCamera` and a `Characters/Player 1`
+- `UI/CanvasCont` for the health and death UI
+- `Systems/AudioPlayer` and `Systems/GlobalLight2D`
+- then whatever the level needs from `Level/` - doors, keycards, cameras,
+  teleporters, alarms
+
+Editing a prefab updates every copy of it in every scene, which is the whole
+point. If you need a one-off variation, right-click the prefab and make a
+**Prefab Variant** rather than unpacking it - unpacking severs the link and you
+stop getting everyone else's fixes.
+
+The objects still sitting loose in `Map.unity` were deliberately left alone;
+turning them into prefab instances rewrites large parts of that scene, and that
+is a change worth making on its own, not bundled into a reorganization.
 
 ## Two naming rules Unity actually enforces
 

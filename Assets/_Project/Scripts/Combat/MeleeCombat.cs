@@ -7,12 +7,12 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerCombat))]
 public class MeleeCombat : MonoBehaviour
 {
-    const float HitStopTimeScale = 0.05f;
-
     [Tooltip("Layers that stop a swing from reaching a target behind them (walls).")]
     public LayerMask obstacleMask = ~0;
     [Tooltip("Tiny freeze when a hit lands, so hits feel heavy. 0 turns it off.")]
     public float hitStopDuration = 0.05f;
+    [Tooltip("Screen shake when a swing lands, 0 to 1. Charged swings shake twice as hard.")]
+    [Range(0f, 1f)] public float hitShake = 0.25f;
 
     public MeleeWeaponData Weapon { get; set; }
     public bool IsBusy => charging || lockTimer > 0f;
@@ -141,12 +141,15 @@ public class MeleeCombat : MonoBehaviour
             hitThisSwing.Add(target);
             Vector2 pushDirection = (Vector2)col.bounds.center - origin;
             if (pushDirection.sqrMagnitude < 0.0001f) pushDirection = direction;
-            target.TakeDamage(new DamageInfo(damage, pushDirection.normalized, knockback, gameObject));
+            Vector2 hitPoint = overlapping ? (Vector2)col.bounds.center : closest;
+            target.TakeDamage(new DamageInfo(damage, pushDirection.normalized, knockback, gameObject, hitPoint));
             landedHit = true;
         }
 
-        if (landedHit && hitStopDuration > 0f)
-            StartCoroutine(HitStop(hitStopDuration));
+        if (!landedHit) yield break;
+
+        CameraShake.Shake(charged ? hitShake * 2f : hitShake);
+        HitStop.Freeze(hitStopDuration);
     }
 
     bool IsOwnCollider(Collider2D col)
@@ -166,15 +169,6 @@ public class MeleeCombat : MonoBehaviour
         return false;
     }
 
-    IEnumerator HitStop(float duration)
-    {
-        if (Time.timeScale < 1f) yield break; // already frozen, paused, or in slow motion
-
-        Time.timeScale = HitStopTimeScale;
-        yield return new WaitForSecondsRealtime(duration);
-        if (Time.timeScale == HitStopTimeScale) Time.timeScale = 1f;
-    }
-
     void StopCharging()
     {
         charging = false;
@@ -187,7 +181,6 @@ public class MeleeCombat : MonoBehaviour
         StopCharging();
         lockTimer = 0f;
         StopAllCoroutines();
-        if (Time.timeScale == HitStopTimeScale) Time.timeScale = 1f;
 
         if (combat == null || combat.Controller == null) return;
         combat.Controller.combatSpeedMultiplier = 1f;
@@ -201,10 +194,12 @@ public class MeleeCombat : MonoBehaviour
         var playerCombat = GetComponent<PlayerCombat>();
         if (playerCombat == null) return;
 
-        MeleeWeaponData weapon = Weapon;
-        if (weapon == null)
+        // Outside Play mode nothing is in hand, so preview the starting weapon or the hotbar's first melee weapon.
+        MeleeWeaponData weapon = Application.isPlaying ? Weapon : playerCombat.startingWeapon as MeleeWeaponData;
+        var hotbar = GetComponent<WeaponHotbar>();
+        if (weapon == null && !Application.isPlaying && hotbar != null)
         {
-            foreach (WeaponData candidate in playerCombat.weapons)
+            foreach (WeaponData candidate in hotbar.slots)
             {
                 if (candidate is MeleeWeaponData meleeWeapon)
                 {

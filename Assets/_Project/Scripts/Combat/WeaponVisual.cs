@@ -336,11 +336,15 @@ public class WeaponVisual : MonoBehaviour
     }
 }
 
-// Placeholder art generated at runtime so weapons work before sprites exist.
+// Placeholder art, effect textures, and materials generated at runtime, so combat works before real art exists.
 public static class CombatSprites
 {
     private static Sprite square;
     private static Material effectMaterial;
+    private static Material flashMaterial;
+    private static Texture2D ringTexture;
+    private static Texture2D softCircleTexture;
+    private static Texture2D vignetteTexture;
 
     // A white square, 1 world unit across. Tint and scale it into any shape.
     public static Sprite Square
@@ -373,5 +377,50 @@ public static class CombatSprites
             }
             return effectMaterial;
         }
+    }
+
+    // Draws a sprite as a solid silhouette in the renderer's color. Null if the Sonny/Sprite Flash shader is missing.
+    public static Material FlashMaterial
+    {
+        get
+        {
+            if (flashMaterial == null)
+            {
+                Shader shader = Shader.Find("Sonny/Sprite Flash");
+                if (shader != null && shader.isSupported) flashMaterial = new Material(shader);
+            }
+            return flashMaterial;
+        }
+    }
+
+    // A thin soft-edged ring, for impact pops.
+    public static Texture2D RingTexture =>
+        ringTexture != null ? ringTexture : (ringTexture = MakeRadialTexture(64, r => Mathf.Clamp01(1f - Mathf.Abs(r - 0.78f) / 0.14f)));
+
+    // A blurry dot, for smoke.
+    public static Texture2D SoftCircleTexture =>
+        softCircleTexture != null ? softCircleTexture : (softCircleTexture = MakeRadialTexture(64, r => Mathf.Pow(Mathf.Clamp01(1f - r), 2f)));
+
+    // Clear in the middle, solid toward the edges, for full-screen hurt flashes.
+    public static Texture2D VignetteTexture =>
+        vignetteTexture != null ? vignetteTexture : (vignetteTexture = MakeRadialTexture(128, r => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 1.3f, r))));
+
+    // A white texture whose alpha depends on distance from the center (0 in the middle, 1 at the edge's midpoint).
+    public static Texture2D MakeRadialTexture(int size, System.Func<float, float> alphaAtRadius)
+    {
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var pixels = new Color[size * size];
+        float half = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float r = Mathf.Sqrt((x - half) * (x - half) + (y - half) * (y - half)) / half;
+                pixels[y * size + x] = new Color(1f, 1f, 1f, alphaAtRadius(r));
+            }
+        }
+        texture.SetPixels(pixels);
+        texture.Apply();
+        return texture;
     }
 }

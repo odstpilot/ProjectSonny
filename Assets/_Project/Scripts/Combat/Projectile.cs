@@ -70,7 +70,7 @@ public class Projectile : MonoBehaviour
             IDamageable target = Damageable.FromCollider(hit.collider);
             if (target != null)
             {
-                target.TakeDamage(new DamageInfo(damage, direction, knockback, owner));
+                target.TakeDamage(new DamageInfo(damage, direction, knockback, owner, hit.point));
                 Finish();
                 return;
             }

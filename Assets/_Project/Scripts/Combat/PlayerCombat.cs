@@ -1,85 +1,59 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-// The player's weapons. One is in hand at a time; its type decides whether MeleeCombat or RangedCombat
-// runs, and is sent to the Animator as WeaponType so the right holding animations play.
+// What the player has in hand. Equip a weapon, or nothing, and the matching combat script takes over:
+// MeleeCombat for melee, RangedCombat for ranged, neither when unarmed. The held weapon's type is sent to the
+// Animator as WeaponType (0 when unarmed). This doesn't decide which weapons the player owns; the inventory does
+// that (WeaponHotbar stands in for it for now) and calls Equip / Unequip.
 [RequireComponent(typeof(PlayerController), typeof(MeleeCombat), typeof(RangedCombat))]
 public class PlayerCombat : MonoBehaviour
 {
-    [Tooltip("Number keys 1-9 or the scroll wheel switch between these.")]
-    public List<WeaponData> weapons = new List<WeaponData>();
-    public int startingWeaponIndex = 0;
+    [Tooltip("In hand when the scene starts. Leave empty to start unarmed.")]
+    public WeaponData startingWeapon;
 
     [Tooltip("Where attacks come from, relative to the player's pivot, in world units.")]
     public Vector2 aimOffset = new Vector2(0f, -0.1f);
     [Tooltip("Where the player's hand is for each direction and frame, so melee weapons sit in it.")]
     public HandPositions hand;
 
+    // Fires whenever the weapon in hand changes, including to null when unequipped. For the inventory and HUD.
+    public event System.Action<WeaponData> WeaponChanged;
+
     public WeaponData CurrentWeapon { get; private set; }
+    public bool IsArmed => CurrentWeapon != null;
+    // True mid-swing, mid-charge, or mid-shot. Equipping still works then, but cancels the attack.
+    public bool IsBusy => melee.IsBusy || ranged.IsBusy;
+
     public PlayerController Controller { get; private set; }
     public WeaponVisual Visual { get; private set; }
     public Vector2 AttackOrigin => (Vector2)transform.position + aimOffset;
 
     private MeleeCombat melee;
     private RangedCombat ranged;
-    private int currentIndex;
+    private bool hasEquipped;
 
     void Awake()
     {
-        Controller = GetComponent<PlayerController>();
-        melee = GetComponent<MeleeCombat>();
-        ranged = GetComponent<RangedCombat>();
-        Visual = WeaponVisual.Create(transform, aimOffset, GetComponent<SpriteRenderer>(), hand);
+        Initialize();
     }
 
     void Start()
     {
-        if (weapons.Count > 0)
-            Equip(Mathf.Clamp(startingWeaponIndex, 0, weapons.Count - 1));
-        else
-            SetWeaponInHand(null);
+        // Another script, like the inventory, may have equipped something already.
+        if (!hasEquipped)
+            Equip(startingWeapon);
     }
 
-    void Update()
+    // Puts a weapon in hand, replacing whatever was there. Pass null to unequip.
+    public void Equip(WeaponData weapon)
     {
-        // No switching while paused or mid-attack.
-        if (Time.timeScale == 0f || melee.IsBusy || ranged.IsBusy || weapons.Count < 2) return;
+        Initialize();
+        if (hasEquipped && weapon == CurrentWeapon) return;
 
-        for (int i = 0; i < weapons.Count && i < 9; i++)
-        {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
-            {
-                Equip(i);
-                return;
-            }
-        }
-
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll > 0f) Equip((currentIndex + 1) % weapons.Count);
-        else if (scroll < 0f) Equip((currentIndex - 1 + weapons.Count) % weapons.Count);
-    }
-
-    public void Equip(int index)
-    {
-        if (index < 0 || index >= weapons.Count) return;
-
-        currentIndex = index;
-        SetWeaponInHand(weapons[index]);
-    }
-
-    // For pickups and crafting: adds the weapon if it's new, then switches to it.
-    public void AddWeapon(WeaponData weapon)
-    {
-        if (weapon == null) return;
-        if (!weapons.Contains(weapon)) weapons.Add(weapon);
-        Equip(weapons.IndexOf(weapon));
-    }
-
-    void SetWeaponInHand(WeaponData weapon)
-    {
+        hasEquipped = true;
         CurrentWeapon = weapon;
 
-        // Turn both off first so the old one releases the player (movement, facing) before the new one takes over.
+        // Turn both off first so the old one releases the player (movement, facing, a half-finished charge)
+        // before the new one takes over.
         melee.enabled = false;
         ranged.enabled = false;
         melee.Weapon = weapon as MeleeWeaponData;
@@ -89,5 +63,22 @@ public class PlayerCombat : MonoBehaviour
 
         Visual.Equip(weapon);
         Controller.heldWeaponType = weapon != null ? weapon.Type : WeaponType.None;
+        WeaponChanged?.Invoke(weapon);
+    }
+
+    public void Unequip()
+    {
+        Equip(null);
+    }
+
+    // Runs from Awake, or earlier if another script calls Equip before this object has woken up.
+    void Initialize()
+    {
+        if (Controller != null) return;
+
+        Controller = GetComponent<PlayerController>();
+        melee = GetComponent<MeleeCombat>();
+        ranged = GetComponent<RangedCombat>();
+        Visual = WeaponVisual.Create(transform, aimOffset, GetComponent<SpriteRenderer>(), hand);
     }
 }

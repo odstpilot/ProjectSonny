@@ -9,11 +9,17 @@ public class LiveCanvas : MonoBehaviour
     public TMP_Text HPText;
     private void Start()
     {
-        HPText= transform.Find("HPText").GetComponent<TMP_Text>();
+        // The CanvasCont prefab has no HPText child (only some scenes add one), so it's optional.
+        if (HPText == null)
+        {
+            Transform found = transform.Find("HPText");
+            if (found != null) HPText = found.GetComponent<TMP_Text>();
+        }
     }
     public void ChangeHP(float hp)
     {
-        HPText.text= hp.ToString(); //Scan object insted of full scene for object, do this when possible!!!!!!
+        if (HPText != null)
+            HPText.text= hp.ToString(); //Scan object insted of full scene for object, do this when possible!!!!!!
     }
 
 }

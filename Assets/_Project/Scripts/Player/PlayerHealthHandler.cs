@@ -29,9 +29,21 @@ public class PlayerHealthHandler : MonoBehaviour
     private Health health;
     private Rigidbody2D rb;
     private Vector3 spawnPosition;
+    private bool spawnPositionSet;
     private float vignetteAlpha;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
     private GUIStyle readoutStyle;
+
+    // Where the player comes back after dying: where they started the scene, until a checkpoint moves it.
+    public Vector3 RespawnPoint
+    {
+        get => spawnPosition;
+        set
+        {
+            spawnPosition = value;
+            spawnPositionSet = true;
+        }
+    }
 
     void Awake()
     {
@@ -41,7 +53,8 @@ public class PlayerHealthHandler : MonoBehaviour
 
     void Start()
     {
-        spawnPosition = transform.position;
+        if (!spawnPositionSet)
+            spawnPosition = transform.position;
     }
 
     void OnEnable()

@@ -103,6 +103,40 @@ public class HitEffects : MonoBehaviour
         }
     }
 
+    // Something heavy landing: chips of it thrown out along the floor and a slow puff of dust. size 1 is about a tile.
+    public static void Dust(Vector2 point, Color chipColor, float size)
+    {
+        HitEffects effects = Instance;
+        if (effects == null) return;
+
+        Color darkChips = new Color(chipColor.r * 0.55f, chipColor.g * 0.55f, chipColor.b * 0.55f, chipColor.a);
+        var particle = new ParticleSystem.EmitParams();
+        int chipCount = Mathf.Max(4, Mathf.RoundToInt(12 * size));
+        for (int i = 0; i < chipCount; i++)
+        {
+            particle.position = point + Random.insideUnitCircle * 0.25f * size;
+            particle.velocity = Random.insideUnitCircle.normalized * Random.Range(1f, 3.5f) * size;
+            particle.startLifetime = Random.Range(0.35f, 0.7f);
+            particle.startSize = Random.Range(0.05f, 0.12f) * Mathf.Sqrt(size);
+            particle.rotation = Random.Range(0f, 360f);
+            particle.angularVelocity = Random.Range(-540f, 540f);
+            particle.startColor = Color.Lerp(chipColor, darkChips, Random.value);
+            effects.debris.Emit(particle, 1);
+        }
+
+        particle.rotation = 0f;
+        particle.angularVelocity = 0f;
+        for (int i = 0; i < 6; i++)
+        {
+            particle.position = point + Random.insideUnitCircle * 0.4f * size;
+            particle.velocity = Random.insideUnitCircle * 0.8f;
+            particle.startLifetime = Random.Range(0.7f, 1.2f);
+            particle.startSize = Random.Range(0.6f, 1.1f) * size;
+            particle.startColor = new Color(0.42f, 0.41f, 0.4f, 0.45f);
+            effects.smoke.Emit(particle, 1);
+        }
+    }
+
     void Build()
     {
         // Sparks stretch along their velocity so they read as streaks.

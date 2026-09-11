@@ -22,12 +22,26 @@ public class CameraShake : MonoBehaviour
     // amount is 0 to 1 and adds up across hits. The shake is amount squared, so small hits stay subtle.
     public static void Shake(float amount)
     {
-        Camera main = Camera.main;
-        if (main == null || amount <= 0f) return;
-
-        if (!main.TryGetComponent(out CameraShake shake))
-            shake = main.gameObject.AddComponent<CameraShake>();
+        if (amount <= 0f || !TryGetMain(out CameraShake shake)) return;
         shake.trauma = Mathf.Clamp01(shake.trauma + amount);
+    }
+
+    // Raises the shake to amount if it's below that, without adding up. Call it every frame to hold a steady rumble.
+    public static void ShakeAtLeast(float amount)
+    {
+        if (amount <= 0f || !TryGetMain(out CameraShake shake)) return;
+        shake.trauma = Mathf.Max(shake.trauma, Mathf.Clamp01(amount));
+    }
+
+    static bool TryGetMain(out CameraShake shake)
+    {
+        shake = null;
+        Camera main = Camera.main;
+        if (main == null) return false;
+
+        if (!main.TryGetComponent(out shake))
+            shake = main.gameObject.AddComponent<CameraShake>();
+        return true;
     }
 
     void Awake()

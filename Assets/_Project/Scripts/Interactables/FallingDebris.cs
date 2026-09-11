@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A piece of the ceiling coming down. A shadow spreads on the floor where it will land, then it drops, hurting
-// anything underneath (the player, and robots too) and knocking it away. What's left lies on the floor as rubble for a
-// while, or stays for good as a solid pile when it's meant to block the way.
+// A piece of the ceiling coming down. Grit trickles from above and a shadow spreads on the floor where it will land;
+// then it drops, and hits hard: the camera jolts and shakes, the picture warps for a moment, sparks and dust fly, and
+// anything underneath (the player, and robots too) is hurt and knocked away. Lamps nearby can break (see StationLight).
+// What's left lies on the floor as rubble for a while, or stays for good as a solid pile when it's meant to block the way.
 // Made from code: StationRumble drops these, and levels can call FallingDebris.Drop. Rubble that's already on the floor
 // when a level starts is this component with startLanded ticked. No prefab or art needed.
 public class FallingDebris : MonoBehaviour
@@ -12,9 +13,13 @@ public class FallingDebris : MonoBehaviour
     const float FallHeight = 7f;
     const float FallTime = 0.35f;       // the end of the warning, spent dropping
     const float FadeTime = 1.5f;
+    const float GritPerSecond = 30f;
     const float PixelsPerUnit = 12f;
     static readonly Color ChipColor = new Color32(150, 154, 160, 255);
+    static readonly Color GritColor = new Color(0.8f, 0.72f, 0.6f, 0.8f);
     static readonly Color RubbleTint = new Color(0.8f, 0.8f, 0.8f);
+    static readonly Color SparkBright = new Color(1f, 0.9f, 0.6f);
+    static readonly Color SparkHot = new Color(1f, 0.5f, 0.15f);
 
     static readonly Dictionary<char, Color32> Palette = new Dictionary<char, Color32>
     {
@@ -67,6 +72,8 @@ public class FallingDebris : MonoBehaviour
     public bool startLanded;
 
     public event System.Action Landed;
+    // (where, size) whenever any piece of debris lands.
+    public static event System.Action<Vector2, float> Impact;
     public bool HasLanded { get; private set; }
 
     static Sprite chunkSprite;
@@ -118,12 +125,23 @@ public class FallingDebris : MonoBehaviour
         chunk.enabled = false;
         float spin = Random.Range(-220f, 220f);
         float fallStart = Mathf.Max(0f, warnTime - FallTime);
+        Vector2 point = transform.position;
+        float gritOwed = 0f;
 
         for (float t = 0f; t < warnTime; t += Time.deltaTime)
         {
             float warning = t / warnTime;
             shadow.transform.localScale = new Vector3(1.3f, 0.75f, 1f) * size * Mathf.Lerp(0.35f, 1f, warning);
-            shadow.color = new Color(0f, 0f, 0f, Mathf.Lerp(0.1f, 0.6f, warning));
+            shadow.color = new Color(0f, 0f, 0f, Mathf.Lerp(0.1f, 0.65f, warning));
+
+            // Grit shaking loose from the ceiling above, more and more of it.
+            gritOwed += GritPerSecond * warning * Time.deltaTime;
+            while (gritOwed >= 1f)
+            {
+                gritOwed -= 1f;
+                Vector2 from = point + new Vector2(Random.Range(-0.35f, 0.35f) * size, Random.Range(1.5f, 2.6f));
+                HitEffects.Speck(from, new Vector2(0f, -7f), Random.Range(0.25f, 0.4f), Random.Range(0.03f, 0.06f), GritColor);
+            }
 
             if (t >= fallStart)
             {
@@ -143,15 +161,23 @@ public class FallingDebris : MonoBehaviour
     {
         HasLanded = true;
         Vector2 point = transform.position;
+        float near = NearCamera(point);
+        float weight = size * (solid ? 1.5f : 1f);
 
-        HitEffects.Dust(point, ChipColor, size);
-        HitEffects.Ring(point, new Color(1f, 1f, 1f, 0.35f), 1.3f * size);
-        CameraShake.Shake(0.25f * size * NearCamera(point));
+        HitEffects.Dust(point, ChipColor, weight);
+        HitEffects.Ring(point, new Color(1f, 0.92f, 0.8f, 0.45f), 1.4f * weight);
+        HitEffects.Sparks(point, Vector2.up, Mathf.RoundToInt(10 * weight), 5f, 160f, SparkBright, SparkHot);
+
+        // The thud: a hard jolt down, shake on top, and the picture warping for a moment.
+        CameraShake.Kick(Vector2.down, 0.14f * weight * near);
+        CameraShake.Shake(0.4f * weight * near);
+        StationRumble.Punch(0.4f * weight * near);
         StationRumble.PlayImpact(point);
         HurtWhatsUnderneath(point);
 
         Settle(chunk, angle);
         Landed?.Invoke();
+        Impact?.Invoke(point, size);
     }
 
     // Leaves it lying on the floor: a solid pile, or loose rubble that fades after a while.

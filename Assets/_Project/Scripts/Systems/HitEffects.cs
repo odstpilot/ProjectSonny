@@ -103,6 +103,23 @@ public class HitEffects : MonoBehaviour
         }
     }
 
+    // A single fleck of grit drifting along velocity, for trickles of dust.
+    public static void Speck(Vector2 position, Vector2 velocity, float lifetime, float size, Color color)
+    {
+        HitEffects effects = Instance;
+        if (effects == null) return;
+
+        var particle = new ParticleSystem.EmitParams
+        {
+            position = position,
+            velocity = velocity,
+            startLifetime = lifetime,
+            startSize = size,
+            startColor = color
+        };
+        effects.debris.Emit(particle, 1);
+    }
+
     // Something heavy landing: chips of it thrown out along the floor and a slow puff of dust. size 1 is about a tile.
     public static void Dust(Vector2 point, Color chipColor, float size)
     {

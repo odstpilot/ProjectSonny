@@ -44,7 +44,8 @@ public class SonnyBox : MonoBehaviour
         body.sortingLayerName = "Player";
         if (boxSprite == null) lensOffset = new Vector2((LensCenter.x + 0.5f - Width * 0.5f) / PixelsPerUnit, (LensCenter.y + 0.5f) / PixelsPerUnit);
 
-        halo = CreateGlowSprite("Halo", CombatSprites.SoftCircleTexture, 1.4f, 11);
+        // Behind the box, so it glows around it rather than washing over it.
+        halo = CreateGlowSprite("Halo", CombatSprites.SoftCircleTexture, 1.4f, -1);
         lens = CreateGlowSprite("Lens", CombatSprites.RingTexture, 0.38f, 12);
 
         if (glow != null) glowIntensity = glow.intensity;
@@ -77,7 +78,7 @@ public class SonnyBox : MonoBehaviour
         float brightness = Mathf.Lerp(0.35f, 1f, awake) * Mathf.Lerp(0.55f, 1f, pulse);
 
         lens.color = new Color(lensColor.r, lensColor.g, lensColor.b, Mathf.Lerp(0.5f, 1f, brightness));
-        halo.color = new Color(lensColor.r, lensColor.g, lensColor.b, 0.5f * brightness);
+        halo.color = new Color(lensColor.r, lensColor.g, lensColor.b, 0.35f * brightness);
         halo.transform.localScale = Vector3.one * Mathf.Lerp(1f, 2.2f, awake) * Mathf.Lerp(0.9f, 1.1f, pulse);
         if (glow != null) glow.intensity = glowIntensity * Mathf.Lerp(0.5f, 1.8f, awake) * Mathf.Lerp(0.6f, 1f, pulse);
         if (humLoop != null) hum.pitch = Mathf.Lerp(0.8f, 1.1f, awake);

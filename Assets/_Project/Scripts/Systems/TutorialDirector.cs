@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -44,6 +45,8 @@ public class TutorialDirector : MonoBehaviour
     public StationRumble rumble;
     [Tooltip("Alarm lamps that come on in the last hallway.")]
     public List<StationLight> alarms = new List<StationLight>();
+    [Tooltip("Wall lamps. In the last hallway the ones between the player and the control room give out one by one.")]
+    public List<StationLight> lamps = new List<StationLight>();
     public AudioClip alarmClip;
     public AudioClip heartbeatClip;
 
@@ -95,6 +98,7 @@ public class TutorialDirector : MonoBehaviour
         respawn = found.GetComponent<PlayerHealthHandler>();
         if (rumble == null) rumble = StationRumble.Instance;
         hud = TutorialHud.Get();
+        StationLight.SunBoost = 1f;
 
         foreach (StationLight alarm in alarms)
             if (alarm != null) alarm.SetOn(false);
@@ -103,7 +107,7 @@ public class TutorialDirector : MonoBehaviour
         StartCoroutine(Run());
     }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.F6)) SkipAhead();
@@ -297,6 +301,8 @@ public class TutorialDirector : MonoBehaviour
         }
         if (controlRoomDoor != null) controlRoomDoor.locked = false;
         hallwayVoice = StartCoroutine(SayAll(sonnyInTheHallway, 2f));
+        StartCoroutine(LightsOutAhead());
+        StartCoroutine(RaiseSun(1.5f, 8f));
     }
 
     IEnumerator Reveal()
@@ -318,6 +324,8 @@ public class TutorialDirector : MonoBehaviour
         yield return PanCameraTo(sonny != null ? (Vector2)sonny.transform.position + new Vector2(-2.5f, 1f) : (Vector2)player.position, 2.5f);
 
         if (sonny != null) sonny.Awaken();
+        // The sunlight sinks as Sonny wakes, so its red is what fills the room.
+        StartCoroutine(RaiseSun(0.6f, 2.5f));
         yield return new WaitForSeconds(1.2f);
         yield return SayAll(sonnyInTheControlRoom, 1.6f);
 
@@ -354,6 +362,38 @@ public class TutorialDirector : MonoBehaviour
             if (rumble == null || rumble.IsClearFloor(point))
                 FallingDebris.Drop(point, 1f, 0.6f);
         }
+    }
+
+    // The lamps between the player and the control room give out one after another, some bursting, some just dying.
+    IEnumerator LightsOutAhead()
+    {
+        if (finalZone == null) yield break;
+        float from = finalZone.transform.position.x;
+        float to = revealZone != null ? revealZone.transform.position.x : float.MaxValue;
+        List<StationLight> ahead = lamps
+            .Where(lamp => lamp != null && lamp.transform.position.x > from && lamp.transform.position.x < to)
+            .OrderBy(lamp => lamp.transform.position.x)
+            .ToList();
+
+        yield return new WaitForSeconds(1f);
+        for (int i = 0; i < ahead.Count; i++)
+        {
+            if (i % 2 == 0) ahead[i].Break();
+            else ahead[i].PowerOff();
+            yield return new WaitForSeconds(0.6f);
+        }
+    }
+
+    // The flare getting closer: the sunlight through every window swells.
+    IEnumerator RaiseSun(float boost, float seconds)
+    {
+        float start = StationLight.SunBoost;
+        for (float t = 0f; t < seconds; t += Time.deltaTime)
+        {
+            StationLight.SunBoost = Mathf.Lerp(start, boost, t / seconds);
+            yield return null;
+        }
+        StationLight.SunBoost = boost;
     }
 
     IEnumerator SayAll(string[] lines, float holdSeconds)

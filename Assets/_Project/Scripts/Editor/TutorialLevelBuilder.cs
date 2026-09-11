@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
@@ -10,16 +11,16 @@ using UnityEngine.Tilemaps;
 // Menu: Sonny > Build Tutorial Level
 //
 // Rebuilds Scenes/Levels/Tutorial.unity from the text map in Scenes/Levels/Tutorial/TutorialLayout.txt, one character
-// per tile, and puts the Tutorial first in the build. Edit the map, run this again, and the whole
-// level is rebuilt to match: walls, floor, doors, robots, lamps, trigger zones, and the TutorialDirector that runs it.
-// It replaces everything in the scene, so change the map, prefabs, or scripts rather than the scene itself, at least
-// until the layout is settled.
+// per tile, and puts the Tutorial first in the build. Edit the map, run this again, and the whole level is rebuilt to
+// match: walls, floor, doors, robots, lighting, trigger zones, and the TutorialDirector that runs it. It replaces
+// everything in the scene, so change the map, prefabs, or scripts rather than the scene itself, at least until the layout
+// is settled.
 //
 // The map:
 //   (space)  nothing. Walls are drawn around the edge of everything else.
 //   .        floor
 //   =        wall face: the 3 rows of wall seen above a floor
-//   +        window in a wall face, 3 wide
+//   +        window in a wall face, 3 wide. Orange sunlight falls through it onto the floor.
 //   :        collapsed floor: a hole with a rail around it that stops walking but not shots
 //   P        where the player starts
 //   M G H A  robots: the melee lesson, the gallery across the hole, the patrol, the arena
@@ -28,19 +29,28 @@ using UnityEngine.Tilemaps;
 //   1 - 5    blast doors: melee room exit, gallery exit, arena entrance (starts open), arena exit, control room
 //   c r m g h a f e   zones the director waits for the player to walk into: the collapse, run, melee, gallery, hide,
 //            arena, final hallway, and the reveal. Mark a line of cells across the way in.
-//   ^        ceiling lamp, on a wall face
+//   ^        lamp, on a wall face      _  a lamp that's already broken, spitting sparks
 //   *        alarm lamp, on a wall face: off until the last hallway
-//   %        loose rubble          &  a solid pile of rubble
+//   %        loose rubble              &  a solid pile of rubble
 public static class TutorialLevelBuilder
 {
     const string ScenePath = "Assets/_Project/Scenes/Levels/Tutorial.unity";
     const string LayoutPath = "Assets/_Project/Scenes/Levels/Tutorial/TutorialLayout.txt";
+    const string PostProcessingPath = "Assets/_Project/Scenes/Levels/Tutorial/TutorialPostProcessing.asset";
     const string TilesFolder = "Assets/_Project/Art/Environment/Tilesets/ShipTiles";
     const string PrefabsFolder = "Assets/_Project/Prefabs";
     const string SfxFolder = "Assets/_Project/Audio/SFX";
     const string MagneticFolder = "Assets/_Project/Audio/SFX/Magnetic Sound fx/Wav";
     const int IgnoreRaycastLayer = 2;
     const float CharacterZ = 1f;    // where the character prefabs sit
+    const float LampDrop = 3.5f;    // a lamp on a wall face lights the floor this far below it
+
+    // Warm, dim, and failing: amber ambient light, sodium lamps, and orange sunlight from the side facing the flare.
+    static readonly Color AmbientColor = new Color(1f, 0.68f, 0.45f);
+    static readonly Color LampColor = new Color(1f, 0.72f, 0.36f);
+    static readonly Color SunColor = new Color(1f, 0.5f, 0.18f);
+    static readonly Color AlarmColor = new Color(1f, 0.2f, 0.06f);
+    static readonly Color LanternColor = new Color(1f, 0.84f, 0.62f);
 
     // Tile numbers in the ship tileset (ShipTiles/tileset_N).
     static class Tiles
@@ -117,7 +127,7 @@ public static class TutorialLevelBuilder
         public Rect WorldRect(int minX, int maxX, int minRow, int maxRow) => Rect.MinMaxRect(minX, Height - 1 - maxRow, maxX + 1, Height - minRow);
 
         public static bool IsVoid(char c) => c == ' ';
-        public static bool IsFace(char c) => c == '=' || c == '+' || c == '^' || c == '*';
+        public static bool IsFace(char c) => c == '=' || c == '+' || c == '^' || c == '_' || c == '*';
         public static bool IsHole(char c) => c == ':';
         public static bool IsFloor(char c) => !IsVoid(c) && !IsFace(c) && !IsHole(c);
     }
@@ -168,12 +178,14 @@ public static class TutorialLevelBuilder
         PlaceCanvas(canvasPrefab, player, cam);
         Light2D globalLight = PlaceGlobalLight(globalLightPrefab);
         StationRumble rumble = PlaceRumble(floor, globalLight);
+        PlacePostProcessing();
 
         Transform level = new GameObject("Level").transform;
         Transform zones = Group("Zones", level);
         Transform doors = Group("Doors", level);
         Transform robots = Group("Robots", level);
         Transform props = Group("Props", level);
+        Transform lights = Group("Lights", level);
 
         var director = new GameObject("Tutorial Director").AddComponent<TutorialDirector>();
         director.rumble = rumble;
@@ -220,7 +232,9 @@ public static class TutorialLevelBuilder
         });
 
         director.collapsePoints = PlaceCollapsePoints(map, props);
-        director.alarms = PlaceLamps(map, Group("Lamps", level));
+        director.lamps = PlaceLamps(map, lights, LoadClip(SfxFolder, "636578__swag1773__cutting-power.wav"));
+        director.alarms = PlaceAlarms(map, lights);
+        PlaceSunlight(map, lights);
         director.sonny = PlaceSonny(map, props);
         PlaceLockers(map, lockerPrefab, Group("Lockers", level));
         PlaceRubble(map, Group("Rubble", level));
@@ -231,7 +245,7 @@ public static class TutorialLevelBuilder
         AddSceneToBuild();
 
         Debug.Log($"Tutorial builder: built a {map.Width} by {map.Height} level with {robots.GetComponentsInChildren<PlaceholderRobot>().Length} robots, " +
-                  $"{doors.childCount} doors and {zones.childCount} zones, and saved {ScenePath}.");
+                  $"{doors.childCount} doors, {zones.childCount} zones and {lights.childCount} lights, and saved {ScenePath}.");
         return true;
     }
 
@@ -367,13 +381,14 @@ public static class TutorialLevelBuilder
         health.disableCollidersOnDeath = false;
         player.AddComponent<PlayerHealthHandler>();
 
-        // A smaller glow than the prefab's, so the dark between the station's lamps reads as dark.
+        // A small, dim, warm glow, so the lamps and the sunlight do the lighting and the dark between them stays dark.
         var lantern = player.GetComponentInChildren<Light2D>();
         if (lantern != null)
         {
-            lantern.pointLightOuterRadius = 6f;
-            lantern.pointLightInnerRadius = 0.5f;
-            lantern.intensity = 0.8f;
+            lantern.pointLightOuterRadius = 5.5f;
+            lantern.pointLightInnerRadius = 0.4f;
+            lantern.intensity = 0.75f;
+            lantern.color = LanternColor;
             Record(lantern);
         }
         return player;
@@ -394,6 +409,12 @@ public static class TutorialLevelBuilder
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = Color.black;
         Record(cam);
+
+        // Post-processing is off on the prefab.
+        var cameraData = cam.GetUniversalAdditionalCameraData();
+        cameraData.renderPostProcessing = true;
+        cameraData.volumeLayerMask = ~0;
+        Record(cameraData);
         return cam;
     }
 
@@ -416,8 +437,8 @@ public static class TutorialLevelBuilder
     static Light2D PlaceGlobalLight(GameObject prefab)
     {
         var globalLight = Spawn(prefab, null, Vector3.zero).GetComponent<Light2D>();
-        globalLight.intensity = 0.45f;
-        globalLight.color = new Color(0.78f, 0.84f, 1f);
+        globalLight.intensity = 0.38f;
+        globalLight.color = AmbientColor;
         Record(globalLight);
         return globalLight;
     }
@@ -431,6 +452,60 @@ public static class TutorialLevelBuilder
         rumble.impactClips = LoadClips(MagneticFolder, "Magnetic hit 01.wav", "Magnetic hit 02.wav", "Magnetic hit 03.wav", "Magnetic hit 04.wav");
         rumble.ambientLoop = LoadClip(SfxFolder, "700008__newlocknew__scimisc_low-steady-hum-2_em.wav");
         return rumble;
+    }
+
+    // A glow on anything bright, warm grading with a bit of contrast, dark corners, and a little film grain.
+    // The profile is saved next to the layout and updated in place, so it keeps the same asset between builds.
+    static void PlacePostProcessing()
+    {
+        var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(PostProcessingPath);
+        if (profile == null)
+        {
+            profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, PostProcessingPath);
+        }
+
+        Bloom bloom = Effect<Bloom>(profile);
+        bloom.threshold.Override(0.75f);
+        bloom.intensity.Override(1.3f);
+        bloom.scatter.Override(0.72f);
+        bloom.tint.Override(new Color(1f, 0.86f, 0.7f));
+
+        ColorAdjustments grade = Effect<ColorAdjustments>(profile);
+        grade.postExposure.Override(0.2f);
+        grade.contrast.Override(18f);
+        grade.saturation.Override(-6f);
+        grade.colorFilter.Override(new Color(1f, 0.94f, 0.86f));
+
+        Vignette vignette = Effect<Vignette>(profile);
+        vignette.intensity.Override(0.38f);
+        vignette.smoothness.Override(0.5f);
+        vignette.color.Override(new Color(0.07f, 0.03f, 0.01f));
+
+        FilmGrain grain = Effect<FilmGrain>(profile);
+        grain.type.Override(FilmGrainLookup.Thin1);
+        grain.intensity.Override(0.2f);
+        grain.response.Override(0.8f);
+
+        Effect<ChromaticAberration>(profile).intensity.Override(0.06f);
+
+        EditorUtility.SetDirty(profile);
+        AssetDatabase.SaveAssets();
+
+        var volume = new GameObject("Post Processing").AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.sharedProfile = profile;
+    }
+
+    // The profile's effect of this kind, added into the asset if it isn't there yet.
+    static T Effect<T>(VolumeProfile profile) where T : VolumeComponent
+    {
+        if (profile.TryGet(out T effect)) return effect;
+        effect = profile.Add<T>();
+        effect.name = typeof(T).Name;
+        effect.hideFlags = HideFlags.HideInInspector | HideFlags.HideInHierarchy;
+        AssetDatabase.AddObjectToAsset(effect, profile);
+        return effect;
     }
 
     // --- Level pieces ---
@@ -506,38 +581,102 @@ public static class TutorialLevelBuilder
         return points.ToArray();
     }
 
-    // Returns the alarms, which the director switches on later.
-    static List<StationLight> PlaceLamps(Map map, Transform parent)
+    // Sodium lamps on the walls, each lighting a warm pool of floor below it. Some flicker; the '_' ones are already smashed.
+    static List<StationLight> PlaceLamps(Map map, Transform parent, AudioClip breakClip)
     {
-        int lampCount = 0;
-        foreach (Vector2Int at in map.Find('^'))
+        var lamps = new List<StationLight>();
+        foreach (char marker in new[] { '^', '_' })
         {
-            // On the wall, shining down into the middle of the room below it.
-            Light2D lamp = NewLight("Ceiling Lamp", parent, map.Center(at.x, at.y) + new Vector2(0f, -3.5f), new Color(0.75f, 0.85f, 1f), 1f, 6f);
-            var station = lamp.gameObject.AddComponent<StationLight>();
-            station.mode = lampCount++ % 4 == 2 ? StationLight.Mode.Flicker : StationLight.Mode.Steady;
-        }
+            foreach (Vector2Int at in map.Find(marker))
+            {
+                Vector2 wall = map.Center(at.x, at.y);
+                Light2D light = NewLight(marker == '_' ? "Broken Lamp" : "Lamp", parent, wall + new Vector2(0f, -LampDrop), LampColor, 1.2f, 6.5f);
+                light.volumetricEnabled = true;
+                light.volumeIntensity = 0.05f;
 
+                var lamp = light.gameObject.AddComponent<StationLight>();
+                lamp.mode = lamps.Count % 4 == 2 ? StationLight.Mode.Flicker : StationLight.Mode.Steady;
+                lamp.startBroken = marker == '_';
+                lamp.drawFixture = true;
+                lamp.fixtureOffset = new Vector2(0f, LampDrop);
+                lamp.breakClip = breakClip;
+                lamps.Add(lamp);
+            }
+        }
+        return lamps;
+    }
+
+    // Red alarm lamps, off until the director switches them on.
+    static List<StationLight> PlaceAlarms(Map map, Transform parent)
+    {
         var alarms = new List<StationLight>();
         foreach (Vector2Int at in map.Find('*'))
         {
             Vector2 wall = map.Center(at.x, at.y);
-            Light2D lamp = NewLight("Alarm Lamp", parent, wall + new Vector2(0f, -2f), new Color(1f, 0.12f, 0.08f), 1.4f, 5f);
+            Light2D light = NewLight("Alarm Lamp", parent, wall + new Vector2(0f, -2f), AlarmColor, 1.4f, 5f);
+            light.volumetricEnabled = true;
+            light.volumeIntensity = 0.08f;
 
             var fixture = new GameObject("Fixture").AddComponent<SpriteRenderer>();
-            fixture.transform.SetParent(lamp.transform);
+            fixture.transform.SetParent(light.transform);
             fixture.transform.position = wall;
             fixture.sprite = (tiles[Tiles.AlarmFixture] as Tile)?.sprite;
             fixture.sortingLayerName = "Collision";
             fixture.sortingOrder = 2;
 
-            var alarm = lamp.gameObject.AddComponent<StationLight>();
+            var alarm = light.gameObject.AddComponent<StationLight>();
             alarm.mode = StationLight.Mode.Alarm;
             alarm.startOn = false;
+            alarm.breakable = false;
             alarm.bulb = fixture;
             alarms.Add(alarm);
         }
         return alarms;
+    }
+
+    // Sunlight through every window: a slanting shaft of orange light across the floor below, and glare in the glass.
+    static void PlaceSunlight(Map map, Transform parent)
+    {
+        for (int row = 0; row < map.Height; row++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                // Start from the bottom-left cell of each window.
+                if (map.At(x, row) != '+' || map.At(x - 1, row) == '+' || !Map.IsFloor(map.At(x, row + 1))) continue;
+
+                int width = 0;
+                while (map.At(x + width, row) == '+') width++;
+                int depth = 0;
+                while (depth < 16 && Map.IsFloor(map.At(x + width / 2, row + 1 + depth))) depth++;
+                float slant = depth * 0.45f;
+
+                // Anchored at the bottom-left corner of the window.
+                var sun = new GameObject("Sunlight");
+                sun.transform.SetParent(parent);
+                sun.transform.position = new Vector3(x, map.Height - 1 - row, 0f);
+
+                var light = sun.AddComponent<Light2D>();
+                light.SetShapePath(new[]
+                {
+                    new Vector3(0.1f, 1.8f), new Vector3(width - 0.1f, 1.8f),
+                    new Vector3(width + slant + 0.8f, -depth), new Vector3(slant - 0.3f, -depth)
+                });
+                light.lightType = Light2D.LightType.Freeform;
+                light.shapeLightFalloffSize = 1.2f;
+                light.color = SunColor;
+                light.intensity = 0.7f;
+                light.volumetricEnabled = true;
+                light.volumeIntensity = 0.12f;
+
+                var station = sun.AddComponent<StationLight>();
+                station.mode = StationLight.Mode.Sunlight;
+                station.breakable = false;
+                station.rumbleStutter = 0.25f;
+                station.drawFixture = true;
+                station.fixtureOffset = new Vector2(width * 0.5f, 1.5f);
+                station.windowSize = new Vector2(width, 3f);
+            }
+        }
     }
 
     static SonnyBox PlaceSonny(Map map, Transform parent)
@@ -555,6 +694,8 @@ public static class TutorialLevelBuilder
 
         var sonny = box.AddComponent<SonnyBox>();
         sonny.glow = NewLight("Glow", box.transform, center + new Vector2(0f, 0.9f), new Color(1f, 0.15f, 0.1f), 1.5f, 8f);
+        sonny.glow.volumetricEnabled = true;
+        sonny.glow.volumeIntensity = 0.15f;
         sonny.humLoop = LoadClip(MagneticFolder + "/Looping", "Magnetic wave bass loop.wav");
         sonny.awakenClip = LoadClip(MagneticFolder, "Magnetic bass tone 01.wav");
         return sonny;

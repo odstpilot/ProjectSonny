@@ -11,7 +11,7 @@ public class RobotEncounter : MonoBehaviour
 {
     const float WakeBlinkTime = 0.06f;
     const int WakeBlinks = 6;
-    static readonly Color DormantTint = new Color(0.35f, 0.37f, 0.42f);
+    static readonly Color DormantTint = new Color(0.55f, 0.57f, 0.62f);
 
     [Tooltip("Leave empty to use every robot (anything with Health) under this object.")]
     public List<Health> robots = new List<Health>();

@@ -1,17 +1,21 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 
-// The station shaking itself apart. Every so often the screen shakes, a low rumble plays, the lights brown out, dust
-// drifts down, and debris falls near the player: a shadow spreads on the floor first, so there's time to step aside
-// (see FallingDebris). Levels can also set one off on cue with Rumble, and raise intensity so they come stronger and
-// more often. Lamps with StationLight listen for Rumbled and stutter along.
+// The station shaking itself apart. Every so often the screen shakes and warps, a low rumble plays, the lights brown
+// out, dust drifts down, and debris falls near the player: a shadow spreads on the floor first, so there's time to step
+// aside (see FallingDebris). Between rumbles a few warm motes of dust hang in the air. Levels can set a rumble off on cue
+// with Rumble, and raise intensity so they come stronger and more often. Heavy impacts call Punch to jolt the picture.
+// Lamps with StationLight listen for Rumbled and stutter along.
 // One per scene. Put it on an empty object; it needs nothing else.
 public class StationRumble : MonoBehaviour
 {
     const float DustPerSecond = 70f;    // specks at full strength
+    const float MotesPerSecond = 6f;
     const float LightDip = 0.5f;        // how far the global light dims at the peak of a rumble
+    const float PunchRecovery = 2.5f;   // a full punch fades in 0.4 seconds
     const string DustSortingLayer = "Top";
 
     [Header("Rumbles On Their Own")]
@@ -35,10 +39,12 @@ public class StationRumble : MonoBehaviour
     [Tooltip("Debris only lands on this tilemap's tiles, so it never falls into walls or empty space. Leave empty to allow anywhere that isn't solid.")]
     public Tilemap floor;
 
-    [Header("Lights")]
+    [Header("Lights and Screen")]
     [Tooltip("Dims and turns toward the emergency color during rumbles. Usually the global light.")]
     public Light2D globalLight;
-    public Color emergencyColor = new Color(1f, 0.55f, 0.5f);
+    public Color emergencyColor = new Color(1f, 0.45f, 0.25f);
+    [Tooltip("How much the picture warps, fringes, and darkens at the height of a rumble or a heavy impact, 0 to 1.")]
+    [Range(0f, 1f)] public float screenDistortion = 0.6f;
 
     [Header("Sound")]
     public AudioClip[] rumbleClips = new AudioClip[0];
@@ -54,12 +60,17 @@ public class StationRumble : MonoBehaviour
     public static event System.Action<float, float> Rumbled;
 
     public bool IsRumbling => Time.time < rumbleEnd;
+    public float BaseLightIntensity => lightIntensity;
+    public Color BaseLightColor => lightColor;
 
     private Transform player;
     private Collider2D playerCollider;
     private AudioSource sfx;
     private ParticleSystem dust;
+    private Volume screenEffects;
     private float dustOwed;
+    private float motesOwed;
+    private float punch;
     private float nextRumble;
     private float rumbleStart;
     private float rumbleEnd;
@@ -90,6 +101,8 @@ public class StationRumble : MonoBehaviour
             lightIntensity = globalLight.intensity;
             lightColor = globalLight.color;
         }
+
+        CreateScreenEffects();
     }
 
     void OnDestroy()
@@ -108,7 +121,7 @@ public class StationRumble : MonoBehaviour
         ScheduleNext();
     }
 
-    // Shakes the station now. strength is 0 to 1; debris falls around the player over the first part of it.
+    // Shakes the station now. shake is 0 to 1; debris falls around the player over the first part of it.
     public void Rumble(float shake, float seconds, int debrisCount)
     {
         rumbleStrength = Mathf.Clamp01(shake);
@@ -122,6 +135,12 @@ public class StationRumble : MonoBehaviour
         ScheduleNext();
     }
 
+    // A sudden jolt to the picture (warp, color fringing, darker edges) that fades in a moment. amount is 0 to 1.
+    public static void Punch(float amount)
+    {
+        if (Instance != null) Instance.punch = Mathf.Clamp01(Mathf.Max(Instance.punch, amount));
+    }
+
     // For the level to change the lighting it goes back to between rumbles, like turning everything red near the end.
     public void SetLightBase(float intensityValue, Color color)
     {
@@ -129,21 +148,24 @@ public class StationRumble : MonoBehaviour
         lightColor = color;
     }
 
-    public float BaseLightIntensity => lightIntensity;
-    public Color BaseLightColor => lightColor;
-
     public void PlaySound(AudioClip clip, float volumeScale = 1f)
     {
         if (clip != null) sfx.PlayOneShot(clip, volume * volumeScale);
+    }
+
+    // A sound from somewhere in the level, quieter the further it is from the camera.
+    public static void PlayAt(AudioClip clip, Vector2 point, float volumeScale = 1f)
+    {
+        if (Instance == null || clip == null) return;
+        float nearness = Nearness(point);
+        if (nearness > 0f) Instance.sfx.PlayOneShot(clip, Instance.volume * volumeScale * nearness);
     }
 
     // For FallingDebris: a crash, quieter the further it lands from the camera.
     public static void PlayImpact(Vector2 point)
     {
         if (Instance == null) return;
-        Camera cam = Camera.main;
-        float distance = cam != null ? Vector2.Distance(cam.transform.position, point) : 0f;
-        Instance.PlayRandom(Instance.impactClips, Mathf.Clamp01(1f - distance / 14f));
+        Instance.PlayRandom(Instance.impactClips, Nearness(point));
     }
 
     void Update()
@@ -158,6 +180,11 @@ public class StationRumble : MonoBehaviour
         float amount = Envelope() * rumbleStrength;
         if (amount > 0f)
             CameraShake.ShakeAtLeast(amount);
+
+        punch = Mathf.MoveTowards(punch, 0f, PunchRecovery * Time.unscaledDeltaTime);
+        if (screenEffects != null)
+            screenEffects.weight = Mathf.Clamp01(amount * 1.3f + punch) * screenDistortion;
+
         UpdateLight(amount);
         EmitDust(amount);
     }
@@ -183,6 +210,27 @@ public class StationRumble : MonoBehaviour
         float flicker = Mathf.PerlinNoise(Time.time * 14f, 0.3f);
         globalLight.intensity = lightIntensity * (1f - LightDip * amount * (0.5f + flicker));
         globalLight.color = Color.Lerp(lightColor, emergencyColor, Mathf.Clamp01(amount * 1.5f));
+    }
+
+    // Its own post-processing, layered over the level's and faded in by weight: lens warp, color fringing, darker edges.
+    void CreateScreenEffects()
+    {
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        profile.Add<ChromaticAberration>().intensity.Override(0.8f);
+        profile.Add<LensDistortion>().intensity.Override(-0.18f);
+        profile.Add<ColorAdjustments>().postExposure.Override(-0.35f);
+        Vignette vignette = profile.Add<Vignette>();
+        vignette.intensity.Override(0.55f);
+        vignette.smoothness.Override(0.6f);
+        vignette.color.Override(new Color(0.12f, 0.03f, 0f));
+
+        var child = new GameObject("Rumble Screen Effects");
+        child.transform.SetParent(transform, false);
+        screenEffects = child.AddComponent<Volume>();
+        screenEffects.isGlobal = true;
+        screenEffects.priority = 50f;
+        screenEffects.weight = 0f;
+        screenEffects.sharedProfile = profile;
     }
 
     // --- Debris ---
@@ -242,10 +290,9 @@ public class StationRumble : MonoBehaviour
 
     // --- Dust and sound ---
 
-    // Specks drifting down across the whole view.
+    // Specks drifting down across the whole view while it rumbles, and a few warm motes hanging in the air all the time.
     void EmitDust(float amount)
     {
-        if (amount <= 0f) return;
         Camera cam = Camera.main;
         if (cam == null) return;
         if (dust == null) dust = CreateDust();
@@ -264,7 +311,19 @@ public class StationRumble : MonoBehaviour
             particle.velocity = new Vector2(Random.Range(-0.1f, 0.1f), -Random.Range(0.4f, 1.2f));
             particle.startLifetime = Random.Range(0.6f, 1.4f);
             particle.startSize = Random.Range(0.03f, 0.07f);
-            particle.startColor = new Color(0.78f, 0.76f, 0.72f, Random.Range(0.2f, 0.5f));
+            particle.startColor = new Color(0.85f, 0.74f, 0.6f, Random.Range(0.2f, 0.5f));
+            dust.Emit(particle, 1);
+        }
+
+        motesOwed += MotesPerSecond * Time.deltaTime;
+        while (motesOwed >= 1f)
+        {
+            motesOwed -= 1f;
+            particle.position = center + new Vector2(Random.Range(-halfWidth, halfWidth), Random.Range(-halfHeight, halfHeight));
+            particle.velocity = Random.insideUnitCircle * 0.12f + new Vector2(0f, -0.04f);
+            particle.startLifetime = Random.Range(3f, 6f);
+            particle.startSize = Random.Range(0.02f, 0.045f);
+            particle.startColor = new Color(1f, 0.8f, 0.52f, Random.Range(0.12f, 0.3f));
             dust.Emit(particle, 1);
         }
     }
@@ -285,7 +344,7 @@ public class StationRumble : MonoBehaviour
         main.playOnAwake = false;
         main.startSpeed = 0f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 600;
+        main.maxParticles = 800;
         ParticleSystem.EmissionModule emission = system.emission;
         emission.enabled = false;
         ParticleSystem.ShapeModule shape = system.shape;
@@ -306,6 +365,13 @@ public class StationRumble : MonoBehaviour
 
         system.Play();
         return system;
+    }
+
+    static float Nearness(Vector2 point)
+    {
+        Camera cam = Camera.main;
+        float distance = cam != null ? Vector2.Distance(cam.transform.position, point) : 0f;
+        return Mathf.Clamp01(1f - distance / 14f);
     }
 
     void PlayRandom(AudioClip[] clips, float volumeScale)

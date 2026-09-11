@@ -96,6 +96,9 @@ GameObject:
   - component: {fileID: 7359373695213242451}
   - component: {fileID: 4121180284899447739}
   - component: {fileID: 3744511568792478675}
+  - component: {fileID: 8179145694604418016}
+  - component: {fileID: 4630285719374628101}
+  - component: {fileID: 6719402837465019283}
   m_Layer: 0
   m_Name: Player 1
   m_TagString: Player
@@ -285,3 +288,49 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.78703, y: 1.7365849}
   m_EdgeRadius: 0
+--- !u!114 &8179145694604418016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54b61f766d7b470cb23586e75d25dcf3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  weapons:
+  - {fileID: 11400000, guid: 47278cf36335424dad937570cd866f77, type: 2}
+  - {fileID: 11400000, guid: 624a4c24e38a4e64a00e78066607fda2, type: 2}
+  startingWeaponIndex: 0
+  aimOffset: {x: 0, y: -0.1}
+  hand: {fileID: 11400000, guid: b41e7d2c9a6f4e58913c0d7a2b5e6f19, type: 2}
+--- !u!114 &4630285719374628101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0e45dcf7d9d44ddbb02ae3396dce9bf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hitStopDuration: 0.05
+--- !u!114 &6719402837465019283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fe0f7695be24b69a86925d633a367ff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:

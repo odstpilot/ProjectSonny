@@ -5,13 +5,16 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Project/Scenes/Menus/TitleScreen.unity
     guid: 5e5006cd90541a742a80a2e1e1296dc8
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Project/Scenes/Levels/PatrolScene (TEST(.unity
     guid: 0ebd2072fd4429749b8665564b047635
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Project/Scenes/Levels/Map (DEMO).unity
     guid: ec65ccca53fcd184bb2b3a59bdcbcff4
+  - enabled: 1
+    path: Assets/_Project/Scenes/Levels/REAL GAME.unity
+    guid: 13b1644ec57d02e40891da40da078f7a
   m_configObjects: {}

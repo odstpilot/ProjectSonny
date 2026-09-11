@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0c443fee84946778d12423def2e777c, type: 3}
+  m_Name: RivetGun
+  m_EditorClassIdentifier:
+  displayName: Rivet Gun
+  showHeldSprite: 1
+  aimSnap: 0
+  sprite: {fileID: 0}
+  spriteScale: 1
+  placeholderSize: {x: 0.35, y: 0.12}
+  placeholderColor: {r: 0.45, g: 0.5, b: 0.55, a: 1}
+  holdDistance: 0.3
+  damage: 2
+  knockback: 0.15
+  cooldown: 0.3
+  lockDuration: 0.2
+  automatic: 0
+  projectilesPerShot: 1
+  spreadAngle: 3
+  recoilDistance: 0.1
+  projectileSprite: {fileID: 0}
+  projectileSize: {x: 0.22, y: 0.07}
+  projectileColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+  projectileSpeed: 14
+  projectileRange: 9
+  projectileRadius: 0.08

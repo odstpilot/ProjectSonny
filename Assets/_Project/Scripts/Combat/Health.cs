@@ -95,7 +95,7 @@ public class Health : MonoBehaviour, IDamageable
             invincibleUntil = Time.time + invincibilityDuration;
 
         if (feedbackRoutine != null) StopCoroutine(feedbackRoutine);
-        feedbackRoutine = StartCoroutine(HitFeedback());
+        feedbackRoutine = StartCoroutine(HitFeedback(true));
 
         float distance = info.knockback * (1f - knockbackResistance);
         if (distance > 0f && info.direction.sqrMagnitude > 0f)
@@ -130,6 +130,23 @@ public class Health : MonoBehaviour, IDamageable
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
     }
 
+    // Dead at once, whatever health is left and even while invincible: for being caught, crushed, and so on.
+    public void Kill(GameObject source = null)
+    {
+        if (IsDead) return;
+        invincibleUntil = 0f;
+        TakeDamage(new DamageInfo(CurrentHealth, Vector2.zero, 0f, source));
+    }
+
+    // Ignores damage for a while, blinking if blinkWhileInvincible, without the hit flash. For coming back after dying.
+    public void MakeInvincible(float seconds)
+    {
+        invincibleUntil = Mathf.Max(invincibleUntil, Time.time + seconds);
+        if (!blinkWhileInvincible) return;
+        if (feedbackRoutine != null) StopCoroutine(feedbackRoutine);
+        feedbackRoutine = StartCoroutine(HitFeedback(false));
+    }
+
     private void Die()
     {
         if (disableCollidersOnDeath)
@@ -150,9 +167,9 @@ public class Health : MonoBehaviour, IDamageable
     }
 
     // A solid flash in the sprite's shape, then blinking for as long as invincibility lasts.
-    private IEnumerator HitFeedback()
+    private IEnumerator HitFeedback(bool withFlash)
     {
-        float flashStart = Time.time;
+        float flashStart = withFlash ? Time.time : Time.time - hitFlashDuration;
         while (true)
         {
             float flashProgress = hitFlashDuration > 0f ? (Time.time - flashStart) / hitFlashDuration : 1f;

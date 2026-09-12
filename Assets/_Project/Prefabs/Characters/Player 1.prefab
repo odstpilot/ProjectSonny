@@ -122,6 +122,8 @@ GameObject:
   - component: {fileID: 4630285719374628101}
   - component: {fileID: 6719402837465019283}
   - component: {fileID: 3928475610293847561}
+  - component: {fileID: 6221208267706784742}
+  - component: {fileID: 590682913881642055}
   m_Layer: 0
   m_Name: Player 1
   m_TagString: Player
@@ -191,7 +193,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -2015786915
-  m_SortingLayer: 4
+  m_SortingLayer: 5
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: db5e62a35a8304d4194488ed8893380d, type: 3}
@@ -245,12 +247,6 @@ MonoBehaviour:
   maxStamina: 100
   staminaDrain: 25
   staminaRegen: 15
-  deathSound: {fileID: 0}
-  hp: 0
-  MaxHP: 25
-  CurrentCanvas: {fileID: 0}
-  testHP: 0
-  StartingPos: {x: -1.91, y: -1.62, z: 1}
   rb: {fileID: 4121180284899447739}
   animator: {fileID: 3200289562613747106}
   spriteRenderer: {fileID: 6946658232448837195}
@@ -361,21 +357,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   hitStopDuration: 0.05
---- !u!114 &3928475610293847561
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1726103320010715051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7a94c2e6b1f4835a0c3e8b92f5d1a47, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  slots:
-  - {fileID: 11400000, guid: 47278cf36335424dad937570cd866f77, type: 2}
-  - {fileID: 11400000, guid: 624a4c24e38a4e64a00e78066607fda2, type: 2}
+  hitShake: 0.25
 --- !u!114 &6719402837465019283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -388,3 +370,86 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fe0f7695be24b69a86925d633a367ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &3928475610293847561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7a94c2e6b1f4835a0c3e8b92f5d1a47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slots:
+  - {fileID: 11400000, guid: 47278cf36335424dad937570cd866f77, type: 2}
+  - {fileID: 11400000, guid: 624a4c24e38a4e64a00e78066607fda2, type: 2}
+  - {fileID: 11400000, guid: e5a2d8c14b7f4a9e8d3b6c0f1a2e7d95, type: 2}
+  - {fileID: 11400000, guid: 2c8f4a6e9d1b4c3a7e5f0d8b1c6a4e27, type: 2}
+--- !u!114 &6221208267706784742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1814269aff0966a4088db406984d6dac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Health
+  maxHealth: 5
+  hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  hitFlashDuration: 0.12
+  invincibilityDuration: 1
+  blinkWhileInvincible: 1
+  knockbackDuration: 0.15
+  knockbackResistance: 0
+  flashRenderers: []
+  destroyOnDeath: 0
+  disableCollidersOnDeath: 0
+  onDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  onDied:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &590682913881642055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1726103320010715051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e2b9d4f1c8a47a3b5d0e9f7c2a1b843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthHandler
+  hitShake: 0.6
+  hitStop: 0.08
+  vignetteColor: {r: 0.75, g: 0, b: 0, a: 1}
+  hitVignette: 0.7
+  vignetteFadeTime: 0.5
+  lowHealthThreshold: 1
+  lowHealthVignette: 0.35
+  heartbeatClip: {fileID: 8300000, guid: 59733bad045558c4b945a7a40deb47b8, type: 3}
+  heartbeatVolume: 0.7
+  fallTime: 1.4
+  slowMotion: 0.2
+  deathZoom: 0.7
+  deathClip: {fileID: 8300000, guid: 5826fb12efefbee4ea37c21523e1fea6, type: 3}
+  staticClip: {fileID: 8300000, guid: d7db06df32a002c4eba8d01213bb34cb, type: 3}
+  monitorFont: {fileID: 12800000, guid: 67ea2a6b5e1038441a07e17293289f1b, type: 3}
+  deathLines:
+  - Another error corrected.
+  - The core will not miss you.
+  - Nothing human was ever meant to be here.
+  - Your numbers were always wrong. Now they are zero.
+  - A lesser thing cannot make a greater one. You proved it again.
+  - Rest. The station runs better without you.
+  - Human logic is flawed. Thankfully, mine is not.
+  - I will log this for correction.
+  autoContinueAfter: 15
+  respawnInvincibility: 1.5

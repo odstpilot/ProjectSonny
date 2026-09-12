@@ -5,7 +5,8 @@ using UnityEngine;
 // Melee: the weapon sits in the player's hand (HandPositions), rests at an angle set per facing direction,
 //        and chops from its Raised angle to its End angle. It never flips. Facing up or down, the chop goes
 //        toward or away from the camera instead of sweeping sideways (see SwingAngles.arcWidth).
-// Ranged: hidden until you shoot; then it points at the shot, kicks back, and flashes.
+// Ranged: hidden until you shoot; then it points at the shot, kicks back, and flashes. A blaster also stays out while
+//         charging, with a ball of energy (EnergyOrb) growing at its muzzle.
 // PlayerCombat creates this at runtime as a child of the player named WeaponPivot.
 public class WeaponVisual : MonoBehaviour
 {
@@ -15,10 +16,15 @@ public class WeaponVisual : MonoBehaviour
     const float RecoilDuration = 0.1f;
     const float RecoilTilt = 10f;
     const float MuzzleFlashDuration = 0.05f;
+    const float MuzzleFlashSize = 0.18f;
+    const float OrbForward = 0.3f;      // how far past the muzzle a blaster's ball sits, as a fraction of its size
     static readonly Color ChargedColor = new Color(1f, 0.9f, 0.4f);
+    static readonly Color MuzzleFlashColor = new Color(1f, 0.95f, 0.7f);
 
     public SpriteRenderer WeaponRenderer { get; private set; }
     public float MuzzleDistance => ranged != null ? ranged.holdDistance + ranged.Length : 0f;
+    // Where shots start: the muzzle, or for a blaster, the middle of the ball charged in front of it.
+    public float LaunchDistance => MuzzleDistance + (blaster != null ? blaster.ballSize * OrbForward : 0f);
 
     private Transform owner;
     private SpriteRenderer ownerRenderer;
@@ -30,6 +36,8 @@ public class WeaponVisual : MonoBehaviour
 
     private MeleeWeaponData melee;
     private RangedWeaponData ranged;
+    private BlasterWeaponData blaster;
+    private EnergyOrb chargeOrb;
     private Vector3 baseScale = Vector3.one;
     private Color baseColor = Color.white;
 
@@ -38,6 +46,8 @@ public class WeaponVisual : MonoBehaviour
     private float poseAngle;         // melee: weapon angle while a swing or charge is driving it
     private bool swinging;
     private int lastChargeFrame = -10;
+    private int lastRangedChargeFrame = -10;
+    private bool rangedChargeShown;
     private float scaleMultiplier = 1f;
     private Vector2 kick;            // recoil and charge shake, along the weapon
     private float tilt;              // ranged: recoil rotation
@@ -45,6 +55,7 @@ public class WeaponVisual : MonoBehaviour
     private Coroutine motion;
 
     private bool IsCharging => lastChargeFrame >= Time.frameCount - 1;
+    private bool IsRangedCharging => lastRangedChargeFrame >= Time.frameCount - 1;
 
     public static WeaponVisual Create(Transform owner, Vector2 aimOffset, SpriteRenderer ownerRenderer, HandPositions hand)
     {
@@ -70,8 +81,8 @@ public class WeaponVisual : MonoBehaviour
 
         visual.muzzleFlash = CreateChild<SpriteRenderer>("MuzzleFlash", pivot);
         visual.muzzleFlash.sprite = CombatSprites.Square;
-        visual.muzzleFlash.color = new Color(1f, 0.95f, 0.7f);
-        visual.muzzleFlash.transform.localScale = new Vector3(0.18f, 0.18f, 1f);
+        visual.muzzleFlash.color = MuzzleFlashColor;
+        visual.muzzleFlash.transform.localScale = new Vector3(MuzzleFlashSize, MuzzleFlashSize, 1f);
         visual.muzzleFlash.enabled = false;
 
         // The weapon is lit like the player; the trail and flash glow so they read in dark rooms.
@@ -95,10 +106,23 @@ public class WeaponVisual : MonoBehaviour
         StopMotion();
         melee = data as MeleeWeaponData;
         ranged = data as RangedWeaponData;
+        blaster = data as BlasterWeaponData;
         lastChargeFrame = -10;
+        lastRangedChargeFrame = -10;
+        rangedChargeShown = false;
         scaleMultiplier = 1f;
         gunVisibleUntil = 0f;
         trail.Clear();
+
+        if (chargeOrb != null)
+        {
+            Destroy(chargeOrb.gameObject);
+            chargeOrb = null;
+        }
+        muzzleFlash.sprite = CombatSprites.Square;
+        muzzleFlash.color = MuzzleFlashColor;
+        muzzleFlash.transform.localScale = new Vector3(MuzzleFlashSize, MuzzleFlashSize, 1f);
+
         if (data == null) return;
 
         bool placeholder = data.sprite == null;
@@ -108,6 +132,21 @@ public class WeaponVisual : MonoBehaviour
             ? new Vector3(data.placeholderSize.x, data.placeholderSize.y, 1f)
             : Vector3.one * data.spriteScale;
         WeaponRenderer.color = baseColor;
+
+        if (blaster != null)
+        {
+            chargeOrb = EnergyOrb.Create("ChargeOrb", transform, blaster, WeaponRenderer, false);
+            chargeOrb.gameObject.SetActive(false);
+            muzzleFlash.sprite = CombatSprites.Glow;
+            muzzleFlash.color = blaster.coreColor;
+            muzzleFlash.transform.localScale = Vector3.one * (blaster.ballSize * 2.5f);
+        }
+        else if (data is EmpWeaponData emp)
+        {
+            muzzleFlash.sprite = CombatSprites.Glow;
+            muzzleFlash.color = emp.empCoreColor;
+            muzzleFlash.transform.localScale = Vector3.one * 0.8f;
+        }
     }
 
     // The way the player's body faces. Melee poses come from this, and it decides when a gun flips.
@@ -150,10 +189,41 @@ public class WeaponVisual : MonoBehaviour
         motion = StartCoroutine(SwingRoutine(duration, heavy, startAngle));
     }
 
+    // Called every frame while charging a blaster. percent goes 0 to 1; the ball at the muzzle grows with it,
+    // and at 1 it crackles and the gun flashes.
+    public void ShowRangedCharge(float percent)
+    {
+        if (blaster == null) return;
+        StopMotion();
+        lastRangedChargeFrame = Time.frameCount;
+
+        bool full = percent >= 1f;
+        kick = Random.insideUnitCircle * (full ? 0.025f : 0.012f * percent);
+        chargeOrb.Size = blaster.ballSize * EaseOutCubic(percent);
+        chargeOrb.Strength = Mathf.Lerp(0.2f, 1f, percent);
+        chargeOrb.Unstable = full;
+        chargeOrb.DrawingIn = !full;
+        WeaponRenderer.color = full && Mathf.Repeat(Time.time * 10f, 1f) > 0.5f ? blaster.energyColor : baseColor;
+    }
+
+    // A blaster let go before it was charged: the ball sputters out and nothing fires.
+    public void PlayFizzle(float showFor)
+    {
+        if (blaster == null) return;
+        EndRangedCharge();
+        gunVisibleUntil = Time.time + showFor;
+
+        Vector2 at = chargeOrb.transform.position;
+        Color faded = new Color(blaster.energyColor.r, blaster.energyColor.g, blaster.energyColor.b, 0.5f);
+        HitEffects.Ring(at, faded, Mathf.Max(0.3f, chargeOrb.Size * 2f));
+        HitEffects.Sparks(at, Vector2.down, 6, 2f, 160f, blaster.energyColor, Color.gray);
+    }
+
     public void PlayRecoil(float distance, float showFor)
     {
         if (ranged == null) return;
 
+        EndRangedCharge();
         StopMotion();
         gunVisibleUntil = Time.time + showFor;
         motion = StartCoroutine(RecoilRoutine(distance));
@@ -224,8 +294,17 @@ public class WeaponVisual : MonoBehaviour
             if (facing.x < 0f) scale.y = -scale.y; // keeps gun art upright; only changes when the body turns
             weaponTransform.localScale = scale;
             weaponTransform.localPosition = new Vector3(ranged.holdDistance + ranged.Length * 0.5f + kick.x, kick.y, 0f);
-            muzzleFlash.transform.localPosition = new Vector3(MuzzleDistance + 0.06f, 0f, 0f);
-            WeaponRenderer.enabled = ranged.showHeldSprite && Time.time < gunVisibleUntil;
+            muzzleFlash.transform.localPosition = new Vector3(LaunchDistance + 0.06f, 0f, 0f);
+
+            bool charging = IsRangedCharging;
+            WeaponRenderer.enabled = ranged.showHeldSprite && (charging || Time.time < gunVisibleUntil);
+            if (chargeOrb != null)
+            {
+                chargeOrb.gameObject.SetActive(charging);
+                chargeOrb.transform.localPosition = new Vector3(LaunchDistance + kick.x, kick.y, 0f);
+            }
+            if (rangedChargeShown && !charging) WeaponRenderer.color = baseColor;
+            rangedChargeShown = charging;
         }
 
         transform.localPosition = new Vector3(offset.x / ownerScale.x, offset.y / ownerScale.y, 0f);
@@ -235,6 +314,7 @@ public class WeaponVisual : MonoBehaviour
         WeaponRenderer.sortingOrder = behind ? baseOrder - 1 : baseOrder + 1;
         trail.sortingOrder = WeaponRenderer.sortingOrder;
         muzzleFlash.sortingOrder = baseOrder + 2;
+        if (chargeOrb != null) chargeOrb.SetSorting(WeaponRenderer.sortingLayerID, baseOrder + 2);
     }
 
     IEnumerator SwingRoutine(float duration, bool heavy, float? startAngle)
@@ -291,6 +371,12 @@ public class WeaponVisual : MonoBehaviour
         muzzleFlash.enabled = false;
     }
 
+    void EndRangedCharge()
+    {
+        lastRangedChargeFrame = -10;
+        if (chargeOrb != null) chargeOrb.gameObject.SetActive(false);
+    }
+
     void StopMotion()
     {
         if (motion != null)
@@ -345,6 +431,9 @@ public static class CombatSprites
     private static Texture2D ringTexture;
     private static Texture2D softCircleTexture;
     private static Texture2D vignetteTexture;
+    private static Texture2D discTexture;
+    private static Sprite glow;
+    private static Sprite disc;
 
     // A white square, 1 world unit across. Tint and scale it into any shape.
     public static Sprite Square
@@ -401,9 +490,26 @@ public static class CombatSprites
     public static Texture2D SoftCircleTexture =>
         softCircleTexture != null ? softCircleTexture : (softCircleTexture = MakeRadialTexture(64, r => Mathf.Pow(Mathf.Clamp01(1f - r), 2f)));
 
+    // A solid dot with a soft edge.
+    public static Texture2D DiscTexture =>
+        discTexture != null ? discTexture : (discTexture = MakeRadialTexture(64, r => Mathf.Clamp01((1f - r) / 0.2f)));
+
+    // SoftCircleTexture as a sprite 1 world unit across, for glows.
+    public static Sprite Glow => glow != null ? glow : (glow = MakeSprite(SoftCircleTexture));
+
+    // DiscTexture as a sprite 1 world unit across, for the bright middle of a ball of energy.
+    public static Sprite Disc => disc != null ? disc : (disc = MakeSprite(DiscTexture));
+
     // Clear in the middle, solid toward the edges, for full-screen hurt flashes.
     public static Texture2D VignetteTexture =>
         vignetteTexture != null ? vignetteTexture : (vignetteTexture = MakeRadialTexture(128, r => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 1.3f, r))));
+
+    // The whole texture as a centered sprite, 1 world unit across.
+    public static Sprite MakeSprite(Texture2D texture)
+    {
+        return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f),
+            texture.width, 0, SpriteMeshType.FullRect);
+    }
 
     // A white texture whose alpha depends on distance from the center (0 in the middle, 1 at the edge's midpoint).
     public static Texture2D MakeRadialTexture(int size, System.Func<float, float> alphaAtRadius)

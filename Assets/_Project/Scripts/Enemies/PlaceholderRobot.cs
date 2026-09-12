@@ -16,14 +16,6 @@ public class PlaceholderRobot : MonoBehaviour
     const float ArriveDistance = 0.2f;
     const float StuckCheckInterval = 0.5f;  // how often it checks whether a wall has stopped it
     const float CatchStandOff = 0.8f;       // how far in front of a locker's exit it stands to pull the player out
-    const float IconPopTime = 0.18f;
-    const float IconPixelsPerUnit = 18f;
-
-    static readonly Color AlertColor = new Color(1f, 0.28f, 0.2f);
-    static readonly Color SearchColor = new Color(1f, 0.82f, 0.3f);
-    // '#' is filled. An outline is added around it.
-    static readonly string[] AlertArt = { "###", "###", "###", "###", "###", "...", "###", "###" };
-    static readonly string[] SearchArt = { ".###.", "##.##", "...##", "..##.", "..#..", "..#..", ".....", "..#.." };
 
     [Header("Patrol")]
     [Tooltip("Points to walk between, relative to where the robot starts: in order, then back to the first. Leave empty to stand guard.")]
@@ -39,8 +31,12 @@ public class PlaceholderRobot : MonoBehaviour
     public float fieldOfView = 100f;
     [Tooltip("Notices the player this close whichever way it's facing, as long as nothing's in between.")]
     public float closeRange = 1.2f;
-    [Tooltip("Seconds it stands still with the ! showing before it gives chase.")]
-    public float reactionTime = 0.5f;
+    [Tooltip("Seconds in plain sight before it's sure and gives chase. The ring around the player fills over this long.")]
+    public float detectionTime = 1.2f;
+    [Tooltip("How much quicker it makes the player out at point-blank range than at the very edge of its sight.")]
+    public float closeDetectionMultiplier = 2.5f;
+    [Tooltip("Seconds for its suspicion to drain away once it can't see them.")]
+    public float detectionFade = 2f;
     [Tooltip("Seconds it looks around under the ? before going back to its patrol.")]
     public float searchTime = 2.5f;
     [Tooltip("After losing the player, it carries on this far past where it last saw them before searching.")]
@@ -75,10 +71,7 @@ public class PlaceholderRobot : MonoBehaviour
     public float hitStunTime = 0.3f;
     public Color windupColor = new Color(1f, 0.6f, 0.2f);
 
-    enum State { Patrol, Alert, Chase, Investigate, Search, Catch, Windup, Lunge, Recover, Stunned }
-
-    static Sprite alertSprite;
-    static Sprite searchSprite;
+    enum State { Patrol, Chase, Investigate, Search, Catch, Windup, Lunge, Recover, Stunned }
 
     private Health health;
     private Rigidbody2D rb;
@@ -105,13 +98,8 @@ public class PlaceholderRobot : MonoBehaviour
     private float stuckCheckTimer;
     private readonly List<RaycastHit2D> sightHits = new List<RaycastHit2D>();
 
-    private SpriteRenderer icon;
-    private float iconBaseHeight;
-    private float iconAge;
-    private float iconTimeLeft;
-
-    static Sprite AlertSprite => alertSprite != null ? alertSprite : (alertSprite = MakeIcon(AlertArt));
-    static Sprite SearchSprite => searchSprite != null ? searchSprite : (searchSprite = MakeIcon(SearchArt));
+    // 0 to 1: how sure it is of what it's looking at. At 1 it gives chase. Drawn as the ring around the player.
+    private float detection;
 
     void Awake()
     {
@@ -136,6 +124,7 @@ public class PlaceholderRobot : MonoBehaviour
     {
         health.Damaged -= OnDamaged;
         health.Died -= OnDied;
+        StealthMeter.Clear(this);
     }
 
     void Start()
@@ -148,18 +137,20 @@ public class PlaceholderRobot : MonoBehaviour
             playerHealth = found.GetComponent<Health>();
         }
 
-        // Made here rather than in Awake, so Health doesn't pick the icon up as one of the sprites it flashes.
-        CreateIcon();
         stuckCheckPosition = rb.position;
     }
 
     void Update()
     {
         UpdateSquash();
-        UpdateIcon();
 
-        if (health.IsDead) return;
+        if (health.IsDead)
+        {
+            StealthMeter.Clear(this);
+            return;
+        }
         stateTimer -= Time.deltaTime;
+        UpdateDetection();
 
         switch (state)
         {
@@ -174,17 +165,6 @@ public class PlaceholderRobot : MonoBehaviour
                     patrolIndex = (patrolIndex + 1) % patrolRoute.Length;
                     Enter(State.Patrol, patrolPause);
                 }
-                break;
-
-            case State.Alert:
-                // Stops dead with the ! up, turning to keep the player in view.
-                rb.linearVelocity = Vector2.zero;
-                if (CanSeePlayer(true))
-                {
-                    Remember();
-                    Look(DirectionToPlayer());
-                }
-                if (stateTimer <= 0f) Enter(State.Chase, 0f);
                 break;
 
             case State.Chase:
@@ -214,7 +194,7 @@ public class PlaceholderRobot : MonoBehaviour
                 break;
 
             case State.Investigate:
-                if (SpotPlayer(true)) break;
+                if (SpotPlayer()) break;
                 if (WalkTo(investigatePoint, moveSpeed)) StartSearch();
                 break;
 
@@ -306,16 +286,38 @@ public class PlaceholderRobot : MonoBehaviour
         return true;
     }
 
-    // Checked while patrolling, investigating, or searching: seeing the player sets off the "!".
-    // skipReaction: it was already hunting them, so it gives chase at once. Returns true if it saw them.
-    bool SpotPlayer(bool skipReaction = false)
+    // Watches the player and fills the ring around them: quicker up close, draining away once they're out of sight.
+    // While it's already hunting them it stays certain, so the ring stays full until it loses them.
+    void UpdateDetection()
     {
-        if (!CanSeePlayer()) return false;
+        bool hunting = state == State.Chase || state == State.Catch || state == State.Windup
+            || state == State.Lunge || state == State.Recover;
+
+        if (CanSeePlayer(hunting))
+        {
+            float nearness = 1f - Mathf.Clamp01(Mathf.InverseLerp(closeRange, sightRange, DistanceToPlayer()));
+            float rate = Mathf.Lerp(1f, closeDetectionMultiplier, nearness) / Mathf.Max(0.05f, detectionTime);
+            detection = Mathf.Clamp01(detection + rate * Time.deltaTime);
+        }
+        else
+        {
+            detection = Mathf.MoveTowards(detection, 0f, Time.deltaTime / Mathf.Max(0.05f, detectionFade));
+        }
+
+        if (detection > 0f || hunting)
+            StealthMeter.Report(this, rb.position, hunting ? 1f : detection, hunting);
+        else
+            StealthMeter.Clear(this);
+    }
+
+    // Checked while patrolling, investigating, or searching: once the ring fills, it gives chase. True if it did.
+    bool SpotPlayer()
+    {
+        if (player == null || detection < 1f) return false;
 
         Remember();
         Look(DirectionToPlayer());
-        ShowIcon(AlertSprite, AlertColor, reactionTime + 0.8f);
-        Enter(skipReaction ? State.Chase : State.Alert, reactionTime);
+        Enter(State.Chase, 0f);
         return true;
     }
 
@@ -353,7 +355,6 @@ public class PlaceholderRobot : MonoBehaviour
 
     void StartSearch()
     {
-        ShowIcon(SearchSprite, SearchColor, searchTime);
         nextLookAround = searchTime * 2f / 3f;
         Enter(State.Search, searchTime);
     }
@@ -367,7 +368,6 @@ public class PlaceholderRobot : MonoBehaviour
 
         attackDirection = DirectionToPlayer();
         Look(attackDirection);
-        ShowIcon(AlertSprite, AlertColor, 1f);
         IDamageable target = playerCollider != null ? Damageable.FromCollider(playerCollider) : player.GetComponent<IDamageable>();
         target?.TakeDamage(new DamageInfo(catchDamage, attackDirection, knockback, gameObject, player.position));
         Enter(State.Recover, recoverTime);
@@ -429,8 +429,7 @@ public class PlaceholderRobot : MonoBehaviour
     void OnDamaged(DamageInfo info)
     {
         // Getting hit cancels whatever it was doing, and gives away where the player is.
-        if (state == State.Patrol || state == State.Investigate || state == State.Search)
-            ShowIcon(AlertSprite, AlertColor, 1f);
+        detection = 1f;
         if (player != null && !Locker.IsPlayerHidden) Remember();
 
         Enter(State.Stunned, hitStunTime);
@@ -475,103 +474,6 @@ public class PlaceholderRobot : MonoBehaviour
     {
         Vector2 toPlayer = (Vector2)player.position - rb.position;
         return toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : attackDirection;
-    }
-
-    // --- The ! and ? over its head ---
-
-    // On the UI sorting layer, so it draws over everything, and so the view from inside a locker (which only draws
-    // the characters' layer) leaves it out. Unlit, so it reads in dark rooms.
-    void CreateIcon()
-    {
-        icon = new GameObject("Icon").AddComponent<SpriteRenderer>();
-        icon.transform.SetParent(transform, false);
-        iconBaseHeight = (body != null ? body.bounds.max.y - transform.position.y : 0.6f) + 0.15f;
-        icon.transform.localPosition = new Vector3(0f, iconBaseHeight, 0f);
-
-        int uiLayer = SortingLayer.NameToID("UI");
-        if (SortingLayer.IsValid(uiLayer))
-        {
-            icon.sortingLayerID = uiLayer;
-        }
-        else if (body != null)
-        {
-            icon.sortingLayerID = body.sortingLayerID;
-            icon.sortingOrder = body.sortingOrder + 100;
-        }
-        if (CombatSprites.EffectMaterial != null) icon.sharedMaterial = CombatSprites.EffectMaterial;
-        icon.enabled = false;
-    }
-
-    void ShowIcon(Sprite sprite, Color color, float duration)
-    {
-        if (icon == null) return;
-        icon.sprite = sprite;
-        icon.color = color;
-        icon.enabled = true;
-        iconAge = 0f;
-        iconTimeLeft = duration;
-    }
-
-    // Pops in a little too big, settles, bobs, and disappears when its time is up.
-    void UpdateIcon()
-    {
-        if (icon == null || !icon.enabled) return;
-
-        iconAge += Time.deltaTime;
-        iconTimeLeft -= Time.deltaTime;
-        if (iconTimeLeft <= 0f || health.IsDead)
-        {
-            icon.enabled = false;
-            return;
-        }
-
-        float t = iconAge / IconPopTime;
-        float scale = t < 0.5f ? Mathf.Lerp(0f, 1.35f, t * 2f) : Mathf.Lerp(1.35f, 1f, Mathf.Clamp01((t - 0.5f) * 2f));
-        icon.transform.localScale = new Vector3(scale, scale, 1f);
-        icon.transform.localPosition = new Vector3(0f, iconBaseHeight + Mathf.Sin(iconAge * 6f) * 0.03f, 0f);
-    }
-
-    // White where the art is filled, with a black outline so it reads on any background. Pivot at the bottom.
-    static Sprite MakeIcon(string[] rows)
-    {
-        int artWidth = 0;
-        foreach (string row in rows)
-            artWidth = Mathf.Max(artWidth, row.Length);
-        int width = artWidth + 2;
-        int height = rows.Length + 2;
-
-        bool Filled(int x, int y) => y >= 0 && y < rows.Length && x >= 0 && x < rows[y].Length && rows[y][x] == '#';
-
-        var pixels = new Color32[width * height];
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                int artX = x - 1;
-                int artY = y - 1;
-                Color32 color = default;
-                if (Filled(artX, artY))
-                {
-                    color = new Color32(255, 255, 255, 255);
-                }
-                else
-                {
-                    for (int dy = -1; dy <= 1 && color.a == 0; dy++)
-                        for (int dx = -1; dx <= 1 && color.a == 0; dx++)
-                            if (Filled(artX + dx, artY + dy)) color = new Color32(0, 0, 0, 255);
-                }
-                pixels[(height - 1 - y) * width + x] = color; // row 0 of the art is the top
-            }
-        }
-
-        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
-        {
-            filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp
-        };
-        texture.SetPixels32(pixels);
-        texture.Apply(false);
-        return Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0f), IconPixelsPerUnit);
     }
 
     // Select the robot to see its patrol route (cyan), view cone and close range (white), how near it must be to a

@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour, IDamageable
+// Walking, running on stamina, facing, footsteps, and the animator. The player's health is the Health component beside
+// this one, and PlayerHealthHandler deals with getting hurt and dying. Enemies tagged Enemy kill on touch.
+[RequireComponent(typeof(Health))]
+public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float sprintMultiplier = 1.5f;
@@ -9,15 +12,6 @@ public class PlayerController : MonoBehaviour, IDamageable
     public float maxStamina = 100f;
     public float staminaDrain = 25f;
     public float staminaRegen = 15f;
-
-    public AudioSource deathSound;
-
-    public float hp;
-    public float MaxHP;
-    public object CanvasCont;
-    public CanvasCont CurrentCanvas;
-    public bool testHP;
-    public Vector3 StartingPos;
 
     public Rigidbody2D rb;
     public Animator animator;
@@ -30,6 +24,7 @@ public class PlayerController : MonoBehaviour, IDamageable
     [SerializeField] private AudioSource audioSource;
     private Vector2 movement;
     private float currentSpeed;
+    private Health health;
 
     // Set each frame by the combat scripts: 0 stops the player mid-attack, in between slows them while charging.
     [System.NonSerialized] public float combatSpeedMultiplier = 1f;
@@ -51,9 +46,7 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private void Start()
     {
-        hp = MaxHP;
-        CurrentCanvas = GameObject.Find("CanvasCont").GetComponent<CanvasCont>();
-        testHP = false;
+        health = GetComponent<Health>();
         stepTimer = baseStepRate;
     }
 
@@ -96,38 +89,11 @@ public class PlayerController : MonoBehaviour, IDamageable
 
         // Footstep sound handling
         HandleFootsteps(isMoving, isSprinting);
-
-        if (testHP)
-        {
-            TakeDamage(5);
-            testHP = false;
-        }
-
-        if (hp <= 0)
-        {
-            CurrentCanvas.Death();
-        }
     }
 
     void FixedUpdate()
     {
         rb.MovePosition(rb.position + movement * currentSpeed * Time.fixedDeltaTime);
-    }
-
-    public void TakeDamage(float damage)
-    {
-        hp -= damage;
-        testHP = false;
-
-        if (hp <= 0)
-            CurrentCanvas.Death();
-        else
-            CurrentCanvas.ChangeHealth(hp);
-    }
-
-    public void TakeDamage(DamageInfo info)
-    {
-        TakeDamage(info.amount);
     }
 
     // Makes the player look a certain way no matter where they walk, until ClearFacingOverride is called.
@@ -205,32 +171,22 @@ public class PlayerController : MonoBehaviour, IDamageable
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            ResetPos();
-            CurrentCanvas.Death();
-            if (collision.gameObject.TryGetComponent<Warden>(out var warden))
-                warden.Reset();
-        }
+        CaughtBy(collision.gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            if (deathSound != null)
-                deathSound.Play();
-
-            ResetPos();
-            CurrentCanvas.Death();
-            if (collision.gameObject.TryGetComponent<Warden>(out var warden))
-                warden.Reset();
-        }
+        CaughtBy(collision.gameObject);
     }
 
-    public void ResetPos()
+    // The older enemies (the Warden, ghosts) don't attack: touching the player is enough.
+    private void CaughtBy(GameObject other)
     {
-        transform.position = StartingPos;
+        if (!other.CompareTag("Enemy")) return;
+
+        if (health != null) health.Kill(other);
+        if (other.TryGetComponent<Warden>(out var warden))
+            warden.Reset();
     }
 
     void HandleFootsteps(bool isMoving, bool isSprinting)

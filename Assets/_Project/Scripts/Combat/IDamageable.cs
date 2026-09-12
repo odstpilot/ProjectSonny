@@ -28,8 +28,7 @@ public static class Damageable
 {
     // Solid colliders count for their whole object hierarchy. Trigger colliders only count for their
     // own object, so something like a robot's detection trigger doesn't soak up hits meant for its body.
-    // Health wins over other damage scripts on the same object, so adding Health to the player switches
-    // them to the new health system without touching PlayerController's old hp.
+    // Health wins over any other damage script on the same object.
     public static IDamageable FromCollider(Collider2D collider)
     {
         Health health = collider.isTrigger ? collider.GetComponent<Health>() : collider.GetComponentInParent<Health>();

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a7c2e9d1b3f4e6a8c5d0b2f7e1a9c36, type: 3}
+  m_Name: EMP
+  m_EditorClassIdentifier:
+  displayName: EMP
+  showHeldSprite: 1
+  sprite: {fileID: 0}
+  spriteScale: 1
+  placeholderSize: {x: 0.3, y: 0.18}
+  placeholderColor: {r: 0.55, g: 0.6, b: 0.62, a: 1}
+  damage: 0
+  knockback: 0
+  cooldown: 2.6
+  lockDuration: 0.25
+  aimSnap: 0
+  holdDistance: 0.3
+  automatic: 0
+  projectilesPerShot: 1
+  spreadAngle: 0
+  recoilDistance: 0.06
+  projectileSprite: {fileID: 0}
+  projectileSize: {x: 0.22, y: 0.07}
+  projectileColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+  projectileSpeed: 14
+  projectileRange: 9
+  projectileRadius: 0.08
+  stunLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  stunRadius: 5
+  coneAngle: 95
+  empColor: {r: 0.3, g: 0.8, b: 1, a: 1}
+  empCoreColor: {r: 0.85, g: 0.97, b: 1, a: 1}
+  lightIntensity: 2.2
+  lightDuration: 0.2
+  lightFadeDuration: 0.4
+  waveCount: 3
+  waveDuration: 0.35
+  pulseShake: 0.2
+  fireClip: {fileID: 8300000, guid: 2fc738323ec551d4bbc6c1eb8db2603c, type: 3}
+  readyClip: {fileID: 0}
+  volume: 0.2

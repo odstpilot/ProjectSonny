@@ -163,9 +163,8 @@ public static class TutorialLevelBuilder
         GameObject robotPrefab = LoadPrefab("Characters/PlaceholderRobot");
         GameObject lockerPrefab = LoadPrefab("Level/Locker");
         GameObject cameraPrefab = LoadPrefab("Player/MainCamera");
-        GameObject canvasPrefab = LoadPrefab("UI/CanvasCont");
         GameObject globalLightPrefab = LoadPrefab("Systems/GlobalLight2D");
-        if (!playerPrefab || !robotPrefab || !lockerPrefab || !cameraPrefab || !canvasPrefab || !globalLightPrefab) return false;
+        if (!playerPrefab || !robotPrefab || !lockerPrefab || !cameraPrefab || !globalLightPrefab) return false;
 
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         foreach (GameObject root in scene.GetRootGameObjects())
@@ -174,8 +173,7 @@ public static class TutorialLevelBuilder
         Tilemap floor = BuildTilemaps(map);
 
         GameObject player = PlacePlayer(map, playerPrefab);
-        Camera cam = PlaceCamera(cameraPrefab, player);
-        PlaceCanvas(canvasPrefab, player, cam);
+        PlaceCamera(cameraPrefab, player);
         Light2D globalLight = PlaceGlobalLight(globalLightPrefab);
         StationRumble rumble = PlaceRumble(floor, globalLight);
         PlacePostProcessing();
@@ -358,7 +356,6 @@ public static class TutorialLevelBuilder
         GameObject player = Spawn(prefab, null, new Vector3(spawn.x, spawn.y, CharacterZ));
 
         var controller = player.GetComponent<PlayerController>();
-        controller.StartingPos = player.transform.position;
         controller.footstepClips = LoadClips(SfxFolder, "footstep1.wav", "footstep2.wav", "footstep3.wav", "footstep4.wav");
         Record(controller);
 
@@ -369,17 +366,6 @@ public static class TutorialLevelBuilder
         var serializedController = new SerializedObject(controller);
         serializedController.FindProperty("audioSource").objectReferenceValue = footsteps;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
-
-        // The Health system, set up like the player in the combat test scene.
-        var health = player.AddComponent<Health>();
-        health.maxHealth = 5f;
-        health.hitFlashColor = new Color(1f, 0.25f, 0.25f);
-        health.hitFlashDuration = 0.12f;
-        health.invincibilityDuration = 1f;
-        health.knockbackDuration = 0.15f;
-        health.destroyOnDeath = false;
-        health.disableCollidersOnDeath = false;
-        player.AddComponent<PlayerHealthHandler>();
 
         // A small, dim, warm glow, so the lamps and the sunlight do the lighting and the dark between them stays dark.
         var lantern = player.GetComponentInChildren<Light2D>();
@@ -416,22 +402,6 @@ public static class TutorialLevelBuilder
         cameraData.volumeLayerMask = ~0;
         Record(cameraData);
         return cam;
-    }
-
-    // PlayerController looks for CanvasCont by name when it starts, so it has to be here.
-    static void PlaceCanvas(GameObject prefab, GameObject player, Camera cam)
-    {
-        GameObject canvas = Spawn(prefab, null, Vector3.zero);
-        foreach (Canvas each in canvas.GetComponentsInChildren<Canvas>(true))
-        {
-            if (each.renderMode == RenderMode.ScreenSpaceOverlay) continue;
-            each.worldCamera = cam;
-            Record(each);
-        }
-
-        var controller = player.GetComponent<PlayerController>();
-        controller.CurrentCanvas = canvas.GetComponent<CanvasCont>();
-        Record(controller);
     }
 
     static Light2D PlaceGlobalLight(GameObject prefab)
@@ -664,7 +634,8 @@ public static class TutorialLevelBuilder
                 light.lightType = Light2D.LightType.Freeform;
                 light.shapeLightFalloffSize = 1.2f;
                 light.color = SunColor;
-                light.intensity = 0.7f;
+                light.intensity = 0.4f;
+                light.falloffIntensity = 1f;
                 light.volumetricEnabled = true;
                 light.volumeIntensity = 0.12f;
 

@@ -26455,8 +26455,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -26893,8 +26893,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -27121,8 +27121,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -27254,8 +27254,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -27391,9 +27391,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071496
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -27415,8 +27415,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.3995001, y: -0.09944999, z: 0}
+    m_Extent: {x: 3.4977, y: 3.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -27436,6 +27436,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694642
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071496
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -27443,7 +27447,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694642
 --- !u!1 &280093801
 GameObject:
   m_ObjectHideFlags: 0
@@ -27524,9 +27528,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071495
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -27548,8 +27552,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -27653,8 +27657,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -27786,8 +27790,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -27920,8 +27924,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -28115,8 +28119,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -28439,8 +28443,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -28573,8 +28577,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -29045,8 +29049,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -29178,8 +29182,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -29595,9 +29599,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071499
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -29619,8 +29623,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 5.0995, y: -6.09945, z: 0}
+    m_Extent: {x: 6.1977, y: 9.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -29829,8 +29833,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -29962,8 +29966,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -30094,8 +30098,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 1.2
@@ -30568,9 +30572,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071494
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -30592,8 +30596,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -30613,6 +30617,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694651
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071494
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -30620,7 +30628,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694651
 --- !u!1 &863254354
 GameObject:
   m_ObjectHideFlags: 0
@@ -30697,8 +30705,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -30834,9 +30842,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071497
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -30858,8 +30866,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.3995001, y: -0.09944999, z: 0}
+    m_Extent: {x: 3.4977, y: 3.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -31143,9 +31151,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071498
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -31167,8 +31175,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 4.6495, y: -5.09945, z: 0}
+    m_Extent: {x: 5.7476997, y: 8.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -31430,6 +31438,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4420000000000000007, guid: 4b9e6d2f8a1c47e5b3d0a9c7e5f2b618, type: 3}
+      propertyPath: m_SortingLayer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4420000000000000007, guid: 4b9e6d2f8a1c47e5b3d0a9c7e5f2b618, type: 3}
+      propertyPath: m_SortingLayerID
+      value: -2015786915
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -31548,8 +31564,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -31736,9 +31752,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071491
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -31760,8 +31776,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -31781,6 +31797,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694648
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071491
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -31788,7 +31808,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694648
 --- !u!1 &1125955601
 GameObject:
   m_ObjectHideFlags: 0
@@ -32210,9 +32230,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071493
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -32234,8 +32254,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -32255,6 +32275,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694650
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071493
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -32262,7 +32286,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694650
 --- !u!1 &1206238272
 GameObject:
   m_ObjectHideFlags: 0
@@ -32464,22 +32488,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6946658232448837195, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
+      propertyPath: m_SortingOrder
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7359373695213242451, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
       propertyPath: audioSource
       value: 
       objectReference: {fileID: 1246929240}
-    - target: {fileID: 7359373695213242451, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
-      propertyPath: CurrentCanvas
-      value: 
-      objectReference: {fileID: 2142761560}
-    - target: {fileID: 7359373695213242451, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
-      propertyPath: StartingPos.x
-      value: 4.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7359373695213242451, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
-      propertyPath: StartingPos.y
-      value: 5.5
-      objectReference: {fileID: 0}
     - target: {fileID: 7359373695213242451, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
       propertyPath: footstepClips.Array.size
       value: 4
@@ -32507,12 +32523,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1726103320010715051, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1246929240}
-    - targetCorrespondingSourceObject: {fileID: 1726103320010715051, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1246929239}
-    - targetCorrespondingSourceObject: {fileID: 1726103320010715051, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1246929238}
   m_SourcePrefab: {fileID: 100100000, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
 --- !u!4 &1246929236 stripped
 Transform:
@@ -32524,55 +32534,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1726103320010715051, guid: 9bb6d3c82b7799f40867238f3a862644, type: 3}
   m_PrefabInstance: {fileID: 1246929235}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1246929238
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1246929237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e2b9d4f1c8a47a3b5d0e9f7c2a1b843, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthHandler
-  hitShake: 0.6
-  hitStop: 0.08
-  respawnDelay: 1.5
-  showDebugReadout: 1
-  vignetteColor: {r: 0.75, g: 0, b: 0, a: 1}
-  hitVignette: 0.7
-  vignetteFadeTime: 0.5
-  lowHealthThreshold: 1
-  lowHealthVignette: 0.35
---- !u!114 &1246929239
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1246929237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1814269aff0966a4088db406984d6dac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Health
-  maxHealth: 5
-  hitFlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
-  hitFlashDuration: 0.12
-  invincibilityDuration: 1
-  blinkWhileInvincible: 1
-  knockbackDuration: 0.15
-  knockbackResistance: 0
-  flashRenderers: []
-  destroyOnDeath: 0
-  disableCollidersOnDeath: 0
-  onDamaged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDied:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!82 &1246929240
 AudioSource:
   m_ObjectHideFlags: 0
@@ -32750,9 +32711,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071492
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -32774,8 +32735,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -32795,6 +32756,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694649
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071492
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -32802,7 +32767,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694649
 --- !u!1 &1265345184
 GameObject:
   m_ObjectHideFlags: 0
@@ -33115,8 +33080,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -33454,8 +33419,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -33587,8 +33552,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -33917,8 +33882,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -34050,8 +34015,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -34237,8 +34202,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -34405,9 +34370,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071500
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -34429,8 +34394,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 5.0995, y: -6.09945, z: 0}
+    m_Extent: {x: 6.1977, y: 9.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -34450,6 +34415,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694644
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071500
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -34457,7 +34426,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694644
 --- !u!1 &1482944489
 GameObject:
   m_ObjectHideFlags: 0
@@ -35332,9 +35301,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071501
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -35356,8 +35325,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 5.0995, y: -6.09945, z: 0}
+    m_Extent: {x: 6.1977, y: 9.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -35377,6 +35346,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694645
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071501
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -35384,7 +35357,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694645
 --- !u!1001 &1534449748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35748,7 +35721,6 @@ Transform:
   - {fileID: 2109442824}
   - {fileID: 1265345185}
   - {fileID: 2139293127}
-  - {fileID: 1875685168}
   - {fileID: 201128842}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -35841,8 +35813,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -35965,9 +35937,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071490
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -35989,8 +35961,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 2.8495002, y: -1.0994501, z: 0}
+    m_Extent: {x: 3.9477, y: 4.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -36010,6 +35982,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694647
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071490
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -36017,7 +35993,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694647
 --- !u!1 &1712182788
 GameObject:
   m_ObjectHideFlags: 0
@@ -36315,8 +36291,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -36448,8 +36424,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -36673,8 +36649,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -36899,8 +36875,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -36988,7 +36964,7 @@ Transform:
   - {fileID: 1034621564}
   - {fileID: 626046211}
   - {fileID: 353951781}
-  m_Father: {fileID: 1659839743}
+  m_Father: {fileID: 2139293127}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1938737158
 GameObject:
@@ -37066,8 +37042,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -37373,9 +37349,9 @@ MonoBehaviour:
     rid: -2
   m_SelectionSources:
     rid: 8402951903819071502
-  m_FalloffIntensity: 0.5
+  m_FalloffIntensity: 1
   m_Color: {r: 1, g: 0.5, b: 0.18, a: 1}
-  m_Intensity: 0.7
+  m_Intensity: 0.4
   m_LightVolumeIntensity: 0.12
   m_LightVolumeEnabled: 1
   m_ApplyToSortingLayers: 00000000e35bd5638f1865a7832f1cc55d88d98793ed7d0a35e0d84ca5ac76039592cd0di
@@ -37397,8 +37373,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 5.0995, y: -6.09945, z: 0}
+    m_Extent: {x: 6.1977, y: 9.10015, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0
@@ -37418,6 +37394,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694646
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071502
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -37425,7 +37405,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694646
 --- !u!1 &2057903720
 GameObject:
   m_ObjectHideFlags: 0
@@ -37601,8 +37581,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.75
@@ -37769,8 +37749,8 @@ MonoBehaviour:
     serializedVersion: 0
     m_Bits: 1
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.975
@@ -37790,6 +37770,10 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+    - rid: 8402951900092694643
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
     - rid: 8402951903819071531
       type: {class: Light2DProviderSources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data:
@@ -37797,7 +37781,7 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 8402951900092694643
 --- !u!114 &2125736862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38037,76 +38021,9 @@ Transform:
   - {fileID: 1253657278}
   - {fileID: 1116473631}
   - {fileID: 1711435166}
+  - {fileID: 1875685168}
   m_Father: {fileID: 1659839743}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &2142761559
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2789738060826311462, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7883006446652304229, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-      propertyPath: m_Name
-      value: CanvasCont
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
---- !u!114 &2142761560 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1031116577597606335, guid: 8e242cd301bb3884f81163d959a4fa8f, type: 3}
-  m_PrefabInstance: {fileID: 2142761559}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 840b479b40e517847a74d45f7353d1c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -38114,7 +38031,6 @@ SceneRoots:
   - {fileID: 2135162260}
   - {fileID: 1246929235}
   - {fileID: 1353312646}
-  - {fileID: 2142761559}
   - {fileID: 1534449748}
   - {fileID: 1279231554}
   - {fileID: 1587348153}

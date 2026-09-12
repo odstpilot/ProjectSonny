@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags:
   - Enemy
   - Light
@@ -52,6 +52,9 @@ TagManager:
   - name: Collision
     uniqueID: 3306958723
     locked: 0
+  - name: On the wall
+    uniqueID: 3623793523
+    locked: 0
   - name: Player
     uniqueID: 2279180381
     locked: 0
@@ -67,3 +70,6 @@ TagManager:
   - name: Fade
     uniqueID: 231576213
     locked: 0
+  m_RenderingLayers:
+  - Default
+  m_MigratedRenderPipelines: []

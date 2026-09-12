@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7e3c91a4f2d4e8a9c615d0e2a7f3b48, type: 3}
+  m_Name: Blaster
+  m_EditorClassIdentifier:
+  displayName: Blaster
+  showHeldSprite: 1
+  sprite: {fileID: 0}
+  spriteScale: 1
+  placeholderSize: {x: 0.45, y: 0.16}
+  placeholderColor: {r: 0.3, g: 0.36, b: 0.42, a: 1}
+  damage: 6
+  knockback: 0.6
+  cooldown: 0.5
+  lockDuration: 0.3
+  aimSnap: 0
+  holdDistance: 0.3
+  automatic: 0
+  projectilesPerShot: 1
+  spreadAngle: 0
+  recoilDistance: 0.25
+  projectileSprite: {fileID: 0}
+  projectileSize: {x: 0.55, y: 0.55}
+  projectileColor: {r: 0.35, g: 0.9, b: 1, a: 1}
+  projectileSpeed: 7
+  projectileRange: 10
+  projectileRadius: 0.22
+  chargeTime: 1.2
+  chargeMoveSpeedMultiplier: 0.35
+  fizzleCooldown: 0.35
+  fireWhenFull: 0
+  energyColor: {r: 0.35, g: 0.9, b: 1, a: 1}
+  coreColor: {r: 0.9, g: 1, b: 1, a: 1}
+  ballSize: 0.55
+  glowRadius: 2.5
+  glowIntensity: 1.2
+  fireShake: 0.25
+  blastRadius: 1.4
+  blastEdgeDamage: 0.4
+  blastObstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  blastShake: 0.45
+  blastHitStop: 0.06

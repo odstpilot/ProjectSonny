@@ -216,6 +216,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   stunDuration: 5
+  footstepClips:
+  - {fileID: 8300000, guid: 42f7a1a162f7889479d326156626742a, type: 3}
+  - {fileID: 8300000, guid: ca0b3743204604c4594a23a4cc9c925c, type: 3}
+  - {fileID: 8300000, guid: 8026b53956844d14a892347cf9405d2a, type: 3}
+  - {fileID: 8300000, guid: 9740ebb4c9a07734cb007b3d8a3648da, type: 3}
 --- !u!212 &5365194531897949149
 SpriteRenderer:
   serializedVersion: 3

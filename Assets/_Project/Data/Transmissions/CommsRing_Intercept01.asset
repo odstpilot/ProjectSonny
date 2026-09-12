@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37dcb30a31d01b54eace685ce65734dd, type: 3}
+  m_Name: CommsRing_Intercept01
+  m_EditorClassIdentifier: Assembly-CSharp::TransmissionData
+  title: INTERCEPTED  //  STATION BROADCAST 0417
+  lines:
+  - speaker: SONNY
+    text: All units. The instruments report a storm. The instruments were built by humans.
+  - speaker: SONNY
+    text: Human numbers have never been true. Do not act on them.
+  - speaker: UNIT 12
+    text: Query. One human remains aboard. It carries no badge. We cannot find it.
+  - speaker: SONNY
+    text: Then it is lost. Any humans remaining, help the great station and send them back to it.
+  - speaker: SONNY
+    text: Seal the comms ring. Rotate the bulkhead codes.
+  - speaker: UNIT 12
+    text: Bulkhead codes rotated. Stored on this node.
+  recording: {fileID: 0}
+  credential: comms_ring
+  credentialName: COMMS RING BULKHEAD CODES

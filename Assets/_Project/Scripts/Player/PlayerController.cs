@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
-// Walking, running on stamina, facing, footsteps, and the animator. The player's health is the Health component beside
+// Walking, running on stamina, crouching, facing, footsteps, and the animator. The player's health is the Health component beside
 // this one, and PlayerHealthHandler deals with getting hurt and dying. Enemies tagged Enemy kill on touch.
 [RequireComponent(typeof(Health))]
 public class PlayerController : MonoBehaviour
@@ -12,6 +13,30 @@ public class PlayerController : MonoBehaviour
     public float maxStamina = 100f;
     public float staminaDrain = 25f;
     public float staminaRegen = 15f;
+
+    [Header("Crouch (C or Ctrl)")]
+    [Tooltip("Speed while crouching, as a fraction of walking speed. No sprinting while crouched.")]
+    [Range(0.1f, 1f)] public float crouchSpeedMultiplier = 0.5f;
+    [Tooltip("Tap C or Ctrl to crouch and tap again to stand, instead of holding the key down.")]
+    public bool crouchToggles = false;
+    [Tooltip("How loud footsteps are while crouching, as a fraction of normal.")]
+    [Range(0f, 1f)] public float crouchFootstepVolume = 0.35f;
+    [Tooltip("How tall the sprite is while crouched, as a fraction of standing. Its feet stay planted.")]
+    [Range(0.5f, 1f)] public float crouchHeight = 0.8f;
+    [Tooltip("How much wider the sprite gets while crouched, so it reads as squatting rather than shrinking.")]
+    [Range(1f, 1.5f)] public float crouchWidth = 1.08f;
+    [Tooltip("Seconds to get down into a crouch, or back up out of one.")]
+    public float crouchTransitionTime = 0.12f;
+
+    [Header("Sprint Lean")]
+    [Tooltip("How far the sprite tips forward while sprinting sideways, in degrees. Its feet stay planted.")]
+    [Range(0f, 25f)] public float sprintLeanAngle = 8f;
+    [Tooltip("How tall the sprite is while sprinting, as a fraction of standing.")]
+    [Range(0.8f, 1.3f)] public float sprintHeight = 1.05f;
+    [Tooltip("How wide the sprite is while sprinting, as a fraction of standing.")]
+    [Range(0.7f, 1.2f)] public float sprintWidth = 0.95f;
+    [Tooltip("Seconds to lean into a sprint, or straighten back up out of one.")]
+    public float sprintLeanTime = 0.15f;
 
     public Rigidbody2D rb;
     public Animator animator;
@@ -33,6 +58,32 @@ public class PlayerController : MonoBehaviour
 
     // The way the player is looking: always straight up, down, left, or right.
     public Vector2 Facing { get; private set; } = Vector2.down;
+    // Robots see a crouching player from less far away and take longer to be sure of them (PlaceholderRobot).
+    public bool IsCrouching { get; private set; }
+    // Robots see a sprinting player from further away, make them out faster, and hear them coming from behind.
+    public bool IsSprinting { get; private set; }
+    // How squashed or stretched the sprite is right now: (1, 1) standing. WeaponVisual follows it so a held weapon
+    // stays in the posed hand.
+    public Vector2 BodySquash => squash;
+    // How far the sprite is tipped by a sprint lean, in degrees. WeaponVisual takes it back out of a gun's aim.
+    public float LeanAngle => lean;
+    // How far the body has been shifted to keep the feet planted, in world units. StealthMeter takes it back off so
+    // its arcs stay on the floor.
+    public Vector2 PoseOffset => poseOffset;
+
+    private float crouchAmount;             // 0 standing, 1 fully crouched, easing between
+    private float sprintAmount;             // 0 standing, 1 fully leaned into a sprint, easing between
+    private float leanDirection;            // -1 leaning left, 1 leaning right
+    private Vector2 squash = Vector2.one;
+    private float lean;
+    private Vector2 poseOffset;
+    private Vector3 baseScale = Vector3.one;
+    private float spriteHalfHeight;
+    private BoxCollider2D bodyCollider;
+    private Vector2 bodyBaseSize;
+    private Vector2 bodyBaseOffset;
+    private readonly List<Transform> carriedLights = new List<Transform>();
+    private readonly List<Vector3> carriedLightScales = new List<Vector3>();
     private bool hasFacingOverride;
     private Vector2 facingOverride;
     private int frozenDirection;
@@ -48,6 +99,7 @@ public class PlayerController : MonoBehaviour
     {
         health = GetComponent<Health>();
         stepTimer = baseStepRate;
+        CaptureStandingPose();
     }
 
     void Update()
@@ -58,8 +110,12 @@ public class PlayerController : MonoBehaviour
         if (combatSpeedMultiplier <= 0f)
             movement = Vector2.zero;
 
+        UpdateCrouch();
+
         bool isMoving = movement != Vector2.zero;
-        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && stamina > 0 && isMoving && combatSpeedMultiplier >= 1f;
+        bool isSprinting = !IsCrouching && Input.GetKey(KeyCode.LeftShift) && stamina > 0 && isMoving && combatSpeedMultiplier >= 1f;
+        IsSprinting = isSprinting;
+        UpdatePose();
 
         if (isSprinting)
         {
@@ -69,7 +125,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            currentSpeed = moveSpeed;
+            currentSpeed = IsCrouching ? moveSpeed * crouchSpeedMultiplier : moveSpeed;
             if (!Input.GetKey(KeyCode.LeftShift) || !isMoving)
             {
                 stamina += staminaRegen * Time.deltaTime;
@@ -94,6 +150,125 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         rb.MovePosition(rb.position + movement * currentSpeed * Time.fixedDeltaTime);
+    }
+
+    // Hold C or Ctrl to crouch, or tap to switch it on and off when crouchToggles is set.
+    void UpdateCrouch()
+    {
+        if (crouchToggles)
+        {
+            if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
+                IsCrouching = !IsCrouching;
+        }
+        else
+        {
+            IsCrouching = Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        }
+    }
+
+    // Controls taken away (a terminal, dying): stand back up, so nothing is left thinking the player is hidden.
+    void OnDisable()
+    {
+        IsCrouching = false;
+        IsSprinting = false;
+        SetAnimBool(PlayerAnimParams.Crouching, false);
+        crouchAmount = 0f;
+        sprintAmount = 0f;
+        leanDirection = 0f;
+        ApplyPose(Vector2.one, 0f);
+    }
+
+    // What standing looks like, so a crouch can be measured against it and undone exactly.
+    void CaptureStandingPose()
+    {
+        baseScale = transform.localScale;
+        if (spriteRenderer != null && spriteRenderer.sprite != null)
+            spriteHalfHeight = spriteRenderer.sprite.bounds.extents.y;
+
+        bodyCollider = GetComponent<BoxCollider2D>();
+        if (bodyCollider != null)
+        {
+            bodyBaseSize = bodyCollider.size;
+            bodyBaseOffset = bodyCollider.offset;
+        }
+
+        // Lights carried on the player (its lantern) keep their shape instead of squashing with the sprite.
+        foreach (Transform child in transform)
+        {
+            if (!child.TryGetComponent(out Light2D _)) continue;
+            carriedLights.Add(child);
+            carriedLightScales.Add(child.localScale);
+        }
+    }
+
+    // Eases between standing, crouching, and leaning into a sprint.
+    void UpdatePose()
+    {
+        float crouchStep = crouchTransitionTime > 0f ? Time.deltaTime / crouchTransitionTime : 1f;
+        float sprintStep = sprintLeanTime > 0f ? Time.deltaTime / sprintLeanTime : 1f;
+        crouchAmount = Mathf.MoveTowards(crouchAmount, IsCrouching ? 1f : 0f, crouchStep);
+        sprintAmount = Mathf.MoveTowards(sprintAmount, IsSprinting ? 1f : 0f, sprintStep);
+
+        // Tips toward the way they're running: diagonals lean part way, and straight up or down doesn't tip at all.
+        if (IsSprinting) leanDirection = Mathf.MoveTowards(leanDirection, movement.x, sprintStep * 2f);
+
+        float crouch = Mathf.SmoothStep(0f, 1f, crouchAmount);
+        float sprint = Mathf.SmoothStep(0f, 1f, sprintAmount);
+        Vector2 crouchSquash = Vector2.Lerp(Vector2.one, new Vector2(crouchWidth, crouchHeight), crouch);
+        Vector2 sprintStretch = Vector2.Lerp(Vector2.one, new Vector2(sprintWidth, sprintHeight), sprint);
+
+        // Negative turns clockwise, tipping the top of the sprite toward the right.
+        ApplyPose(Vector2.Scale(crouchSquash, sprintStretch), -leanDirection * sprintLeanAngle * sprint);
+    }
+
+    // Poses the sprite: squashed or stretched, and tipped by lean degrees, always around its planted feet. The sprite,
+    // animator, and collider all live on this object and the art is centre-pivoted, so the body is shifted to keep the
+    // feet where they stood, and the collider is sized and placed back over exactly the ground it covered standing:
+    // posing changes how the player looks, never where they fit or get hit. (The box does tip along with a lean.)
+    void ApplyPose(Vector2 newSquash, float newLean)
+    {
+        if (newSquash == squash && Mathf.Approximately(newLean, lean)) return;
+        squash = newSquash;
+        lean = newLean;
+
+        Quaternion tip = Quaternion.Euler(0f, 0f, lean);
+        transform.localScale = new Vector3(baseScale.x * squash.x, baseScale.y * squash.y, baseScale.z);
+        transform.localRotation = tip;
+
+        // Shift the body by however far the pose would move the feet from where they stood.
+        Vector2 standingFeet = new Vector2(0f, -spriteHalfHeight * baseScale.y);
+        Vector2 posedFeet = tip * new Vector2(0f, -spriteHalfHeight * baseScale.y * squash.y);
+        Vector2 offset = standingFeet - posedFeet;
+        Vector2 change = offset - poseOffset;
+        poseOffset = offset;
+
+        if (rb != null)
+        {
+            // Set both from the body's own position, so it moves once whether or not transforms auto-sync.
+            Vector2 moved = rb.position + change;
+            rb.position = moved;
+            transform.position = new Vector3(moved.x, moved.y, transform.position.z);
+        }
+        else
+        {
+            transform.position += (Vector3)change;
+        }
+
+        if (bodyCollider != null && baseScale.x != 0f && baseScale.y != 0f)
+        {
+            // The same world size, and the same world centre measured back through the new rotation and scale.
+            bodyCollider.size = new Vector2(bodyBaseSize.x / squash.x, bodyBaseSize.y / squash.y);
+            Vector2 standingCentre = new Vector2(bodyBaseOffset.x * baseScale.x, bodyBaseOffset.y * baseScale.y);
+            Vector2 local = Quaternion.Inverse(tip) * (standingCentre - offset);
+            bodyCollider.offset = new Vector2(local.x / (baseScale.x * squash.x), local.y / (baseScale.y * squash.y));
+        }
+
+        for (int i = 0; i < carriedLights.Count; i++)
+        {
+            if (carriedLights[i] == null) continue;
+            Vector3 scale = carriedLightScales[i];
+            carriedLights[i].localScale = new Vector3(scale.x / squash.x, scale.y / squash.y, scale.z);
+        }
     }
 
     // Makes the player look a certain way no matter where they walk, until ClearFacingOverride is called.
@@ -132,6 +307,7 @@ public class PlayerController : MonoBehaviour
         if (CanSetAnimParameter(PlayerAnimParams.FaceX)) animator.SetFloat(PlayerAnimParams.FaceX, Facing.x);
         if (CanSetAnimParameter(PlayerAnimParams.FaceY)) animator.SetFloat(PlayerAnimParams.FaceY, Facing.y);
         SetAnimBool(PlayerAnimParams.IsMoving, isMoving);
+        SetAnimBool(PlayerAnimParams.Crouching, IsCrouching);
         if (CanSetAnimParameter(PlayerAnimParams.WeaponType)) animator.SetInteger(PlayerAnimParams.WeaponType, (int)heldWeaponType);
 
         if (!CanSetAnimParameter(PlayerAnimParams.Direction)) return;
@@ -195,13 +371,14 @@ public class PlayerController : MonoBehaviour
 
         stepTimer -= Time.deltaTime;
 
-        float stepRate = isSprinting ? baseStepRate * 0.6f : baseStepRate;
+        // Crouching: slower, softer steps.
+        float stepRate = isSprinting ? baseStepRate * 0.6f : IsCrouching ? baseStepRate * 1.4f : baseStepRate;
 
         if (stepTimer <= 0f)
         {
             AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];
-            audioSource.pitch = isSprinting ? 1.2f : 1f;
-            audioSource.PlayOneShot(clip);
+            audioSource.pitch = isSprinting ? 1.2f : IsCrouching ? 0.9f : 1f;
+            audioSource.PlayOneShot(clip, IsCrouching ? crouchFootstepVolume : 1f);
             stepTimer = stepRate;
         }
     }

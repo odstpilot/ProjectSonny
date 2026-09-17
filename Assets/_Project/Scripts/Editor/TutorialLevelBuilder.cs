@@ -15,6 +15,7 @@ using UnityEngine.Tilemaps;
 // match: walls, floor, doors, robots, lighting, trigger zones, and the TutorialDirector that runs it. It replaces
 // everything in the scene, so change the map, prefabs, or scripts rather than the scene itself, at least until the layout
 // is settled.
+// FloorOneBuilder builds REAL GAME.unity from a map in the same format, with the tiles and pieces painted here.
 //
 // The map:
 //   (space)  nothing. Walls are drawn around the edge of everything else.
@@ -53,7 +54,7 @@ public static class TutorialLevelBuilder
     static readonly Color LanternColor = new Color(1f, 0.84f, 0.62f);
 
     // Tile numbers in the ship tileset (ShipTiles/tileset_N).
-    static class Tiles
+    internal static class Tiles
     {
         // Floor: grating, framed in metal plates wherever it meets a wall.
         public const int Floor = 377, FloorN = 346, FloorS = 405, FloorW = 376, FloorE = 378;
@@ -85,7 +86,7 @@ public static class TutorialLevelBuilder
     }
 
     // The text map. Cells are (column, row) with row 0 at the top; in the world, row r is at y = Height - 1 - r.
-    class Map
+    internal class Map
     {
         readonly string[] rows;
         public readonly int Width;
@@ -249,7 +250,7 @@ public static class TutorialLevelBuilder
 
     // --- Tiles ---
 
-    static Tilemap BuildTilemaps(Map map)
+    internal static Tilemap BuildTilemaps(Map map)
     {
         var grid = new GameObject("Grid").AddComponent<Grid>();
         Tilemap floor = CreateTilemap(grid, "Floor", "Floor", 0, false);
@@ -349,7 +350,7 @@ public static class TutorialLevelBuilder
 
     // --- The player and what's always around them ---
 
-    static GameObject PlacePlayer(Map map, GameObject prefab)
+    internal static GameObject PlacePlayer(Map map, GameObject prefab)
     {
         Vector2Int start = map.Find('P')[0];
         Vector2 spawn = map.Center(start.x, start.y);
@@ -380,7 +381,7 @@ public static class TutorialLevelBuilder
         return player;
     }
 
-    static Camera PlaceCamera(GameObject prefab, GameObject player)
+    internal static Camera PlaceCamera(GameObject prefab, GameObject player)
     {
         Vector3 at = player.transform.position;
         GameObject cameraObject = Spawn(prefab, null, new Vector3(at.x, at.y, at.z - 5f));
@@ -404,7 +405,7 @@ public static class TutorialLevelBuilder
         return cam;
     }
 
-    static Light2D PlaceGlobalLight(GameObject prefab)
+    internal static Light2D PlaceGlobalLight(GameObject prefab)
     {
         var globalLight = Spawn(prefab, null, Vector3.zero).GetComponent<Light2D>();
         globalLight.intensity = 0.38f;
@@ -552,7 +553,7 @@ public static class TutorialLevelBuilder
     }
 
     // Sodium lamps on the walls, each lighting a warm pool of floor below it. Some flicker; the '_' ones are already smashed.
-    static List<StationLight> PlaceLamps(Map map, Transform parent, AudioClip breakClip)
+    internal static List<StationLight> PlaceLamps(Map map, Transform parent, AudioClip breakClip)
     {
         var lamps = new List<StationLight>();
         foreach (char marker in new[] { '^', '_' })
@@ -605,7 +606,7 @@ public static class TutorialLevelBuilder
     }
 
     // Sunlight through every window: a slanting shaft of orange light across the floor below, and glare in the glass.
-    static void PlaceSunlight(Map map, Transform parent)
+    internal static void PlaceSunlight(Map map, Transform parent)
     {
         for (int row = 0; row < map.Height; row++)
         {
@@ -672,7 +673,7 @@ public static class TutorialLevelBuilder
         return sonny;
     }
 
-    static void PlaceLockers(Map map, GameObject prefab, Transform parent)
+    internal static void PlaceLockers(Map map, GameObject prefab, Transform parent)
     {
         // Lifted a little so the locker stands against the wall above its cell.
         foreach (Vector2Int at in map.Find('L'))
@@ -748,7 +749,7 @@ public static class TutorialLevelBuilder
 
     // --- Helpers ---
 
-    static bool LoadTiles()
+    internal static bool LoadTiles()
     {
         tiles.Clear();
         foreach (int number in Tiles.All().Distinct())
@@ -760,7 +761,7 @@ public static class TutorialLevelBuilder
         return true;
     }
 
-    static GameObject LoadPrefab(string pathInPrefabs)
+    internal static GameObject LoadPrefab(string pathInPrefabs)
     {
         string path = $"{PrefabsFolder}/{pathInPrefabs}.prefab";
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -768,7 +769,7 @@ public static class TutorialLevelBuilder
         return prefab;
     }
 
-    static AudioClip LoadClip(string folder, string file)
+    internal static AudioClip LoadClip(string folder, string file)
     {
         var clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{folder}/{file}");
         if (clip == null) Debug.LogWarning($"Tutorial builder: couldn't find the sound {folder}/{file}, so it's left out.");
@@ -787,7 +788,7 @@ public static class TutorialLevelBuilder
         return instance;
     }
 
-    static Transform Group(string groupName, Transform parent)
+    internal static Transform Group(string groupName, Transform parent)
     {
         var group = new GameObject(groupName).transform;
         group.SetParent(parent);
@@ -810,7 +811,7 @@ public static class TutorialLevelBuilder
     }
 
     // Changes to a prefab instance only stay as overrides once they're recorded.
-    static void Record(Object changed)
+    internal static void Record(Object changed)
     {
         if (PrefabUtility.IsPartOfPrefabInstance(changed))
             PrefabUtility.RecordPrefabInstancePropertyModifications(changed);

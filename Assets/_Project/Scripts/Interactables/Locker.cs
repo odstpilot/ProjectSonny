@@ -31,10 +31,11 @@ public class Locker : MonoBehaviour
     [Tooltip("Font for the prompt and hint. Leave empty for TextMesh Pro's default.")]
     public TMP_FontAsset font;
 
-    // True from the moment the player climbs in until they are standing outside again.
-    public static bool IsPlayerHidden { get; private set; }
+    // True from the moment the player climbs in until they are standing outside again, and while they're crawling
+    // through the air ducts (VentNetwork), which hide them from everything the same way.
+    public static bool IsPlayerHidden => inLocker || VentNetwork.IsPlayerInside;
     // The locker the player is hiding in, or null.
-    public static Locker Occupied => IsPlayerHidden ? inUse : null;
+    public static Locker Occupied => inLocker ? inUse : null;
 
     public Vector2 DoorDirection => doorDirection.sqrMagnitude > 0f ? doorDirection.normalized : Vector2.down;
     public Vector2 ExitPoint => (Vector2)transform.position + DoorDirection * exitDistance;
@@ -50,6 +51,7 @@ public class Locker : MonoBehaviour
     static readonly List<Locker> all = new List<Locker>();
     // The locker the player is in or on the way in or out of. The others ignore the player meanwhile.
     static Locker inUse;
+    static bool inLocker;
 
     private Collider2D footprint;
     private SpriteRenderer body;
@@ -119,7 +121,7 @@ public class Locker : MonoBehaviour
     // For an enemy that saw the player climb in: the door flies open and the player is back outside at once, no fade.
     public void PullPlayerOut()
     {
-        if (inUse != this || !IsPlayerHidden) return;
+        if (inUse != this || !inLocker) return;
         ForceOut();
         StartCoroutine(Rattle());
     }
@@ -157,7 +159,7 @@ public class Locker : MonoBehaviour
     void ForceOut()
     {
         StopAllCoroutines();
-        if (IsPlayerHidden) ShowPlayer();
+        if (inLocker) ShowPlayer();
         LockerView.ForceClose();
         if (body != null) body.transform.localPosition = bodyBasePosition;
         inUse = null;
@@ -196,7 +198,7 @@ public class Locker : MonoBehaviour
     // exactly that comes back, the same way PlayerHealthHandler freezes the player on death.
     void HidePlayer()
     {
-        IsPlayerHidden = true;
+        inLocker = true;
 
         // Scripts stop, so no moving, attacking, or weapon swapping. Health and its handler stay on for the HUD,
         // and lights stay on so there's something to see out the vent in a dark room.
@@ -226,7 +228,7 @@ public class Locker : MonoBehaviour
 
     void ShowPlayer()
     {
-        IsPlayerHidden = false;
+        inLocker = false;
 
         if (player != null)
         {

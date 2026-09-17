@@ -14,7 +14,7 @@ public class HitStop : MonoBehaviour
 
     public static void Freeze(float duration)
     {
-        if (duration <= 0f) return;
+        if (duration <= 0f || !GameSettings.FreezeOnHit) return;
 
         bool alreadyFrozen = instance != null && instance.frozen;
         if (!alreadyFrozen && Time.timeScale < 1f) return; // paused or in slow motion

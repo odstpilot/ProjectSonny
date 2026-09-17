@@ -94,6 +94,7 @@ public class CameraShake : MonoBehaviour
     {
         if (rendering != cam || offsetApplied) return;
         if (trauma <= 0f && kickOffset == Vector2.zero) return;
+        if (GameSettings.ScreenShake <= 0f) return;
 
         Vector3 shake = Vector3.zero;
         if (trauma > 0f)
@@ -106,7 +107,7 @@ public class CameraShake : MonoBehaviour
                 0f) * strength;
         }
 
-        appliedOffset = shake + (Vector3)kickOffset;
+        appliedOffset = (shake + (Vector3)kickOffset) * GameSettings.ScreenShake;
         transform.position += appliedOffset;
         offsetApplied = true;
     }

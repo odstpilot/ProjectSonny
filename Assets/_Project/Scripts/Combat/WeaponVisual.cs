@@ -27,6 +27,7 @@ public class WeaponVisual : MonoBehaviour
     public float LaunchDistance => MuzzleDistance + (blaster != null ? blaster.ballSize * OrbForward : 0f);
 
     private Transform owner;
+    private PlayerController controller;
     private SpriteRenderer ownerRenderer;
     private HandPositions hand;
     private Vector2 aimOffset;
@@ -67,6 +68,7 @@ public class WeaponVisual : MonoBehaviour
         visual.ownerRenderer = ownerRenderer;
         visual.hand = hand;
         visual.aimOffset = aimOffset;
+        visual.controller = owner.GetComponent<PlayerController>();
         visual.WeaponRenderer = CreateChild<SpriteRenderer>("Weapon", pivot);
         visual.weaponTransform = visual.WeaponRenderer.transform;
 
@@ -289,6 +291,8 @@ public class WeaponVisual : MonoBehaviour
             offset = aimOffset;
             angle = aimAngle + tilt;
             behind = Mathf.Sin(angle * Mathf.Deg2Rad) > 0.2f;
+            // The pivot tips with a sprinting player's lean; take it back out so the gun still points where they aim.
+            if (controller != null) angle -= controller.LeanAngle;
 
             Vector3 scale = baseScale * scaleMultiplier;
             if (facing.x < 0f) scale.y = -scale.y; // keeps gun art upright; only changes when the body turns
@@ -306,6 +310,9 @@ public class WeaponVisual : MonoBehaviour
             if (rangedChargeShown && !charging) WeaponRenderer.color = baseColor;
             rangedChargeShown = charging;
         }
+
+        // A crouching or sprinting player's hand moves with their squash or stretch; follow it so the weapon stays in it.
+        if (controller != null) offset = Vector2.Scale(offset, controller.BodySquash);
 
         transform.localPosition = new Vector3(offset.x / ownerScale.x, offset.y / ownerScale.y, 0f);
         transform.localRotation = Quaternion.Euler(0f, 0f, angle);

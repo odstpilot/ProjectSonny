@@ -18,6 +18,9 @@ public static class PlayerAnimParams
     // Bool. True while holding the attack button to charge a melee swing.
     public static readonly int Charging = Animator.StringToHash("Charging");
 
+    // Bool. True while crouching (C or Ctrl).
+    public static readonly int Crouching = Animator.StringToHash("Crouching");
+
     // Triggers. Fired the moment an attack starts.
     public static readonly int Swing = Animator.StringToHash("Swing");
     public static readonly int ChargedSwing = Animator.StringToHash("ChargedSwing");

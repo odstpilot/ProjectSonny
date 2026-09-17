@@ -37,6 +37,16 @@ public class PlaceholderRobot : MonoBehaviour
     public float closeDetectionMultiplier = 2.5f;
     [Tooltip("Seconds for its suspicion to drain away once it can't see them.")]
     public float detectionFade = 2f;
+    [Tooltip("A crouching player can only be seen from this fraction of Sight Range. Close Range still notices them.")]
+    [Range(0.1f, 1f)] public float crouchSightMultiplier = 0.6f;
+    [Tooltip("How fast the ring fills while the player crouches, as a fraction of normal.")]
+    [Range(0.05f, 1f)] public float crouchDetectionMultiplier = 0.45f;
+    [Tooltip("A sprinting player can be seen this many times further than Sight Range.")]
+    [Range(1f, 3f)] public float sprintSightMultiplier = 1.3f;
+    [Tooltip("How fast the ring fills while the player sprints, as a multiple of normal.")]
+    [Range(1f, 5f)] public float sprintDetectionMultiplier = 1.8f;
+    [Tooltip("It hears a sprinting player this close whichever way it's facing, as long as nothing solid is in between.")]
+    public float sprintHearingRange = 3.5f;
     [Tooltip("Seconds it looks around under the ? before going back to its patrol.")]
     public float searchTime = 2.5f;
     [Tooltip("After losing the player, it carries on this far past where it last saw them before searching.")]
@@ -81,6 +91,7 @@ public class PlaceholderRobot : MonoBehaviour
     private Transform player;
     private Collider2D playerCollider;
     private Health playerHealth;
+    private PlayerController playerController;
     private State state = State.Patrol;
     private float stateTimer;
     private Vector2 attackDirection = Vector2.right;
@@ -135,6 +146,7 @@ public class PlaceholderRobot : MonoBehaviour
             player = found.transform;
             playerCollider = found.GetComponent<Collider2D>();
             playerHealth = found.GetComponent<Health>();
+            playerController = found.GetComponent<PlayerController>();
         }
 
         stuckCheckPosition = rb.position;
@@ -267,8 +279,22 @@ public class PlaceholderRobot : MonoBehaviour
 
         Vector2 toPlayer = (Vector2)player.position - rb.position;
         float distance = toPlayer.magnitude;
-        if (distance > sightRange) return false;
-        if (!tracking && distance > closeRange && Vector2.Angle(facing, toPlayer) > fieldOfView * 0.5f) return false;
+        // Crouching keeps the player out of sight at a distance. Sprinting carries further, and it hears the footsteps
+        // coming up behind it. Once it's hunting them it keeps them in view either way.
+        float range = sightRange;
+        float allAround = closeRange;
+        if (!tracking && PlayerCrouching)
+        {
+            range = Mathf.Max(closeRange, sightRange * crouchSightMultiplier);
+        }
+        else if (!tracking && PlayerSprinting)
+        {
+            range = sightRange * sprintSightMultiplier;
+            allAround = Mathf.Max(closeRange, sprintHearingRange);
+        }
+
+        if (distance > range) return false;
+        if (!tracking && distance > allAround && Vector2.Angle(facing, toPlayer) > fieldOfView * 0.5f) return false;
         return HasLineOfSight(player.position);
     }
 
@@ -297,6 +323,8 @@ public class PlaceholderRobot : MonoBehaviour
         {
             float nearness = 1f - Mathf.Clamp01(Mathf.InverseLerp(closeRange, sightRange, DistanceToPlayer()));
             float rate = Mathf.Lerp(1f, closeDetectionMultiplier, nearness) / Mathf.Max(0.05f, detectionTime);
+            if (!hunting && PlayerCrouching) rate *= crouchDetectionMultiplier;
+            else if (!hunting && PlayerSprinting) rate *= sprintDetectionMultiplier;
             detection = Mathf.Clamp01(detection + rate * Time.deltaTime);
         }
         else
@@ -320,6 +348,9 @@ public class PlaceholderRobot : MonoBehaviour
         Enter(State.Chase, 0f);
         return true;
     }
+
+    bool PlayerCrouching => playerController != null && playerController.IsCrouching;
+    bool PlayerSprinting => playerController != null && playerController.IsSprinting;
 
     void Remember()
     {
@@ -476,8 +507,9 @@ public class PlaceholderRobot : MonoBehaviour
         return toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : attackDirection;
     }
 
-    // Select the robot to see its patrol route (cyan), view cone and close range (white), how near it must be to a
-    // locker to catch the player climbing in (magenta), attack range (yellow), and where the lunge hurts (red).
+    // Select the robot to see its patrol route (cyan), view cone and close range (white), how far it hears a sprinting
+    // player (orange), how near it must be to a locker to catch the player climbing in (magenta), attack range
+    // (yellow), and where the lunge hurts (red).
     void OnDrawGizmosSelected()
     {
         Vector2 origin = Application.isPlaying ? home : (Vector2)transform.position;
@@ -496,6 +528,8 @@ public class PlaceholderRobot : MonoBehaviour
         Gizmos.DrawLine(center, center + Quaternion.Euler(0f, 0f, fieldOfView * 0.5f) * look * sightRange);
         Gizmos.DrawLine(center, center + Quaternion.Euler(0f, 0f, -fieldOfView * 0.5f) * look * sightRange);
         Gizmos.DrawWireSphere(center, closeRange);
+        Gizmos.color = new Color(1f, 0.6f, 0.2f);
+        Gizmos.DrawWireSphere(center, sprintHearingRange);
         Gizmos.color = Color.magenta;
         Gizmos.DrawWireSphere(center, catchRange);
         Gizmos.color = Color.yellow;

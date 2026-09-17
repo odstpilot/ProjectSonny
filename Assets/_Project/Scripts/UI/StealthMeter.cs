@@ -5,6 +5,8 @@ using UnityEngine;
 // watcher is on and fills as it makes them out, with a "?" over it while it's still guessing and a "!" once it's
 // sure; once it fills, that watcher has spotted them and gives chase.
 // Several watchers mean several arcs, so the player can tell which way the danger is and how close it is to being sure.
+// The arcs draw in tighter while the player crouches and swell out while they sprint, so the floor shows how exposed
+// they're making themselves.
 // Watchers call Report every frame they're interested, and an arc fades out by itself once they stop.
 // Built from code the first time something reports, like HitEffects.
 public class StealthMeter : MonoBehaviour
@@ -25,6 +27,9 @@ public class StealthMeter : MonoBehaviour
     const float NarrowArc = 9f;         // half width in degrees when a watcher has only just noticed something
     const float WideArc = 30f;          // half width once it's certain
     const float FadeSpeed = 5f;
+    const float CrouchedSize = 0.72f;   // the arcs' size while the player crouches, as a fraction of normal
+    const float SprintingSize = 1.3f;   // and while they sprint
+    const float ResizeSpeed = 4f;
 
     static readonly Color CalmColor = new Color(0.85f, 0.92f, 1f);
     static readonly Color WarningColor = new Color(1f, 0.75f, 0.25f);
@@ -62,6 +67,8 @@ public class StealthMeter : MonoBehaviour
     private readonly Stack<SpriteRenderer> spareSigns = new Stack<SpriteRenderer>();
     private AnimationCurve taper;
     private Transform player;
+    private PlayerController playerController;
+    private float size = 1f;
     private int linesMade;
     private int signsMade;
 
@@ -112,7 +119,11 @@ public class StealthMeter : MonoBehaviour
             if (player == null)
             {
                 GameObject found = GameObject.FindGameObjectWithTag("Player");
-                if (found != null) player = found.transform;
+                if (found != null)
+                {
+                    player = found.transform;
+                    playerController = found.GetComponent<PlayerController>();
+                }
             }
             return player;
         }
@@ -132,7 +143,12 @@ public class StealthMeter : MonoBehaviour
         Transform target = Player;
         if (target == null) return;
 
-        Vector2 center = target.position;
+        // Around the feet, which stay put however the body is posed: crouched low or leaning into a sprint.
+        Vector2 center = (Vector2)target.position - (playerController != null ? playerController.PoseOffset : Vector2.zero);
+        float targetSize = 1f;
+        if (playerController != null)
+            targetSize = playerController.IsCrouching ? CrouchedSize : playerController.IsSprinting ? SprintingSize : 1f;
+        size = Mathf.MoveTowards(size, targetSize, ResizeSpeed * Time.deltaTime);
         finished.Clear();
 
         foreach (KeyValuePair<Object, Arc> pair in arcs)
@@ -240,8 +256,8 @@ public class StealthMeter : MonoBehaviour
     Vector3 PointOnRing(Vector2 center, float angleRadians)
     {
         return new Vector3(
-            center.x + Mathf.Cos(angleRadians) * Radius,
-            center.y + Mathf.Sin(angleRadians) * Radius * GroundSquash + GroundDrop,
+            center.x + Mathf.Cos(angleRadians) * Radius * size,
+            center.y + Mathf.Sin(angleRadians) * Radius * size * GroundSquash + GroundDrop,
             0f);
     }
 

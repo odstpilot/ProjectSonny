@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0c443fee84946778d12423def2e777c, type: 3}
-  m_Name: RivetGun
+  m_Name: ScrapGun
   m_EditorClassIdentifier:
-  displayName: Rivet Gun
+  displayName: Scrap Gun
   showHeldSprite: 1
   aimSnap: 0
-  sprite: {fileID: 0}
-  spriteScale: 1
+  sprite: {fileID: 21300000, guid: 1960f2f905264139a41e8e2f28e3084b, type: 3}
+  spriteScale: 0.8
   placeholderSize: {x: 0.35, y: 0.12}
   placeholderColor: {r: 0.45, g: 0.5, b: 0.55, a: 1}
   holdDistance: 0.3
@@ -30,7 +30,7 @@ MonoBehaviour:
   recoilDistance: 0.1
   projectileSprite: {fileID: 0}
   projectileSize: {x: 0.22, y: 0.07}
-  projectileColor: {r: 1, g: 0.85, b: 0.4, a: 1}
+  projectileColor: {r: 1, g: 0.78, b: 0.45, a: 1}
   projectileSpeed: 14
   projectileRange: 9
   projectileRadius: 0.08

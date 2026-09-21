@@ -5,7 +5,10 @@ using UnityEngine.Rendering.Universal;
 
 // A light on the station: a wall lamp, an alarm, or sunlight through a window.
 //   Steady, Flicker: an ordinary lamp, or one with a failing tube.   Alarm: pulses.
-//   Sunlight: breathes slowly and swells with SunBoost as the flare gets closer.
+//   Sunlight: breathes slowly and swells with SunBoost as the flare gets closer. FlareProgress (0 to 1) turns every
+//   window from orange toward white hot over the whole level, so the flare works as a countdown without a timer.
+// A lamp with swing sways on its bracket when the station rumbles, its pool of light swinging across the floor. One with
+// dropOnBreak can come away when it's smashed and fall as a light fitting (FallingDebris).
 // Every light stutters while the station rumbles. Breakable lights can be smashed, by debris landing under them, by a hard
 // rumble, or by Break() from a script: they pop, spray sparks and glass, stutter out, and keep sputtering sparks after.
 // PowerOff puts a light out with a flicker instead, like the power failing.
@@ -17,58 +20,25 @@ public class StationLight : MonoBehaviour
     const float StutterStep = 0.06f;    // seconds between changes while stuttering, so it doesn't depend on frame rate
     const float DyingTime = 0.9f;       // a smashed light stutters this long before it's dark
     const float PowerFlickerTime = 0.6f;
-    const float FixturePixelsPerUnit = 16f;
 
     static readonly Color GlassLit = new Color(1f, 0.88f, 0.6f);
     static readonly Color GlassDark = new Color(0.2f, 0.16f, 0.12f);
     static readonly Color SunDeep = new Color(1f, 0.38f, 0.1f);
     static readonly Color SunWhite = new Color(1f, 0.9f, 0.62f);
+    static readonly Color FlareWhite = new Color(1f, 0.97f, 0.9f);
     static readonly Color SparkBright = new Color(1f, 0.95f, 0.7f);
     static readonly Color SparkHot = new Color(1f, 0.5f, 0.12f);
     static readonly Color Shards = new Color(0.95f, 0.85f, 0.62f);
 
-    static readonly Dictionary<char, Color32> FramePalette = new Dictionary<char, Color32>
-    {
-        { 'o', new Color32(30, 28, 26, 255) },
-        { '#', new Color32(96, 90, 82, 255) },
-        { '=', new Color32(58, 54, 50, 255) },
-    };
-    static readonly Dictionary<char, Color32> GlassPalette = new Dictionary<char, Color32>
-    {
-        { 'g', new Color32(255, 255, 255, 255) },
-    };
-    // A bulkhead lamp: a metal frame with cage bars over the glass.
-    static readonly string[] FrameArt =
-    {
-        "..oooooooo..",
-        ".o########o.",
-        "o#..=..=..#o",
-        "o#..=..=..#o",
-        "o#..=..=..#o",
-        ".o########o.",
-        "..oooooooo..",
-    };
-    static readonly string[] GlassArt =
-    {
-        "............",
-        "............",
-        "..gg.gg.gg..",
-        "..gg.gg.gg..",
-        "..gg.gg.gg..",
-        "............",
-        "............",
-    };
-    // What's left of the glass.
-    static readonly string[] BrokenGlassArt =
-    {
-        "............",
-        "............",
-        "..g......g..",
-        "...g.g......",
-        "..gg....g...",
-        "............",
-        "............",
-    };
+    // The bulkhead lamp, drawn at the tileset's pixel size: a steel housing bolted to the wall, a cage of bars over its
+    // window, and the glass behind them.
+    const int FixtureWidth = 24;
+    const int FixtureHeight = 14;
+    static readonly Color32 Housing = new Color32(74, 80, 88, 255);
+    static readonly Color32 Rim = new Color32(150, 156, 164, 255);
+    static readonly Color32 Bars = new Color32(118, 124, 132, 255);
+    static readonly Color32 Bolt = new Color32(46, 50, 56, 255);
+    static readonly Color32 Ink = new Color32(18, 20, 26, 255);
 
     public enum Mode { Steady, Flicker, Alarm, Sunlight }
 
@@ -85,6 +55,11 @@ public class StationLight : MonoBehaviour
     [Tooltip("Optional sprite that brightens and dims with the light, like the lamp itself.")]
     public SpriteRenderer bulb;
 
+    [Tooltip("How far the light swings to each side when the station rumbles, in world units. 0 keeps it still.")]
+    public float swing;
+    [Tooltip("Swings per second.")]
+    public float swingRate = 0.9f;
+
     [Header("Breaking")]
     public bool breakable = true;
     [Tooltip("Debris landing within this distance of the light can smash it.")]
@@ -92,6 +67,8 @@ public class StationLight : MonoBehaviour
     [Tooltip("Chance a hard rumble smashes it, when it's on screen.")]
     [Range(0f, 1f)] public float rumbleBreakChance = 0.15f;
     public bool sparkWhenBroken = true;
+    [Tooltip("Chance a smashed lamp comes off the wall and falls to the floor below.")]
+    [Range(0f, 1f)] public float dropOnBreak;
     public AudioClip breakClip;
     [Range(0f, 1f)] public float breakVolume = 0.8f;
 
@@ -105,6 +82,8 @@ public class StationLight : MonoBehaviour
 
     // Sunlight is multiplied by this: 1 normally, higher as the flare arrives.
     public static float SunBoost { get; set; } = 1f;
+    // 0 to 1: how close the flare is. Sunlight whitens and brightens with it. Set by the level.
+    public static float FlareProgress { get; set; }
 
     public bool IsOn { get; private set; }
     public bool IsBroken { get; private set; }
@@ -123,6 +102,11 @@ public class StationLight : MonoBehaviour
     private SpriteRenderer glass;
     private SpriteRenderer halo;
     private SpriteRenderer glare;
+    private SpriteRenderer frame;
+    private Color baseColor;
+    private Vector3 home;
+    private float swingEnergy;      // 0 still, 1 swinging as hard as it goes
+    private float swingPhase;
     private Coroutine routine;
     private float power = 1f;       // dips while the power is failing or coming back
     private float flash;            // the pop when it breaks, and sparks sputtering after
@@ -133,9 +117,50 @@ public class StationLight : MonoBehaviour
     private float nextStutterStep;
     private float stutterLevel = 1f;
 
-    static Sprite FrameSprite => frameSprite != null ? frameSprite : (frameSprite = PixelArt.FromText(FrameArt, FramePalette, FixturePixelsPerUnit, new Vector2(0.5f, 0.5f)));
-    static Sprite GlassSprite => glassSprite != null ? glassSprite : (glassSprite = PixelArt.FromText(GlassArt, GlassPalette, FixturePixelsPerUnit, new Vector2(0.5f, 0.5f)));
-    static Sprite BrokenGlassSprite => brokenGlassSprite != null ? brokenGlassSprite : (brokenGlassSprite = PixelArt.FromText(BrokenGlassArt, GlassPalette, FixturePixelsPerUnit, new Vector2(0.5f, 0.5f)));
+    static Sprite FrameSprite => frameSprite != null ? frameSprite : (frameSprite = DrawFrame().ToSprite(new Vector2(0.5f, 0.5f)));
+    static Sprite GlassSprite => glassSprite != null ? glassSprite : (glassSprite = DrawGlass(false).ToSprite(new Vector2(0.5f, 0.5f)));
+    static Sprite BrokenGlassSprite => brokenGlassSprite != null ? brokenGlassSprite : (brokenGlassSprite = DrawGlass(true).ToSprite(new Vector2(0.5f, 0.5f)));
+
+    static bool InWindow(int x, int y) => x >= 4 && x <= FixtureWidth - 5 && y >= 4 && y <= FixtureHeight - 5;
+    static bool OnBar(int x, int y) => (x - 4) % 5 == 4 || y == FixtureHeight / 2;
+
+    static PixelCanvas DrawFrame()
+    {
+        var canvas = new PixelCanvas(FixtureWidth, FixtureHeight);
+        canvas.FillRect(1, 1, FixtureWidth - 2, FixtureHeight - 2, Housing);
+        canvas.FillRect(2, FixtureHeight - 2, FixtureWidth - 3, FixtureHeight - 2, Rim);
+        foreach (Vector2Int corner in new[] { new Vector2Int(1, 1), new Vector2Int(FixtureWidth - 2, 1), new Vector2Int(1, FixtureHeight - 2), new Vector2Int(FixtureWidth - 2, FixtureHeight - 2) })
+            canvas.Clear(corner.x, corner.y);
+        foreach (Vector2Int bolt in new[] { new Vector2Int(2, 2), new Vector2Int(FixtureWidth - 3, 2), new Vector2Int(2, FixtureHeight - 4), new Vector2Int(FixtureWidth - 3, FixtureHeight - 4) })
+            canvas.Set(bolt.x, bolt.y, Bolt);
+
+        canvas.Bevel(1.2f, 0.75f);
+        canvas.Outline(Ink);
+
+        // The window, cut after the outline so it isn't inked in: open, but for the cage bars across it.
+        for (int y = 0; y < FixtureHeight; y++)
+            for (int x = 0; x < FixtureWidth; x++)
+                if (InWindow(x, y)) canvas.Set(x, y, OnBar(x, y) ? Bars : default);
+        return canvas;
+    }
+
+    // White, so the light's colour can tint it. Broken, only a few shards are left round the edge of the window.
+    static PixelCanvas DrawGlass(bool broken)
+    {
+        var canvas = new PixelCanvas(FixtureWidth, FixtureHeight);
+        var white = new Color32(255, 255, 255, 255);
+        var shards = new System.Random(7);
+        for (int y = 0; y < FixtureHeight; y++)
+        {
+            for (int x = 0; x < FixtureWidth; x++)
+            {
+                if (!InWindow(x, y) || OnBar(x, y)) continue;
+                bool edge = x == 4 || x == FixtureWidth - 5 || y == 4 || y == FixtureHeight - 5;
+                if (!broken || (edge && shards.NextDouble() < 0.45)) canvas.Set(x, y, white);
+            }
+        }
+        return canvas;
+    }
     static Sprite HaloSprite
     {
         get
@@ -173,6 +198,7 @@ public class StationLight : MonoBehaviour
     static void ResetStatics()
     {
         SunBoost = 1f;
+        FlareProgress = 0f;
         lastRumbleBreak = -10f;
     }
 
@@ -180,6 +206,9 @@ public class StationLight : MonoBehaviour
     {
         lamp = GetComponent<Light2D>();
         baseIntensity = lamp.intensity;
+        baseColor = lamp.color;
+        home = transform.position;
+        swingPhase = Random.value * Mathf.PI * 2f;
         if (bulb != null) bulbColor = bulb.color;
         IsOn = startOn;
         IsBroken = startBroken;
@@ -255,6 +284,18 @@ public class StationLight : MonoBehaviour
 
         flash = Mathf.MoveTowards(flash, 0f, Time.deltaTime * 10f);
         Apply(Mathf.Max(level, flash));
+        Swing();
+    }
+
+    // The light sways and the fixture stays put on the wall, so the pool of light swings across the floor under it.
+    void Swing()
+    {
+        if (swing <= 0f || mode == Mode.Sunlight) return;
+        swingEnergy = Mathf.MoveTowards(swingEnergy, 0f, Time.deltaTime * 0.35f);
+        float offset = swing * swingEnergy * Mathf.Sin(Time.time * swingRate * Mathf.PI * 2f + swingPhase);
+        transform.position = home + new Vector3(offset, 0f, 0f);
+        foreach (Transform art in transform)
+            art.localPosition = fixtureOffset - new Vector2(offset, 0f);
     }
 
     float ModeLevel()
@@ -274,7 +315,7 @@ public class StationLight : MonoBehaviour
                 return 0.1f + 0.9f * wave * wave;
 
             case Mode.Sunlight:
-                return (0.85f + 0.15f * Mathf.PerlinNoise(Time.time * 0.35f, transform.position.x)) * SunBoost;
+                return (0.85f + 0.15f * Mathf.PerlinNoise(Time.time * 0.35f, transform.position.x)) * SunBoost * (1f + 0.6f * FlareProgress);
 
             default:
                 return 1f;
@@ -284,6 +325,7 @@ public class StationLight : MonoBehaviour
     void Apply(float level)
     {
         lamp.intensity = baseIntensity * level;
+        if (mode == Mode.Sunlight) lamp.color = Color.Lerp(baseColor, FlareWhite, FlareProgress * 0.8f);
         float glow = Mathf.Clamp01(level);
 
         if (bulb != null)
@@ -300,7 +342,11 @@ public class StationLight : MonoBehaviour
             halo.color = tint;
         }
         // The sky through the window runs from deep orange to white hot as the flare builds.
-        if (glare != null) glare.color = Color.Lerp(SunDeep, SunWhite, Mathf.Clamp01((level - 0.8f) * 0.9f));
+        if (glare != null)
+        {
+            Color sky = Color.Lerp(SunDeep, SunWhite, Mathf.Clamp01((level - 0.8f) * 0.9f));
+            glare.color = Color.Lerp(sky, FlareWhite, FlareProgress);
+        }
     }
 
     IEnumerator Die()
@@ -311,6 +357,14 @@ public class StationLight : MonoBehaviour
         HitEffects.Ring(point, new Color(1f, 0.8f, 0.45f, 0.8f), 1.1f);
         StationRumble.PlayAt(breakClip, point, breakVolume);
         if (glass != null) glass.sprite = BrokenGlassSprite;
+
+        // Torn off the wall: the fitting falls to the floor under it, and only the bracket is left.
+        if (dropOnBreak > 0f && Random.value < dropOnBreak)
+        {
+            FallingDebris.Drop(home, 0f, 0.45f, 0.85f, false, FallingDebris.Kind.Fixture);
+            if (frame != null) frame.enabled = false;
+            if (glass != null) glass.enabled = false;
+        }
 
         flash = 2.2f;
         yield return new WaitForSeconds(0.06f);
@@ -353,6 +407,7 @@ public class StationLight : MonoBehaviour
 
     void OnRumble(float strength, float duration)
     {
+        swingEnergy = Mathf.Clamp01(Mathf.Max(swingEnergy, strength * 1.6f));
         stutterUntil = Mathf.Max(stutterUntil, Time.time + duration * Mathf.Clamp01(strength * 1.5f));
 
         // A hard rumble can shake a lamp loose, but only one every few seconds, and only where the player can see it.
@@ -402,7 +457,7 @@ public class StationLight : MonoBehaviour
             return;
         }
 
-        NewSprite("Fixture", FrameSprite, "Collision", 3);
+        frame = NewSprite("Fixture", FrameSprite, "Collision", 3);
         glass =NewSprite("Glass", IsBroken ? BrokenGlassSprite : GlassSprite, "Collision", 4);
         halo = NewSprite("Halo", HaloSprite, "Collision", 5);
         halo.transform.localScale = new Vector3(1.8f, 1.8f, 1f);

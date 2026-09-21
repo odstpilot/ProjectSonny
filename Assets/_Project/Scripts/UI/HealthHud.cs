@@ -55,6 +55,12 @@ public class HealthHud : MonoBehaviour
         OnHealthChanged(tracked.CurrentHealth, tracked.maxHealth);
     }
 
+    // Hides the row of cells but keeps the hurt vignette, for when health doesn't matter (the tutorial).
+    public void SetCellsVisible(bool visible)
+    {
+        if (row != null) row.gameObject.SetActive(visible);
+    }
+
     public void SetVignette(float alpha, Color color)
     {
         if (vignette == null) return;

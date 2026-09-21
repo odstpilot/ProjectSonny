@@ -1,8 +1,8 @@
 using UnityEngine;
 
 // Particles for when this object's Health is hit or killed: sparks spraying away from the attacker and a ring at
-// the impact point, plus an optional burst of debris and smoke on death. The flash, blink, and knockback are
-// handled by Health itself.
+// the impact point, plus an optional burst of debris and smoke on death, and pieces of it thrown across the floor
+// (ScrapBurst). The flash, blink, and knockback are handled by Health itself.
 [RequireComponent(typeof(Health))]
 public class DamageEffects : MonoBehaviour
 {
@@ -23,6 +23,10 @@ public class DamageEffects : MonoBehaviour
     [Range(0f, 1f)] public float deathShake = 0.5f;
     [Tooltip("Freeze when this dies, in seconds.")]
     public float deathHitStop = 0.1f;
+    [Tooltip("Pieces of it thrown out across the floor when it's destroyed. 0 for none.")]
+    public int partsOnDeath = 7;
+    [Tooltip("Seconds the pieces lie there before they fade.")]
+    public float partLifetime = 6f;
 
     private Health health;
     private Vector2 lastHitDirection = Vector2.up;
@@ -60,6 +64,7 @@ public class DamageEffects : MonoBehaviour
         if (!explodeOnDeath) return;
 
         HitEffects.Explosion(transform.position, lastHitDirection, debrisColor, debrisCount);
+        if (partsOnDeath > 0) ScrapBurst.Burst(transform.position, partsOnDeath, lastHitDirection, partLifetime);
         CameraShake.Shake(deathShake);
         HitStop.Freeze(deathHitStop);
     }

@@ -16,6 +16,8 @@ public class Health : MonoBehaviour, IDamageable
     const float SkinWidth = 0.02f;
 
     public float maxHealth = 10f;
+    [Tooltip("Hits still flash, knock back, and shake the screen, but no health is lost and nothing can kill it. For the tutorial.")]
+    public bool cannotDie;
 
     [Header("When Hit")]
     [Tooltip("The sprite briefly turns solid this color.")]
@@ -90,7 +92,7 @@ public class Health : MonoBehaviour, IDamageable
     {
         if (IsDead || IsInvincible || info.amount <= 0f) return;
 
-        CurrentHealth = Mathf.Max(0f, CurrentHealth - info.amount);
+        if (!cannotDie) CurrentHealth = Mathf.Max(0f, CurrentHealth - info.amount);
         if (invincibilityDuration > 0f)
             invincibleUntil = Time.time + invincibilityDuration;
 
@@ -133,7 +135,7 @@ public class Health : MonoBehaviour, IDamageable
     // Dead at once, whatever health is left and even while invincible: for being caught, crushed, and so on.
     public void Kill(GameObject source = null)
     {
-        if (IsDead) return;
+        if (IsDead || cannotDie) return;
         invincibleUntil = 0f;
         TakeDamage(new DamageInfo(CurrentHealth, Vector2.zero, 0f, source));
     }

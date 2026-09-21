@@ -23,6 +23,8 @@ public class PlaceholderRobot : MonoBehaviour
     public float patrolSpeed = 1.2f;
     [Tooltip("Pause at each patrol point.")]
     public float patrolPause = 1f;
+    [Tooltip("Which way it looks while standing still on its patrol, like a guard watching a doorway. Zero keeps looking whichever way it last walked.")]
+    public Vector2 idleFacing;
 
     [Header("Senses")]
     [Tooltip("How far it can see.")]
@@ -112,11 +114,18 @@ public class PlaceholderRobot : MonoBehaviour
     // 0 to 1: how sure it is of what it's looking at. At 1 it gives chase. Drawn as the ring around the player.
     private float detection;
 
+    // After the player: chasing, going for them in a locker, or attacking.
+    public bool IsHunting => state == State.Chase || state == State.Catch || state == State.Windup
+        || state == State.Lunge || state == State.Recover;
+    // The last point of its patrol, where it ends up standing if the route is a single point.
+    public Vector2 PatrolEnd => home + (patrolRoute.Length > 0 ? patrolRoute[patrolRoute.Length - 1] : Vector2.zero);
+
     void Awake()
     {
         health = GetComponent<Health>();
         rb = GetComponent<Rigidbody2D>();
         body = GetComponentInChildren<SpriteRenderer>();
+        DepthSort.Group(gameObject);
         if (body != null)
         {
             bodyBasePosition = body.transform.localPosition;
@@ -171,6 +180,7 @@ public class PlaceholderRobot : MonoBehaviour
                 if (patrolRoute.Length == 0 || stateTimer > 0f)
                 {
                     rb.linearVelocity = Vector2.zero; // standing guard, or pausing at a point
+                    if (idleFacing != Vector2.zero) Look(idleFacing);
                 }
                 else if (WalkTo(home + patrolRoute[patrolIndex % patrolRoute.Length], patrolSpeed))
                 {
@@ -259,6 +269,20 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
+    // Back where it started, calm, at the beginning of its patrol, as if it had never seen the player. For a level
+    // putting a stealth section back to how it began.
+    public void ResetToStart()
+    {
+        lockerToOpen = null;
+        detection = 0f;
+        patrolIndex = 0;
+        ResetBody();
+        rb.position = home;
+        transform.position = new Vector3(home.x, home.y, transform.position.z);
+        Enter(State.Patrol, 0f);
+        StealthMeter.Clear(this);
+    }
+
     void Enter(State next, float duration)
     {
         if (state == State.Windup) ResetBody();
@@ -316,8 +340,7 @@ public class PlaceholderRobot : MonoBehaviour
     // While it's already hunting them it stays certain, so the ring stays full until it loses them.
     void UpdateDetection()
     {
-        bool hunting = state == State.Chase || state == State.Catch || state == State.Windup
-            || state == State.Lunge || state == State.Recover;
+        bool hunting = IsHunting;
 
         if (CanSeePlayer(hunting))
         {

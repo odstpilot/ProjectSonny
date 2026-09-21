@@ -58,11 +58,11 @@ TagManager:
   - name: Player
     uniqueID: 2279180381
     locked: 0
-  - name: Top
-    uniqueID: 176024979
-    locked: 0
   - name: Decor
     uniqueID: 1289281589
+    locked: 0
+  - name: Top
+    uniqueID: 176024979
     locked: 0
   - name: UI
     uniqueID: 58109093

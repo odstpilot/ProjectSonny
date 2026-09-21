@@ -6,9 +6,10 @@ using UnityEngine.UI;
 
 // On-screen text for the tutorial and its cutscenes, built from code the first time something asks for it, so there's
 // no canvas to set up:
-//  - a control prompt along the bottom: key caps and what they do, turning green once the player has done it
-//  - the current objective in the top right corner
-//  - captions for a voice over the station speakers, typed out a letter at a time
+//  - a control prompt along the bottom: outlined key caps and what they do, with an optional line of detail under it.
+//    It slides up into place, and once the player has done it the accent turns green and it drops away.
+//  - the current objective in the top left corner
+//  - captions for a voice over the station speakers, typed out a letter at a time over a soft dark backdrop
 //  - letterbox bars, a fade to black, and title cards
 // Everything runs on unscaled time, so hit stop can't stall it. One per scene: TutorialHud.Get().
 public class TutorialHud : MonoBehaviour
@@ -18,14 +19,20 @@ public class TutorialHud : MonoBehaviour
     const float LetterboxHeight = 130f;
     const float LettersPerSecond = 40f;
     const float PromptFadeTime = 0.25f;
-    const float DoneHoldTime = 0.9f;
+    const float PromptY = 72f;              // the prompt's resting height off the bottom of the screen
+    const float PromptSlide = 14f;          // how far it slides in and out
+    const float DoneHoldTime = 0.8f;
+    const float Margin = 56f;
 
-    static readonly Color PanelColor = new Color(0.02f, 0.03f, 0.04f, 0.78f);
-    static readonly Color KeyColor = new Color(0.88f, 0.9f, 0.93f);
-    static readonly Color KeyTextColor = new Color(0.07f, 0.08f, 0.09f);
-    static readonly Color DoneColor = new Color(0.45f, 1f, 0.55f);
-    static readonly Color DimTextColor = new Color(0.7f, 0.74f, 0.8f);
-    static readonly Color SpeakerColor = new Color(1f, 0.32f, 0.26f);
+    static readonly Color PanelColor = new Color(0.03f, 0.035f, 0.045f, 0.62f);
+    static readonly Color AccentColor = new Color(1f, 0.66f, 0.3f);
+    static readonly Color KeyEdgeColor = new Color(0.9f, 0.9f, 0.88f, 0.9f);
+    static readonly Color KeyFillColor = new Color(0.08f, 0.085f, 0.1f, 0.9f);
+    static readonly Color TextColor = new Color(0.96f, 0.95f, 0.92f);
+    static readonly Color DimTextColor = new Color(0.72f, 0.71f, 0.68f);
+    static readonly Color DoneColor = new Color(0.5f, 0.95f, 0.6f);
+    static readonly Color SpeakerColor = new Color(1f, 0.34f, 0.28f);
+    static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.55f);
 
     static TutorialHud instance;
 
@@ -38,9 +45,13 @@ public class TutorialHud : MonoBehaviour
 
     private bool built;
     private CanvasGroup promptGroup;
-    private RectTransform promptRow;
-    private readonly List<Graphic> promptKeys = new List<Graphic>();
+    private RectTransform prompt;
+    private Image promptAccent;
+    private RectTransform promptKeys;
     private TextMeshProUGUI promptAction;
+    private TextMeshProUGUI promptHint;
+    private readonly List<Graphic> keyEdges = new List<Graphic>();
+    private readonly List<TextMeshProUGUI> keyLabels = new List<TextMeshProUGUI>();
     private Coroutine promptRoutine;
 
     private CanvasGroup objectiveGroup;
@@ -53,6 +64,7 @@ public class TutorialHud : MonoBehaviour
 
     private RectTransform letterboxTop;
     private RectTransform letterboxBottom;
+    private readonly List<RawImage> barEdges = new List<RawImage>();
     private Image fade;
     private TextMeshProUGUI titleText;
 
@@ -80,39 +92,36 @@ public class TutorialHud : MonoBehaviour
     // For example ShowPrompt("Move", "W", "A", "S", "D"). Replaces whatever prompt is up.
     public void ShowPrompt(string action, params string[] keys)
     {
+        ShowPromptWithHint(action, null, keys);
+    }
+
+    // The same, with a smaller line of detail under the action, like ("Swing", "Hold to charge a heavy swing", "LEFT CLICK").
+    public void ShowPromptWithHint(string action, string hint, params string[] keys)
+    {
         StopPromptRoutine();
 
-        var oldChildren = new List<Transform>();
-        foreach (Transform child in promptRow) oldChildren.Add(child);
-        foreach (Transform child in oldChildren)
+        var oldKeys = new List<Transform>();
+        foreach (Transform child in promptKeys) oldKeys.Add(child);
+        foreach (Transform child in oldKeys)
         {
             child.SetParent(null);
             Destroy(child.gameObject);
         }
+        keyEdges.Clear();
+        keyLabels.Clear();
+        foreach (string key in keys) AddKey(key);
+        promptKeys.gameObject.SetActive(keys.Length > 0);
 
-        promptKeys.Clear();
-        foreach (string key in keys)
-        {
-            RectTransform cap = NewRect("Key", promptRow);
-            Image capBack = cap.gameObject.AddComponent<Image>();
-            capBack.color = KeyColor;
-            capBack.raycastTarget = false;
-            HorizontalLayoutGroup capLayout = Row(cap.gameObject, new RectOffset(14, 14, 4, 4), 0f);
-            capLayout.childAlignment = TextAnchor.MiddleCenter;
-            var capSize = cap.gameObject.AddComponent<LayoutElement>();
-            capSize.minWidth = 50f;
-            capSize.minHeight = 50f;
-            Label("Text", cap, key, 26f, KeyTextColor, TextAlignmentOptions.Center);
-            promptKeys.Add(capBack);
-        }
-        promptAction = Label("Action", promptRow, action, 32f, Color.white, TextAlignmentOptions.Left);
+        promptAction.text = action.ToUpperInvariant();
+        promptHint.text = hint ?? "";
+        promptHint.gameObject.SetActive(!string.IsNullOrEmpty(hint));
+        SetPromptColor(AccentColor, KeyEdgeColor, TextColor);
 
         PromptShowing = true;
-        promptRow.localScale = Vector3.one;
-        promptRoutine = StartCoroutine(FadeGroup(promptGroup, 1f, PromptFadeTime));
+        promptRoutine = StartCoroutine(SlidePrompt(1f, PromptY - PromptSlide, PromptY));
     }
 
-    // Ticks the prompt off: it turns green, pops, and fades away.
+    // Ticks the prompt off: it turns green, pops, and drops away.
     public void CompletePrompt()
     {
         if (!PromptShowing) return;
@@ -127,27 +136,50 @@ public class TutorialHud : MonoBehaviour
         if (!PromptShowing && !PromptCompleting) return;
         StopPromptRoutine();
         PromptShowing = false;
-        promptRoutine = StartCoroutine(FadeGroup(promptGroup, 0f, PromptFadeTime));
+        promptRoutine = StartCoroutine(SlidePrompt(0f, prompt.anchoredPosition.y, PromptY - PromptSlide));
     }
 
     IEnumerator CompleteRoutine()
     {
-        if (promptAction != null) promptAction.color = DoneColor;
-        foreach (Graphic key in promptKeys)
-            if (key != null) key.color = DoneColor;
+        SetPromptColor(DoneColor, DoneColor, DoneColor);
 
         const float popTime = 0.15f;
         for (float t = 0f; t < popTime; t += Time.unscaledDeltaTime)
         {
-            promptRow.localScale = Vector3.one * (1f + 0.08f * Mathf.Sin(t / popTime * Mathf.PI));
+            prompt.localScale = Vector3.one * (1f + 0.05f * Mathf.Sin(t / popTime * Mathf.PI));
             yield return null;
         }
-        promptRow.localScale = Vector3.one;
+        prompt.localScale = Vector3.one;
 
         yield return WaitUnscaled(DoneHoldTime);
-        yield return FadeGroup(promptGroup, 0f, PromptFadeTime);
+        yield return SlidePrompt(0f, PromptY, PromptY - PromptSlide);
         PromptCompleting = false;
         promptRoutine = null;
+    }
+
+    IEnumerator SlidePrompt(float alpha, float fromY, float toY)
+    {
+        prompt.localScale = Vector3.one;
+        float startAlpha = promptGroup.alpha;
+        for (float t = 0f; t < PromptFadeTime; t += Time.unscaledDeltaTime)
+        {
+            float progress = Mathf.SmoothStep(0f, 1f, t / PromptFadeTime);
+            promptGroup.alpha = Mathf.Lerp(startAlpha, alpha, progress);
+            prompt.anchoredPosition = new Vector2(0f, Mathf.Lerp(fromY, toY, progress));
+            yield return null;
+        }
+        promptGroup.alpha = alpha;
+        prompt.anchoredPosition = new Vector2(0f, toY);
+    }
+
+    void SetPromptColor(Color accent, Color keyEdge, Color text)
+    {
+        promptAccent.color = accent;
+        foreach (Graphic edge in keyEdges)
+            if (edge != null) edge.color = keyEdge;
+        foreach (TextMeshProUGUI label in keyLabels)
+            if (label != null) label.color = text;
+        promptAction.color = text;
     }
 
     void StopPromptRoutine()
@@ -155,6 +187,33 @@ public class TutorialHud : MonoBehaviour
         if (promptRoutine != null) StopCoroutine(promptRoutine);
         promptRoutine = null;
         PromptCompleting = false;
+    }
+
+    // An outlined key cap: a light edge around a dark face, as wide as its label needs.
+    void AddKey(string key)
+    {
+        RectTransform edge = NewRect("Key", promptKeys);
+        Image edgeImage = edge.gameObject.AddComponent<Image>();
+        edgeImage.color = KeyEdgeColor;
+        edgeImage.raycastTarget = false;
+        HorizontalLayoutGroup edgeLayout = Row(edge.gameObject, new RectOffset(2, 2, 2, 2), 0f);
+        edgeLayout.childForceExpandWidth = edgeLayout.childForceExpandHeight = true;
+        var capSize = edge.gameObject.AddComponent<LayoutElement>();
+        capSize.minWidth = 42f;
+        capSize.minHeight = 42f;
+
+        RectTransform face = NewRect("Face", edge);
+        Image faceImage = face.gameObject.AddComponent<Image>();
+        faceImage.color = KeyFillColor;
+        faceImage.raycastTarget = false;
+        Row(face.gameObject, new RectOffset(11, 11, 4, 4), 0f).childAlignment = TextAnchor.MiddleCenter;
+
+        TextMeshProUGUI label = Label("Text", face, key, key.Length > 1 ? 16f : 21f, TextColor, TextAlignmentOptions.Center);
+        label.fontStyle = FontStyles.Bold;
+        label.characterSpacing = key.Length > 1 ? 4f : 0f;
+
+        keyEdges.Add(edgeImage);
+        keyLabels.Add(label);
     }
 
     // --- Objective ---
@@ -179,10 +238,10 @@ public class TutorialHud : MonoBehaviour
     // Types the line out under the speaker's name, holds it, then fades it out.
     public IEnumerator Say(string speaker, string line, float holdSeconds = 2.5f)
     {
-        captionSpeaker.text = speaker;
+        captionSpeaker.text = speaker.ToUpperInvariant();
         captionLine.text = line;
         captionLine.maxVisibleCharacters = 0;
-        captionGroup.alpha = 1f;
+        if (captionGroup.alpha < 1f) yield return FadeGroup(captionGroup, 1f, 0.2f);
 
         for (float shown = 0f; shown < line.Length; shown += LettersPerSecond * Time.unscaledDeltaTime)
         {
@@ -233,8 +292,8 @@ public class TutorialHud : MonoBehaviour
 
         foreach (string line in lines)
         {
-            titleText.text = line;
-            yield return FadeText(titleText, 1f, 0.6f);
+            titleText.text = line.ToUpperInvariant();
+            yield return FadeText(titleText, 1f, 0.7f);
             yield return WaitUnscaled(holdSeconds);
             yield return FadeText(titleText, 0f, 0.6f);
         }
@@ -244,6 +303,11 @@ public class TutorialHud : MonoBehaviour
     {
         letterboxTop.sizeDelta = new Vector2(0f, height);
         letterboxBottom.sizeDelta = new Vector2(0f, height);
+        foreach (RawImage edge in barEdges)
+        {
+            edge.enabled = height > 0.5f;
+            edge.color = new Color(0f, 0f, 0f, Mathf.Clamp01(height / 60f));
+        }
     }
 
     // --- Building ---
@@ -261,48 +325,9 @@ public class TutorialHud : MonoBehaviour
         scaler.referenceResolution = ReferenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
 
-        // Objective, top right, clear of the health readout in the top left.
-        RectTransform objective = NewRect("Objective", transform);
-        objective.anchorMin = objective.anchorMax = objective.pivot = new Vector2(1f, 1f);
-        objective.anchoredPosition = new Vector2(-48f, -40f);
-        objective.sizeDelta = new Vector2(700f, 90f);
-        objectiveGroup = objective.gameObject.AddComponent<CanvasGroup>();
-        objectiveGroup.alpha = 0f;
-        TextMeshProUGUI objectiveLabel = Label("Label", objective, "OBJECTIVE", 20f, DimTextColor, TextAlignmentOptions.TopRight);
-        objectiveLabel.characterSpacing = 8f;
-        Stretch(objectiveLabel.rectTransform, 0f, 0.6f, 1f, 1f);
-        objectiveText = Label("Text", objective, "", 30f, Color.white, TextAlignmentOptions.TopRight);
-        Stretch(objectiveText.rectTransform, 0f, 0f, 1f, 0.62f);
-
-        // Control prompt, bottom middle, sized to fit whatever is in it.
-        promptRow = NewRect("Prompt", transform);
-        promptRow.anchorMin = promptRow.anchorMax = new Vector2(0.5f, 0f);
-        promptRow.pivot = new Vector2(0.5f, 0f);
-        promptRow.anchoredPosition = new Vector2(0f, 90f);
-        Image promptBack = promptRow.gameObject.AddComponent<Image>();
-        promptBack.color = PanelColor;
-        promptBack.raycastTarget = false;
-        Row(promptRow.gameObject, new RectOffset(26, 30, 14, 14), 12f).childAlignment = TextAnchor.MiddleCenter;
-        var fit = promptRow.gameObject.AddComponent<ContentSizeFitter>();
-        fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        promptGroup = promptRow.gameObject.AddComponent<CanvasGroup>();
-        promptGroup.alpha = 0f;
-
-        // Captions, above the prompt and the letterbox.
-        RectTransform caption = NewRect("Caption", transform);
-        caption.anchorMin = caption.anchorMax = new Vector2(0.5f, 0f);
-        caption.pivot = new Vector2(0.5f, 0f);
-        caption.anchoredPosition = new Vector2(0f, 220f);
-        caption.sizeDelta = new Vector2(1400f, 130f);
-        captionGroup = caption.gameObject.AddComponent<CanvasGroup>();
-        captionGroup.alpha = 0f;
-        captionSpeaker = Label("Speaker", caption, "", 24f, SpeakerColor, TextAlignmentOptions.Bottom);
-        captionSpeaker.characterSpacing = 10f;
-        Stretch(captionSpeaker.rectTransform, 0f, 0.62f, 1f, 1f);
-        captionLine = Label("Line", caption, "", 36f, Color.white, TextAlignmentOptions.Top);
-        captionLine.textWrappingMode = TextWrappingModes.Normal;
-        Stretch(captionLine.rectTransform, 0f, 0f, 1f, 0.6f);
+        BuildObjective();
+        BuildPrompt();
+        BuildCaption();
 
         letterboxTop = Bar("Letterbox Top", 1f);
         letterboxBottom = Bar("Letterbox Bottom", 0f);
@@ -311,10 +336,105 @@ public class TutorialHud : MonoBehaviour
         fade = Stretch(NewRect("Fade", transform), 0f, 0f, 1f, 1f).gameObject.AddComponent<Image>();
         fade.raycastTarget = false;
         SetFade(0f);
-        titleText = Label("Title", transform, "", 46f, Color.white, TextAlignmentOptions.Center);
-        titleText.characterSpacing = 6f;
+        titleText = Label("Title", transform, "", 34f, TextColor, TextAlignmentOptions.Center);
+        titleText.characterSpacing = 14f;
         titleText.alpha = 0f;
         Stretch(titleText.rectTransform, 0.1f, 0f, 0.9f, 1f);
+    }
+
+    // Top left, the corner the health readout would use; the tutorial hides that, since the player can't die in it.
+    // A short amber rule, a small label, and the objective itself.
+    void BuildObjective()
+    {
+        RectTransform objective = NewRect("Objective", transform);
+        objective.anchorMin = objective.anchorMax = objective.pivot = new Vector2(0f, 1f);
+        objective.anchoredPosition = new Vector2(Margin, -Margin * 0.8f);
+        objective.sizeDelta = new Vector2(760f, 70f);
+        objectiveGroup = objective.gameObject.AddComponent<CanvasGroup>();
+        objectiveGroup.alpha = 0f;
+
+        RectTransform rule = NewRect("Rule", objective);
+        rule.anchorMin = rule.anchorMax = rule.pivot = new Vector2(0f, 1f);
+        rule.anchoredPosition = Vector2.zero;
+        rule.sizeDelta = new Vector2(3f, 62f);
+        Image ruleImage = rule.gameObject.AddComponent<Image>();
+        ruleImage.color = AccentColor;
+        ruleImage.raycastTarget = false;
+
+        TextMeshProUGUI label = Label("Label", objective, "OBJECTIVE", 15f, DimTextColor, TextAlignmentOptions.TopLeft);
+        label.characterSpacing = 12f;
+        Stretch(label.rectTransform, 0f, 0.62f, 1f, 1f).offsetMin = new Vector2(18f, 0f);
+        objectiveText = Label("Text", objective, "", 26f, TextColor, TextAlignmentOptions.TopLeft);
+        objectiveText.characterSpacing = 1f;
+        Stretch(objectiveText.rectTransform, 0f, 0f, 1f, 0.62f).offsetMin = new Vector2(18f, 0f);
+    }
+
+    // Bottom middle, sized to fit whatever is in it: [accent] [keys] [ACTION / hint].
+    void BuildPrompt()
+    {
+        prompt = NewRect("Prompt", transform);
+        prompt.anchorMin = prompt.anchorMax = new Vector2(0.5f, 0f);
+        prompt.pivot = new Vector2(0.5f, 0f);
+        prompt.anchoredPosition = new Vector2(0f, PromptY);
+        Image back = prompt.gameObject.AddComponent<Image>();
+        back.color = PanelColor;
+        back.raycastTarget = false;
+        HorizontalLayoutGroup row = Row(prompt.gameObject, new RectOffset(0, 28, 0, 0), 20f);
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childForceExpandHeight = true;      // so the accent runs the full height, with or without a hint
+        var fit = prompt.gameObject.AddComponent<ContentSizeFitter>();
+        fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        promptGroup = prompt.gameObject.AddComponent<CanvasGroup>();
+        promptGroup.alpha = 0f;
+
+        // A strip down the left edge, the full height of the prompt.
+        RectTransform accent = NewRect("Accent", prompt);
+        promptAccent = accent.gameObject.AddComponent<Image>();
+        promptAccent.raycastTarget = false;
+        var accentSize = accent.gameObject.AddComponent<LayoutElement>();
+        accentSize.minWidth = accentSize.preferredWidth = 4f;
+        accentSize.minHeight = 66f;
+
+        promptKeys = NewRect("Keys", prompt);
+        Row(promptKeys.gameObject, new RectOffset(0, 0, 12, 12), 6f).childAlignment = TextAnchor.MiddleCenter;
+
+        RectTransform words = NewRect("Words", prompt);
+        var column = words.gameObject.AddComponent<VerticalLayoutGroup>();
+        column.padding = new RectOffset(0, 0, 12, 12);
+        column.spacing = 2f;
+        column.childAlignment = TextAnchor.MiddleLeft;
+        column.childControlWidth = column.childControlHeight = true;
+        column.childForceExpandWidth = column.childForceExpandHeight = false;
+
+        promptAction = Label("Action", words, "", 24f, TextColor, TextAlignmentOptions.Left);
+        promptAction.characterSpacing = 6f;
+        promptHint = Label("Hint", words, "", 18f, DimTextColor, TextAlignmentOptions.Left);
+        promptHint.characterSpacing = 1f;
+    }
+
+    // Above the prompt and the letterbox, over a soft dark pool so it reads against the sunlight.
+    void BuildCaption()
+    {
+        RectTransform caption = NewRect("Caption", transform);
+        caption.anchorMin = caption.anchorMax = new Vector2(0.5f, 0f);
+        caption.pivot = new Vector2(0.5f, 0f);
+        caption.anchoredPosition = new Vector2(0f, 200f);
+        caption.sizeDelta = new Vector2(1300f, 120f);
+        captionGroup = caption.gameObject.AddComponent<CanvasGroup>();
+        captionGroup.alpha = 0f;
+
+        RawImage backdrop = Stretch(NewRect("Backdrop", caption), -0.15f, -0.5f, 1.15f, 1.4f).gameObject.AddComponent<RawImage>();
+        backdrop.texture = CombatSprites.SoftCircleTexture;
+        backdrop.color = BackdropColor;
+        backdrop.raycastTarget = false;
+
+        captionSpeaker = Label("Speaker", caption, "", 17f, SpeakerColor, TextAlignmentOptions.Bottom);
+        captionSpeaker.characterSpacing = 16f;
+        Stretch(captionSpeaker.rectTransform, 0f, 0.66f, 1f, 1f);
+        captionLine = Label("Line", caption, "", 32f, TextColor, TextAlignmentOptions.Top);
+        captionLine.textWrappingMode = TextWrappingModes.Normal;
+        Stretch(captionLine.rectTransform, 0f, 0f, 1f, 0.6f);
     }
 
     RectTransform Bar(string barName, float edge)
@@ -327,6 +447,25 @@ public class TutorialHud : MonoBehaviour
         Image image = bar.gameObject.AddComponent<Image>();
         image.color = Color.black;
         image.raycastTarget = false;
+
+        // A soft fade off the bar's inner edge, so it doesn't cut the picture off hard.
+        RectTransform edgeRect = NewRect("Soft Edge", bar);
+        edgeRect.anchorMin = new Vector2(0f, 1f - edge);
+        edgeRect.anchorMax = new Vector2(1f, 1f - edge);
+        edgeRect.pivot = new Vector2(0.5f, edge);
+        edgeRect.sizeDelta = new Vector2(0f, 140f);
+        RawImage fadeEdge = edgeRect.gameObject.AddComponent<RawImage>();
+        // Solid where it meets the bar, clear at the far end.
+        Texture2D gradient = PixelArt.MakeTexture(1, 32, (x, y) =>
+        {
+            float along = edge > 0.5f ? y / 31f : 1f - y / 31f;
+            return new Color32(255, 255, 255, (byte)(255f * along * along));
+        });
+        gradient.filterMode = FilterMode.Bilinear;
+        fadeEdge.texture = gradient;
+        fadeEdge.raycastTarget = false;
+        fadeEdge.enabled = false;
+        barEdges.Add(fadeEdge);
         return bar;
     }
 

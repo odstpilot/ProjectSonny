@@ -368,7 +368,7 @@ public static class FloorOneBuilder
         TutorialLevelBuilder.PlaceLockers(map, lockerPrefab, TutorialLevelBuilder.Group("Lockers", level));
         PlaceMarker(map, 'S', "Sonny Install Point", level);
 
-        PipeWalls(map, roomOf, grid.transform.Find("Walls").GetComponent<Tilemap>());
+        PipeWalls(map, roomOf, grid.transform.Find(TutorialLevelBuilder.WallsMap).GetComponent<Tilemap>());
         int pieces = Decorate(map, rooms, grid, lights);
 
         EditorSceneManager.MarkSceneDirty(scene);

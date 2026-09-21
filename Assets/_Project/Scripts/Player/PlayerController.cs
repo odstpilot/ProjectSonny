@@ -87,6 +87,9 @@ public class PlayerController : MonoBehaviour
     private bool hasFacingOverride;
     private Vector2 facingOverride;
     private int frozenDirection;
+    private bool scripted;
+    private Vector2 scriptedMove;
+    private bool scriptedSprint;
     private HashSet<int> animatorParameters;
     // States in the old PlayerCont controller, indexed by its Direction parameter.
     private static readonly int[] directionStates =
@@ -100,33 +103,49 @@ public class PlayerController : MonoBehaviour
         health = GetComponent<Health>();
         stepTimer = baseStepRate;
         CaptureStandingPose();
+        DepthSort.Group(gameObject);
+    }
+
+    // For cutscenes: moves the player as if these keys were held, walking or sprinting, until ClearScriptedInput. The
+    // player's own keys are ignored meanwhile, and a scripted sprint doesn't use up stamina.
+    public void SetScriptedInput(Vector2 move, bool sprint)
+    {
+        scripted = true;
+        scriptedMove = move;
+        scriptedSprint = sprint;
+    }
+
+    public void ClearScriptedInput()
+    {
+        scripted = false;
     }
 
     void Update()
     {
-        movement.x = Input.GetAxisRaw("Horizontal");
-        movement.y = Input.GetAxisRaw("Vertical");
+        movement = scripted ? scriptedMove : new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         movement = movement.normalized;
         if (combatSpeedMultiplier <= 0f)
             movement = Vector2.zero;
 
-        UpdateCrouch();
+        if (scripted) IsCrouching = false;
+        else UpdateCrouch();
 
         bool isMoving = movement != Vector2.zero;
-        bool isSprinting = !IsCrouching && Input.GetKey(KeyCode.LeftShift) && stamina > 0 && isMoving && combatSpeedMultiplier >= 1f;
+        bool sprintHeld = scripted ? scriptedSprint : Input.GetKey(KeyCode.LeftShift);
+        bool isSprinting = !IsCrouching && sprintHeld && stamina > 0 && isMoving && combatSpeedMultiplier >= 1f;
         IsSprinting = isSprinting;
         UpdatePose();
 
         if (isSprinting)
         {
             currentSpeed = moveSpeed * sprintMultiplier;
-            stamina -= staminaDrain * Time.deltaTime;
+            if (!scripted) stamina -= staminaDrain * Time.deltaTime;
             stamina = Mathf.Clamp(stamina, 0, maxStamina);
         }
         else
         {
             currentSpeed = IsCrouching ? moveSpeed * crouchSpeedMultiplier : moveSpeed;
-            if (!Input.GetKey(KeyCode.LeftShift) || !isMoving)
+            if (!sprintHeld || !isMoving)
             {
                 stamina += staminaRegen * Time.deltaTime;
                 stamina = Mathf.Clamp(stamina, 0, maxStamina);
@@ -147,9 +166,12 @@ public class PlayerController : MonoBehaviour
         HandleFootsteps(isMoving, isSprinting);
     }
 
+    // Moves by velocity rather than MovePosition: easing into a sprint or a crouch nudges the body every frame to keep the
+    // feet planted (ApplyPose), and each nudge would throw away a pending MovePosition, stalling the player for as long as
+    // the pose took to settle. A velocity carries on through those nudges.
     void FixedUpdate()
     {
-        rb.MovePosition(rb.position + movement * currentSpeed * Time.fixedDeltaTime);
+        rb.linearVelocity = movement * currentSpeed;
     }
 
     // Hold C or Ctrl to crouch, or tap to switch it on and off when crouchToggles is set.
@@ -176,6 +198,8 @@ public class PlayerController : MonoBehaviour
         sprintAmount = 0f;
         leanDirection = 0f;
         ApplyPose(Vector2.one, 0f);
+        // Nothing is steering now, so don't let the last step carry the player on.
+        if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 
     // What standing looks like, so a crouch can be measured against it and undone exactly.

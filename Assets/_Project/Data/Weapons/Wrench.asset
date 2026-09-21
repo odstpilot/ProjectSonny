@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   displayName: Wrench
   showHeldSprite: 1
-  sprite: {fileID: 0}
-  spriteScale: 1
+  sprite: {fileID: 21300000, guid: 52dbe6b5d3c241a8af0865175de2584c, type: 3}
+  spriteScale: 0.9
   placeholderSize: {x: 0.55, y: 0.1}
   placeholderColor: {r: 0.72, g: 0.74, b: 0.8, a: 1}
   damage: 3
@@ -25,27 +25,31 @@ MonoBehaviour:
   gripInset: 0.1
   facingUp:
     rest: 70
-    raised: -110
-    end: 80
-    arcWidth: 0.3
+    raised: 175
+    end: -5
+    arcWidth: 1
+    arcHeight: 0.55
   facingDown:
     rest: 120
-    raised: 100
-    end: 260
-    arcWidth: 0.3
+    raised: 5
+    end: -185
+    arcWidth: 1
+    arcHeight: 0.55
   facingLeft:
     rest: 120
-    raised: 70
-    end: 230
+    raised: 65
+    end: 265
     arcWidth: 1
+    arcHeight: 1
   facingRight:
     rest: 60
-    raised: 110
-    end: -50
+    raised: 115
+    end: -85
     arcWidth: 1
-  range: 1.1
-  arcAngle: 110
-  swingDuration: 0.14
+    arcHeight: 1
+  range: 1.25
+  arcAngle: 150
+  swingDuration: 0.16
   canCharge: 1
   tapThreshold: 0.15
   chargeTime: 0.8
@@ -53,7 +57,7 @@ MonoBehaviour:
   windupAngle: 40
   chargedDamageMultiplier: 2.5
   chargedRangeMultiplier: 1.35
-  chargedArcAngle: 220
+  chargedArcAngle: 260
   chargedKnockback: 0.8
-  chargedSwingDuration: 0.22
+  chargedSwingDuration: 0.24
   chargedLockDuration: 0.45

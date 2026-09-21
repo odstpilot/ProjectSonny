@@ -21,6 +21,8 @@ public class RangedCombat : MonoBehaviour
     public bool IsDrawn => charging || Time.time < drawnUntil;
     // How full a blaster's charge is, 0 to 1. For the HUD.
     public float ChargePercent { get; private set; }
+    // Each time a shot goes off.
+    public event System.Action Fired;
 
     private PlayerCombat combat;
     private Camera cam;
@@ -120,6 +122,7 @@ public class RangedCombat : MonoBehaviour
 
         combat.Controller.SetAnimTrigger(PlayerAnimParams.Shoot);
         combat.Visual.PlayRecoil(Weapon.recoilDistance, drawnUntil - Time.time);
+        Fired?.Invoke();
 
         Vector2 attackOrigin = combat.AttackOrigin;
         float launchDistance = combat.Visual.LaunchDistance;

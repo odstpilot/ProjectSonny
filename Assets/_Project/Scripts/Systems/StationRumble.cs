@@ -35,6 +35,9 @@ public class StationRumble : MonoBehaviour
     public float debrisMaxDistance = 5f;
     [Tooltip("Chance that one piece of each rumble comes down right where the player is standing.")]
     [Range(0f, 1f)] public float aimAtPlayerChance = 0.35f;
+    [Tooltip("While the player is on the move, the chance a piece comes down somewhere ahead of them, where they'll see it, " +
+             "rather than anywhere around them.")]
+    [Range(0f, 1f)] public float aheadChance = 0f;
     public float debrisDamage = 1f;
     [Tooltip("Debris only lands on this tilemap's tiles, so it never falls into walls or empty space. Leave empty to allow anywhere that isn't solid.")]
     public Tilemap floor;
@@ -65,6 +68,7 @@ public class StationRumble : MonoBehaviour
 
     private Transform player;
     private Collider2D playerCollider;
+    private Rigidbody2D playerBody;
     private AudioSource sfx;
     private ParticleSystem dust;
     private Volume screenEffects;
@@ -117,6 +121,7 @@ public class StationRumble : MonoBehaviour
         {
             player = found.transform;
             playerCollider = found.GetComponent<Collider2D>();
+            playerBody = found.GetComponent<Rigidbody2D>();
         }
         ScheduleNext();
     }
@@ -263,11 +268,18 @@ public class StationRumble : MonoBehaviour
             feet = new Vector2(bounds.center.x, bounds.min.y + 0.4f);
         }
 
+        // Heading somewhere: most pieces come down in front, within a cone either side of the way they're going.
+        Vector2 velocity = playerBody != null ? playerBody.linearVelocity : Vector2.zero;
+        bool ahead = velocity.sqrMagnitude > 0.25f && Random.value < aheadChance;
+
         for (int attempt = 0; attempt < 12; attempt++)
         {
+            Vector2 direction = ahead
+                ? (Vector2)(Quaternion.Euler(0f, 0f, Random.Range(-55f, 55f)) * velocity.normalized)
+                : Random.insideUnitCircle.normalized;
             point = aimAtPlayer && attempt < 3
                 ? feet + Random.insideUnitCircle * 0.3f
-                : feet + Random.insideUnitCircle.normalized * Random.Range(debrisMinDistance, debrisMaxDistance);
+                : feet + direction * Random.Range(debrisMinDistance, debrisMaxDistance);
             if (IsClearFloor(point)) return true;
         }
         return false;

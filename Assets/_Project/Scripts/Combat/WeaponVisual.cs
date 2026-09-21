@@ -3,8 +3,9 @@ using UnityEngine;
 
 // Code-driven weapon animation, so attacks read clearly with or without weapon art.
 // Melee: the weapon sits in the player's hand (HandPositions), rests at an angle set per facing direction,
-//        and chops from its Raised angle to its End angle. It never flips. Facing up or down, the chop goes
-//        toward or away from the camera instead of sweeping sideways (see SwingAngles.arcWidth).
+//        and swings from its Raised angle to its End angle. It never flips. Facing up or down, the swing sweeps side
+//        to side along a flattened arc, so it reads as passing across the floor (see SwingAngles.arcHeight).
+//        While a swing charges, a ring on the floor around the player's feet fills up, and flashes once it's full.
 // Ranged: hidden until you shoot; then it points at the shot, kicks back, and flashes. A blaster also stays out while
 //         charging, with a ball of energy (EnergyOrb) growing at its muzzle.
 // PlayerCombat creates this at runtime as a child of the player named WeaponPivot.
@@ -20,6 +21,13 @@ public class WeaponVisual : MonoBehaviour
     const float OrbForward = 0.3f;      // how far past the muzzle a blaster's ball sits, as a fraction of its size
     static readonly Color ChargedColor = new Color(1f, 0.9f, 0.4f);
     static readonly Color MuzzleFlashColor = new Color(1f, 0.95f, 0.7f);
+    const int RingPoints = 40;
+    const float RingRadius = 0.42f;
+    const float RingSquash = 0.45f;     // flattened so it lies on the floor
+    const float RingFadeSpeed = 8f;
+    static readonly Color RingTrack = new Color(1f, 0.8f, 0.5f, 0.18f);
+    static readonly Color RingFilling = new Color(1f, 0.62f, 0.25f, 0.85f);
+    static readonly Color RingFull = new Color(1f, 0.95f, 0.7f, 1f);
 
     public SpriteRenderer WeaponRenderer { get; private set; }
     public float MuzzleDistance => ranged != null ? ranged.holdDistance + ranged.Length : 0f;
@@ -54,6 +62,11 @@ public class WeaponVisual : MonoBehaviour
     private float tilt;              // ranged: recoil rotation
     private float gunVisibleUntil;
     private Coroutine motion;
+    private LineRenderer ringTrack;
+    private LineRenderer ringFill;
+    private float ringAlpha;
+    private float ringPercent;
+    private bool ringWasFull;
 
     private bool IsCharging => lastChargeFrame >= Time.frameCount - 1;
     private bool IsRangedCharging => lastRangedChargeFrame >= Time.frameCount - 1;
@@ -99,6 +112,9 @@ public class WeaponVisual : MonoBehaviour
         }
         visual.trail.sharedMaterial = effectMaterial;
         visual.muzzleFlash.sharedMaterial = effectMaterial;
+
+        visual.ringTrack = visual.CreateRing("ChargeRingTrack", effectMaterial, 0.04f);
+        visual.ringFill = visual.CreateRing("ChargeRing", effectMaterial, 0.07f);
 
         return visual;
     }
@@ -176,6 +192,7 @@ public class WeaponVisual : MonoBehaviour
         poseAngle = Mathf.Lerp(angles.rest, windup, EaseOutCubic(percent));
 
         bool full = percent >= 1f;
+        ringPercent = percent;
         scaleMultiplier = 1f + 0.15f * percent;
         kick = Random.insideUnitCircle * (full ? 0.03f : 0.015f * percent);
         WeaponRenderer.color = full && Mathf.Repeat(Time.time * 10f, 1f) > 0.5f ? ChargedColor : baseColor;
@@ -235,6 +252,64 @@ public class WeaponVisual : MonoBehaviour
     void LateUpdate()
     {
         ApplyTransforms();
+        UpdateRing();
+    }
+
+    LineRenderer CreateRing(string ringName, Material material, float width)
+    {
+        LineRenderer ring = CreateChild<LineRenderer>(ringName, transform);
+        ring.useWorldSpace = true;
+        ring.loop = false;
+        ring.widthMultiplier = width;
+        ring.numCapVertices = 2;
+        ring.sharedMaterial = material;
+        if (ownerRenderer != null) ring.sortingLayerID = ownerRenderer.sortingLayerID;
+        ring.sortingOrder = (ownerRenderer != null ? ownerRenderer.sortingOrder : 0) - 2;    // on the floor, under the player
+        ring.enabled = false;
+        return ring;
+    }
+
+    // Fills clockwise from the top while the swing charges; once full it flashes and pulses until let go.
+    void UpdateRing()
+    {
+        bool charging = melee != null && IsCharging;
+        ringAlpha = Mathf.MoveTowards(ringAlpha, charging ? 1f : 0f, RingFadeSpeed * Time.deltaTime);
+        bool visible = ringAlpha > 0.001f;
+        ringTrack.enabled = ringFill.enabled = visible;
+        if (!charging) ringWasFull = false;
+        if (!visible) return;
+
+        Vector2 feet = owner.position;
+        if (ownerRenderer != null) feet = new Vector2(ownerRenderer.bounds.center.x, ownerRenderer.bounds.min.y + 0.06f);
+
+        bool full = ringPercent >= 1f;
+        if (full && charging && !ringWasFull)
+        {
+            ringWasFull = true;
+            HitEffects.Ring(feet, RingFull, 1.1f);
+        }
+
+        DrawArc(ringTrack, feet, 1f);
+        DrawArc(ringFill, feet, Mathf.Max(0.02f, ringPercent));
+
+        Color fill = full ? Color.Lerp(RingFilling, RingFull, 0.5f + 0.5f * Mathf.Sin(Time.time * 20f)) : RingFilling;
+        fill.a *= ringAlpha;
+        ringFill.startColor = ringFill.endColor = fill;
+        ringFill.widthMultiplier = full ? 0.09f : 0.07f;
+        Color track = RingTrack;
+        track.a *= ringAlpha;
+        ringTrack.startColor = ringTrack.endColor = track;
+    }
+
+    static void DrawArc(LineRenderer ring, Vector2 center, float amount)
+    {
+        int count = Mathf.Max(2, Mathf.CeilToInt(RingPoints * amount) + 1);
+        ring.positionCount = count;
+        for (int i = 0; i < count; i++)
+        {
+            float angle = Mathf.PI * 0.5f - Mathf.PI * 2f * amount * i / (count - 1);
+            ring.SetPosition(i, new Vector3(center.x + Mathf.Cos(angle) * RingRadius, center.y + Mathf.Sin(angle) * RingRadius * RingSquash, 0f));
+        }
     }
 
     void ApplyTransforms()
@@ -269,10 +344,11 @@ public class WeaponVisual : MonoBehaviour
             SwingAngles angles = melee.AnglesFor(facing);
             float swingAngle = (swinging || IsCharging ? poseAngle : angles.rest + frameTilt) * Mathf.Deg2Rad;
 
-            // The weapon travels around a circle squashed sideways by arcWidth. At 1 (left/right) that's a plain
-            // rotation. Below 1 (up/down) the weapon shortens as it passes the middle, so the chop reads as coming
-            // toward or going away from the camera instead of sweeping across the player.
-            Vector2 pointing = new Vector2(Mathf.Cos(swingAngle) * angles.arcWidth, Mathf.Sin(swingAngle));
+            // The weapon travels around a circle squashed sideways by arcWidth and top to bottom by arcHeight. At 1 and
+            // 1 (left/right) that's a plain rotation. Below 1, the weapon shortens as it passes the squashed part, as if
+            // turning toward or away from the camera: a flattened arcHeight makes an up or down swing a sweep across
+            // the floor in front of or behind the player.
+            Vector2 pointing = new Vector2(Mathf.Cos(swingAngle) * angles.arcWidth, Mathf.Sin(swingAngle) * angles.arcHeight);
             float reach = pointing.magnitude;
             angle = Mathf.Atan2(pointing.y, pointing.x) * Mathf.Rad2Deg;
             behind = layer == WeaponLayer.Behind

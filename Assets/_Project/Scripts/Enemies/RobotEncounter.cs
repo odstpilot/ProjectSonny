@@ -21,6 +21,14 @@ public class RobotEncounter : MonoBehaviour
     [Range(0f, 1f)] public float wakeVolume = 0.6f;
     public UnityEvent onCleared = new UnityEvent();
 
+    [Header("The Last One")]
+    [Tooltip("How slowly the game runs as the last of the group goes down, to land the end of the fight. 1 turns it off.")]
+    [Range(0.05f, 1f)] public float lastKillSlowMotion = 0.3f;
+    [Tooltip("Real seconds that lasts.")]
+    public float lastKillSeconds = 0.6f;
+    [Tooltip("Screen shake as the last one goes down, 0 to 1.")]
+    [Range(0f, 1f)] public float lastKillShake = 0.7f;
+
     public event System.Action Cleared;
 
     public bool IsActive { get; private set; }
@@ -129,6 +137,9 @@ public class RobotEncounter : MonoBehaviour
         if (Remaining > 0 || IsCleared) return;
 
         IsCleared = true;
+        // The room falls quiet: everything drops into slow motion for a moment as the last one comes apart.
+        if (lastKillSlowMotion < 1f) HitStop.Hold(lastKillSlowMotion, lastKillSeconds);
+        CameraShake.Shake(lastKillShake);
         Cleared?.Invoke();
         onCleared.Invoke();
     }

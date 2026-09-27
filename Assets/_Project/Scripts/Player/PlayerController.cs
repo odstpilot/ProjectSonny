@@ -386,7 +386,9 @@ public class PlayerController : MonoBehaviour
 
         if (health != null) health.Kill(other);
         if (other.TryGetComponent<Warden>(out var warden))
-            warden.Reset();
+        {
+            //warden.Reset();
+        }
     }
 
     void HandleFootsteps(bool isMoving, bool isSprinting)

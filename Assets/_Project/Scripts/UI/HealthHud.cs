@@ -1,34 +1,45 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The player's health in the top left corner: a row of cells, one for each point of health. A lost cell flashes and goes
-// dark, and when only one is left it pulses. Also draws the red hurt vignette across the screen.
+// The player's health in the top left corner: a row of cells, one for each point of health, on a small framed panel
+// (GameUI's) under a VITALS heading. A lost cell flashes and goes dark, and when only one is left it pulses. Also draws
+// the red hurt vignette across the screen.
 // Built from code the first time it's needed; PlayerHealthHandler hooks it up to the player's Health.
 public class HealthHud : MonoBehaviour
 {
     const int SortingOrder = 80;            // under the tutorial's text (90) and the death screen (120)
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
-    const float CellWidth = 34f;
-    const float CellHeight = 16f;
+    const float CellWidth = 30f;
+    const float CellHeight = 18f;
     const float CellGap = 6f;
+    const float Padding = 18f;
+    const float HeadingHeight = 26f;
+    // How far down the screen the panel reaches, from its top; TutorialHud keeps the objective below it.
+    public const float Height = Padding * 2f + HeadingHeight + CellHeight;
     const float LoseTime = 0.45f;
 
     static readonly Color Full = new Color(1f, 0.44f, 0.3f);
     static readonly Color LastCell = new Color(0.55f, 0.16f, 0.1f);
     static readonly Color Empty = new Color(0.2f, 0.09f, 0.07f, 0.8f);
     static readonly Color Flash = new Color(1f, 0.96f, 0.88f);
-    static readonly Color Frame = new Color(0f, 0f, 0f, 0.55f);
+    static readonly Color Frame = new Color(0.02f, 0.02f, 0.03f, 0.9f);
+    static readonly Color Shine = new Color(1f, 1f, 1f, 0.3f);
 
     static HealthHud instance;
 
     private Health tracked;
     private RectTransform row;
+    private RectTransform panel;
     private readonly List<Image> cells = new List<Image>();
     private readonly HashSet<Image> losing = new HashSet<Image>();
     private RawImage vignette;
     private int lit = -1;
+
+    // Whether the cells are up in the corner, for anything else that wants that corner.
+    public static bool CellsShowing => instance != null && instance.row != null && instance.row.gameObject.activeInHierarchy && instance.lit >= 0;
 
     public static HealthHud Get()
     {
@@ -72,7 +83,8 @@ public class HealthHud : MonoBehaviour
     {
         int count = Mathf.Max(1, Mathf.CeilToInt(max));
         while (cells.Count < count) cells.Add(NewCell(cells.Count));
-        for (int i = 0; i < cells.Count; i++) cells[i].gameObject.SetActive(i < count);
+        for (int i = 0; i < cells.Count; i++) cells[i].transform.parent.gameObject.SetActive(i < count);
+        panel.sizeDelta = new Vector2(Padding * 2f + count * CellWidth + (count - 1) * CellGap, Height);
 
         int nowLit = Mathf.Clamp(Mathf.CeilToInt(current), 0, count);
         for (int i = 0; i < count; i++)
@@ -114,7 +126,7 @@ public class HealthHud : MonoBehaviour
         rect.SetParent(row, false);
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
         rect.sizeDelta = new Vector2(CellWidth, CellHeight);
-        rect.anchoredPosition = new Vector2(index * (CellWidth + CellGap), 0f);
+        rect.anchoredPosition = new Vector2(Padding + index * (CellWidth + CellGap), -(Padding + HeadingHeight));
 
         var back = rect.gameObject.AddComponent<Image>();
         back.color = Frame;
@@ -124,11 +136,22 @@ public class HealthHud : MonoBehaviour
         fill.SetParent(rect, false);
         fill.anchorMin = Vector2.zero;
         fill.anchorMax = Vector2.one;
-        fill.offsetMin = new Vector2(2f, 2f);
-        fill.offsetMax = new Vector2(-2f, -2f);
+        fill.offsetMin = new Vector2(3f, 3f);
+        fill.offsetMax = new Vector2(-3f, -3f);
         var image = fill.gameObject.AddComponent<Image>();
         image.color = Full;
         image.raycastTarget = false;
+
+        // A lit strip along the top of the fill, so each cell reads as a little lamp rather than a flat block.
+        var shine = new GameObject("Shine", typeof(RectTransform)).GetComponent<RectTransform>();
+        shine.SetParent(fill, false);
+        shine.anchorMin = new Vector2(0f, 1f);
+        shine.anchorMax = Vector2.one;
+        shine.pivot = new Vector2(0.5f, 1f);
+        shine.sizeDelta = new Vector2(0f, 3f);
+        var shineImage = shine.gameObject.AddComponent<Image>();
+        shineImage.color = Shine;
+        shineImage.raycastTarget = false;
         return image;
     }
 
@@ -160,7 +183,19 @@ public class HealthHud : MonoBehaviour
         row = new GameObject("Health", typeof(RectTransform)).GetComponent<RectTransform>();
         row.SetParent(transform, false);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0f, 1f);
-        row.anchoredPosition = new Vector2(44f, -40f);
-        row.sizeDelta = new Vector2(400f, CellHeight);
+        row.anchoredPosition = new Vector2(44f, -36f);
+        row.sizeDelta = new Vector2(400f, Height);
+
+        Image back = GameUI.Sliced("Panel", row, GameUI.PanelSprite, Color.white);
+        panel = back.rectTransform;
+        panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0f, 1f);
+        panel.anchoredPosition = Vector2.zero;
+        panel.sizeDelta = new Vector2(Padding * 2f + CellWidth, Height);
+
+        TextMeshProUGUI heading = GameUI.Label("Heading", row, "VITALS", 22f, GameUI.Dim, TextAlignmentOptions.TopLeft, GameUI.Heading);
+        heading.characterSpacing = 10f;
+        heading.rectTransform.anchorMin = heading.rectTransform.anchorMax = heading.rectTransform.pivot = new Vector2(0f, 1f);
+        heading.rectTransform.anchoredPosition = new Vector2(Padding + 2f, -Padding + 2f);
+        heading.rectTransform.sizeDelta = new Vector2(300f, HeadingHeight);
     }
 }

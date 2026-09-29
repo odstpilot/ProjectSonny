@@ -4,13 +4,21 @@ using UnityEngine;
 // with the same name and type and it starts receiving values; ones the controller doesn't have are skipped.
 public static class PlayerAnimParams
 {
-    // Float. The way the player faces, always one of (0,1) up, (0,-1) down, (-1,0) left, (1,0) right.
-    // Use these as the X and Y of a 2D Simple Directional blend tree.
+    // Float. The way the player faces, always one of eight directions: (0,1) up, (0,-1) down, (-1,0) left, (1,0) right,
+    // or a diagonal between them, normalized (PlayerController.SnapToEightWay). Use these as the X and Y of a
+    // 2D Simple Directional blend tree.
     public static readonly int FaceX = Animator.StringToHash("FaceX");
     public static readonly int FaceY = Animator.StringToHash("FaceY");
 
+    // Float. -1 or 1: the side the player last faced, left or right. Facing straight up or down keeps the last one.
+    // For animations that only come in left and right, like crouching.
+    public static readonly int FaceSide = Animator.StringToHash("FaceSide");
+
     // Bool. True while walking.
     public static readonly int IsMoving = Animator.StringToHash("IsMoving");
+
+    // Bool. True while sprinting.
+    public static readonly int Sprinting = Animator.StringToHash("Sprinting");
 
     // Int. What's in hand: 0 = nothing, 1 = melee, 2 = ranged (the WeaponType enum).
     public static readonly int WeaponType = Animator.StringToHash("WeaponType");

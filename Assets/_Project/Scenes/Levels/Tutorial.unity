@@ -548,8 +548,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -1188,8 +1187,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -1324,8 +1322,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -1880,8 +1877,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -2016,7 +2012,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.3
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -2159,8 +2155,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -2459,8 +2454,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -2606,8 +2600,7 @@ MonoBehaviour:
   openWhenPlayerWithin: 0
   locked: 1
   shutterSprite: {fileID: 0}
-  moveClip: {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
-  volume: 0.7
+  moveSound: Blast Door
 --- !u!61 &231727955
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2713,8 +2706,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -3682,8 +3674,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -4035,8 +4026,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -4358,8 +4348,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -5218,8 +5207,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -5522,8 +5510,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -5802,8 +5789,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -6621,8 +6607,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -6757,8 +6742,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -7278,8 +7262,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -7593,8 +7576,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -7821,8 +7803,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -8268,8 +8249,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -8851,19 +8831,9 @@ MonoBehaviour:
   globalLight: {fileID: 1559221349}
   emergencyColor: {r: 1, g: 0.45, b: 0.25, a: 1}
   screenDistortion: 0.6
-  rumbleClips:
-  - {fileID: 8300000, guid: 18f318de2a6520342999fafee11f502c, type: 3}
-  - {fileID: 8300000, guid: 25292c842677a944caee7a806fa1a2f0, type: 3}
-  - {fileID: 8300000, guid: 5826fb12efefbee4ea37c21523e1fea6, type: 3}
-  - {fileID: 8300000, guid: 720d610c0cfe16d46b3d6138a83dccdc, type: 3}
-  impactClips:
-  - {fileID: 8300000, guid: 613cca64ea7356e4cba0fbf7845ba2b7, type: 3}
-  - {fileID: 8300000, guid: c3a386305f06d5a4fa2749f016ce4445, type: 3}
-  - {fileID: 8300000, guid: 30f7e40a041f782499d364f7dda11278, type: 3}
-  - {fileID: 8300000, guid: 3a1952a0c62cac34f9d4bcf0207e602a, type: 3}
-  ambientLoop: {fileID: 8300000, guid: 553b93527361a17448921d7d75480e7d, type: 3}
-  ambientVolume: 0.35
-  volume: 0.8
+  rumbleSound: Rumble
+  impactSound: Debris Impact
+  ambientSound: Station Hum
 --- !u!4 &705204311
 Transform:
   m_ObjectHideFlags: 0
@@ -8927,8 +8897,7 @@ MonoBehaviour:
   robots:
   - {fileID: 800778700}
   startDormant: 1
-  wakeClip: {fileID: 8300000, guid: 70d38aab0572cf94d957920fcf38a874, type: 3}
-  wakeVolume: 0.6
+  wakeSound: Robot Wake
   onCleared:
     m_PersistentCalls:
       m_Calls: []
@@ -9416,8 +9385,7 @@ MonoBehaviour:
   - {fileID: 1189433518}
   - {fileID: 675217748}
   startDormant: 1
-  wakeClip: {fileID: 8300000, guid: 70d38aab0572cf94d957920fcf38a874, type: 3}
-  wakeVolume: 0.6
+  wakeSound: Robot Wake
   onCleared:
     m_PersistentCalls:
       m_Calls: []
@@ -9472,8 +9440,7 @@ MonoBehaviour:
   robots:
   - {fileID: 1017221616}
   startDormant: 1
-  wakeClip: {fileID: 8300000, guid: 70d38aab0572cf94d957920fcf38a874, type: 3}
-  wakeVolume: 0.6
+  wakeSound: Robot Wake
   onCleared:
     m_PersistentCalls:
       m_Calls: []
@@ -10148,8 +10115,7 @@ MonoBehaviour:
   openWhenPlayerWithin: 0
   locked: 0
   shutterSprite: {fileID: 0}
-  moveClip: {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
-  volume: 0.7
+  moveSound: Blast Door
 --- !u!1 &769080001
 GameObject:
   m_ObjectHideFlags: 0
@@ -10647,8 +10613,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -10783,8 +10748,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -11224,8 +11188,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -11288,8 +11251,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -11424,8 +11386,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -11501,6 +11462,578 @@ MonoBehaviour:
           rid: -2
         m_Provider2DCache:
           rid: -2
+--- !u!1 &876465683
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 876465685}
+  - component: {fileID: 876465684}
+  m_Layer: 0
+  m_Name: Sound Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &876465684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 876465683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b614b9e9f64df64f97cf2479dbfc367, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
+  sounds:
+  - name: Footsteps
+    category: 2
+    description: The player's footsteps, one clip a step. Quieter and lower while crouching, higher while sprinting.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 42f7a1a162f7889479d326156626742a, type: 3}
+    - {fileID: 8300000, guid: ca0b3743204604c4594a23a4cc9c925c, type: 3}
+    - {fileID: 8300000, guid: 8026b53956844d14a892347cf9405d2a, type: 3}
+    - {fileID: 8300000, guid: 9740ebb4c9a07734cb007b3d8a3648da, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.3
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Low Health Heartbeat
+    category: 2
+    description: Loops, fading in while the player's health is low.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 59733bad045558c4b945a7a40deb47b8, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.7
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Death Hit
+    category: 2
+    description: The hit that kills the player, as they go down in slow motion.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 5826fb12efefbee4ea37c21523e1fea6, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 1
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Revive Static
+    category: 2
+    description: Sonny's death monitor cutting back to the game (only its first 0.6 seconds play).
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: d7db06df32a002c4eba8d01213bb34cb, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 1
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Monitor Beep
+    category: 3
+    description: Heart monitor beep on the death screen, one per spike. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.6
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Flatline
+    category: 3
+    description: Heart monitor flatline on the death screen, a steady tone that loops. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.3
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Blast Door
+    category: 2
+    description: A blast door sliding open or shut. Quieter the further away it is.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.7
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Robot Wake
+    category: 2
+    description: A group of robots powering on.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 70d38aab0572cf94d957920fcf38a874, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.6
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Lamp Break
+    category: 2
+    description: A wall lamp smashing and cutting out. Quieter the further away it is.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.64
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Rumble
+    category: 2
+    description: 'The station shaking: a deep boom at the start of each rumble.'
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 18f318de2a6520342999fafee11f502c, type: 3}
+    - {fileID: 8300000, guid: 25292c842677a944caee7a806fa1a2f0, type: 3}
+    - {fileID: 8300000, guid: 5826fb12efefbee4ea37c21523e1fea6, type: 3}
+    - {fileID: 8300000, guid: 720d610c0cfe16d46b3d6138a83dccdc, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.8
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Debris Impact
+    category: 2
+    description: Debris from the ceiling crashing to the floor. Quieter the further away it lands.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 613cca64ea7356e4cba0fbf7845ba2b7, type: 3}
+    - {fileID: 8300000, guid: c3a386305f06d5a4fa2749f016ce4445, type: 3}
+    - {fileID: 8300000, guid: 30f7e40a041f782499d364f7dda11278, type: 3}
+    - {fileID: 8300000, guid: 3a1952a0c62cac34f9d4bcf0207e602a, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.8
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Station Hum
+    category: 1
+    description: The station's machinery, looping quietly the whole level.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 553b93527361a17448921d7d75480e7d, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.35
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Alarm
+    category: 2
+    description: The station alarm going off near the end.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: bacf8c0dd3de6ab45850d35967eaa268, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.8
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Heartbeat
+    category: 2
+    description: One loud heartbeat in the last hallway.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 59733bad045558c4b945a7a40deb47b8, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.8
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Ear Ringing
+    category: 2
+    description: High whine of ringing ears after the ceiling comes down, fading over a couple of seconds. Loops. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.12
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Ending Tone
+    category: 2
+    description: One deep tone ringing out over the cut to black at the end. Heard over the silence. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.9
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Sonny Hum
+    category: 2
+    description: Sonny's box humming, looping while it's powered. Its pitch rises as it wakes.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: e483a773e1b8c924e82e6ba189b556eb, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.3
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Sonny Awaken
+    category: 2
+    description: Sonny's box powering on and waking.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: fb39d83374c1fc640b9eb381c25d0f09, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.6
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+--- !u!4 &876465685
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 876465683}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &877026229
 GameObject:
   m_ObjectHideFlags: 0
@@ -11705,8 +12238,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -28092,8 +28624,7 @@ MonoBehaviour:
   openWhenPlayerWithin: 3.5
   locked: 0
   shutterSprite: {fileID: 0}
-  moveClip: {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
-  volume: 0.7
+  moveSound: Blast Door
 --- !u!1 &987196003
 GameObject:
   m_ObjectHideFlags: 0
@@ -28678,8 +29209,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -28896,8 +29426,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -29104,8 +29633,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -29585,8 +30113,7 @@ MonoBehaviour:
   - {fileID: 1802545307}
   - {fileID: 1922738674}
   startDormant: 1
-  wakeClip: {fileID: 8300000, guid: 70d38aab0572cf94d957920fcf38a874, type: 3}
-  wakeVolume: 0.6
+  wakeSound: Robot Wake
   onCleared:
     m_PersistentCalls:
       m_Calls: []
@@ -40122,8 +40649,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -40476,8 +41002,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -40930,8 +41455,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -41275,8 +41799,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -41339,8 +41862,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -41924,8 +42446,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -42251,8 +42772,8 @@ MonoBehaviour:
   - {fileID: 836263279}
   - {fileID: 1814506398}
   - {fileID: 1928743868}
-  alarmClip: {fileID: 8300000, guid: bacf8c0dd3de6ab45850d35967eaa268, type: 3}
-  heartbeatClip: {fileID: 8300000, guid: 59733bad045558c4b945a7a40deb47b8, type: 3}
+  alarmSound: Alarm
+  heartbeatSound: Heartbeat
   openingCard:
   - The flare reaches the station in minutes
   - Get to the control room
@@ -42265,12 +42786,11 @@ MonoBehaviour:
   - Nothing so small makes something greater than itself.
   closingCard:
   - Earlier
-  nextScene: ShipEntrance
+  nextScene: Chapter1
   playerCannotDie: 1
   basicWeaponsOnly: 1
   guideAfter: 10
   dazedSeconds: 1.8
-  ringingVolume: 0.12
   arenaView: 1.18
   finalHallwayView: 0.88
   holdOnSonny: 2
@@ -42569,8 +43089,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -42835,8 +43354,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -43411,8 +43929,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -44592,8 +45109,7 @@ MonoBehaviour:
   openWhenPlayerWithin: 0
   locked: 0
   shutterSprite: {fileID: 0}
-  moveClip: {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
-  volume: 0.7
+  moveSound: Blast Door
 --- !u!1001 &1559221348
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44925,8 +45441,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -45421,8 +45936,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -45557,8 +46071,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -45658,8 +46171,7 @@ MonoBehaviour:
   openWhenPlayerWithin: 0
   locked: 0
   shutterSprite: {fileID: 0}
-  moveClip: {fileID: 8300000, guid: efda90709e10a6e49b669bf664c65911, type: 3}
-  volume: 0.7
+  moveSound: Blast Door
 --- !u!1 &1607269450
 GameObject:
   m_ObjectHideFlags: 0
@@ -47192,9 +47704,9 @@ MonoBehaviour:
   glow: {fileID: 1573532421}
   dormantPulseRate: 0.3
   awakePulseRate: 1.5
-  humLoop: {fileID: 8300000, guid: e483a773e1b8c924e82e6ba189b556eb, type: 3}
-  awakenClip: {fileID: 8300000, guid: fb39d83374c1fc640b9eb381c25d0f09, type: 3}
-  volume: 0.6
+  humSound: Sonny Hum
+  awakenSound: Sonny Awaken
+  startPowered: 1
 --- !u!1 &1720321710
 GameObject:
   m_ObjectHideFlags: 0
@@ -60011,8 +60523,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -60239,8 +60750,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -60467,8 +60977,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -60604,8 +61113,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -61011,8 +61519,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -61401,8 +61908,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -62386,8 +62892,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -63459,8 +63964,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -63626,8 +64130,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 1.5, y: 1.5}
   windowSize: {x: 3, y: 3}
@@ -64205,8 +64708,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -64341,8 +64843,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -64477,8 +64978,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -64613,8 +65113,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0.6
-  breakClip: {fileID: 8300000, guid: 2521031b52503284f9409311086f5418, type: 3}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 1
   fixtureOffset: {x: 0, y: 3.5}
   windowSize: {x: 3, y: 3}
@@ -64677,8 +65176,7 @@ MonoBehaviour:
   rumbleBreakChance: 0.15
   sparkWhenBroken: 1
   dropOnBreak: 0
-  breakClip: {fileID: 0}
-  breakVolume: 0.8
+  breakSound: Lamp Break
   drawFixture: 0
   fixtureOffset: {x: 0, y: 0}
   windowSize: {x: 3, y: 3}
@@ -64766,3 +65264,4 @@ SceneRoots:
   - {fileID: 93571254}
   - {fileID: 692601307}
   - {fileID: 1352202554}
+  - {fileID: 876465685}

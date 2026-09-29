@@ -9,7 +9,9 @@ using UnityEngine.UI;
 // past, a planet turns, asteroids tumble, a station leans out of a rock, and nearer things shift more as the mouse moves.
 // It boots like a monitor: the picture opens out of a bright line and a scan beam sweeps the view in, PROJECT decodes,
 // SONNY flickers on letter by letter like a neon tube, and the loading bar fills. Then it waits for any button, which
-// opens the menu row (START, SETTINGS, QUIT). START switches the screen off like an old monitor and loads the next scene.
+// opens the menu row (START, SETTINGS, QUIT; or CONTINUE and NEW GAME in place of START when there's a save). START and
+// NEW GAME start over (SaveGame.NewGame) and CONTINUE picks up from the last checkpoint (SaveGame.Continue): either way
+// the screen switches off like an old monitor and the scene loads.
 // A button during the boot skips it.
 // Everything is built when the scene starts (TitleScreen.Build.cs, with the art from TitleArt), so the scene holds only
 // this and a camera.
@@ -128,8 +130,17 @@ public partial class TitleScreen : MonoBehaviour
                 break;
             case State.Menu:
                 TitleChoice choice = menu.Tick(now, dt);
-                if (choice == TitleChoice.Start) StartCoroutine(Leave(false));
-                else if (choice == TitleChoice.Quit) StartCoroutine(Leave(true));
+                if (choice == TitleChoice.Start)
+                {
+                    SaveGame.NewGame();
+                    StartCoroutine(Leave(false, nextScene));
+                }
+                else if (choice == TitleChoice.Continue)
+                {
+                    string saved = SaveGame.Continue();
+                    StartCoroutine(Leave(false, string.IsNullOrEmpty(saved) ? nextScene : saved));
+                }
+                else if (choice == TitleChoice.Quit) StartCoroutine(Leave(true, null));
                 else if (choice == TitleChoice.Back)
                 {
                     menu.Close(now);
@@ -158,7 +169,7 @@ public partial class TitleScreen : MonoBehaviour
         waitingSince = fromBoot ? now - 1f : now;   // from the boot, the prompt has already decoded
     }
 
-    IEnumerator Leave(bool quit)
+    IEnumerator Leave(bool quit, string scene)
     {
         state = State.Leaving;
         leaveTime = 0f;
@@ -167,14 +178,14 @@ public partial class TitleScreen : MonoBehaviour
         if (!quit)
         {
             sfx.PlayOneShot(confirmSound != null ? confirmSound : blipClip, 0.8f);
-            if (Application.CanStreamedLevelBeLoaded(nextScene))
+            if (Application.CanStreamedLevelBeLoaded(scene))
             {
-                loading = SceneManager.LoadSceneAsync(nextScene);
+                loading = SceneManager.LoadSceneAsync(scene);
                 loading.allowSceneActivation = false;
             }
             else
             {
-                Debug.LogWarning($"TitleScreen: there's no scene called \"{nextScene}\" in the build settings to load.", this);
+                Debug.LogWarning($"TitleScreen: there's no scene called \"{scene}\" in the build settings to load.", this);
             }
         }
 

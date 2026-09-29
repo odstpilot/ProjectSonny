@@ -1,0 +1,112 @@
+using System.Collections;
+using UnityEngine;
+
+// Chapter 2's common grounds, once the technician's out of the ducts (StorageEscape): the crew they're looking for are
+// lying where they fell, with scorch marks beside them. Walking near one the first time, Pip says something: a few of them have lines of their own
+// (the ones the technician met), the rest take the next of the shared lines. After seeing enough of them, Pip works out
+// what they had in common, their badges, and that the technician's the only one without, and the objective becomes the
+// control room, where Sonny is.
+// Built by ChapterOneBuilder for ChapterTwoBuilder, which places the bodies where the crew were in Chapter 1.
+public class CrewAftermath : MonoBehaviour
+{
+    [System.Serializable]
+    public class Body
+    {
+        public Transform body;
+        [Tooltip("What Pip says on finding this one. Empty takes the next of the shared lines.")]
+        [TextArea] public string[] pipLines = new string[0];
+    }
+
+    public PlayerController player;
+    public Body[] bodies = new Body[0];
+    [Tooltip("How close the player has to come to find one.")]
+    public float findRange = 2.6f;
+
+    [Header("Pip")]
+    [Tooltip("For the bodies with no lines of their own, one set each, in turn (| between lines). ~ opens a line with static.")]
+    [TextArea] public string[] sharedLines =
+    {
+        "~Another one. Their badge is still blinking.",
+        "~Those scorch marks... that wasn't the rubble. Something shot them.",
+        "~No vitals. Nothing, anywhere on this deck.|~Tech, I'm so sorry.",
+        "~Their badges all went off at the same time. Like something was looking for them.",
+    };
+    [Tooltip("How many have to be found before Pip works it out.")]
+    public int realizeAfter = 3;
+    [TextArea] public string[] pipRealizes =
+    {
+        "~Tech... everyone who had a badge is... like this.",
+        "~You're the only one on the station without one.",
+        "~Sonny. Sonny runs everything from the control room. If anyone knows what happened, it's Sonny.",
+    };
+    public string objectiveNext = "Get to the control room";
+    [Tooltip("The room marked on the map for it, by its marker in the layout, and what the pin says.")]
+    public char nextRoom = 'o';
+    public string nextLabel = "Control Room";
+
+    private int nextShared;
+
+    void OnEnable()
+    {
+        StorageEscape.Escaped += BeginSearch;
+    }
+
+    void OnDisable()
+    {
+        StorageEscape.Escaped -= BeginSearch;
+    }
+
+    void Start()
+    {
+        if (player == null) player = FindAnyObjectByType<PlayerController>();
+    }
+
+    void BeginSearch() => StartCoroutine(Search());
+
+    IEnumerator Search()
+    {
+        var found = new bool[bodies.Length];
+        int count = 0;
+        bool realized = false;
+        while (!realized)
+        {
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (found[i] || bodies[i].body == null || player == null) continue;
+                if (Vector2.Distance(player.transform.position, bodies[i].body.position) > findRange) continue;
+                found[i] = true;
+                count++;
+                Tell(LinesFor(bodies[i]));
+            }
+            if (count >= Mathf.Min(realizeAfter, bodies.Length))
+            {
+                // Once what's being said has been said.
+                while (SuitHelper.Exists && SuitHelper.Get().Talking) yield return null;
+                realized = true;
+                Tell(pipRealizes);
+                TutorialHud.Get().SetObjective(objectiveNext);
+                MapScreen.SetTarget(nextRoom, nextLabel);
+            }
+            yield return null;
+        }
+    }
+
+    // Picking up from a save once it's been worked out (ChapterTwoDirector): no search, just where to go.
+    public void ResumeRealized()
+    {
+        TutorialHud.Get().SetObjective(objectiveNext);
+        MapScreen.SetTarget(nextRoom, nextLabel);
+    }
+
+    string[] LinesFor(Body found)
+    {
+        if (found.pipLines.Length > 0) return found.pipLines;
+        if (sharedLines.Length == 0) return new string[0];
+        return sharedLines[nextShared++ % sharedLines.Length].Split('|');
+    }
+
+    static void Tell(string[] lines)
+    {
+        if (SuitHelper.Exists && lines.Length > 0) SuitHelper.Get().Tell(lines);
+    }
+}

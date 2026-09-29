@@ -49,14 +49,12 @@ public class StationRumble : MonoBehaviour
     [Tooltip("How much the picture warps, fringes, and darkens at the height of a rumble or a heavy impact, 0 to 1.")]
     [Range(0f, 1f)] public float screenDistortion = 0.6f;
 
-    [Header("Sound")]
-    public AudioClip[] rumbleClips = new AudioClip[0];
+    [Header("Sound (the scene's SoundManager has the clips; empty for none)")]
+    [SoundName] public string rumbleSound = "Rumble";
     [Tooltip("Played when debris lands.")]
-    public AudioClip[] impactClips = new AudioClip[0];
+    [SoundName] public string impactSound = "Debris Impact";
     [Tooltip("Loops quietly the whole time, like the station's machinery.")]
-    public AudioClip ambientLoop;
-    [Range(0f, 1f)] public float ambientVolume = 0.35f;
-    [Range(0f, 1f)] public float volume = 0.8f;
+    [SoundName] public string ambientSound = "Station Hum";
 
     public static StationRumble Instance { get; private set; }
     // (strength, duration) as each rumble starts.
@@ -70,6 +68,7 @@ public class StationRumble : MonoBehaviour
     private Collider2D playerCollider;
     private Rigidbody2D playerBody;
     private AudioSource sfx;
+    private AudioSource ambience;
     private ParticleSystem dust;
     private Volume screenEffects;
     private float dustOwed;
@@ -90,15 +89,12 @@ public class StationRumble : MonoBehaviour
         sfx.playOnAwake = false;
         sfx.spatialBlend = 0f;
 
-        if (ambientLoop != null)
-        {
-            AudioSource ambience = gameObject.AddComponent<AudioSource>();
-            ambience.clip = ambientLoop;
-            ambience.loop = true;
-            ambience.volume = ambientVolume;
-            ambience.spatialBlend = 0f;
-            ambience.Play();
-        }
+        ambience = gameObject.AddComponent<AudioSource>();
+        ambience.spatialBlend = 0f;
+        SoundManager.Setup(ambience, ambientSound);
+        ambience.loop = true;
+        ambience.volume = SoundManager.Volume(ambientSound);
+        if (ambience.clip != null) ambience.Play();
 
         if (globalLight != null)
         {
@@ -132,7 +128,7 @@ public class StationRumble : MonoBehaviour
         rumbleStrength = Mathf.Clamp01(shake);
         rumbleStart = Time.time;
         rumbleEnd = Time.time + Mathf.Max(0.1f, seconds);
-        PlayRandom(rumbleClips, Mathf.Lerp(0.5f, 1f, rumbleStrength));
+        SoundManager.PlayOneShot(sfx, rumbleSound, Mathf.Lerp(0.5f, 1f, rumbleStrength));
         Rumbled?.Invoke(rumbleStrength, seconds);
 
         if (debrisCount > 0)
@@ -153,28 +149,29 @@ public class StationRumble : MonoBehaviour
         lightColor = color;
     }
 
-    public void PlaySound(AudioClip clip, float volumeScale = 1f)
+    // One of the scene's sounds (SoundManager), at its volume times volumeScale.
+    public void PlaySound(string soundName, float volumeScale = 1f)
     {
-        if (clip != null) sfx.PlayOneShot(clip, volume * volumeScale);
+        SoundManager.PlayOneShot(sfx, soundName, volumeScale);
     }
 
     // A sound from somewhere in the level, quieter the further it is from the camera.
-    public static void PlayAt(AudioClip clip, Vector2 point, float volumeScale = 1f)
+    public static void PlayAt(string soundName, Vector2 point, float volumeScale = 1f)
     {
-        if (Instance == null || clip == null) return;
-        float nearness = Nearness(point);
-        if (nearness > 0f) Instance.sfx.PlayOneShot(clip, Instance.volume * volumeScale * nearness);
+        if (Instance == null) return;
+        SoundManager.PlayOneShot(Instance.sfx, soundName, volumeScale * Nearness(point));
     }
 
     // For FallingDebris: a crash, quieter the further it lands from the camera.
     public static void PlayImpact(Vector2 point)
     {
         if (Instance == null) return;
-        Instance.PlayRandom(Instance.impactClips, Nearness(point));
+        SoundManager.PlayOneShot(Instance.sfx, Instance.impactSound, Nearness(point));
     }
 
     void Update()
     {
+        if (ambience.isPlaying) ambience.volume = SoundManager.Volume(ambientSound);
         if (rumbleOnItsOwn && !IsRumbling && Time.time >= nextRumble)
         {
             float scale = Mathf.Clamp(intensity, 0.25f, 2f);
@@ -384,12 +381,5 @@ public class StationRumble : MonoBehaviour
         Camera cam = Camera.main;
         float distance = cam != null ? Vector2.Distance(cam.transform.position, point) : 0f;
         return Mathf.Clamp01(1f - distance / 14f);
-    }
-
-    void PlayRandom(AudioClip[] clips, float volumeScale)
-    {
-        if (clips == null || clips.Length == 0 || volumeScale <= 0f) return;
-        AudioClip clip = clips[Random.Range(0, clips.Length)];
-        if (clip != null) sfx.PlayOneShot(clip, volume * volumeScale);
     }
 }

@@ -69,8 +69,8 @@ public class StationLight : MonoBehaviour
     public bool sparkWhenBroken = true;
     [Tooltip("Chance a smashed lamp comes off the wall and falls to the floor below.")]
     [Range(0f, 1f)] public float dropOnBreak;
-    public AudioClip breakClip;
-    [Range(0f, 1f)] public float breakVolume = 0.8f;
+    [Tooltip("The scene's sound for it smashing. Empty for none.")]
+    [SoundName] public string breakSound = "Lamp Break";
 
     [Header("Placeholder Art")]
     [Tooltip("Draw a lamp fixture (or, for sunlight, the glare through the window) at fixtureOffset.")]
@@ -355,7 +355,7 @@ public class StationLight : MonoBehaviour
         HitEffects.Sparks(point, Vector2.down, 26, 6f, 220f, SparkBright, SparkHot);
         HitEffects.Dust(point, Shards, 0.35f);
         HitEffects.Ring(point, new Color(1f, 0.8f, 0.45f, 0.8f), 1.1f);
-        StationRumble.PlayAt(breakClip, point, breakVolume);
+        StationRumble.PlayAt(breakSound, point);
         if (glass != null) glass.sprite = BrokenGlassSprite;
 
         // Torn off the wall: the fitting falls to the floor under it, and only the bracket is left.

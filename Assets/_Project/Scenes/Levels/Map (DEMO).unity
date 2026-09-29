@@ -22935,7 +22935,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1314367758, guid: 120a79d77318ea34bbc71a75348eb7a7, type: 3}
@@ -23175,7 +23175,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1314367758, guid: 120a79d77318ea34bbc71a75348eb7a7, type: 3}
@@ -23243,7 +23243,12 @@ MonoBehaviour:
   detectionDistance: 4
   numRays: 10
   coneAngle: 45
+  visionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rayMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  alertInterval: 0.5
+  alertMoveDistance: 1
 --- !u!212 &386300334
 SpriteRenderer:
   serializedVersion: 3
@@ -23350,7 +23355,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
@@ -24372,6 +24377,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   teleportTarget: {fileID: 26587528}
   animator: {fileID: 1564209683}
+  mode: 0
+  interactRange: 0.6
+  promptText: E  OPEN
+  locked: 0
+  lockedText: LOCKED
+  fadeTime: 0.25
+  sound: 
+  look: 0
+  wallDirection: {x: 0, y: 1}
 --- !u!61 &592533388
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -34805,7 +34819,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
@@ -35382,7 +35396,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1314367758, guid: 120a79d77318ea34bbc71a75348eb7a7, type: 3}
@@ -35874,7 +35888,12 @@ MonoBehaviour:
   detectionDistance: 4
   numRays: 10
   coneAngle: 45
+  visionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rayMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  alertInterval: 0.5
+  alertMoveDistance: 1
 --- !u!212 &928166901
 SpriteRenderer:
   serializedVersion: 3
@@ -35998,7 +36017,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
@@ -36733,7 +36752,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
@@ -37285,6 +37304,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   teleportTarget: {fileID: 1032988411}
   animator: {fileID: 1564209683}
+  mode: 0
+  interactRange: 0.6
+  promptText: E  OPEN
+  locked: 0
+  lockedText: LOCKED
+  fadeTime: 0.25
+  sound: 
+  look: 0
+  wallDirection: {x: 0, y: 1}
 --- !u!61 &1187943989
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -37427,7 +37455,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
@@ -39104,7 +39132,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1314367758, guid: 120a79d77318ea34bbc71a75348eb7a7, type: 3}
@@ -43200,7 +43228,12 @@ MonoBehaviour:
   detectionDistance: 4
   numRays: 10
   coneAngle: 45
+  visionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rayMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  alertInterval: 0.5
+  alertMoveDistance: 1
 --- !u!212 &1549901176
 SpriteRenderer:
   serializedVersion: 3
@@ -43307,7 +43340,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
@@ -44334,7 +44367,12 @@ MonoBehaviour:
   detectionDistance: 4
   numRays: 10
   coneAngle: 45
+  visionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rayMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  alertInterval: 0.5
+  alertMoveDistance: 1
 --- !u!212 &1769159366
 SpriteRenderer:
   serializedVersion: 3
@@ -44441,7 +44479,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
@@ -44970,7 +45008,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1314367758, guid: 120a79d77318ea34bbc71a75348eb7a7, type: 3}
@@ -45612,6 +45650,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   teleportTarget: {fileID: 117935308}
   animator: {fileID: 1564209683}
+  mode: 0
+  interactRange: 0.6
+  promptText: E  OPEN
+  locked: 0
+  lockedText: LOCKED
+  fadeTime: 0.25
+  sound: 
+  look: 0
+  wallDirection: {x: 0, y: 1}
 --- !u!61 &1924698994
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -45736,7 +45783,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
@@ -46115,8 +46162,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2009027576}
-  - component: {fileID: 2009027575}
-  - component: {fileID: 2009027574}
+  - component: {fileID: 2009027577}
   m_Layer: 0
   m_Name: Audio Player
   m_TagString: Untagged
@@ -46124,123 +46170,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2009027574
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2009027573}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7680181c7b06d1489c1c90dd1d2361e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  musicSource: {fileID: 2009027575}
-  sfxSource: {fileID: 2009027575}
-  musicClips: []
-  sfxClips:
-  - {fileID: 8300000, guid: c26d09ce773c07c4ca995380188a2b43, type: 3}
-  - {fileID: 8300000, guid: 6f95929e2de01984eae7df9a5c5c7c9f, type: 3}
-  musicDelayRange: {x: 60, y: 180}
-  sfxDelayRange: {x: 20, y: 40}
---- !u!82 &2009027575
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2009027573}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
-  m_Volume: 0.08
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 1
-  MinDistance: 61.9703
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!4 &2009027576
 Transform:
   m_ObjectHideFlags: 0
@@ -46256,6 +46185,224 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1177235904}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2009027577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009027573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b614b9e9f64df64f97cf2479dbfc367, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
+  sounds:
+  - name: Random Ambience
+    category: 1
+    description: 
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: c26d09ce773c07c4ca995380188a2b43, type: 3}
+    - {fileID: 8300000, guid: 6f95929e2de01984eae7df9a5c5c7c9f, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 1
+    loop: 0
+    priority: 128
+    volume: 0.08
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 61.9703
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 1
+    repeatWait: {x: 20, y: 40}
+  - name: Footsteps
+    category: 2
+    description: The player's footsteps, one clip a step. Quieter and lower while crouching, higher while sprinting.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 42f7a1a162f7889479d326156626742a, type: 3}
+    - {fileID: 8300000, guid: ca0b3743204604c4594a23a4cc9c925c, type: 3}
+    - {fileID: 8300000, guid: 8026b53956844d14a892347cf9405d2a, type: 3}
+    - {fileID: 8300000, guid: 9740ebb4c9a07734cb007b3d8a3648da, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.3
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Low Health Heartbeat
+    category: 2
+    description: Loops, fading in while the player's health is low.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 59733bad045558c4b945a7a40deb47b8, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.7
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Death Hit
+    category: 2
+    description: The hit that kills the player, as they go down in slow motion.
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: 5826fb12efefbee4ea37c21523e1fea6, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 1
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Revive Static
+    category: 2
+    description: Sonny's death monitor cutting back to the game (only its first 0.6 seconds play).
+    credit: 
+    clips:
+    - {fileID: 8300000, guid: d7db06df32a002c4eba8d01213bb34cb, type: 3}
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 1
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Monitor Beep
+    category: 3
+    description: Heart monitor beep on the death screen, one per spike. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 0
+    priority: 128
+    volume: 0.6
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
+  - name: Flatline
+    category: 3
+    description: Heart monitor flatline on the death screen, a steady tone that loops. Made in code until it has a clip.
+    credit: 
+    clips: []
+    playFrom: {fileID: 0}
+    output: {fileID: 0}
+    mute: 0
+    bypassEffects: 0
+    bypassListenerEffects: 0
+    bypassReverbZones: 0
+    playOnAwake: 0
+    loop: 1
+    priority: 128
+    volume: 0.3
+    pitch: 1
+    stereoPan: 0
+    spatialBlend: 0
+    reverbZoneMix: 1
+    dopplerLevel: 1
+    spread: 0
+    volumeRolloff: 0
+    minDistance: 1
+    maxDistance: 500
+    volumeVariation: 0
+    pitchVariation: 0
+    repeat: 0
+    repeatWait: {x: 5, y: 20}
 --- !u!1 &2014366983
 GameObject:
   m_ObjectHideFlags: 0
@@ -46310,7 +46457,12 @@ MonoBehaviour:
   detectionDistance: 4
   numRays: 10
   coneAngle: 45
+  visionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   rayMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  alertInterval: 0.5
+  alertMoveDistance: 1
 --- !u!212 &2014366986
 SpriteRenderer:
   serializedVersion: 3
@@ -46417,7 +46569,7 @@ LineRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
@@ -46559,7 +46711,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1289281589
-  m_SortingLayer: 7
+  m_SortingLayer: 6
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
@@ -47125,7 +47277,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.075
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0

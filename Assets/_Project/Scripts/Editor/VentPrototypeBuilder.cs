@@ -60,7 +60,8 @@ public static class VentPrototypeBuilder
         Debug.Log(networks.Length == 0 ? "There's no VentNetwork in the open scene." : $"Filled in the empty sound slots on {networks.Length} VentNetwork(s).");
     }
 
-    static void FillEmptySlots(VentNetwork network)
+    // Also used by ChapterOneBuilder for its ducts.
+    internal static void FillEmptySlots(VentNetwork network)
     {
         if (network.font == null) network.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
         if (network.ambienceLoop == null) network.ambienceLoop = Clip("700008__newlocknew__scimisc_low-steady-hum-2_em.wav");

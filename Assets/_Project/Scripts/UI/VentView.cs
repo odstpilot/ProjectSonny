@@ -919,7 +919,7 @@ public class VentView : MonoBehaviour
     static TextMeshProUGUI Label(string name, Transform parent, string text, float size, TMP_FontAsset font)
     {
         var label = NewRect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
-        if (font != null) label.font = font;
+        label.font = GameUI.Or(font);
         label.text = text;
         label.fontSize = size;
         label.alignment = TextAlignmentOptions.Center;

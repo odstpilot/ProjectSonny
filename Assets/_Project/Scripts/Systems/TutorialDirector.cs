@@ -68,8 +68,9 @@ public class TutorialDirector : MonoBehaviour
     public List<StationLight> alarms = new List<StationLight>();
     [Tooltip("Wall lamps. In the last hallway the ones between the player and the control room give out one by one.")]
     public List<StationLight> lamps = new List<StationLight>();
-    public AudioClip alarmClip;
-    public AudioClip heartbeatClip;
+    [Tooltip("The scene's sounds (SoundManager) for the alarm and the heartbeat near the end. Empty for none.")]
+    [SoundName] public string alarmSound = "Alarm";
+    [SoundName] public string heartbeatSound = "Heartbeat";
 
     [Header("Words")]
     public string[] openingCard = { "The flare reaches the station in minutes", "Get to the control room" };
@@ -82,8 +83,8 @@ public class TutorialDirector : MonoBehaviour
     public string[] closingCard = { "Earlier" };
 
     [Header("Afterwards")]
-    [Tooltip("Loaded when the tutorial ends: Chapter 1 starts at the ship's entrance. Until that scene is in the build, the tutorial ends on black.")]
-    public string nextScene = "ShipEntrance";
+    [Tooltip("Loaded when the tutorial ends: Chapter 1 starts at the ship's entrance (ChapterOneBuilder). Until that scene is in the build, the tutorial ends on black.")]
+    public string nextScene = "Chapter1";
 
     [Header("Player")]
     [Tooltip("Hits land but take no health, so the player can't die in the tutorial. The health readout is hidden too.")]
@@ -96,7 +97,6 @@ public class TutorialDirector : MonoBehaviour
     [Header("The Chase")]
     [Tooltip("Seconds the player's ears ring after the ceiling comes down, before it's theirs to play.")]
     public float dazedSeconds = 1.8f;
-    [Range(0f, 1f)] public float ringingVolume = 0.12f;
 
     [Header("Camera")]
     [Tooltip("How far the camera pulls back for the arena fight, as a multiple of its normal view, so the wall coming in and every robot are on screen.")]
@@ -138,6 +138,20 @@ public class TutorialDirector : MonoBehaviour
 
     void Start()
     {
+        // Continuing from a save here: its one objective is the whole level, so it's been played; on to the next scene.
+        if (SaveGame.ResumePending)
+        {
+            SaveGame.DoneResuming();
+            if (!string.IsNullOrEmpty(nextScene))
+            {
+                hud = TutorialHud.Get();
+                hud.SetFade(1f);
+                enabled = false;
+                SceneManager.LoadScene(nextScene);
+                return;
+            }
+        }
+
         GameObject found = GameObject.FindGameObjectWithTag("Player");
         if (found == null)
         {
@@ -289,7 +303,8 @@ public class TutorialDirector : MonoBehaviour
         AudioLowPassFilter muffle = null;
         AudioListener listener = FindAnyObjectByType<AudioListener>();
         if (listener != null) muffle = listener.gameObject.AddComponent<AudioLowPassFilter>();
-        AudioSource ringing = TutorialSetPieces.Speaker(gameObject, TutorialSetPieces.Ringing(), true);
+        AudioClip made = SoundManager.Clip("Ear Ringing") == null ? TutorialSetPieces.Ringing() : null;
+        AudioSource ringing = TutorialSetPieces.Speaker(gameObject, "Ear Ringing", made, true);
         ringing.Play();
 
         for (float t = 0f; t < seconds; t += Time.deltaTime)
@@ -297,7 +312,7 @@ public class TutorialDirector : MonoBehaviour
             float left = 1f - Mathf.SmoothStep(0f, 1f, t / seconds);
             smear.weight = 0.8f * left;
             if (muffle != null) muffle.cutoffFrequency = Mathf.Lerp(22000f, 500f, left);
-            ringing.volume = ringingVolume * left;
+            ringing.volume = SoundManager.Volume("Ear Ringing") * left;
             yield return null;
         }
 
@@ -305,7 +320,7 @@ public class TutorialDirector : MonoBehaviour
         Destroy(smear.gameObject);
         if (muffle != null) Destroy(muffle);
         ringing.Stop();
-        Destroy(ringing.clip);
+        if (made != null) Destroy(made);
         Destroy(ringing);
     }
 
@@ -467,7 +482,7 @@ public class TutorialDirector : MonoBehaviour
     {
         hud.HidePrompt();
         SetControls(false);
-        if (rumble != null) rumble.PlaySound(alarmClip, 0.5f);
+        if (rumble != null) rumble.PlaySound(alarmSound, 0.5f);
         yield return new WaitForSeconds(0.6f);
         yield return hud.FadeTo(1f, 0.35f);
 
@@ -528,7 +543,7 @@ public class TutorialDirector : MonoBehaviour
         SetControls(false);
         yield return PanCameraTo(lead.transform.position, 0.9f);
         patrolRobots.Activate();
-        if (rumble != null) rumble.PlaySound(alarmClip, 0.4f);
+        if (rumble != null) rumble.PlaySound(alarmSound, 0.4f);
         yield return new WaitForSeconds(1.1f);
 
         Locker nearest = FindObjectsByType<Locker>(FindObjectsSortMode.None)
@@ -648,7 +663,7 @@ public class TutorialDirector : MonoBehaviour
         {
             rumble.intensity = 2f;
             rumble.SetLightBase(rumble.BaseLightIntensity * 0.75f, new Color(1f, 0.72f, 0.68f));
-            rumble.PlaySound(alarmClip, 0.8f);
+            rumble.PlaySound(alarmSound, 0.8f);
             rumble.Rumble(0.7f, 2.5f, 2);
         }
         if (controlRoomDoor != null) controlRoomDoor.locked = false;
@@ -669,7 +684,7 @@ public class TutorialDirector : MonoBehaviour
         if (rumble != null)
         {
             rumble.rumbleOnItsOwn = false;
-            rumble.PlaySound(heartbeatClip, 1f);
+            rumble.PlaySound(heartbeatSound, 1f);
         }
         if (hallwayVoice != null) yield return hallwayVoice;
 
@@ -692,12 +707,13 @@ public class TutorialDirector : MonoBehaviour
         CurrentBeat = "Ending";
         hud.SetFade(1f);
         AudioListener.volume = 0f;
-        AudioSource tone = TutorialSetPieces.Speaker(gameObject, TutorialSetPieces.LowTone(), false);
-        tone.volume = 0.9f;
+        AudioSource tone = TutorialSetPieces.Speaker(gameObject, "Ending Tone",
+            SoundManager.Clip("Ending Tone") == null ? TutorialSetPieces.LowTone() : null, false);
+        tone.volume = SoundManager.Volume("Ending Tone");
         tone.Play();
         yield return new WaitForSecondsRealtime(holdOnBlack);
         yield return hud.TitleCard(closingCard, 1.5f);
-        AudioListener.volume = 1f;
+        AudioListener.volume = GameSettings.MasterVolume;
         LoadNextScene();
     }
 

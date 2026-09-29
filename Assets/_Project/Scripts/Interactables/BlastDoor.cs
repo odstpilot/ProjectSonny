@@ -27,8 +27,8 @@ public class BlastDoor : MonoBehaviour
     public bool locked;
     [Tooltip("Leave empty for the placeholder shutter. Put the pivot on the edge it retracts into.")]
     public Sprite shutterSprite;
-    public AudioClip moveClip;
-    [Range(0f, 1f)] public float volume = 0.7f;
+    [Tooltip("The scene's sound for it opening and closing. Empty for none.")]
+    [SoundName] public string moveSound = "Blast Door";
 
     public event System.Action Opened;
     public event System.Action Closed;
@@ -128,11 +128,11 @@ public class BlastDoor : MonoBehaviour
 
     void PlayMoveSound()
     {
-        if (moveClip == null) return;
+        if (string.IsNullOrEmpty(moveSound)) return;
         Camera cam = Camera.main;
         float distance = cam != null ? Vector2.Distance(cam.transform.position, transform.position) : 0f;
         float nearness = Mathf.Clamp01(1.4f - distance / 12f);
-        if (nearness > 0f) audioSource.PlayOneShot(moveClip, volume * nearness);
+        SoundManager.PlayOneShot(audioSource, moveSound, nearness);
     }
 
     void BuildVisuals()

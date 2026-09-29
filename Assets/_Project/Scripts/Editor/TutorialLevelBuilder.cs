@@ -16,7 +16,7 @@ using NavMeshPlus.Components;
 // match: walls, floor, doors, robots, lighting, trigger zones, and the TutorialDirector that runs it. It replaces
 // everything in the scene, so change the map, prefabs, or scripts rather than the scene itself, at least until the layout
 // is settled.
-// FloorOneBuilder builds REAL GAME.unity from a map in the same format, with the tiles and pieces painted here.
+// FloorOneBuilder builds the station's floors, in every chapter's scene, from maps in the same format, with the tiles and pieces painted here.
 //
 // The map:
 //   (space)  nothing. Walls are drawn around the edge of everything else.
@@ -61,8 +61,6 @@ public static class TutorialLevelBuilder
     const string PostProcessingPath = "Assets/_Project/Scenes/Levels/Tutorial/TutorialPostProcessing.asset";
     const string TilesFolder = "Assets/_Project/Art/Environment/Tilesets/ShipTiles";
     const string PrefabsFolder = "Assets/_Project/Prefabs";
-    const string SfxFolder = "Assets/_Project/Audio/SFX";
-    const string MagneticFolder = "Assets/_Project/Audio/SFX/Magnetic Sound fx/Wav";
     const int IgnoreRaycastLayer = 2;
     const float CharacterZ = 1f;    // where the character prefabs sit
     const float LampDrop = 3.5f;    // a lamp on a wall face lights the floor this far below it
@@ -134,9 +132,14 @@ public static class TutorialLevelBuilder
             Width = Height == 0 ? 0 : rows.Max(row => row.Length);
         }
 
+        // Where the map's bottom-left corner is in the world. Zero for a scene with one floor; a floor built beside
+        // another in the same scene (FloorOneBuilder) is moved off by this much, its tilemaps' Grid with it. Cell is on
+        // the Grid, so it doesn't include this; everything placed in the world does.
+        public Vector2 Origin;
+
         public char At(int x, int row) => row >= 0 && row < Height && x >= 0 && x < rows[row].Length ? rows[row][x] : ' ';
         public Vector3Int Cell(int x, int row) => new Vector3Int(x, Height - 1 - row, 0);
-        public Vector2 Center(int x, int row) => new Vector2(x + 0.5f, Height - 1 - row + 0.5f);
+        public Vector2 Center(int x, int row) => Origin + new Vector2(x + 0.5f, Height - 1 - row + 0.5f);
 
         public List<Vector2Int> Find(char marker)
         {
@@ -157,7 +160,8 @@ public static class TutorialLevelBuilder
             return true;
         }
 
-        public Rect WorldRect(int minX, int maxX, int minRow, int maxRow) => Rect.MinMaxRect(minX, Height - 1 - maxRow, maxX + 1, Height - minRow);
+        public Rect WorldRect(int minX, int maxX, int minRow, int maxRow) =>
+            Rect.MinMaxRect(Origin.x + minX, Origin.y + Height - 1 - maxRow, Origin.x + maxX + 1, Origin.y + Height - minRow);
 
         public static bool IsVoid(char c) => c == ' ';
         public static bool IsFace(char c) => c == '=' || c == '+' || c == '^' || c == '_' || c == '*';
@@ -171,7 +175,7 @@ public static class TutorialLevelBuilder
     public static void BuildFromMenu()
     {
         bool rebuild = EditorUtility.DisplayDialog("Build Tutorial Level",
-            "Rebuild Tutorial.unity from TutorialLayout.txt?\n\nThis replaces everything in the scene. Anything added to it by hand will be lost.",
+            "Rebuild Tutorial.unity from TutorialLayout.txt?\n\nThis replaces everything in the scene except the Sound Manager. Anything else added to it by hand will be lost.",
             "Rebuild", "Cancel");
         if (rebuild && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             Build();
@@ -200,8 +204,7 @@ public static class TutorialLevelBuilder
         if (!playerPrefab || !robotPrefab || !lockerPrefab || !cameraPrefab || !globalLightPrefab) return false;
 
         Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-        foreach (GameObject root in scene.GetRootGameObjects())
-            Object.DestroyImmediate(root);
+        ClearScene(scene);
 
         Tilemap floor = BuildTilemaps(map);
         Grid grid = floor.GetComponentInParent<Grid>();
@@ -221,8 +224,6 @@ public static class TutorialLevelBuilder
 
         var director = new GameObject("Tutorial Director").AddComponent<TutorialDirector>();
         director.rumble = rumble;
-        director.alarmClip = LoadClip(SfxFolder, "316847__lalks__alarm-04-short.wav");
-        director.heartbeatClip = LoadClip(SfxFolder, "heartbeat.wav");
 
         director.collapseZone = PlaceZone(map, 'c', "Collapse Zone", zones);
         director.runZone = PlaceZone(map, 'r', "Run Zone", zones);
@@ -233,24 +234,22 @@ public static class TutorialLevelBuilder
         director.finalZone = PlaceZone(map, 'f', "Final Hallway Zone", zones);
         director.revealZone = PlaceZone(map, 'e', "Reveal Zone", zones);
 
-        AudioClip doorClip = LoadClip(MagneticFolder, "Magnetic industrial layer02_1.wav");
-        director.meleeExit = PlaceDoor(map, '1', "Melee Room Exit", doors, doorClip);
-        director.arenaEntrance = PlaceDoor(map, '2', "Arena Entrance", doors, doorClip);
-        director.arenaExit = PlaceDoor(map, '3', "Arena Exit", doors, doorClip);
-        director.controlRoomDoor = PlaceDoor(map, '4', "Control Room Door", doors, doorClip);
-        PlaceReactorDoor(map, doors, lights, doorClip);
+        director.meleeExit = PlaceDoor(map, '1', "Melee Room Exit", doors);
+        director.arenaEntrance = PlaceDoor(map, '2', "Arena Entrance", doors);
+        director.arenaExit = PlaceDoor(map, '3', "Arena Exit", doors);
+        director.controlRoomDoor = PlaceDoor(map, '4', "Control Room Door", doors);
+        PlaceReactorDoor(map, doors, lights);
         if (director.arenaEntrance != null) director.arenaEntrance.startsOpen = true;
         if (director.controlRoomDoor != null) director.controlRoomDoor.openWhenPlayerWithin = 3.5f;
 
-        AudioClip wakeClip = LoadClip(SfxFolder, "746988__gammagool__robot-awakening-power-on (1).wav");
-        director.meleeRobots = PlaceRobots(map, 'M', "Melee Robot", robots, robotPrefab, wakeClip, (robot, health) =>
+        director.meleeRobots = PlaceRobots(map, 'M', "Melee Robot", robots, robotPrefab, (robot, health) =>
         {
             StandGuard(robot, 9f);
         });
         // The patrol walks the room to just inside its doorway and turns to watch it. It sees only a short way while it
         // walks, so there's time to hide; the director widens that once it stands guard. Crouching cuts it to a third.
         float postX = map.TryGetArea('h', out Rect hideDoorway) ? hideDoorway.xMax + 0.5f : 0f;
-        director.patrolRobots = PlaceRobots(map, 'H', "Patrol", robots, robotPrefab, wakeClip, (robot, health) =>
+        director.patrolRobots = PlaceRobots(map, 'H', "Patrol", robots, robotPrefab, (robot, health) =>
         {
             robot.patrolRoute = new[] { new Vector2(postX - robot.transform.position.x, 0f) };
             robot.patrolSpeed = 1.3f;
@@ -262,12 +261,12 @@ public static class TutorialLevelBuilder
             health.cannotDie = true;
         });
         director.chasers = PlaceChasers(map, robotPrefab, Group("Chasers", robots));
-        director.arenaRobots = PlaceRobots(map, 'A', "Arena Robots", robots, robotPrefab, wakeClip, (robot, health) =>
+        director.arenaRobots = PlaceRobots(map, 'A', "Arena Robots", robots, robotPrefab, (robot, health) =>
         {
             StandGuard(robot, 14f);
         });
         // Waits switched off, out of sight behind the wall, until the director blows the wall in.
-        director.breachRobots = PlaceRobots(map, 'W', "Breach Robot", robots, robotPrefab, wakeClip, (robot, health) =>
+        director.breachRobots = PlaceRobots(map, 'W', "Breach Robot", robots, robotPrefab, (robot, health) =>
         {
             StandGuard(robot, 16f);
             robot.gameObject.SetActive(false);
@@ -275,7 +274,7 @@ public static class TutorialLevelBuilder
         director.breachPoint = PlaceBreachPoint(map, props);
 
         director.collapsePoints = PlaceCollapsePoints(map, props);
-        director.lamps = PlaceLamps(map, lights, LoadClip(SfxFolder, "636578__swag1773__cutting-power.wav"));
+        director.lamps = PlaceLamps(map, lights, "Lamp Break");
         director.alarms = PlaceAlarms(map, lights);
         PlaceSunlight(map, lights);
         director.sonny = PlaceSonny(map, props);
@@ -286,6 +285,8 @@ public static class TutorialLevelBuilder
         DressLevel(map, grid, lights);
         PlaceRailings(map, props);
 
+        SoundDefaults.Fill(scene, SoundDefaults.Player, SoundDefaults.Tutorial, SoundDefaults.Sonny);
+
         EditorSceneManager.MarkSceneDirty(scene);
         if (!EditorSceneManager.SaveScene(scene)) return Fail($"couldn't save {ScenePath}.");
         AddSceneToBuild();
@@ -293,6 +294,14 @@ public static class TutorialLevelBuilder
         Debug.Log($"Tutorial builder: built a {map.Width} by {map.Height} level with {robots.GetComponentsInChildren<PlaceholderRobot>().Length} robots, " +
                   $"{doors.childCount} doors, {zones.childCount} zones and {lights.childCount} lights, and saved {ScenePath}.");
         return true;
+    }
+
+    // Removes everything in the scene but the Sound Manager, so the scene's sound list survives a rebuild. A sound's Play
+    // From goes empty if it pointed at something the builder replaces.
+    internal static void ClearScene(Scene scene)
+    {
+        foreach (GameObject root in scene.GetRootGameObjects())
+            if (root.GetComponent<SoundManager>() == null) Object.DestroyImmediate(root);
     }
 
     // --- Tiles ---
@@ -443,13 +452,11 @@ public static class TutorialLevelBuilder
         GameObject player = Spawn(prefab, null, new Vector3(spawn.x, spawn.y, CharacterZ));
 
         var controller = player.GetComponent<PlayerController>();
-        controller.footstepClips = LoadClips(SfxFolder, "footstep1.wav", "footstep2.wav", "footstep3.wav", "footstep4.wav");
         Record(controller);
 
         var footsteps = player.AddComponent<AudioSource>();
         footsteps.playOnAwake = false;
         footsteps.spatialBlend = 0f;
-        footsteps.volume = 0.3f;
         var serializedController = new SerializedObject(controller);
         serializedController.FindProperty("audioSource").objectReferenceValue = footsteps;
         serializedController.ApplyModifiedPropertiesWithoutUndo();
@@ -525,9 +532,6 @@ public static class TutorialLevelBuilder
         rumble.aheadChance = 0.75f;
         rumble.floor = floor;
         rumble.globalLight = globalLight;
-        rumble.rumbleClips = LoadClips(MagneticFolder, "Magnetic bass ground.wav", "Magnetic bass once 01.wav", "Magnetic bass once 02.wav", "Magnetic bass full.wav");
-        rumble.impactClips = LoadClips(MagneticFolder, "Magnetic hit 01.wav", "Magnetic hit 02.wav", "Magnetic hit 03.wav", "Magnetic hit 04.wav");
-        rumble.ambientLoop = LoadClip(SfxFolder, "700008__newlocknew__scimisc_low-steady-hum-2_em.wav");
         return rumble;
     }
 
@@ -599,7 +603,7 @@ public static class TutorialLevelBuilder
         return zone.AddComponent<PlayerTriggerZone>();
     }
 
-    static BlastDoor PlaceDoor(Map map, char marker, string doorName, Transform parent, AudioClip clip)
+    static BlastDoor PlaceDoor(Map map, char marker, string doorName, Transform parent)
     {
         if (!map.TryGetArea(marker, out Rect area)) return null;
         var doorObject = new GameObject(doorName);
@@ -607,11 +611,10 @@ public static class TutorialLevelBuilder
         doorObject.transform.position = area.center;
         doorObject.AddComponent<BoxCollider2D>().size = area.size;
         var door = doorObject.AddComponent<BlastDoor>();
-        door.moveClip = clip;
         return door;
     }
 
-    static RobotEncounter PlaceRobots(Map map, char marker, string groupName, Transform parent, GameObject prefab, AudioClip wakeClip,
+    static RobotEncounter PlaceRobots(Map map, char marker, string groupName, Transform parent, GameObject prefab,
         System.Action<PlaceholderRobot, Health> setUp)
     {
         List<Vector2Int> cells = map.Find(marker);
@@ -630,7 +633,6 @@ public static class TutorialLevelBuilder
         }
 
         var encounter = group.gameObject.AddComponent<RobotEncounter>();
-        encounter.wakeClip = wakeClip;
         // Listed, rather than found when the scene starts, so robots switched off until later are counted too.
         encounter.robots = group.GetComponentsInChildren<Health>(true).ToList();
         return encounter;
@@ -653,9 +655,9 @@ public static class TutorialLevelBuilder
     }
 
     // The way into the reactor, jammed open, its light pouring out: a slow cold pulse, and a haze filling the doorway.
-    static void PlaceReactorDoor(Map map, Transform doors, Transform lights, AudioClip clip)
+    static void PlaceReactorDoor(Map map, Transform doors, Transform lights)
     {
-        BlastDoor door = PlaceDoor(map, 'R', "Reactor Door", doors, clip);
+        BlastDoor door = PlaceDoor(map, 'R', "Reactor Door", doors);
         if (door == null) return;
         door.startsOpen = true;
         door.locked = true;
@@ -716,7 +718,8 @@ public static class TutorialLevelBuilder
     }
 
     // Sodium lamps on the walls, each lighting a warm pool of floor below it. Some flicker; the '_' ones are already smashed.
-    internal static List<StationLight> PlaceLamps(Map map, Transform parent, AudioClip breakClip)
+    // breakSound is the scene's sound for a lamp smashing; empty for none.
+    internal static List<StationLight> PlaceLamps(Map map, Transform parent, string breakSound)
     {
         var lamps = new List<StationLight>();
         foreach (char marker in new[] { '^', '_' })
@@ -733,7 +736,7 @@ public static class TutorialLevelBuilder
                 lamp.startBroken = marker == '_';
                 lamp.drawFixture = true;
                 lamp.fixtureOffset = new Vector2(0f, LampDrop);
-                lamp.breakClip = breakClip;
+                lamp.breakSound = breakSound;
                 // Every third one hangs loose enough to swing when the station shakes, and any can fall when smashed.
                 if (lamps.Count % 3 == 1) lamp.swing = 0.45f;
                 lamp.dropOnBreak = 0.6f;
@@ -790,7 +793,7 @@ public static class TutorialLevelBuilder
                 // Anchored at the bottom-left corner of the window.
                 var sun = new GameObject("Sunlight");
                 sun.transform.SetParent(parent);
-                sun.transform.position = new Vector3(x, map.Height - 1 - row, 0f);
+                sun.transform.position = new Vector3(map.Origin.x + x, map.Origin.y + map.Height - 1 - row, 0f);
 
                 var light = sun.AddComponent<Light2D>();
                 light.SetShapePath(new[]
@@ -817,7 +820,7 @@ public static class TutorialLevelBuilder
         }
     }
 
-    static SonnyBox PlaceSonny(Map map, Transform parent)
+    internal static SonnyBox PlaceSonny(Map map, Transform parent)
     {
         List<Vector2Int> cells = map.Find('S');
         if (cells.Count == 0) return null;
@@ -834,8 +837,6 @@ public static class TutorialLevelBuilder
         sonny.glow = NewLight("Glow", box.transform, center + new Vector2(0f, 0.9f), new Color(1f, 0.15f, 0.1f), 1.5f, 8f);
         sonny.glow.volumetricEnabled = true;
         sonny.glow.volumeIntensity = 0.15f;
-        sonny.humLoop = LoadClip(MagneticFolder + "/Looping", "Magnetic wave bass loop.wav");
-        sonny.awakenClip = LoadClip(MagneticFolder, "Magnetic bass tone 01.wav");
         return sonny;
     }
 
@@ -921,7 +922,7 @@ public static class TutorialLevelBuilder
                 float lift = DepthSort.FeetToCenter;
                 var furniture = new GameObject(piece.name);
                 furniture.transform.SetParent(parent);
-                furniture.transform.position = new Vector3(at.x, map.Height - 1 - at.y + 0.1f + lift, CharacterZ);
+                furniture.transform.position = new Vector3(map.Origin.x + at.x, map.Origin.y + map.Height - 1 - at.y + 0.1f + lift, CharacterZ);
                 DepthSort.Group(furniture);
 
                 for (int y = 0; y < height; y++)
@@ -1220,18 +1221,6 @@ public static class TutorialLevelBuilder
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (prefab == null) Fail($"the prefab {path} is missing.");
         return prefab;
-    }
-
-    internal static AudioClip LoadClip(string folder, string file)
-    {
-        var clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{folder}/{file}");
-        if (clip == null) Debug.LogWarning($"Tutorial builder: couldn't find the sound {folder}/{file}, so it's left out.");
-        return clip;
-    }
-
-    static AudioClip[] LoadClips(string folder, params string[] files)
-    {
-        return files.Select(file => LoadClip(folder, file)).Where(clip => clip != null).ToArray();
     }
 
     static GameObject Spawn(GameObject prefab, Transform parent, Vector3 position)

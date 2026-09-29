@@ -58,6 +58,7 @@ public abstract class Terminal : MonoBehaviour
         if (Player == null) return;
 
         bool free = !AnyInUse()
+            && !DialogueBox.Busy
             && Time.timeScale > 0f
             && !Locker.IsPlayerHidden
             && (playerController == null || playerController.enabled)
@@ -66,7 +67,7 @@ public abstract class Terminal : MonoBehaviour
         if (free && DistanceToPlayer() <= interactRange)
         {
             InteractPrompt.Show(this, PromptPoint, $"{InteractKey}  {PromptText}", screenFont);
-            if (Input.GetKeyDown(InteractKey)) Interact();
+            if (InteractPrompt.Pressed(this, InteractKey)) Interact();
         }
         else
         {

@@ -1,24 +1,28 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The "E  USE" tag that bobs over whatever the player can use right now. Objects call Show every frame they're usable
-// and Hide when they're not; if two ask at once, the last one wins. Built from code the first time it's needed.
+// The "[E] Talk" tag over whatever the player can use right now: a small flat key cap and what it does, on a slim dark
+// glass tag (PromptBadge). Objects call Show every frame they're usable and Hide when they're not; if two ask at once,
+// the last one wins. Built from code the first time it's needed.
+// Whatever has the prompt is the only thing E uses: objects ask Pressed(this) rather than reading the key themselves, so
+// a door and a person side by side can't both answer the same press.
 public class InteractPrompt : MonoBehaviour
 {
     const int SortingOrder = 105;           // over the HUD, under terminal screens
-    static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
-    static readonly Color TextColor = new Color(1f, 0.8f, 0.5f);
 
     static InteractPrompt instance;
-    static readonly Dictionary<Font, TMP_FontAsset> fonts = new Dictionary<Font, TMP_FontAsset>();
 
-    private RectTransform badge;
-    private TextMeshProUGUI label;
+    private Canvas canvas;
+    private PromptBadge badge;
     private Object owner;
+    private Object shownFor;
     private Vector3 worldPoint;
+    private string text;
+    private int pressTaken = -1;
 
+    // text is the key and what it does, two spaces apart, like "E  TUNE IN". Without the two spaces it's all label.
+    // font is ignored: every prompt uses the game's own font, so they all match.
     public static void Show(Object owner, Vector3 worldPoint, string text, Font font = null)
     {
         if (instance == null)
@@ -29,22 +33,25 @@ public class InteractPrompt : MonoBehaviour
 
         instance.owner = owner;
         instance.worldPoint = worldPoint;
-        if (instance.label.text != text) instance.label.text = text;
-        TMP_FontAsset asset = FontFor(font);
-        if (asset != null && instance.label.font != asset) instance.label.font = asset;
+        if (instance.text != text)
+        {
+            instance.text = text;
+            instance.badge.SetText(text);
+        }
+    }
+
+    // True the frame E is pressed, for whatever the prompt was showing over when it was: only that, and only once.
+    public static bool Pressed(Object owner, KeyCode key = KeyCode.E)
+    {
+        if (instance == null || owner == null || instance.shownFor != owner || !Input.GetKeyDown(key)) return false;
+        if (instance.pressTaken == Time.frameCount) return false;
+        instance.pressTaken = Time.frameCount;
+        return true;
     }
 
     public static void Hide(Object owner)
     {
         if (instance != null && instance.owner == owner) instance.owner = null;
-    }
-
-    static TMP_FontAsset FontFor(Font font)
-    {
-        if (font == null) return TMP_Settings.defaultFontAsset;
-        if (!fonts.TryGetValue(font, out TMP_FontAsset asset) || asset == null)
-            fonts[font] = asset = TMP_FontAsset.CreateFontAsset(font);
-        return asset;
     }
 
     void OnDestroy()
@@ -55,44 +62,136 @@ public class InteractPrompt : MonoBehaviour
     void LateUpdate()
     {
         Camera cam = Camera.main;
-        bool show = owner != null && cam != null;
-        if (badge.gameObject.activeSelf != show) badge.gameObject.SetActive(show);
-        if (!show) return;
-
-        // An overlay canvas is laid out in screen pixels, so the screen point can be used as-is.
-        float bob = Mathf.Sin(Time.unscaledTime * 4f) * 3f;
-        badge.position = cam.WorldToScreenPoint(worldPoint) + new Vector3(0f, bob, 0f);
+        // Nothing to use while the screen's faded out or a cutscene's playing.
+        bool show = owner != null && cam != null && !TutorialHud.ScreenCovered && !ArrivalCutscene.Playing;
+        if (!show)
+        {
+            shownFor = null;
+            badge.Hide();
+            return;
+        }
+        // Eases in each time it lands on something new.
+        if (shownFor != owner)
+        {
+            shownFor = owner;
+            badge.Restart();
+        }
+        badge.ShowAt(cam, worldPoint, canvas);
     }
 
     void Build()
     {
-        var canvas = gameObject.AddComponent<Canvas>();
+        canvas = PromptBadge.MakeCanvas(gameObject, SortingOrder);
+        badge = new PromptBadge(transform, GameUI.Text);
+    }
+}
+
+// A small tag over something in the level: a flat key cap and a word or two, on slim dark glass with a thin edge. It
+// fades in and rises a touch when it appears, sways very slightly while it's up, and fades out when it goes. Used for
+// E (InteractPrompt) and Q (InspectTag), so they look alike.
+public class PromptBadge
+{
+    const float FadeIn = 0.16f, FadeOut = 0.12f;
+    const float Rise = 8f;                  // canvas units it comes up by as it appears
+    const float KeyHeight = 30f;
+    const float TextSize = 24f;
+
+    readonly RectTransform root;
+    readonly CanvasGroup group;
+    readonly Image keyCap;
+    readonly LayoutElement keySize;
+    readonly TextMeshProUGUI keyLabel;
+    readonly TextMeshProUGUI label;
+    float shownAt = -10f, alpha;
+    bool showing;
+
+    public static Canvas MakeCanvas(GameObject holder, int sortingOrder)
+    {
+        var canvas = holder.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = SortingOrder;
-        var scaler = gameObject.AddComponent<CanvasScaler>();
+        canvas.sortingOrder = sortingOrder;
+        var scaler = holder.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = ReferenceResolution;
+        scaler.referenceResolution = GameUI.ReferenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
+        return canvas;
+    }
 
-        badge = new GameObject("Badge", typeof(RectTransform)).GetComponent<RectTransform>();
-        badge.SetParent(transform, false);
-        badge.pivot = new Vector2(0.5f, 0f);
-        badge.sizeDelta = new Vector2(280f, 46f);
-        var back = badge.gameObject.AddComponent<Image>();
-        back.color = new Color(0f, 0f, 0f, 0.7f);
-        back.raycastTarget = false;
+    public PromptBadge(Transform parent, Color textColor)
+    {
+        root = GameUI.NewRect("Badge", parent);
+        root.pivot = new Vector2(0.5f, 0f);
+        group = root.gameObject.AddComponent<CanvasGroup>();
+        group.interactable = group.blocksRaycasts = false;
+        group.alpha = 0f;
 
-        label = new GameObject("Text", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
-        label.rectTransform.SetParent(badge, false);
-        label.rectTransform.anchorMin = Vector2.zero;
-        label.rectTransform.anchorMax = Vector2.one;
-        label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
-        label.fontSize = 28f;
-        label.color = TextColor;
-        label.alignment = TextAlignmentOptions.Center;
-        label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.raycastTarget = false;
+        Image panel = GameUI.Sliced("Panel", root, GameUI.SoftPanelSprite, Color.white);
+        panel.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
+        RectTransform panelRect = panel.rectTransform;
+        panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = new Vector2(0.5f, 0f);
+        panelRect.anchoredPosition = Vector2.zero;
+        var row = panel.gameObject.AddComponent<HorizontalLayoutGroup>();
+        row.padding = new RectOffset(8, 14, 6, 6);
+        row.spacing = 9f;
+        row.childAlignment = TextAnchor.MiddleLeft;
+        row.childControlWidth = row.childControlHeight = true;
+        row.childForceExpandWidth = row.childForceExpandHeight = false;
+        var fit = panel.gameObject.AddComponent<ContentSizeFitter>();
+        fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        badge.gameObject.SetActive(false);
+        keyCap = GameUI.Sliced("Key", panel.transform, GameUI.SoftKeyCapSprite, Color.white);
+        keyCap.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
+        keySize = keyCap.gameObject.AddComponent<LayoutElement>();
+        keySize.minHeight = keySize.preferredHeight = KeyHeight;
+        keyLabel = GameUI.Label("Key", keyCap.transform, "E", 16f, GameUI.KeyText, TextAlignmentOptions.Center);
+        GameUI.Anchor(keyLabel.rectTransform, 0f, 0f, 1f, 1f, 1f, 4f, 1f, 0f);
+
+        label = GameUI.Label("Text", panel.transform, "", TextSize, textColor, TextAlignmentOptions.Left);
+        label.characterSpacing = 1f;
+        label.fontSharedMaterial = GameUI.Shadow(label.font);
+
+        root.sizeDelta = new Vector2(10f, 10f);
+    }
+
+    // "E  OPEN" or just "OPEN": the key, then what it does, in sentence case.
+    public void SetText(string text)
+    {
+        int split = text.IndexOf("  ", System.StringComparison.Ordinal);
+        string key = split > 0 && split <= 6 ? text.Substring(0, split).Trim() : "";
+        string action = split > 0 && split <= 6 ? text.Substring(split).Trim() : text.Trim();
+        keyCap.gameObject.SetActive(key.Length > 0);
+        keyLabel.text = key;
+        keyLabel.fontSize = key.Length > 1 ? 16f : 22f;
+        keySize.minWidth = keySize.preferredWidth = key.Length > 1 ? 16f + key.Length * 11f : KeyHeight;
+        label.text = GameUI.Sentence(action);
+    }
+
+    public void Restart() => shownAt = Time.unscaledTime;
+
+    // Over a point in the world, easing in.
+    public void ShowAt(Camera cam, Vector3 worldPoint, Canvas canvas)
+    {
+        if (!showing)
+        {
+            showing = true;
+            shownAt = Time.unscaledTime;
+        }
+        float t = Mathf.Clamp01((Time.unscaledTime - shownAt) / FadeIn);
+        alpha = Mathf.Max(alpha, t);
+        group.alpha = alpha;
+        float sway = Mathf.Sin(Time.unscaledTime * 2.2f) * 1.2f;
+        Vector3 screenPoint = cam.WorldToScreenPoint(worldPoint) + new Vector3(0f, sway - (1f - TitleUI.EaseOut(t)) * Rise, 0f);
+        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay) root.position = screenPoint;
+        else if (RectTransformUtility.ScreenPointToWorldPointInRectangle((RectTransform)canvas.transform, screenPoint, canvas.worldCamera, out Vector3 onCanvas))
+            root.position = onCanvas;
+        root.gameObject.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        showing = false;
+        if (alpha <= 0f) return;
+        alpha = Mathf.MoveTowards(alpha, 0f, Time.unscaledDeltaTime / FadeOut);
+        group.alpha = alpha;
     }
 }

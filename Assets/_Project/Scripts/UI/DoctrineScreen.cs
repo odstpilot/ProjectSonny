@@ -646,7 +646,7 @@ public class DoctrineScreen : MonoBehaviour
     TextMeshProUGUI Label(string labelName, Transform parent, string text, float size, Color color, TextAlignmentOptions alignment)
     {
         var label = NewRect(labelName, parent).gameObject.AddComponent<TextMeshProUGUI>();
-        if (font != null) label.font = font;
+        label.font = GameUI.Or(font);
         label.text = text;
         label.fontSize = size;
         label.color = color;

@@ -27,8 +27,8 @@ public class PlayerHealthHandler : MonoBehaviour
     [Tooltip("At or below this much health, the vignette pulses and the heartbeat plays.")]
     public float lowHealthThreshold = 1f;
     [Range(0f, 1f)] public float lowHealthVignette = 0.35f;
-    public AudioClip heartbeatClip;
-    [Range(0f, 1f)] public float heartbeatVolume = 0.7f;
+    [Tooltip("The scene's sound for the heartbeat at low health, looping. Empty for none.")]
+    [SoundName] public string heartbeatSound = "Low Health Heartbeat";
 
     [Header("Dying")]
     [Tooltip("Real seconds of slow motion while the player goes down, before the monitor.")]
@@ -37,10 +37,10 @@ public class PlayerHealthHandler : MonoBehaviour
     [Range(0.05f, 1f)] public float slowMotion = 0.2f;
     [Tooltip("The camera closes in to this much of its normal view.")]
     [Range(0.3f, 1f)] public float deathZoom = 0.7f;
-    [Tooltip("The hit that kills.")]
-    public AudioClip deathClip;
-    [Tooltip("The monitor cutting back to the game.")]
-    public AudioClip staticClip;
+    [Tooltip("The scene's sound for the hit that kills. Empty for none.")]
+    [SoundName] public string deathSound = "Death Hit";
+    [Tooltip("The scene's sound for the monitor cutting back to the game. Empty for none.")]
+    [SoundName] public string staticSound = "Revive Static";
     [Tooltip("Font for Sonny's monitor. Leave empty for TextMesh Pro's default.")]
     public Font monitorFont;
     [Tooltip("Sonny logs each death with one of these.")]
@@ -82,6 +82,7 @@ public class PlayerHealthHandler : MonoBehaviour
     private Vector2 lastHitDirection = Vector2.right;
     private HealthHud hud;
     private AudioSource heartbeat;
+    private float heartbeatLevel;   // eases between 0 and 1 as health gets low and recovers
     private AudioSource sfx;
     private Volume deathEffects;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
@@ -92,10 +93,9 @@ public class PlayerHealthHandler : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
 
         heartbeat = gameObject.AddComponent<AudioSource>();
-        heartbeat.clip = heartbeatClip;
-        heartbeat.loop = true;
-        heartbeat.playOnAwake = false;
         heartbeat.spatialBlend = 0f;
+        SoundManager.Setup(heartbeat, heartbeatSound);
+        heartbeat.loop = true;
         heartbeat.volume = 0f;
 
         sfx = gameObject.AddComponent<AudioSource>();
@@ -171,7 +171,8 @@ public class PlayerHealthHandler : MonoBehaviour
         CameraShake.Shake(1f);
         CameraShake.Kick(Vector2.down, 0.3f);
         StationRumble.Punch(1f);
-        if (deathClip != null) sfx.PlayOneShot(deathClip);
+        sfx.volume = 1f;     // the static below turns it down to its own volume
+        SoundManager.PlayOneShot(sfx, deathSound);
 
         // Going down: slow motion, the camera closing in, the colour draining away, the body falling over.
         Camera cam = Camera.main;
@@ -216,6 +217,7 @@ public class PlayerHealthHandler : MonoBehaviour
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
+        AudioClip staticClip = SoundManager.Clip(staticSound);
         if (staticClip != null) StartCoroutine(PlayFor(staticClip, 0.6f));
         yield return screen.Hide();
 
@@ -225,17 +227,18 @@ public class PlayerHealthHandler : MonoBehaviour
 
     void UpdateHeartbeat(bool lowHealth)
     {
-        if (heartbeatClip == null) return;
+        if (heartbeat.clip == null) return;
 
-        float target = lowHealth && !IsDying ? heartbeatVolume : 0f;
-        heartbeat.volume = Mathf.MoveTowards(heartbeat.volume, target, 1.5f * Time.unscaledDeltaTime);
-        if (heartbeat.volume > 0f && !heartbeat.isPlaying) heartbeat.Play();
-        else if (heartbeat.volume <= 0f && heartbeat.isPlaying) heartbeat.Stop();
+        heartbeatLevel = Mathf.MoveTowards(heartbeatLevel, lowHealth && !IsDying ? 1f : 0f, 2f * Time.unscaledDeltaTime);
+        heartbeat.volume = heartbeatLevel * SoundManager.Volume(heartbeatSound);
+        if (heartbeatLevel > 0f && !heartbeat.isPlaying) heartbeat.Play();
+        else if (heartbeatLevel <= 0f && heartbeat.isPlaying) heartbeat.Stop();
     }
 
     IEnumerator PlayFor(AudioClip clip, float seconds)
     {
         sfx.clip = clip;
+        sfx.volume = SoundManager.Volume(staticSound);
         sfx.Play();
         yield return new WaitForSecondsRealtime(seconds);
         if (sfx.clip == clip) sfx.Stop();

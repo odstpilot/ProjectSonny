@@ -4,6 +4,8 @@ using UnityEngine.Rendering.Universal;
 // Sonny, as the player sees it: the processing box in the control room, humming, with a red lens that watches.
 // While dormant the lens breathes slowly; Awaken makes it swell and pulse faster, for the moment the player walks in.
 // The box art is made in code unless a sprite is set. Put a Light2D in glow to have the room pulse with it.
+// In Chapter 1 it starts unpowered (startPowered off), dark and silent, until the technician installs it and PowerOn
+// brings it up; Flicker shows another color in the lens for a moment (Sonny's first slip).
 public class SonnyBox : MonoBehaviour
 {
     const float PixelsPerUnit = 20f;
@@ -22,19 +24,27 @@ public class SonnyBox : MonoBehaviour
     [Tooltip("Pulses a second while dormant, then once awake.")]
     public float dormantPulseRate = 0.3f;
     public float awakePulseRate = 1.5f;
-    public AudioClip humLoop;
-    public AudioClip awakenClip;
-    [Range(0f, 1f)] public float volume = 0.6f;
+    [Tooltip("The scene's sound for the hum, looping while it's powered. Empty for none.")]
+    [SoundName] public string humSound = "Sonny Hum";
+    [Tooltip("The scene's sound for it powering on and waking. Empty for none.")]
+    [SoundName] public string awakenSound = "Sonny Awaken";
+    [Tooltip("Off leaves it dark and silent until PowerOn.")]
+    public bool startPowered = true;
 
     public bool IsAwake { get; private set; }
+    public bool IsPowered { get; private set; }
 
     private SpriteRenderer lens;
     private SpriteRenderer halo;
     private AudioSource hum;
     private AudioSource voice;
+    private float humPitch = 1f;
     private float glowIntensity;
     private float awake;        // eases from 0 to 1 after Awaken
     private float phase;
+    private float power;        // eases from 0 to 1 after PowerOn
+    private Color flickerColor;
+    private float flickerUntil = -1f;
 
     void Awake()
     {
@@ -52,36 +62,70 @@ public class SonnyBox : MonoBehaviour
 
         hum = gameObject.AddComponent<AudioSource>();
         hum.spatialBlend = 0f;
+        SoundManager.Setup(hum, humSound);
         hum.loop = true;
-        hum.clip = humLoop;
-        hum.volume = volume * 0.5f;
-        if (humLoop != null) hum.Play();
+        humPitch = hum.pitch;
+        hum.volume = SoundManager.Volume(humSound);
+        if (hum.clip != null) hum.Play();
 
         voice = gameObject.AddComponent<AudioSource>();
         voice.spatialBlend = 0f;
         voice.playOnAwake = false;
+
+        IsPowered = startPowered;
+        power = startPowered ? 1f : 0f;
+        if (!startPowered) hum.Stop();
+    }
+
+    public void PowerOn()
+    {
+        if (IsPowered) return;
+        IsPowered = true;
+        if (hum.clip != null) hum.Play();
+        SoundManager.PlayOneShot(voice, awakenSound);
+    }
+
+    // The lens goes this color for a moment, then back. Unscaled, so a cutscene can time it to a line.
+    public void Flicker(Color color, float seconds)
+    {
+        flickerColor = color;
+        flickerUntil = Time.unscaledTime + seconds;
     }
 
     public void Awaken()
     {
         if (IsAwake) return;
         IsAwake = true;
-        if (awakenClip != null) voice.PlayOneShot(awakenClip, volume);
+        SoundManager.PlayOneShot(voice, awakenSound);
     }
 
     void Update()
     {
         if (IsAwake) awake = Mathf.MoveTowards(awake, 1f, Time.deltaTime / WakeTime);
+        power = Mathf.MoveTowards(power, IsPowered ? 1f : 0f, Time.deltaTime / WakeTime);
 
         phase += Time.deltaTime * Mathf.PI * 2f * Mathf.Lerp(dormantPulseRate, awakePulseRate, awake);
         float pulse = 0.5f + 0.5f * Mathf.Sin(phase);
         float brightness = Mathf.Lerp(0.35f, 1f, awake) * Mathf.Lerp(0.55f, 1f, pulse);
+        // Powering up stutters on, like a tube catching.
+        float lit = power >= 1f ? 1f : power * (Mathf.PerlinNoise(Time.time * 18f, 0f) > 0.35f ? 1f : 0.2f);
+        bool flickering = Time.unscaledTime < flickerUntil;
+        Color color = flickering ? flickerColor : lensColor;
+        if (flickering) brightness = 1f;
 
-        lens.color = new Color(lensColor.r, lensColor.g, lensColor.b, Mathf.Lerp(0.5f, 1f, brightness));
-        halo.color = new Color(lensColor.r, lensColor.g, lensColor.b, 0.35f * brightness);
+        lens.color = new Color(color.r, color.g, color.b, Mathf.Lerp(0.5f, 1f, brightness) * lit);
+        halo.color = new Color(color.r, color.g, color.b, 0.35f * brightness * lit);
         halo.transform.localScale = Vector3.one * Mathf.Lerp(1f, 2.2f, awake) * Mathf.Lerp(0.9f, 1.1f, pulse);
-        if (glow != null) glow.intensity = glowIntensity * Mathf.Lerp(0.5f, 1.8f, awake) * Mathf.Lerp(0.6f, 1f, pulse);
-        if (humLoop != null) hum.pitch = Mathf.Lerp(0.8f, 1.1f, awake);
+        if (glow != null)
+        {
+            glow.intensity = glowIntensity * Mathf.Lerp(0.5f, 1.8f, awake) * Mathf.Lerp(0.6f, 1f, pulse) * lit;
+            glow.color = color;
+        }
+        if (hum.clip != null)
+        {
+            hum.pitch = humPitch * Mathf.Lerp(0.8f, 1.1f, awake) * (flickering ? 0.7f : 1f);
+            hum.volume = SoundManager.Volume(humSound);
+        }
     }
 
     // The box is only made in Play mode, so outline where it will be.

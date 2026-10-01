@@ -329,8 +329,8 @@ public static class GameUI
         { 'H', new Color32(255, 255, 255, 255) },   // tab highlight
         { 'd', new Color32(168, 168, 168, 255) },   // tab shadow
         { 'e', new Color32(150, 164, 180, 110) },   // a soft tag's edge
-        { ',', new Color32(14, 18, 25, 205) },      // just inside it
-        { ';', new Color32(12, 15, 21, 196) },      // a soft tag's glass, a touch see-through
+        { ',', new Color32(14, 18, 25, 240) },      // just inside it
+        { ';', new Color32(12, 15, 21, 232) },      // a soft tag's glass, only just see-through
         { 'K', new Color32(226, 222, 210, 255) },   // soft key face
         { 'q', new Color32(170, 164, 150, 255) },   // its bottom edge
         { 'k', new Color32(60, 66, 76, 200) },      // round it

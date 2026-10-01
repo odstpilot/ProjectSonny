@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -6,12 +7,15 @@ using UnityEngine.Rendering.Universal;
 //
 // Builds Scenes/Levels/Chapter2.unity: the whole station again, both floors, as FloorOneBuilder lays it out, a few hours
 // after Chapter 1 ends. Nobody's left alive. The lights are down to emergency power (a dim red, every other lamp out),
-// the crew lie where they stood in Chapter 1, Sonny's box glows red in the control room, and everything's where Chapter 1
+// the crew lie dead all through the rooms, converted bots roam among them (PatrolReveal shows them to the player on
+// stepping out of the restroom), Sonny's box glows red in the control room, and everything's where Chapter 1
 // left it (all placed by ChapterOneBuilder, from the same crowds, so it lines up): the broken toilet, the knocked-about
-// shelf, and the storage room door jammed with rubble behind it, with the vents the only way out. The control room's
-// badge door won't open for anyone now (BadgeLockout): the way in is through the comms ring, on floor 2.
-// The technician starts on the storage room floor, in front of the shelf, and ChapterTwoDirector wakes them up. The
-// stairs work: floor 2 (the comms ring, the lower maintenance deck, the reactor) is there, empty for now.
+// shelf, and the storage room door jammed with rubble behind it, with the vents the only way out. Every other way on
+// is shut too (BlockedWay): the ship entrance is sealed and the escape pods gone, the hallway to the control room has
+// caved in, and the east hallway's stairs are buried, so the only way on is the maintenance deck's stairs, up to the
+// upper maintenance deck. The technician starts on the storage room floor, in front of the shelf, and
+// ChapterTwoDirector wakes them up. Floor 2 (the comms ring, the upper maintenance deck, the reactor) is there, empty
+// for now.
 // It replaces everything in the scene but the Sound Manager.
 public static class ChapterTwoBuilder
 {
@@ -19,6 +23,9 @@ public static class ChapterTwoBuilder
 
     // Emergency power: the ambient light at this much of what it is in Chapter 1, in this color.
     const float EmergencyLight = 0.4f;
+    // The rooms past the lounge, with the power out altogether (DarkRooms): the common grounds hallway, the bedrooms, the
+    // east hallway, the maintenance deck, the hallway to the control room and the control room, and all of floor 2.
+    const string DarkRoomMarkers = "hbvmcodgr";
     static readonly Color EmergencyColor = new Color(1f, 0.5f, 0.42f);
     static readonly Color SonnyLens = new Color(1f, 0.16f, 0.1f);
 
@@ -73,16 +80,11 @@ public static class ChapterTwoBuilder
         }
         else Debug.LogWarning("Chapter 2 builder: there's no shelf in the storage room, so the technician wakes up at the ship entrance.");
 
-        // The control room's badge door, with nobody left to badge them through.
-        if (ChapterOneBuilder.ControlRoomDoor != null)
-        {
-            var lockout = new GameObject("Control Room Lockout").AddComponent<BadgeLockout>();
-            lockout.transform.SetParent(floor.level);
-            lockout.player = player.GetComponent<PlayerController>();
-            lockout.door = ChapterOneBuilder.ControlRoomDoor;
-            TutorialLevelBuilder.Record(lockout);
-        }
-        else Debug.LogWarning("Chapter 2 builder: there's no badge door into the control room.");
+        // Past the lounge, the power's out (DarkRooms), and the suit light comes on.
+        var darkness = new GameObject("Dark Rooms").AddComponent<DarkRooms>();
+        darkness.transform.SetParent(floor.level);
+        darkness.rooms = DarkRoomMarkers;
+        TutorialLevelBuilder.Record(darkness);
 
         var director = new GameObject("Chapter 2 Director").AddComponent<ChapterTwoDirector>();
         director.transform.SetParent(floor.level);
@@ -104,11 +106,31 @@ public static class ChapterTwoBuilder
         }
         foreach (FloorOneBuilder.BuiltFloor floor in floors)
         {
-            int lamp = 0;
+            // The rooms with the power out, by where their walls are (a lamp hangs on the wall above the floor).
+            var dark = floor.rooms.Where(r => DarkRoomMarkers.IndexOf(r.marker) >= 0)
+                .Select(r => floor.map.WorldRect(r.minX, r.maxX, r.minRow - 4, r.maxRow)).ToList();
+            int lamp = 0, darkLamp = 0;
             foreach (StationLight station in floor.level.GetComponentsInChildren<StationLight>())
             {
-                if (station.mode == StationLight.Mode.Sunlight || lamp++ % 2 == 0) continue;
-                station.startOn = false;
+                if (station.mode == StationLight.Mode.Sunlight) continue;
+                if (dark.Any(r => r.Contains(station.transform.position)))
+                {
+                    // Out, but for the odd one still flickering, weakly, and the odd one smashed and sparking.
+                    int which = darkLamp++ % 8;
+                    if (which == 0)
+                    {
+                        station.mode = StationLight.Mode.Flicker;
+                        station.flickerRate = 1.4f;
+                        foreach (Light2D bulbLight in station.GetComponentsInChildren<Light2D>())
+                        {
+                            bulbLight.intensity *= 0.45f;
+                            TutorialLevelBuilder.Record(bulbLight);
+                        }
+                    }
+                    else if (which == 4) station.startBroken = true;
+                    else station.startOn = false;
+                }
+                else if (lamp++ % 2 == 1) station.startOn = false;
                 TutorialLevelBuilder.Record(station);
             }
         }

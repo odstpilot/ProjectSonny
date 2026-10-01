@@ -98,6 +98,10 @@ public class StationLight : MonoBehaviour
 
     private Light2D lamp;
     private float baseIntensity;
+    // Other lights that are part of it (the glow on the wall round the fitting, FloorOneBuilder), going on and off,
+    // flickering, and dying with it.
+    private Light2D[] extras = new Light2D[0];
+    private float[] extraIntensities = new float[0];
     private Color bulbColor;
     private SpriteRenderer glass;
     private SpriteRenderer halo;
@@ -206,6 +210,10 @@ public class StationLight : MonoBehaviour
     {
         lamp = GetComponent<Light2D>();
         baseIntensity = lamp.intensity;
+        var others = new System.Collections.Generic.List<Light2D>(GetComponentsInChildren<Light2D>(true));
+        others.Remove(lamp);
+        extras = others.ToArray();
+        extraIntensities = System.Array.ConvertAll(extras, extra => extra.intensity);
         baseColor = lamp.color;
         home = transform.position;
         swingPhase = Random.value * Mathf.PI * 2f;
@@ -325,6 +333,8 @@ public class StationLight : MonoBehaviour
     void Apply(float level)
     {
         lamp.intensity = baseIntensity * level;
+        for (int i = 0; i < extras.Length; i++)
+            if (extras[i] != null) extras[i].intensity = extraIntensities[i] * level;
         if (mode == Mode.Sunlight) lamp.color = Color.Lerp(baseColor, FlareWhite, FlareProgress * 0.8f);
         float glow = Mathf.Clamp01(level);
 

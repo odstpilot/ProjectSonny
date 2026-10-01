@@ -46,8 +46,11 @@ public static class CheckpointJump
         new Stage("Chapter2", Start, "From the top (waking up)"),
         new Stage("Chapter2", "vent", "Door jammed: crawl through the vent"),
         new Stage("Chapter2", "out", "Out in the restroom: find the crew"),
-        new Stage("Chapter2", "to-control-room", "Crew found: get to the control room"),
-        new Stage("Chapter2", "lockout", "Badge lockout: the comms ring, upstairs"),
+        new Stage("Chapter2", "patrols", "Crew found, bots roaming: find the escape pods"),
+        new Stage("Chapter2", "exit-sealed", "Exit sealed, no pods: get to the control room"),
+        new Stage("Chapter2", "hallway-caved", "Hallway caved in: upstairs to the maintenance deck"),
+        new Stage("Chapter2", "upper-deck", "Upper maintenance deck: find the EMP parts"),
+        new Stage("Chapter2", "emp-built", "EMP built: cross to the comms ring"),
     };
 
     // Loads the scene set up at that stage.

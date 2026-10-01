@@ -18,7 +18,7 @@ public class MaintenanceBot : MonoBehaviour
     public enum Kind { Sweeper, Hauler, Scanner }
 
     const float PixelsPerUnit = 16f;
-    static readonly Vector2 PersonalSpace = new Vector2(0.9f, 0.5f);
+    static readonly Vector2 PersonalSpace = new Vector2(1f, 1.2f);
     static readonly Color EyeColor = new Color(0.4f, 0.95f, 1f);
     static readonly Color SyncColor = new Color(1f, 0.15f, 0.1f);
     static readonly List<MaintenanceBot> all = new List<MaintenanceBot>();
@@ -154,9 +154,12 @@ public class MaintenanceBot : MonoBehaviour
         }
     }
 
+    // Along the path, stopping for anyone in the way, and staying stopped a moment before trying again so it doesn't
+    // jitter; if they're still there, it goes somewhere else.
     IEnumerator Roll()
     {
-        float giveUpAfter = Random.Range(0.8f, 2f), blockedFor = 0f;
+        const float Pause = 0.4f;
+        float giveUpAfter = Random.Range(0.6f, 1.2f), blockedFor = 0f, stillUntil = 0f;
         int next = 0;
         while (next < path.Count)
         {
@@ -172,11 +175,20 @@ public class MaintenanceBot : MonoBehaviour
                 next++;
                 continue;
             }
+            if (Time.time < stillUntil)
+            {
+                moving = false;
+                blockedFor += Time.fixedDeltaTime;
+                if (blockedFor > giveUpAfter) yield break;
+                yield return new WaitForFixedUpdate();
+                continue;
+            }
             Face(offset);
             Vector2 step = Vector2.MoveTowards(Position, path[next], moveSpeed * Time.fixedDeltaTime);
             if (InTheWay(step))
             {
                 moving = false;
+                stillUntil = Time.time + Pause;
                 blockedFor += Time.fixedDeltaTime;
                 if (blockedFor > giveUpAfter) yield break;
             }
@@ -364,9 +376,10 @@ public class MaintenanceBot : MonoBehaviour
             float after = Crowding(other - step);
             return after < room && after < Crowding(other - Position);
         }
-        if (player != null && Blocks(player.position, 1.25f)) return true;
+        // People have right of way: it gives them a wide berth.
+        if (player != null && Blocks(player.position, 1.3f)) return true;
         foreach (CrewMember crew in CrewMember.Everyone)
-            if (Blocks(crew.Position, 1f)) return true;
+            if (Blocks(crew.Position, 1.3f)) return true;
         foreach (MaintenanceBot bot in all)
             if (bot != this && Blocks(bot.Position, 1f)) return true;
         return false;

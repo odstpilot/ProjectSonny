@@ -96,23 +96,20 @@ public static class FloorOneBuilder
 
     // A piece of furniture or floor detail: tiles from the ship tileset, top row first, -1 where there's nothing.
     // A piece can reach up onto the wall above the floor (wallRows); its position is where its first floor row starts.
-    // footDepth is how far back from its front edge a piece of furniture is solid: all of it unless it's given, since
-    // nobody should stand on a table. Only something tall, like a pod, lets you walk behind its top.
+    // Where furniture is solid is worked out from its tiles and its name (FurnitureFootprint).
     class Stamp
     {
         public readonly string name;
         public readonly Layer layer;
         public readonly int[][] rows;
         public readonly int wallRows;
-        public readonly float footDepth;
 
-        public Stamp(string name, Layer layer, int[][] rows, int wallRows = 0, float footDepth = -1f)
+        public Stamp(string name, Layer layer, int[][] rows, int wallRows = 0)
         {
             this.name = name;
             this.layer = layer;
             this.rows = rows;
             this.wallRows = wallRows;
-            this.footDepth = footDepth >= 0f ? footDepth : rows.Length - wallRows - 0.1f;
         }
     }
 
@@ -120,7 +117,7 @@ public static class FloorOneBuilder
     static readonly Stamp Bench = new Stamp("bench", Layer.Furniture, new[] { new[] { 15, 16, 17 }, new[] { 39, 40, 41 } });
     static readonly Stamp Sofa = new Stamp("sofa", Layer.Furniture, new[] { new[] { 18, 19, 20 }, new[] { 42, 43, 44 } });
     static readonly Stamp Beds = new Stamp("beds", Layer.Furniture, new[] { new[] { 164, 165 }, new[] { 196, 197 } });
-    static readonly Stamp Pod = new Stamp("pod", Layer.Furniture, new[] { new[] { 13, 14 }, new[] { 37, 38 }, new[] { 62, 63 } }, footDepth: 2.1f);
+    static readonly Stamp Pod = new Stamp("pod", Layer.Furniture, new[] { new[] { 13, 14 }, new[] { 37, 38 }, new[] { 62, 63 } });
     // Chairs go on columns 1 and 3.
     static readonly Stamp ConsoleBank = new Stamp("console bank", Layer.Furniture, new[]
     {
@@ -403,6 +400,7 @@ public static class FloorOneBuilder
         public Map map;
         public List<Room> rooms;
         public HashSet<Vector2Int> furniture;   // the cells solid furniture stands on
+        public HashSet<Vector2Int> seats;       // of those, the ones with a chair on
         public GameObject player;
         public Transform level;
         public Stairway[] stairs;
@@ -445,6 +443,8 @@ public static class FloorOneBuilder
         if (compacts[0].Find('P').Count != 1) return Fail("floor 1's layout needs exactly one P, where the player starts.");
         if (!TutorialLevelBuilder.LoadTiles()) return false;
         decorTiles.Clear();
+        artSpans.Clear();
+        tilesetImages.Clear();
 
         GameObject playerPrefab = TutorialLevelBuilder.LoadPrefab("Characters/Player 1");
         GameObject lockerPrefab = TutorialLevelBuilder.LoadPrefab("Level/Locker");
@@ -536,10 +536,11 @@ public static class FloorOneBuilder
         PlaceStationMap(compact, map, rooms, stretches, level);
 
         PipeWalls(map, roomOf, grid.transform.Find(TutorialLevelBuilder.WallsMap).GetComponent<Tilemap>());
-        Decorate(map, rooms, stretches, grid, TutorialLevelBuilder.Group("Furniture", level), out HashSet<Vector2Int> furniture);
+        Decorate(map, rooms, stretches, grid, TutorialLevelBuilder.Group("Furniture", level), out HashSet<Vector2Int> furniture,
+            out HashSet<Vector2Int> seats);
         ShadeWalls(map, grid);
 
-        return new BuiltFloor { name = spec.name, map = map, rooms = rooms, furniture = furniture, level = level, stairs = stairs };
+        return new BuiltFloor { name = spec.name, map = map, rooms = rooms, furniture = furniture, seats = seats, level = level, stairs = stairs };
     }
 
     // --- Rooms ---
@@ -1072,7 +1073,7 @@ public static class FloorOneBuilder
     // Lays each room's floor and puts its furnishings in: rugs, details, and wall pieces on tilemaps of their own, and
     // furniture as objects under props. Returns how many pieces went in, and the cells the furniture stands on.
     static int Decorate(Map map, List<Room> rooms, Dictionary<char, RoomStretch> stretches, Grid grid, Transform props,
-        out HashSet<Vector2Int> furniture)
+        out HashSet<Vector2Int> furniture, out HashSet<Vector2Int> seats)
     {
         Tilemap pattern = NewTilemap(grid, "Floor Pattern", "Floor", 1, false);
         var tilemaps = new Dictionary<Layer, Tilemap>
@@ -1082,6 +1083,7 @@ public static class FloorOneBuilder
             { Layer.Wall, NewTilemap(grid, "Wall Details", "Collision", 1, false) },
         };
         var used = System.Enum.GetValues(typeof(Layer)).Cast<Layer>().ToDictionary(layer => layer, layer => new HashSet<Vector2Int>());
+        var nooks = new HashSet<Vector2Int>();
 
         int placed = 0;
         foreach (Room room in rooms)
@@ -1121,6 +1123,7 @@ public static class FloorOneBuilder
                     else tilemaps[layer].SetTile(map.Cell(cell.x, cell.y), Tile(tile));
                 }
                 if (standing.Count > 0) PlaceProp(map, stamp, standing, props);
+                if (stamp.layer == Layer.Furniture) nooks.UnionWith(Nooks(stamp, corner));
                 placed++;
             }
 
@@ -1131,17 +1134,27 @@ public static class FloorOneBuilder
 
         furniture = new HashSet<Vector2Int>(used[Layer.Furniture]);
         furniture.UnionWith(used[Layer.Front]);
+        furniture.UnionWith(nooks);
+        seats = new HashSet<Vector2Int>(used[Layer.Front]);
         return placed;
     }
 
+    // The empty cells inside a piece on the floor: the knee space under a console or counter, where the chairs go. Nobody
+    // stands or walks about in there, though a chair can go in.
+    static IEnumerable<Vector2Int> Nooks(Stamp stamp, Vector2Int corner)
+    {
+        for (int row = stamp.wallRows; row < stamp.rows.Length; row++)
+            for (int column = 0; column < stamp.rows[row].Length; column++)
+                if (stamp.rows[row][column] < 0) yield return corner + new Vector2Int(column, row - stamp.wallRows);
+    }
+
     // A piece of furniture as one object that sorts by where it stands, the way characters do (DepthSort): anyone lower
-    // on screen than its front edge is drawn in front of it, anyone higher up behind it. Only its foot is solid, so the
-    // player can walk up behind a tall piece, and it has a shadow under it. A piece standing in front of another (a chair
-    // at a console) sorts a hair in front of it.
+    // on screen than its front edge is drawn in front of it, anyone higher up behind it. Only the part of it standing on
+    // the floor is solid (FurnitureFootprint), so the player can walk right up to it and behind a tall piece, and it has
+    // a shadow under it. A piece standing in front of another (a chair at a console) sorts a hair in front of it.
     static void PlaceProp(Map map, Stamp stamp, List<(Vector2Int cell, int tile)> cells, Transform parent)
     {
-        int minX = cells.Min(c => c.cell.x), maxX = cells.Max(c => c.cell.x), baseRow = cells.Max(c => c.cell.y);
-        int width = maxX - minX + 1;
+        int minX = cells.Min(c => c.cell.x), baseRow = cells.Max(c => c.cell.y);
         float lift = DepthSort.FeetToCenter - (stamp.layer == Layer.Front ? 0.05f : 0f);
         float front = map.Origin.y + map.Height - 1 - baseRow;
 
@@ -1162,20 +1175,62 @@ public static class FloorOneBuilder
             piece.sortingLayerName = DepthSort.Layer;
         }
 
-        var foot = prop.AddComponent<BoxCollider2D>();
-        foot.size = new Vector2(width - 0.2f, stamp.footDepth);
-        foot.offset = new Vector2(width * 0.5f, stamp.footDepth * 0.5f - lift);
+        FurnitureFootprint.AddColliders(prop, stamp.name, stamp.rows, stamp.wallRows, lift);
 
+        // The shadow is where the art meets the floor, a column at a time: under a console, along the front of the desk
+        // and under its two ends, not across the knee space in front of it where the chairs go. Each one is only as wide
+        // as the art, so it doesn't run out past an end piece that's mostly empty tile.
         Sprite shadowSprite = DepthDressing.FurnitureShadow;
         if (shadowSprite == null) return;
-        var shadow = new GameObject("Shadow").AddComponent<SpriteRenderer>();
-        shadow.transform.SetParent(prop.transform, false);
-        shadow.transform.localPosition = new Vector3(width * 0.5f, 0.04f - lift, 0f);
-        shadow.sprite = shadowSprite;
-        shadow.drawMode = SpriteDrawMode.Sliced;
-        shadow.size = new Vector2(width + 0.1f, 0.4f);
-        shadow.sortingLayerName = DepthSort.Layer;
-        shadow.sortingOrder = -1;
+        foreach ((int start, int end, int lowest) in FurnitureFootprint.Runs(stamp.rows, stamp.wallRows))
+        {
+            int row = stamp.rows.Length - 1 - lowest;
+            float left = start, right = end + 1;
+            if (ArtSpan(stamp.rows[row][start]) is Vector2 first) left = start + first.x;
+            if (ArtSpan(stamp.rows[row][end]) is Vector2 last) right = end + last.y;
+            var shadow = new GameObject("Shadow").AddComponent<SpriteRenderer>();
+            shadow.transform.SetParent(prop.transform, false);
+            shadow.transform.localPosition = new Vector3((left + right) * 0.5f, lowest + 0.04f - lift, 0f);
+            shadow.sprite = shadowSprite;
+            shadow.drawMode = SpriteDrawMode.Sliced;
+            shadow.size = new Vector2(right - left + 0.1f, 0.4f);
+            shadow.sortingLayerName = DepthSort.Layer;
+            shadow.sortingOrder = -1;
+        }
+    }
+
+    // How far across a tile its art reaches, from its left edge, as a fraction of the tile: (left, right), or null if it
+    // can't tell. The end pieces of a console slant down to the floor, so it's the whole tile, not only its bottom edge.
+    // Read from the tileset image itself, which isn't imported readable.
+    static readonly Dictionary<int, Vector2?> artSpans = new Dictionary<int, Vector2?>();
+    static readonly Dictionary<string, Texture2D> tilesetImages = new Dictionary<string, Texture2D>();
+    static Vector2? ArtSpan(int number)
+    {
+        if (artSpans.TryGetValue(number, out Vector2? known)) return known;
+        Vector2? span = null;
+        Sprite sprite = (Tile(number) as Tile)?.sprite;
+        // The sprite's own image, not sprite.texture: that's the atlas the tiles are packed into.
+        string path = sprite != null ? AssetDatabase.GetAssetPath(sprite) : null;
+        if (!string.IsNullOrEmpty(path))
+        {
+            if (!tilesetImages.TryGetValue(path, out Texture2D image))
+            {
+                image = new Texture2D(2, 2);
+                if (!image.LoadImage(System.IO.File.ReadAllBytes(path))) image = null;
+                tilesetImages[path] = image;
+            }
+            Rect rect = sprite.rect;
+            if (image != null && rect.xMax <= image.width && rect.yMax <= image.height)
+            {
+                int minX = int.MaxValue, maxX = -1;
+                for (int y = (int)rect.yMin; y < (int)rect.yMax; y++)
+                    for (int x = (int)rect.xMin; x < (int)rect.xMax; x++)
+                        if (image.GetPixel(x, y).a > 0.5f) { minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x); }
+                if (maxX >= 0) span = new Vector2((minX - rect.xMin) / rect.width, (maxX + 1 - rect.xMin) / rect.width);
+            }
+        }
+        artSpans[number] = span;
+        return span;
     }
 
     // The map with more lamps ('^') along its walls, so no stretch of wall runs more than LampSpacing cells without one.
@@ -1255,15 +1310,16 @@ public static class FloorOneBuilder
                     tilemap.SetTile(map.Cell(x, row), shade);
     }
 
-    // The player stands on the floor like everyone else: solid only at the feet, a shadow under them, and no lantern
-    // (the station's own lights are on).
-    static void GroundPlayer(GameObject player)
+    // The player stands on the floor like everyone else: solid only at the feet, a shadow under them, and (unless
+    // keepLantern, for the dark of the tutorial) no lantern, since the station's own lights are on.
+    internal static void GroundPlayer(GameObject player, bool keepLantern = false)
     {
-        foreach (Light2D lantern in player.GetComponentsInChildren<Light2D>(true))
-        {
-            lantern.enabled = false;
-            TutorialLevelBuilder.Record(lantern);
-        }
+        if (!keepLantern)
+            foreach (Light2D lantern in player.GetComponentsInChildren<Light2D>(true))
+            {
+                lantern.enabled = false;
+                TutorialLevelBuilder.Record(lantern);
+            }
 
         player.transform.position += new Vector3(0f, DepthDressing.FeetLift, 0f);
         TutorialLevelBuilder.Record(player.transform);

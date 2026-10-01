@@ -6,7 +6,8 @@ using UnityEngine;
 // (both ends locked), and rubble lies piled on the lounge side, where they'll find it later. The door won't budge.
 // The first time they try it, the technician says so and Pip spots the floor vent: the air ducts (VentNetwork) run from here to the
 // restroom. The vent grates at both ends only work from the wake-up on. Getting caught in the ducts puts them back in
-// the storage room, where they woke. Climbing out in the restroom, the objective moves on to finding the crew.
+// the storage room, where they woke. Climbing out in the restroom, the objective moves on to finding the crew, which is
+// over the moment they step out of it (PatrolReveal).
 // Built by ChapterOneBuilder for ChapterTwoBuilder, which places the rubble, the grates, and the ducts.
 public class StorageEscape : MonoBehaviour
 {
@@ -114,7 +115,8 @@ public class StorageEscape : MonoBehaviour
         StartCoroutine(Crawl());
     }
 
-    // Picking up from a save once they're out of the ducts. searching: the crew are still to be found (CrewAftermath).
+    // Picking up from a save once they're out of the ducts. searching: they haven't stepped out of the restroom yet
+    // (PatrolReveal, CrewAftermath).
     public void ResumeOut(bool searching)
     {
         SetVents(true);

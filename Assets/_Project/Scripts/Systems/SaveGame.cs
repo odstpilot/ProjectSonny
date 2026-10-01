@@ -29,6 +29,7 @@ public static class SaveGame
         public float x, y;          // where the player was standing, in the world
         public string savedAt;      // local time, ISO 8601
         public string stage;        // a tester's jump (CheckpointJump): the director fills in the rest
+        public string inventory;    // scrap and what's been made from it (Inventory)
     }
 
     const string FileName = "save.json";
@@ -67,6 +68,7 @@ public static class SaveGame
             x = player != null ? player.transform.position.x : 0f,
             y = player != null ? player.transform.position.y : 0f,
             savedAt = DateTime.Now.ToString("s"),
+            inventory = Inventory.Save(),
         };
 
         try
@@ -146,6 +148,7 @@ public static class SaveGame
         Last = null;
         Resuming = null;
         SuitFeatures.Reset();
+        Inventory.Reset();
         try
         {
             if (HasSave) File.Delete(FilePath);

@@ -4,9 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The player's health in the top left corner: a row of cells, one for each point of health, on a small framed panel
-// (GameUI's) under a VITALS heading. A lost cell flashes and goes dark, and when only one is left it pulses. Also draws
-// the red hurt vignette across the screen.
+// The player's health in the top left corner. Either drives health segment Images placed by hand in the scene
+// (customSegments), or builds its own: a row of cells, one for each point of health, on a small framed panel (GameUI's)
+// under a VITALS heading. A lost cell flashes and goes dark, and when only one is left it pulses. Also draws the red
+// hurt vignette across the screen.
 // Built from code the first time it's needed; PlayerHealthHandler hooks it up to the player's Health.
 public class HealthHud : MonoBehaviour
 {
@@ -21,14 +22,21 @@ public class HealthHud : MonoBehaviour
     public const float Height = Padding * 2f + HeadingHeight + CellHeight;
     const float LoseTime = 0.45f;
 
-    static readonly Color Full = new Color(1f, 0.44f, 0.3f);
-    static readonly Color LastCell = new Color(0.55f, 0.16f, 0.1f);
-    static readonly Color Empty = new Color(0.2f, 0.09f, 0.07f, 0.8f);
-    static readonly Color Flash = new Color(1f, 0.96f, 0.88f);
+    // Cyan to match the new HUD art.
+    static readonly Color Full = new Color(0f, 0.95f, 1f);
+    static readonly Color LastCell = new Color(0f, 0.45f, 0.5f);
+    static readonly Color Empty = new Color(0.03f, 0.15f, 0.17f, 0.8f);
+    static readonly Color Flash = Color.white;
     static readonly Color Frame = new Color(0.02f, 0.02f, 0.03f, 0.9f);
     static readonly Color Shine = new Color(1f, 1f, 1f, 0.3f);
 
     static HealthHud instance;
+
+    [Header("Custom Health HUD")]
+    [Tooltip("Assign the 10 health segment Images here. Leave empty to use the generated HUD.")]
+    public Image[] customSegments;
+    public TMP_Text hpText;
+    public VitalsLine vitalsLine;
 
     private Health tracked;
     private RectTransform row;
@@ -37,6 +45,9 @@ public class HealthHud : MonoBehaviour
     private readonly HashSet<Image> losing = new HashSet<Image>();
     private RawImage vignette;
     private int lit = -1;
+    private bool built;
+
+    bool UsesCustom => customSegments != null && customSegments.Length > 0;
 
     // Whether the cells are up in the corner, for anything else that wants that corner.
     public static bool CellsShowing => instance != null && instance.row != null && instance.row.gameObject.activeInHierarchy && instance.lit >= 0;
@@ -66,10 +77,13 @@ public class HealthHud : MonoBehaviour
         OnHealthChanged(tracked.CurrentHealth, tracked.maxHealth);
     }
 
-    // Hides the row of cells but keeps the hurt vignette, for when health doesn't matter (the tutorial).
+    // Hides the cells but keeps the hurt vignette, for when health doesn't matter (the tutorial).
     public void SetCellsVisible(bool visible)
     {
         if (row != null) row.gameObject.SetActive(visible);
+        if (customSegments == null) return;
+        foreach (Image segment in customSegments)
+            if (segment != null) segment.gameObject.SetActive(visible);
     }
 
     public void SetVignette(float alpha, Color color)
@@ -81,17 +95,34 @@ public class HealthHud : MonoBehaviour
 
     void OnHealthChanged(float current, float max)
     {
+        if (hpText != null) hpText.text = Mathf.CeilToInt(current).ToString();
+        if (vitalsLine != null) vitalsLine.SetHealth(current, max);
+
+        if (UsesCustom)
+        {
+            // The hand-placed segments each stand for a share of max health, however many there are.
+            int segments = customSegments.Length;
+            float share = max > 0f ? current / max : 0f;
+            Light(customSegments, segments, Mathf.Clamp(Mathf.CeilToInt(share * segments), 0, segments));
+            return;
+        }
+
         int count = Mathf.Max(1, Mathf.CeilToInt(max));
         while (cells.Count < count) cells.Add(NewCell(cells.Count));
         for (int i = 0; i < cells.Count; i++) cells[i].transform.parent.gameObject.SetActive(i < count);
         panel.sizeDelta = new Vector2(Padding * 2f + count * CellWidth + (count - 1) * CellGap, Height);
 
-        int nowLit = Mathf.Clamp(Mathf.CeilToInt(current), 0, count);
+        Light(cells, count, Mathf.Clamp(Mathf.CeilToInt(current), 0, count));
+    }
+
+    void Light(IList<Image> list, int count, int nowLit)
+    {
         for (int i = 0; i < count; i++)
         {
+            if (list[i] == null) continue;
             bool wasLit = lit < 0 || i < lit;
-            if (lit >= 0 && wasLit && i >= nowLit) StartCoroutine(Lose(cells[i]));
-            else if (!losing.Contains(cells[i])) cells[i].color = i < nowLit ? Full : Empty;
+            if (lit >= 0 && wasLit && i >= nowLit) StartCoroutine(Lose(list[i]));
+            else if (!losing.Contains(list[i])) list[i].color = i < nowLit ? Full : Empty;
         }
         lit = nowLit;
     }
@@ -99,9 +130,10 @@ public class HealthHud : MonoBehaviour
     void Update()
     {
         // The last cell pulses when it's all that's left.
-        if (lit != 1 || cells.Count == 0 || losing.Contains(cells[0])) return;
+        Image first = UsesCustom ? customSegments[0] : cells.Count > 0 ? cells[0] : null;
+        if (lit != 1 || first == null || losing.Contains(first)) return;
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * 1.1f);
-        cells[0].color = Color.Lerp(LastCell, Full, pulse);
+        first.color = Color.Lerp(LastCell, Full, pulse);
     }
 
     IEnumerator Lose(Image cell)
@@ -117,7 +149,16 @@ public class HealthHud : MonoBehaviour
         }
         rect.localScale = Vector3.one;
         losing.Remove(cell);
-        cell.color = cells.IndexOf(cell) < lit ? Full : Empty;
+        int index = CellIndex(cell);
+        cell.color = index >= 0 && index < lit ? Full : Empty;
+    }
+
+    int CellIndex(Image cell)
+    {
+        if (customSegments != null)
+            for (int i = 0; i < customSegments.Length; i++)
+                if (customSegments[i] == cell) return i;
+        return cells.IndexOf(cell);
     }
 
     Image NewCell(int index)
@@ -155,12 +196,17 @@ public class HealthHud : MonoBehaviour
         return image;
     }
 
-    private bool built;
-
     void Build()
     {
         if (built) return;
         built = true;
+
+        // The custom HUD already sits on a Canvas in the scene; it only needs the vignette.
+        if (UsesCustom)
+        {
+            if (GetComponentInParent<Canvas>() != null) BuildVignette();
+            return;
+        }
 
         var canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -170,15 +216,7 @@ public class HealthHud : MonoBehaviour
         scaler.referenceResolution = ReferenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
 
-        var vignetteRect = new GameObject("Hurt Vignette", typeof(RectTransform)).GetComponent<RectTransform>();
-        vignetteRect.SetParent(transform, false);
-        vignetteRect.anchorMin = Vector2.zero;
-        vignetteRect.anchorMax = Vector2.one;
-        vignetteRect.offsetMin = vignetteRect.offsetMax = Vector2.zero;
-        vignette = vignetteRect.gameObject.AddComponent<RawImage>();
-        vignette.texture = CombatSprites.VignetteTexture;
-        vignette.raycastTarget = false;
-        vignette.enabled = false;
+        BuildVignette();
 
         row = new GameObject("Health", typeof(RectTransform)).GetComponent<RectTransform>();
         row.SetParent(transform, false);
@@ -197,5 +235,21 @@ public class HealthHud : MonoBehaviour
         heading.rectTransform.anchorMin = heading.rectTransform.anchorMax = heading.rectTransform.pivot = new Vector2(0f, 1f);
         heading.rectTransform.anchoredPosition = new Vector2(Padding + 2f, -Padding + 2f);
         heading.rectTransform.sizeDelta = new Vector2(300f, HeadingHeight);
+    }
+
+    void BuildVignette()
+    {
+        var vignetteRect = new GameObject("Hurt Vignette", typeof(RectTransform)).GetComponent<RectTransform>();
+        // On the Canvas rather than inside a small HUD, so it covers the whole screen, and behind the HUD's own images.
+        Canvas canvas = GetComponentInParent<Canvas>();
+        vignetteRect.SetParent(canvas != null ? canvas.transform : transform, false);
+        vignetteRect.SetAsFirstSibling();
+        vignetteRect.anchorMin = Vector2.zero;
+        vignetteRect.anchorMax = Vector2.one;
+        vignetteRect.offsetMin = vignetteRect.offsetMax = Vector2.zero;
+        vignette = vignetteRect.gameObject.AddComponent<RawImage>();
+        vignette.texture = CombatSprites.VignetteTexture;
+        vignette.raycastTarget = false;
+        vignette.enabled = false;
     }
 }

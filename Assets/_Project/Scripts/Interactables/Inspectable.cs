@@ -104,7 +104,7 @@ public class InspectTag : MonoBehaviour
     void Awake()
     {
         canvas = PromptBadge.MakeCanvas(gameObject, SortingOrder);
-        badge = new PromptBadge(transform, new Color(0.84f, 0.86f, 0.88f));
+        badge = new PromptBadge(transform, new Color(0.84f, 0.86f, 0.88f), 1);
         badge.SetText($"{Inspectable.InspectKey}  INSPECT");
     }
 

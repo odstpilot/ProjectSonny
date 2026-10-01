@@ -213,7 +213,7 @@ public class TitleSettings
         root.gameObject.SetActive(false);
     }
 
-    public void Open(float now)
+    public void Open(float now, int page = 0)
     {
         IsOpen = true;
         openedAt = now;
@@ -226,7 +226,7 @@ public class TitleSettings
         displayModeIndex = System.Array.IndexOf(DisplayModeValues, Screen.fullScreenMode);
         if (displayModeIndex < 0) displayModeIndex = DisplayModes.Length - 1;
 
-        ShowPage(0, now, 0);
+        ShowPage(page, now, 0);
         highlightY = FirstRowY;
         underlineX = pages[0].tab.anchoredPosition.x;
         root.gameObject.SetActive(true);

@@ -82,15 +82,17 @@ public class InteractPrompt : MonoBehaviour
     void Build()
     {
         canvas = PromptBadge.MakeCanvas(gameObject, SortingOrder);
-        badge = new PromptBadge(transform, GameUI.Text);
+        badge = new PromptBadge(transform, GameUI.Text, 0);
     }
 }
 
 // A small tag over something in the level: a flat key cap and a word or two, on slim dark glass with a thin edge. It
 // fades in and rises a touch when it appears, sways very slightly while it's up, and fades out when it goes. Used for
-// E (InteractPrompt) and Q (InspectTag), so they look alike.
-public class PromptBadge
+// E (InteractPrompt) and Q (InspectTag), so they look alike. It keeps out of the way of the other boxes over the level
+// (OverheadLayout): E's stays put and the rest make room for it; Q's rises above E's if they'd meet.
+public class PromptBadge : OverheadLayout.IItem
 {
+    const float Glide = 16f;
     const float FadeIn = 0.16f, FadeOut = 0.12f;
     const float Rise = 8f;                  // canvas units it comes up by as it appears
     const float KeyHeight = 30f;
@@ -103,7 +105,12 @@ public class PromptBadge
     readonly TextMeshProUGUI keyLabel;
     readonly TextMeshProUGUI label;
     float shownAt = -10f, alpha;
-    bool showing;
+    bool showing, placedYet;
+    readonly int priority;
+    Camera cam;
+    Canvas canvas;
+    Vector3 worldPoint, screenPoint;
+    float lift;                             // screen pixels up, where the layout's put it
 
     public static Canvas MakeCanvas(GameObject holder, int sortingOrder)
     {
@@ -117,8 +124,9 @@ public class PromptBadge
         return canvas;
     }
 
-    public PromptBadge(Transform parent, Color textColor)
+    public PromptBadge(Transform parent, Color textColor, int priority)
     {
+        this.priority = priority;
         root = GameUI.NewRect("Badge", parent);
         root.pivot = new Vector2(0.5f, 0f);
         group = root.gameObject.AddComponent<CanvasGroup>();
@@ -151,7 +159,11 @@ public class PromptBadge
         label.fontSharedMaterial = GameUI.Shadow(label.font);
 
         root.sizeDelta = new Vector2(10f, 10f);
+        panelArea = panel.rectTransform;
+        OverheadLayout.Add(this);
     }
+
+    readonly RectTransform panelArea;     // the tag itself, for its size
 
     // "E  OPEN" or just "OPEN": the key, then what it does, in sentence case.
     public void SetText(string text)
@@ -171,6 +183,9 @@ public class PromptBadge
     // Over a point in the world, easing in.
     public void ShowAt(Camera cam, Vector3 worldPoint, Canvas canvas)
     {
+        this.cam = cam;
+        this.canvas = canvas;
+        this.worldPoint = worldPoint;
         if (!showing)
         {
             showing = true;
@@ -180,17 +195,53 @@ public class PromptBadge
         alpha = Mathf.Max(alpha, t);
         group.alpha = alpha;
         float sway = Mathf.Sin(Time.unscaledTime * 2.2f) * 1.2f;
-        Vector3 screenPoint = cam.WorldToScreenPoint(worldPoint) + new Vector3(0f, sway - (1f - TitleUI.EaseOut(t)) * Rise, 0f);
-        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay) root.position = screenPoint;
-        else if (RectTransformUtility.ScreenPointToWorldPointInRectangle((RectTransform)canvas.transform, screenPoint, canvas.worldCamera, out Vector3 onCanvas))
-            root.position = onCanvas;
+        screenPoint = cam.WorldToScreenPoint(worldPoint) + new Vector3(0f, sway - (1f - TitleUI.EaseOut(t)) * Rise, 0f);
+        MoveTo(screenPoint + new Vector3(0f, lift, 0f));
         root.gameObject.SetActive(true);
+    }
+
+    void MoveTo(Vector3 point)
+    {
+        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay) root.position = point;
+        else if (RectTransformUtility.ScreenPointToWorldPointInRectangle((RectTransform)canvas.transform, point, canvas.worldCamera, out Vector3 onCanvas))
+            root.position = onCanvas;
+    }
+
+    // --- Keeping out of the way (OverheadLayout) ---
+
+    // World units per screen pixel, for the camera it's shown with.
+    float WorldPerPixel => cam != null && cam.orthographic && cam.pixelHeight > 0 ? cam.orthographicSize * 2f / cam.pixelHeight : 0.01f;
+
+    bool OverheadLayout.IItem.Alive => root != null;
+    bool OverheadLayout.IItem.Visible => root != null && cam != null && canvas != null && alpha > 0f;
+    int OverheadLayout.IItem.Priority => priority;
+    float OverheadLayout.IItem.Since => shownAt;
+
+    Rect OverheadLayout.IItem.Wanted
+    {
+        get
+        {
+            Vector2 size = panelArea.rect.size * canvas.scaleFactor * WorldPerPixel;
+            return new Rect(worldPoint.x - size.x * 0.5f, worldPoint.y, size.x, size.y);
+        }
+    }
+
+    void OverheadLayout.IItem.Place(Vector2 offset)
+    {
+        float target = offset.y / WorldPerPixel;
+        lift = placedYet ? Mathf.Lerp(lift, target, 1f - Mathf.Exp(-Glide * Time.unscaledDeltaTime)) : target;
+        placedYet = true;
+        MoveTo(screenPoint + new Vector3(0f, lift, 0f));
     }
 
     public void Hide()
     {
         showing = false;
-        if (alpha <= 0f) return;
+        if (alpha <= 0f)
+        {
+            placedYet = false;
+            return;
+        }
         alpha = Mathf.MoveTowards(alpha, 0f, Time.unscaledDeltaTime / FadeOut);
         group.alpha = alpha;
     }

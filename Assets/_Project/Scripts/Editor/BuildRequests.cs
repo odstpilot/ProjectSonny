@@ -15,11 +15,14 @@ using UnityEngine.SceneManagement;
 // "Capture <scene> <x> <y> [size]" renders what the scene's camera sees from there (world units; size is the camera's
 // half height, left out for the camera's own) to Temp/SonnyCapture.png, for checking a build without pressing Play.
 // Nothing runs in a capture, so it shows the scene as it's saved, before any script has started.
+// A capture or play request with the word "colliders" in it draws every solid collider over the picture, in green (the
+// player's in yellow), for checking what blocks what.
 // "Play <scene> <seconds> [x y [size]]" is the same, but plays the scene for that many seconds first, so the capture
 // shows the game as it runs; the camera stays where the game put it unless given a point. It comes back out of Play
 // mode afterwards, and the result lists every warning and error logged while it played. Ending it with
 // "player <x> <y>" puts the player there a second before the capture, to see them somewhere in particular, and
-// "player <x> <y> walk <dx> <dy>" has them walk that way from there until the capture.
+// "player <x> <y> walk <dx> <dy>" has them walk that way from there until the capture, and "... for <t>" puts them there
+// t seconds before it.
 //
 // It won't build over unsaved scene changes, or while playing or compiling, and it puts back the scene that was open.
 [InitializeOnLoad]
@@ -164,7 +167,7 @@ static class BuildRequests
         }
         cam.transform.position = new Vector3(x, y, cam.transform.position.z);
         if (words.Length > 4 && float.TryParse(words[4], out float size)) cam.orthographicSize = size;
-        RenderToFile(cam);
+        RenderToFile(cam, words.Any(w => w.Equals("colliders", StringComparison.OrdinalIgnoreCase)));
 
         // Moving the camera marked the scene changed; the scene put back afterwards replaces it without saving.
         return true;
@@ -172,8 +175,9 @@ static class BuildRequests
 
     // The camera's view, with the on-screen UI (overlay canvases: the HUD, prompts, dialogue) drawn over it too: for the
     // shot, each is put in front of the camera and laid out again for the capture's size.
-    static void RenderToFile(Camera cam)
+    static void RenderToFile(Camera cam, bool showColliders = false)
     {
+        List<GameObject> outlines = showColliders ? DrawColliders() : new List<GameObject>();
         var target = new RenderTexture(CaptureSize.x, CaptureSize.y, 24);
         cam.targetTexture = target;
         var overlays = UnityEngine.Object.FindObjectsByType<Canvas>().Where(c => c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay).ToList();
@@ -195,6 +199,7 @@ static class BuildRequests
             canvas.sortingLayerName = "Default";
         }
         cam.targetTexture = null;
+        foreach (GameObject outline in outlines) UnityEngine.Object.DestroyImmediate(outline);
         RenderTexture.active = target;
         var image = new Texture2D(CaptureSize.x, CaptureSize.y, TextureFormat.RGB24, false);
         image.ReadPixels(new Rect(0, 0, CaptureSize.x, CaptureSize.y), 0, 0);
@@ -203,6 +208,44 @@ static class BuildRequests
         File.WriteAllBytes(CapturePath, image.EncodeToPNG());
         UnityEngine.Object.DestroyImmediate(image);
         target.Release();
+    }
+
+    // An outline over every solid box and circle collider in the scene (tilemap walls left out: they're plain to see).
+    static List<GameObject> DrawColliders()
+    {
+        var made = new List<GameObject>();
+        var material = new Material(Shader.Find("Sprites/Default"));
+        GameObject player = GameObject.FindWithTag("Player");
+        void Outline(Collider2D collider, Vector3[] corners)
+        {
+            var line = new GameObject("Collider Outline").AddComponent<LineRenderer>();
+            line.sharedMaterial = material;
+            line.loop = true;
+            line.useWorldSpace = true;
+            line.widthMultiplier = 0.045f;
+            Color color = player != null && collider.transform.IsChildOf(player.transform) ? Color.yellow : new Color(0.3f, 1f, 0.3f);
+            line.startColor = line.endColor = color;
+            line.sortingLayerName = "UI";
+            line.sortingOrder = 50;
+            line.positionCount = corners.Length;
+            line.SetPositions(corners);
+            made.Add(line.gameObject);
+        }
+        foreach (BoxCollider2D box in UnityEngine.Object.FindObjectsByType<BoxCollider2D>())
+        {
+            if (!box.enabled || box.isTrigger) continue;
+            Vector2 half = box.size * 0.5f;
+            Outline(box, new[] { new Vector2(-half.x, -half.y), new Vector2(-half.x, half.y), new Vector2(half.x, half.y), new Vector2(half.x, -half.y) }
+                .Select(c => box.transform.TransformPoint(box.offset + c)).Select(v => new Vector3(v.x, v.y, 0f)).ToArray());
+        }
+        foreach (CircleCollider2D circle in UnityEngine.Object.FindObjectsByType<CircleCollider2D>())
+        {
+            if (!circle.enabled || circle.isTrigger) continue;
+            Vector3 center = circle.transform.TransformPoint(circle.offset);
+            float radius = circle.radius * Mathf.Abs(circle.transform.lossyScale.x);
+            Outline(circle, Enumerable.Range(0, 16).Select(i => new Vector3(center.x + Mathf.Cos(i * Mathf.PI / 8f) * radius, center.y + Mathf.Sin(i * Mathf.PI / 8f) * radius, 0f)).ToArray());
+        }
+        return made;
     }
 
     // --- Play captures ---
@@ -249,6 +292,7 @@ static class BuildRequests
         SessionState.SetFloat(PlayKey + "Started", -1f);
         SessionState.SetBool(PlayKey + "Taken", false);
         SessionState.SetBool(PlayKey + "Placed", false);
+        SessionState.SetBool(PlayKey + "Called", false);
         Application.logMessageReceived += RecordPlayLog;
 
         EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
@@ -279,7 +323,23 @@ static class BuildRequests
             // Timed in the game's own seconds: an editor in the background may run the game slowly.
             float seconds = float.Parse(words[2]);
             float played = Time.timeSinceLevelLoad;
-            if (placeAt.HasValue && !SessionState.GetBool(PlayKey + "Placed", false) && played >= seconds - 1f)
+            // "for <t>" after the walk puts them there that many seconds before the capture, rather than one.
+            int forAt = extras.FindIndex(w => w.Equals("for", StringComparison.OrdinalIgnoreCase));
+            float lead = forAt >= 0 && forAt + 1 < extras.Count && float.TryParse(extras[forAt + 1], out float given) ? given : 1f;
+            // "call <Type>.<Method>" calls that method (no arguments) on the scene's first <Type> at the same moment, to
+            // set something up for the capture: TutorialDirector.SkipAhead, say.
+            int callAt = extras.FindIndex(w => w.Equals("call", StringComparison.OrdinalIgnoreCase));
+            if (callAt >= 0 && callAt + 1 < extras.Count && !SessionState.GetBool(PlayKey + "Called", false) && played >= seconds - lead)
+            {
+                SessionState.SetBool(PlayKey + "Called", true);
+                string[] parts = extras[callAt + 1].Split('.');
+                Type type = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(parts[0])).FirstOrDefault(t => t != null);
+                UnityEngine.Object target = type != null ? UnityEngine.Object.FindAnyObjectByType(type) : null;
+                var method = type?.GetMethod(parts.Length > 1 ? parts[1] : "", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                if (target != null && method != null) method.Invoke(target, null);
+                else RecordPlayLog($"Couldn't call {extras[callAt + 1]}: no such object or method.", "", LogType.Warning);
+            }
+            if (placeAt.HasValue && !SessionState.GetBool(PlayKey + "Placed", false) && played >= seconds - lead)
             {
                 GameObject player = GameObject.FindWithTag("Player");
                 if (player != null)
@@ -302,7 +362,7 @@ static class BuildRequests
                 if (words.Count > 4 && float.TryParse(words[3], out float x) && float.TryParse(words[4], out float y))
                     cam.transform.position = new Vector3(x, y, cam.transform.position.z);
                 if (words.Count > 5 && float.TryParse(words[5], out float size)) cam.orthographicSize = size;
-                RenderToFile(cam);
+                RenderToFile(cam, words.Concat(extras).Any(w => w.Equals("colliders", StringComparison.OrdinalIgnoreCase)));
             }
             else
             {
@@ -322,6 +382,7 @@ static class BuildRequests
         foreach (string key in new[] { "Requested", "Started" }) SessionState.EraseFloat(PlayKey + key);
         SessionState.EraseBool(PlayKey + "Taken");
         SessionState.EraseBool(PlayKey + "Placed");
+        SessionState.EraseBool(PlayKey + "Called");
         SessionState.EraseBool(PlayKey + "Active");
         Application.logMessageReceived -= RecordPlayLog;
 

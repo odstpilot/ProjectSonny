@@ -71,6 +71,9 @@ public class PlayerHealthHandler : MonoBehaviour
         }
     }
 
+    // Once they're back on their feet at RespawnPoint.
+    public static event System.Action Respawned;
+
     // From the killing hit until they're back on their feet.
     public bool IsDying { get; private set; }
 
@@ -223,6 +226,7 @@ public class PlayerHealthHandler : MonoBehaviour
 
         SetFrozen(false);
         IsDying = false;
+        Respawned?.Invoke();
     }
 
     void UpdateHeartbeat(bool lowHealth)

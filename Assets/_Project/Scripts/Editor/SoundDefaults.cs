@@ -81,6 +81,9 @@ public static class SoundDefaults
     {
         new Entry("Door", SoundCategory.SoundEffect, 0.7f, "Going through a door to another room, as the screen fades to black.", Magnetic + "/Magnetic industrial layer02_1.wav"),
         new Entry("Stairs", SoundCategory.SoundEffect, 0.7f, "Taking the stairs to another floor, as the screen fades to black. Silent until it has a clip."),
+        new Entry("Camera Servo", SoundCategory.SoundEffect, 0.5f, "A security camera whirring round to look at the player." + MadeInCode),
+        new Entry("EMP Craft", SoundCategory.SoundEffect, 0.6f, "Putting the EMP together at the workbench: crackling solder and sparks, a few times over." + MadeInCode),
+        new Entry("Camera Alert", SoundCategory.SoundEffect, 0.7f, "A security camera sure it's seen the player, calling the robots.", Sfx + "/316847__lalks__alarm-04-short.wav"),
     };
 
     public static readonly Entry[] ChapterOne =

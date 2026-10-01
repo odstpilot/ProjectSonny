@@ -25,17 +25,23 @@ using NavMeshPlus.Components;
 //   +        window in a wall face, 3 wide. Orange sunlight falls through it onto the floor.
 //   :        collapsed floor: a hole with a rail around it that stops walking but not shots
 //   P        where the player starts
-//   M H A    robots: the melee lesson, the patrol, the arena
-//   W        a robot that breaks through the wall above it partway through the arena fight
+//   M A      robots: the melee lesson, the arena
+//   W        a robot behind the wall above it in the arena, behind a cracked panel the player has to shoot open
 //   L        locker, against the wall above it
 //   R        the reactor door, standing open with the reactor's light pouring out: where the player comes from
 //   Z        robots chasing the player out of the reactor at the start, until the ceiling comes down on them
-//            (the H patrol walks the length of its room to the H zone's doorway and stands guard there, watching the
-//            room: it can't be fought, only hidden from and crept past)
+//   Y        a robot behind the wall above it that blasts out and joins that chase as the player runs past
+//   U        a robot behind the wall above it in the run hallway: it blasts out just behind the player and hunts them
+//            down the hallway, until the ceiling comes down across the end of it (just short of the melee zone)
+//   V        a robot behind the wall above it in the ambush room: the walls blow in one after another when the player
+//            walks in, and they have to be beaten before the way on opens
+//   G        a robot behind the run hallway's wall that bursts out on top of the player and grabs them
+//   X        a robot behind the wall above it in the ambush room that punches through when the door on (2) jams after
+//            the ambush: the hole it leaves is the way on, taking the player through to the far side of that door
 //   S        Sonny's processing box
 //   1 - 4    blast doors: melee room exit, arena entrance (starts open), arena exit, control room
 //   c r m g h a f e   zones the director waits for the player to walk into: the collapse, run, melee, the crossing of
-//            the collapsed floor, hide, arena, final hallway, and the reveal. Mark a line of cells across the way in.
+//            the collapsed floor, the ambush, arena, final hallway, and the reveal. Mark a line of cells across the way in.
 //   ^        lamp, on a wall face      _  a lamp that's already broken, spitting sparks
 //   *        alarm lamp, on a wall face: off until the last hallway
 //   %        loose wreckage            &  a solid pile of wreckage
@@ -53,7 +59,7 @@ using NavMeshPlus.Components;
 // merged into one shape, so nothing snags on the seams between tiles.
 // Each stretch of the level is dressed from what's in it, the way Map (DEMO)'s rooms are: hallways get plated floors
 // and ceiling lights, the melee room a dark floor, the arena a hazard-striped one, the control room walkways, and the
-// rooms with fights or a patrol machinery along their top wall.
+// rooms with fights, machinery along their top wall.
 public static class TutorialLevelBuilder
 {
     const string ScenePath = "Assets/_Project/Scenes/Levels/Tutorial.unity";
@@ -210,6 +216,8 @@ public static class TutorialLevelBuilder
         Grid grid = floor.GetComponentInParent<Grid>();
 
         GameObject player = PlacePlayer(map, playerPrefab);
+        // Solid at the feet, as in the chapters, so furniture and walls stop them where they'd really touch.
+        FloorOneBuilder.GroundPlayer(player, keepLantern: true);
         PlaceCamera(cameraPrefab, player);
         Light2D globalLight = PlaceGlobalLight(globalLightPrefab);
         StationRumble rumble = PlaceRumble(floor, globalLight);
@@ -229,7 +237,7 @@ public static class TutorialLevelBuilder
         director.runZone = PlaceZone(map, 'r', "Run Zone", zones);
         director.meleeZone = PlaceZone(map, 'm', "Melee Zone", zones);
         director.crossingZone = PlaceZone(map, 'g', "Crossing Zone", zones);
-        director.hideZone = PlaceZone(map, 'h', "Hide Zone", zones);
+        director.ambushZone = PlaceZone(map, 'h', "Ambush Zone", zones);
         director.arenaZone = PlaceZone(map, 'a', "Arena Zone", zones);
         director.finalZone = PlaceZone(map, 'f', "Final Hallway Zone", zones);
         director.revealZone = PlaceZone(map, 'e', "Reveal Zone", zones);
@@ -246,21 +254,42 @@ public static class TutorialLevelBuilder
         {
             StandGuard(robot, 9f);
         });
-        // The patrol walks the room to just inside its doorway and turns to watch it. It sees only a short way while it
-        // walks, so there's time to hide; the director widens that once it stands guard. Crouching cuts it to a third.
-        float postX = map.TryGetArea('h', out Rect hideDoorway) ? hideDoorway.xMax + 0.5f : 0f;
-        director.patrolRobots = PlaceRobots(map, 'H', "Patrol", robots, robotPrefab, (robot, health) =>
-        {
-            robot.patrolRoute = new[] { new Vector2(postX - robot.transform.position.x, 0f) };
-            robot.patrolSpeed = 1.3f;
-            robot.patrolPause = 0.5f;
-            robot.sightRange = 7f;
-            robot.fieldOfView = 100f;
-            robot.crouchSightMultiplier = 0.35f;
-            robot.idleFacing = Vector2.right;
-            health.cannotDie = true;
-        });
         director.chasers = PlaceChasers(map, robotPrefab, Group("Chasers", robots));
+        director.openingBreaches = PlaceBreachChasers(map, robotPrefab, Group("Opening Breaches", robots));
+        // Out of the wall behind the player in the run hallway: they see them at once, anywhere down the hallway, and
+        // come faster than walking pace (3.5) but slower than running (5.25).
+        director.hallwayHunters = PlaceRobots(map, 'U', "Hallway Hunters", robots, robotPrefab, (robot, health) =>
+        {
+            StandGuard(robot, 40f);
+            robot.moveSpeed = 4f;
+            robot.detectionTime = 0.05f;
+            robot.gameObject.SetActive(false);
+        });
+        director.hallwayBreaches = BreachesFor(director.hallwayHunters);
+        director.hallwayCollapsePoints = PlaceHallwayCollapsePoints(map, props);
+        director.ambushRobots = PlaceRobots(map, 'V', "Ambush Robots", robots, robotPrefab, (robot, health) =>
+        {
+            StandGuard(robot, 16f);
+            robot.gameObject.SetActive(false);
+        });
+        director.ambushBreaches = BreachesFor(director.ambushRobots);
+        // Grabs them: out of the wall right on top of them, then after them with the hunters once they tear free.
+        director.grabber = PlaceRobots(map, 'G', "Grabber", robots, robotPrefab, (robot, health) =>
+        {
+            StandGuard(robot, 40f);
+            robot.moveSpeed = 4f;
+            robot.detectionTime = 0.05f;
+            robot.gameObject.SetActive(false);
+        });
+        director.grabberBreaches = BreachesFor(director.grabber);
+        // The way round the jammed door: the robot that punches through the ambush room's wall, and the hole it leaves.
+        director.passageRobot = PlaceRobots(map, 'X', "Passage Robot", robots, robotPrefab, (robot, health) =>
+        {
+            StandGuard(robot, 14f);
+            robot.gameObject.SetActive(false);
+        });
+        director.passageBreaches = BreachesFor(director.passageRobot);
+        director.arenaPassage = PlaceBreachWay(map, director.passageBreaches, props);
         director.arenaRobots = PlaceRobots(map, 'A', "Arena Robots", robots, robotPrefab, (robot, health) =>
         {
             StandGuard(robot, 14f);
@@ -272,13 +301,14 @@ public static class TutorialLevelBuilder
             robot.gameObject.SetActive(false);
         });
         director.breachPoint = PlaceBreachPoint(map, props);
+        director.arenaWeakWall = PlaceWeakWall(director.breachPoint);
 
         director.collapsePoints = PlaceCollapsePoints(map, props);
         director.lamps = PlaceLamps(map, lights, "Lamp Break");
         director.alarms = PlaceAlarms(map, lights);
         PlaceSunlight(map, lights);
         director.sonny = PlaceSonny(map, props);
-        PlaceLockers(map, lockerPrefab, Group("Lockers", level));
+        PlaceLockers(map, lockerPrefab, Group("Lockers", level));   // none in the tutorial now, but a layout can still have them
         PlaceFurniture(map, Group("Furniture", level));
         PlaceRubble(map, Group("Rubble", level));
         PlaceStains(map, Group("Stains", level));
@@ -654,6 +684,115 @@ public static class TutorialLevelBuilder
         return chasers;
     }
 
+    // More for the opening chase, switched off behind the corridor wall until the director blows it in on them (Y).
+    static List<TutorialDirector.WallBreach> PlaceBreachChasers(Map map, GameObject prefab, Transform parent)
+    {
+        var breaches = new List<TutorialDirector.WallBreach>();
+        foreach (Vector2Int at in map.Find('Y'))
+        {
+            Vector2 center = map.Center(at.x, at.y);
+            GameObject robot = Spawn(prefab, parent, new Vector3(center.x, center.y + 0.15f, CharacterZ));
+            var brain = robot.GetComponent<PlaceholderRobot>();
+            brain.enabled = false;
+            brain.patrolRoute = new Vector2[0];
+            Record(brain);
+            robot.SetActive(false);
+            Record(robot);
+            breaches.Add(new TutorialDirector.WallBreach { robot = robot.GetComponent<Health>(), point = BreachPoint(robot.transform, center) });
+        }
+        return breaches;
+    }
+
+    // Each of the group's robots with the point on the wall face just above it that it bursts through.
+    static List<TutorialDirector.WallBreach> BreachesFor(RobotEncounter group)
+    {
+        var breaches = new List<TutorialDirector.WallBreach>();
+        if (group == null) return breaches;
+        foreach (Health robot in group.robots)
+        {
+            if (robot == null) continue;
+            Record(robot.gameObject);
+            Vector2 center = (Vector2)robot.transform.position - new Vector2(0f, 0.15f);
+            breaches.Add(new TutorialDirector.WallBreach { robot = robot, point = BreachPoint(robot.transform, center) });
+        }
+        return breaches;
+    }
+
+    static Transform BreachPoint(Transform robot, Vector2 cellCenter)
+    {
+        var point = new GameObject("Breach Point").transform;
+        point.SetParent(robot.parent);
+        point.position = cellCenter + new Vector2(0f, 1.6f);
+        return point;
+    }
+
+    // The hole the passage robot leaves in the wall, as a way through to the far side of the jammed door (2): walking up
+    // into it takes the player there through a fade. Switched off until the director opens it, once the robot's beaten.
+    static Teleporter PlaceBreachWay(Map map, List<TutorialDirector.WallBreach> breaches, Transform parent)
+    {
+        List<Vector2Int> door = map.Find('2');
+        List<Vector2Int> arena = map.Find('a');
+        if (breaches.Count == 0 || breaches[0].point == null || door.Count == 0 || arena.Count == 0) return null;
+
+        // Out just past the door on the arena's side, level with the middle of it.
+        Vector2 doorCenter = door.Aggregate(Vector2.zero, (sum, c) => sum + map.Center(c.x, c.y)) / door.Count;
+        float side = Mathf.Sign(map.Center(arena[0].x, arena[0].y).x - doorCenter.x);
+        var exit = new GameObject("Breach Exit").transform;
+        exit.SetParent(parent);
+        exit.position = new Vector3(doorCenter.x + side * 1.5f, doorCenter.y, 0f);
+
+        // The foot of the wall under the hole, where the player walks up into it.
+        Vector2 hole = breaches[0].point.position;
+        var way = new GameObject("Breach Way");
+        way.transform.SetParent(parent);
+        way.transform.position = new Vector3(hole.x, hole.y - 1.35f, 0f);
+        way.layer = IgnoreRaycastLayer;
+        var trigger = way.AddComponent<BoxCollider2D>();
+        trigger.isTrigger = true;
+        trigger.size = new Vector2(1.4f, 0.4f);
+        var teleporter = way.AddComponent<Teleporter>();
+        teleporter.teleportTarget = exit;
+        teleporter.mode = Teleporter.Mode.WalkThrough;
+        Record(teleporter);
+        way.SetActive(false);
+        return teleporter;
+    }
+
+    // The cracked panel over the arena's breach robot, solid along the foot of the wall so shots at it land on it.
+    static WeakWall PlaceWeakWall(Transform breachPoint)
+    {
+        if (breachPoint == null) return null;
+        var panel = new GameObject("Weak Wall");
+        panel.transform.SetParent(breachPoint.parent);
+        panel.transform.position = breachPoint.position;
+        var foot = panel.AddComponent<BoxCollider2D>();
+        foot.size = new Vector2(1.8f, 0.5f);
+        foot.offset = new Vector2(0f, -1.3f);
+        var wall = panel.AddComponent<WeakWall>();
+        Health health = panel.GetComponent<Health>();
+        health.maxHealth = 3f;
+        health.destroyOnDeath = false;
+        health.knockbackResistance = 1f;
+        Record(health);
+        return wall;
+    }
+
+    // A line across the run hallway just short of the melee room (the m zone), where the ceiling comes down behind the
+    // player: one point a row, over the rows the hallway's run zone (r) spans.
+    static Transform[] PlaceHallwayCollapsePoints(Map map, Transform parent)
+    {
+        if (!map.TryGetArea('m', out Rect melee) || !map.TryGetArea('r', out Rect hallway)) return new Transform[0];
+        Transform group = Group("Hallway Collapse Points", parent);
+        var points = new List<Transform>();
+        for (float y = hallway.yMin + 0.5f; y < hallway.yMax; y += 1f)
+        {
+            Transform point = Group("Collapse Point", group);
+            point.position = new Vector3(melee.xMin - 2.5f, y, 0f);
+            points.Add(point);
+        }
+        return points.ToArray();
+    }
+
     // The way into the reactor, jammed open, its light pouring out: a slow cold pulse, and a haze filling the doorway.
     static void PlaceReactorDoor(Map map, Transform doors, Transform lights)
     {
@@ -857,13 +996,11 @@ public static class TutorialLevelBuilder
         public readonly string name;
         public readonly int[][] rows;
         public readonly int wallRows;
-        public readonly float footDepth;    // how deep its solid foot is, front to back
 
-        public Furnishing(string name, int[][] rows, float footDepth, int wallRows = 0)
+        public Furnishing(string name, int[][] rows, int wallRows = 0)
         {
             this.name = name;
             this.rows = rows;
-            this.footDepth = footDepth;
             this.wallRows = wallRows;
         }
 
@@ -872,14 +1009,14 @@ public static class TutorialLevelBuilder
 
     static readonly Dictionary<char, Furnishing> Furnishings = new Dictionary<char, Furnishing>
     {
-        { 'K', new Furnishing("Monitor Bank", new[] { new[] { 179, 180 } }, 0.7f) },
-        { 'k', new Furnishing("Control Desk", new[] { new[] { 60, 61 } }, 0.7f) },
-        { 'Q', new Furnishing("Console Bank", new[] { new[] { 59, 60, 61, 117, 118, 119 }, new[] { 88, -1, -1, -1, 148, 149 } }, 0.9f) },
-        { 'C', new Furnishing("Chair", new[] { new[] { 89 }, new[] { 120 } }, 0.45f) },
-        { 'T', new Furnishing("Bench", new[] { new[] { 15, 16, 17 }, new[] { 39, 40, 41 } }, 0.9f) },
-        { 'B', new Furnishing("Sofa", new[] { new[] { 18, 19, 20 }, new[] { 42, 43, 44 } }, 0.9f) },
-        { 'O', new Furnishing("Pod", new[] { new[] { 13, 14 }, new[] { 37, 38 }, new[] { 62, 63 } }, 1.2f) },
-        { 'I', new Furnishing("Wall Pipe", new[] { new[] { 400 }, new[] { 428 }, new[] { 457 } }, 0.4f, wallRows: 1) },
+        { 'K', new Furnishing("Monitor Bank", new[] { new[] { 179, 180 } }) },
+        { 'k', new Furnishing("Control Desk", new[] { new[] { 60, 61 } }) },
+        { 'Q', new Furnishing("Console Bank", new[] { new[] { 59, 60, 61, 117, 118, 119 }, new[] { 88, -1, -1, -1, 148, 149 } }) },
+        { 'C', new Furnishing("Chair", new[] { new[] { 89 }, new[] { 120 } }) },
+        { 'T', new Furnishing("Bench", new[] { new[] { 15, 16, 17 }, new[] { 39, 40, 41 } }) },
+        { 'B', new Furnishing("Sofa", new[] { new[] { 18, 19, 20 }, new[] { 42, 43, 44 } }) },
+        { 'O', new Furnishing("Pod", new[] { new[] { 13, 14 }, new[] { 37, 38 }, new[] { 62, 63 } }) },
+        { 'I', new Furnishing("Wall Pipe", new[] { new[] { 400 }, new[] { 428 }, new[] { 457 } }, wallRows: 1) },
     };
 
     static readonly Dictionary<int, Sprite> decorSprites = new Dictionary<int, Sprite>();
@@ -940,9 +1077,8 @@ public static class TutorialLevelBuilder
                     }
                 }
 
-                var foot = furniture.AddComponent<BoxCollider2D>();
-                foot.size = new Vector2(piece.Width - 0.2f, piece.footDepth);
-                foot.offset = new Vector2(piece.Width * 0.5f, piece.footDepth * 0.5f - lift);
+                // Solid only where it stands on the floor (FurnitureFootprint); the base is 0.1 above the cell's bottom.
+                FurnitureFootprint.AddColliders(furniture, piece.name, piece.rows, piece.wallRows, lift + 0.1f);
 
                 // Sonny can take over the monitors: the screens run along the top half of the bank.
                 if (entry.Key == 'K')
@@ -1081,7 +1217,7 @@ public static class TutorialLevelBuilder
                 PlaceCeilingLight(map, overhead, lights, stretch.minX + stretch.Width / 2, middleRow, lightsPlaced++);
             }
 
-            // Fittings strung across the ceiling of the room the patrol comes through.
+            // Fittings strung across the ceiling of the ambush room.
             if (stretch.Has('h') && !stretch.IsHallway && stretch.Width >= CeilingFixtures.Length + 4)
             {
                 int start = stretch.minX + (stretch.Width - CeilingFixtures.Length) / 2;

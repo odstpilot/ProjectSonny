@@ -10,7 +10,7 @@ using UnityEngine;
 // room door jammed with rubble behind it. Chapter 2 keeps what the suit had (the map); played straight from this scene
 // in the editor, it unlocks it.
 // Continuing from a save (SaveGame.Resuming), there's no waking up: the player's back on their feet where they were,
-// Pip's on, and the chapter picks up after the objective that was saved (StorageEscape, CrewAftermath, BadgeLockout).
+// Pip's on, and the chapter picks up after the objective that was saved (StorageEscape, PatrolReveal, BlockedWay).
 // Built by ChapterTwoBuilder.
 public class ChapterTwoDirector : MonoBehaviour
 {
@@ -53,6 +53,7 @@ public class ChapterTwoDirector : MonoBehaviour
             yield break;
         }
 
+        Inventory.Reset();      // from the top: nothing scavenged yet
         if (!ArrivingFromChapterOne) yield return hud.TitleCard(titleCard, titleHoldSeconds);
         ArrivingFromChapterOne = false;
         yield return WakeUp(hud);
@@ -65,25 +66,32 @@ public class ChapterTwoDirector : MonoBehaviour
         yield return null;      // so everything else in the scene has started, and can be set up
         player.transform.rotation = Quaternion.identity;
         if (!string.IsNullOrEmpty(checkpoint.stage)) FillStage(checkpoint);
+        Inventory.Load(checkpoint.inventory);
         SaveGame.PlacePlayer(checkpoint);
         if (player.TryGetComponent(out PlayerHealthHandler handler)) handler.RespawnPoint = player.transform.position;
         SuitHelper.Get().ComeOnline();
 
         var escape = FindAnyObjectByType<StorageEscape>();
-        var aftermath = FindAnyObjectByType<CrewAftermath>();
-        var lockout = FindAnyObjectByType<BadgeLockout>();
-        string done = checkpoint.finishedObjective, next = checkpoint.nextObjective;
-        bool lockedOut = lockout != null && (next == lockout.objective || done == lockout.objective);
-        bool realized = lockedOut || (aftermath != null && next == aftermath.objectiveNext);
-        bool escaped = realized || (escape != null && next == escape.objectiveOut);
+        var reveal = FindAnyObjectByType<PatrolReveal>();
+        string next = checkpoint.nextObjective;
+        // The last blocked way found, if it was one of those (the exit, then the way to the control room).
+        BlockedWay passed = null;
+        foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
+            if (!string.IsNullOrEmpty(way.objective) && next == way.objective) passed = way;
+        // Or somewhere in scavenging and making the EMP on the upper maintenance deck.
+        var crafting = FindAnyObjectByType<Workshop>();
+        bool craftingStage = crafting != null && crafting.Owns(next);
+        bool revealed = craftingStage || passed != null || (reveal != null && next == reveal.objective);
+        bool escaped = revealed || (escape != null && next == escape.objectiveOut);
 
         if (escape != null)
         {
             if (!escaped) escape.ResumeAtVent();
-            else escape.ResumeOut(!realized);
+            else escape.ResumeOut(!revealed);
         }
-        if (realized && !lockedOut && aftermath != null) aftermath.ResumeRealized();
-        if (lockedOut) lockout.ResumeLockedOut();
+        if (revealed && reveal != null) reveal.ResumeRevealed(passed == null && !craftingStage);
+        if (passed != null) passed.ResumePassed();
+        if (craftingStage) crafting.Resume(next);
         SaveGame.DoneResuming();
 
         player.ClearScriptedInput();
@@ -95,8 +103,7 @@ public class ChapterTwoDirector : MonoBehaviour
     void FillStage(SaveGame.Checkpoint checkpoint)
     {
         var escape = FindAnyObjectByType<StorageEscape>();
-        var aftermath = FindAnyObjectByType<CrewAftermath>();
-        var lockout = FindAnyObjectByType<BadgeLockout>();
+        var reveal = FindAnyObjectByType<PatrolReveal>();
         Vector2? OutOf(VentGrate vent) => vent != null ? (Vector2)vent.transform.position + vent.exitOffset : (Vector2?)null;
         Vector2? at = null;
         string next = null;
@@ -110,14 +117,23 @@ public class ChapterTwoDirector : MonoBehaviour
                 next = escape != null ? escape.objectiveOut : null;
                 at = escape != null ? OutOf(escape.restroomVent) : null;
                 break;
-            case "to-control-room":
-                next = aftermath != null ? aftermath.objectiveNext : null;
+            case "patrols":
+                next = reveal != null ? reveal.objective : null;
                 at = escape != null ? OutOf(escape.restroomVent) : null;
                 break;
-            case "lockout":
-                next = lockout != null ? lockout.objective : null;
-                if (lockout != null && lockout.door != null)
-                    at = (Vector2)lockout.door.transform.position - lockout.door.wallDirection * 1.5f;
+            case "emp-built":
+                var crafting = FindAnyObjectByType<Workshop>();
+                next = crafting != null ? crafting.afterObjective : null;
+                at = crafting != null ? crafting.benchStandAt : (Vector2?)null;
+                break;
+            default:
+                // Found one of the blocked ways: standing in front of it, with where it sends them next.
+                foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
+                {
+                    if (way.stage != checkpoint.stage) continue;
+                    next = way.objective;
+                    at = way.standAt;
+                }
                 break;
         }
         if (next == null) Debug.LogWarning($"{name}: there's no stage called \"{checkpoint.stage}\" in Chapter 2 (or what it needs isn't in the scene).", this);

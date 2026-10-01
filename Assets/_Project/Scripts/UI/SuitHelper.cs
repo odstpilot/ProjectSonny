@@ -29,10 +29,10 @@ public class SuitHelper : MonoBehaviour
     const float BubbleWidth = 600f;
     const float BubbleGap = 18f;
     const float FacePixel = 6f;                 // canvas units per pixel of Pip's face
-    const float LettersPerSecond = 38f;
-    const float HoldBase = 1.6f;                // how long a line stays up once it's typed, plus a little per letter
-    const float HoldPerLetter = 0.055f;
-    const float LastLineLinger = 1.6f;          // how long Pip stays after the last line in the queue, before switching off
+    const float LettersPerSecond = 62f;
+    const float HoldBase = 1.05f;               // how long a line stays up once it's typed, plus a little per letter
+    const float HoldPerLetter = 0.038f;
+    const float LastLineLinger = 1.2f;          // how long Pip stays after the last line in the queue, before switching off
     const float SwitchTime = 0.18f;             // switching on or off, like an old screen
     const float ChirpFrequency = 880f;
 
@@ -86,6 +86,7 @@ public class SuitHelper : MonoBehaviour
         if (instance == null) instance = FindAnyObjectByType<SuitHelper>();
         if (instance == null) instance = new GameObject("SuitHelper", typeof(RectTransform)).AddComponent<SuitHelper>();
         instance.Build();
+        PipLog.Ensure();
         return instance;
     }
 
@@ -126,6 +127,27 @@ public class SuitHelper : MonoBehaviour
         Tell(lines);
         int until = queuedCount;
         while (saidCount < until) yield return null;
+    }
+
+    // Everything Pip's said this session, oldest first, as it was shown (keys picked out): for the log (PipLog).
+    public static readonly List<string> History = new List<string>();
+    public const int HistoryLimit = 200;
+    public static event System.Action<string> Said;
+
+    // Entering Play mode without reloading scripts keeps statics.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHistory()
+    {
+        History.Clear();
+        Said = null;
+    }
+
+    static void Remember(string line)
+    {
+        string shown = Styled(line);
+        History.Add(shown);
+        if (History.Count > HistoryLimit) History.RemoveAt(0);
+        Said?.Invoke(shown);
     }
 
     // Drops whatever hasn't been said yet; the line being said finishes.
@@ -199,10 +221,11 @@ public class SuitHelper : MonoBehaviour
             if (line.StartsWith("~"))
             {
                 line = line.Substring(1);
-                yield return GlitchRoutine(0.45f);
+                yield return GlitchRoutine(0.28f);
             }
             happy = line.StartsWith("^");
             if (happy) line = line.Substring(1).TrimStart();
+            Remember(line);
             ShowBubble(true);
             yield return TypeLine(Styled(line), true);
             float hold = HoldBase + lineLabel.textInfo.characterCount * HoldPerLetter;

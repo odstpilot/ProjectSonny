@@ -20,9 +20,10 @@ public class CrewMember : MonoBehaviour
     public enum Role { Wander, Stand, Chat, Greet }
 
     static readonly int TrimColorId = Shader.PropertyToID("_TrimColor");
-    // How close anyone can come to anyone else, middle to middle, side by side and one behind the other: a little more
-    // than their footprint (DepthDressing), so nobody walks into anyone.
-    static readonly Vector2 PersonalSpace = new Vector2(0.9f, 0.5f);
+    // How close anyone can come to anyone else, middle to middle, side by side and one above the other on screen: wide
+    // enough apart up and down that one person's head never covers the next one's body, so nobody seems to stand in
+    // anyone.
+    static readonly Vector2 PersonalSpace = new Vector2(1f, 1.4f);
 
     // Everyone aboard, for keeping out of each other's way.
     static readonly List<CrewMember> everyone = new List<CrewMember>();
@@ -540,11 +541,14 @@ public class CrewMember : MonoBehaviour
         new Vector2(apart.x / PersonalSpace.x, apart.y / PersonalSpace.y).magnitude;
 
     // Along the path a step at a time. Waits while anyone's in the way, and gives up on the walk if they stay there
-    // (not all after the same wait, so two people meeting head on don't both turn back at once).
+    // (not all after the same wait, so two people meeting head on don't both turn back at once). Once stopped, they stay
+    // stopped a moment before trying again, so they don't flicker between walking and standing a step at a time.
     IEnumerator WalkPath()
     {
+        const float Pause = 0.35f;
         float giveUpAfter = Random.Range(0.8f, 2f);
         float blockedFor = 0f;
+        float stillUntil = 0f;
         int next = 0;
         while (next < path.Count)
         {
@@ -563,11 +567,21 @@ public class CrewMember : MonoBehaviour
                 continue;
             }
 
+            if (Time.time < stillUntil)
+            {
+                moving = false;
+                blockedFor += Time.fixedDeltaTime;
+                if (blockedFor > giveUpAfter) yield break;
+                yield return new WaitForFixedUpdate();
+                continue;
+            }
+
             Face(offset);
             Vector2 step = Vector2.MoveTowards(Position, path[next], walkSpeed * Time.fixedDeltaTime);
             if (PlayerInTheWay(step) || CrewInTheWay(step))
             {
                 moving = false;
+                stillUntil = Time.time + Pause;
                 blockedFor += Time.fixedDeltaTime;
                 if (blockedFor > giveUpAfter) yield break;
             }
@@ -592,11 +606,12 @@ public class CrewMember : MonoBehaviour
             float after = Crowding(other.Position - step);
             if (after < 1f && after < Crowding(other.Position - Position)) return true;
         }
+        // The bots keep out of people's way themselves (MaintenanceBot), so people only stop for one right in front of them.
         foreach (Rigidbody2D other in otherWalkers)
         {
             if (other == null) continue;
             float after = Crowding(other.position - step);
-            if (after < 1f && after < Crowding(other.position - Position)) return true;
+            if (after < 0.6f && after < Crowding(other.position - Position)) return true;
         }
         return false;
     }

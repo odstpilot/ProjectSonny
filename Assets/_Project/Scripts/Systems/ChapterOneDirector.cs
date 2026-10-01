@@ -149,7 +149,7 @@ public class ChapterOneDirector : MonoBehaviour
         Vector2? at = null;
         Vector2? controlRoom = cutscene != null && cutscene.sonny != null ? (Vector2)cutscene.sonny.transform.position + cutscene.workSpot : (Vector2?)null;
         Vector2? nearGreeter = greeter != null ? greeter.Position + Vector2.left * 1.2f : (Vector2?)null;
-        Vector2? InFront(Component thing) => thing != null ? (Vector2)thing.transform.position + Vector2.down : (Vector2?)null;
+        Vector2? InFront(Component thing) => thing != null ? (Vector2)thing.transform.position + Vector2.down * 1.3f : (Vector2?)null;
         string finished = null;
         switch (checkpoint.stage)
         {

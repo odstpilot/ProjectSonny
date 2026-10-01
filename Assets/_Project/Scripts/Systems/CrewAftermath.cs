@@ -1,11 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-// Chapter 2's common grounds, once the technician's out of the ducts (StorageEscape): the crew they're looking for are
-// lying where they fell, with scorch marks beside them. Walking near one the first time, Pip says something: a few of them have lines of their own
-// (the ones the technician met), the rest take the next of the shared lines. After seeing enough of them, Pip works out
-// what they had in common, their badges, and that the technician's the only one without, and the objective becomes the
-// control room, where Sonny is.
+// Chapter 2's common grounds, once the technician's out of the ducts (StorageEscape): the crew are lying where they fell,
+// all through the rooms, with scorch marks beside them. Finding them isn't the objective (PatrolReveal settles that the
+// moment the technician steps out of the restroom); this is what Pip says about them on the way. Walking near one the
+// first time, Pip says something: a few of them have lines of their own (the ones the technician met), the rest take
+// the next of the shared lines. After seeing enough of them, Pip works out what they had in common, their badges, and
+// that the technician's the only one without.
 // Built by ChapterOneBuilder for ChapterTwoBuilder, which places the bodies where the crew were in Chapter 1.
 public class CrewAftermath : MonoBehaviour
 {
@@ -36,13 +37,8 @@ public class CrewAftermath : MonoBehaviour
     [TextArea] public string[] pipRealizes =
     {
         "~Tech... everyone who had a badge is... like this.",
-        "~You're the only one on the station without one.",
-        "~Sonny. Sonny runs everything from the control room. If anyone knows what happened, it's Sonny.",
+        "~You're the only one on the station without one. Maybe that's why you're still here.",
     };
-    public string objectiveNext = "Get to the control room";
-    [Tooltip("The room marked on the map for it, by its marker in the layout, and what the pin says.")]
-    public char nextRoom = 'o';
-    public string nextLabel = "Control Room";
 
     private int nextShared;
 
@@ -70,6 +66,12 @@ public class CrewAftermath : MonoBehaviour
         bool realized = false;
         while (!realized)
         {
+            // Not over the technician taking it all in at the restroom door.
+            if (PatrolReveal.Playing)
+            {
+                yield return null;
+                continue;
+            }
             for (int i = 0; i < bodies.Length; i++)
             {
                 if (found[i] || bodies[i].body == null || player == null) continue;
@@ -84,18 +86,9 @@ public class CrewAftermath : MonoBehaviour
                 while (SuitHelper.Exists && SuitHelper.Get().Talking) yield return null;
                 realized = true;
                 Tell(pipRealizes);
-                TutorialHud.Get().SetObjective(objectiveNext);
-                MapScreen.SetTarget(nextRoom, nextLabel);
             }
             yield return null;
         }
-    }
-
-    // Picking up from a save once it's been worked out (ChapterTwoDirector): no search, just where to go.
-    public void ResumeRealized()
-    {
-        TutorialHud.Get().SetObjective(objectiveNext);
-        MapScreen.SetTarget(nextRoom, nextLabel);
     }
 
     string[] LinesFor(Body found)

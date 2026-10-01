@@ -142,6 +142,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (PauseMenu.IsPaused)
+        {
+            movement = Vector2.zero;
+            return;
+        }
+
         movement = scripted ? scriptedMove : new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         movement = movement.normalized;
         if (combatSpeedMultiplier <= 0f)

@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Everything Pip's said (SuitHelper.History), to read back. Once Pip's on, a little icon sits in the top right corner,
+// Everything Pip's said (SuitHelper.History), to read back, with every tip card that's come up (TipCard) kept among it. Once Pip's on, a little icon sits in the top right corner,
 // under where Pip pops up: a speech bubble on Pip's green screen, with an amber dot when there's something new since it
 // was last opened. Click it, or press L, and the log opens over the game, paused: Pip's lines oldest first, scrolled to
 // the newest, with the mouse wheel, W/S, or the arrow keys to go back through them. L, Tab, Esc, or a click outside it
@@ -22,6 +22,7 @@ public class PipLog : MonoBehaviour
     static readonly Color PanelColor = new Color(0.03f, 0.08f, 0.075f, 0.97f);
     static readonly Color ScreenTop = new Color(0.06f, 0.24f, 0.2f);
     const string PipTag = "<color=#73FFC7><b>PIP</b></color>   ";
+    const string TipTag = "<color=#FFAE52><b>TIP</b></color>   ";
 
     static PipLog instance;
 
@@ -69,7 +70,8 @@ public class PipLog : MonoBehaviour
 
     void Update()
     {
-        bool pipOn = SuitHelper.Exists && !TutorialHud.ScreenCovered;
+        // Whenever there's anything to read back, even with Pip itself offline (the comms ring's blackout).
+        bool pipOn = (SuitHelper.Exists || SuitHelper.History.Count > 0) && !TutorialHud.ScreenCovered;
         iconGroup.alpha = Mathf.MoveTowards(iconGroup.alpha, pipOn && !open ? 1f : 0f, Time.unscaledDeltaTime / FadeTime);
         unread.enabled = SuitHelper.History.Count > seen;
         MouseOverIcon = pipOn && !open && RectTransformUtility.RectangleContainsScreenPoint(icon, Input.mousePosition, null);
@@ -158,7 +160,8 @@ public class PipLog : MonoBehaviour
         foreach (string line in SuitHelper.History)
         {
             if (text.Length > 0) text.Append("\n\n");
-            text.Append(PipTag).Append(line);
+            if (line.Length > 0 && line[0] == SuitHelper.TipMarker) text.Append(TipTag).Append(line, 1, line.Length - 1);
+            else text.Append(PipTag).Append(line);
         }
         lines.text = text.ToString();
         empty.enabled = SuitHelper.History.Count == 0;

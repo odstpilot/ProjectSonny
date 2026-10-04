@@ -6,7 +6,7 @@ using UnityEngine.UI;
 // The screen while hiding in a Locker: the inside of the locker door fills the screen, dark metal with a vent of
 // horizontal slats at eye level. Through the gaps is a first-person view of the hallway outside (FirstPersonView),
 // built from the level itself, with any robots walking past. Moving the mouse peeks around a little.
-// Also draws the "Press E to hide" prompt over the locker the player is next to, and the fade through black.
+// Also draws the fade through black. (The "[E] Hide" tag over a locker is the shared one, InteractPrompt.)
 // Built from code the first time a locker needs it, so there is no canvas to set up. Every locker shares it.
 public class LockerView : MonoBehaviour
 {
@@ -40,9 +40,7 @@ public class LockerView : MonoBehaviour
 
     static LockerView instance;
 
-    private Locker promptOwner;
     private Locker openLocker;
-    private RectTransform prompt;
     private GameObject inside;
     private RectTransform door;
     private RectTransform outsideRect;
@@ -59,15 +57,6 @@ public class LockerView : MonoBehaviour
             instance.Build(font);
         }
         return instance;
-    }
-
-    // Shows the prompt over this locker, or hides it if this locker was the one showing it.
-    public static void SetPrompt(Locker locker, bool show, TMP_FontAsset font)
-    {
-        if (show)
-            Get(font).promptOwner = locker;
-        else if (instance != null && instance.promptOwner == locker)
-            instance.promptOwner = null;
     }
 
     // For a locker switched off with the player inside: back to the normal view right away.
@@ -118,20 +107,7 @@ public class LockerView : MonoBehaviour
 
     void LateUpdate()
     {
-        UpdatePrompt();
         if (openLocker != null) UpdateInside();
-    }
-
-    void UpdatePrompt()
-    {
-        Camera main = Camera.main;
-        bool show = promptOwner != null && openLocker == null && main != null;
-        if (prompt.gameObject.activeSelf != show) prompt.gameObject.SetActive(show);
-        if (!show) return;
-
-        // An overlay canvas is laid out in screen pixels, so the screen point can be used as-is.
-        float bob = Mathf.Sin(Time.unscaledTime * 4f) * 3f;
-        prompt.position = main.WorldToScreenPoint(promptOwner.PromptPoint) + new Vector3(0f, bob, 0f);
     }
 
     void UpdateInside()
@@ -227,16 +203,6 @@ public class LockerView : MonoBehaviour
         hint.color = new Color(0.8f, 0.84f, 0.9f, 0.55f);
         hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0.1f);
         hint.rectTransform.sizeDelta = new Vector2(600f, 50f);
-
-        // --- Prompt over the locker ---
-        prompt = NewRect("Prompt", transform);
-        prompt.pivot = new Vector2(0.5f, 0f);
-        prompt.sizeDelta = new Vector2(250f, 46f);
-        Image promptBack = prompt.gameObject.AddComponent<Image>();
-        promptBack.color = new Color(0f, 0f, 0f, 0.7f);
-        promptBack.raycastTarget = false;
-        Fill(Label("Text", prompt, $"Press {Locker.InteractKey} to hide", 28f, font).rectTransform);
-        prompt.gameObject.SetActive(false);
 
         // --- Fade, on top of everything ---
         fade = Fill(NewRect("Fade", transform)).gameObject.AddComponent<Image>();

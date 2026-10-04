@@ -117,11 +117,46 @@ public static class SoundDefaults
             Magnetic + "/Magnetic hit 01.wav", Magnetic + "/Magnetic hit 02.wav"),
     };
 
+    // The air ducts (VentNetwork), in Chapter 2. The ones without clips are made in code (VentSounds).
+    public static readonly Entry[] Vents =
+    {
+        new Entry("Vent Ambience", SoundCategory.Ambience, 0.5f, "Inside the air ducts: a low machine hum, looping the whole time the player's in them.",
+            Sfx + "/700008__newlocknew__scimisc_low-steady-hum-2_em.wav").Looping(),
+        new Entry("Vent Deep Loop", SoundCategory.Ambience, 0.35f, "A deeper drone under the duct hum, played a little slow. Loops.",
+            Magnetic + "/Looping/Magnetic bass ground loop.wav").Looping(),
+        new Entry("Vent Crawl", SoundCategory.SoundEffect, 0.6f, "Hands and knees on sheet metal, one per cell crawled. Played pitched down.",
+            Sfx + "/footstep1.wav", Sfx + "/footstep2.wav", Sfx + "/footstep3.wav", Sfx + "/footstep4.wav"),
+        new Entry("Vent Dent", SoundCategory.SoundEffect, 1f, "A dented duct panel banging under the player. Also, quieter and higher, bumps and grates.", Magnetic + "/Magnetic hit 01.wav"),
+        new Entry("Vent Bang", SoundCategory.SoundEffect, 1f, "Crawling head first into a duct wall: a hollow metal bang that booms and rattles and rings back down the ducts. Loud." + MadeInCode),
+        new Entry("Vent Scrape", SoundCategory.SoundEffect, 1f, "Scraping against the duct on a wrong key in a tight squeeze.", Magnetic + "/Magnetic hit 04.wav"),
+        new Entry("Vent Found", SoundCategory.SoundEffect, 1f, "The noise meter filling up, as eyes look back out of the dark.", Sfx + "/eerie_sound_1.wav"),
+        new Entry("Vent Heartbeat", SoundCategory.SoundEffect, 0.75f, "The player's heartbeat in the ducts, louder and faster as the noise fills and while the drone is out. Loops.",
+            Sfx + "/heartbeat.wav").Looping(),
+        new Entry("Vent Scare", SoundCategory.SoundEffect, 0.6f, "Something in the ducts that isn't the player, now and then, from one side or the other.",
+            Sfx + "/eerie_sound_2.wav", Magnetic + "/Magnetic hit 02.wav", Magnetic + "/Magnetic hit 05.wav", Magnetic + "/Magnetic fx 03.wav",
+            Magnetic + "/Magnetic fx 07.wav", Magnetic + "/Magnetic fx 11.wav", Magnetic + "/Magnetic bass once 01.wav", Sfx + "/30334__erh__radio-noise-1.wav"),
+        new Entry("Vent Creak", SoundCategory.SoundEffect, 0.6f, "One of the duct scares: a long metal groan." + MadeInCode),
+        new Entry("Vent Skitter", SoundCategory.SoundEffect, 0.6f, "One of the duct scares: little claws on metal behind a panel." + MadeInCode),
+        new Entry("Vent Breath", SoundCategory.SoundEffect, 0.6f, "One of the duct scares: slow breathing in the dark that isn't the player's." + MadeInCode),
+        new Entry("Vent Knock", SoundCategory.SoundEffect, 0.6f, "One of the duct scares: three knocks far off down the ducts." + MadeInCode),
+        new Entry("Vent Whisper", SoundCategory.SoundEffect, 0.6f, "One of the duct scares: a whisper, nearly words." + MadeInCode),
+        new Entry("Rat Scurry", SoundCategory.SoundEffect, 0.9f, "The rat's feet on the metal as it bolts at the player." + MadeInCode),
+        new Entry("Rat Squeal", SoundCategory.SoundEffect, 1f, "The rat squealing as it reaches the player: the jump scare. Loud." + MadeInCode),
+        new Entry("Drone Release", SoundCategory.SoundEffect, 1f, "The drone's hatch opening and it powering up.", Sfx + "/746988__gammagool__robot-awakening-power-on (1).wav"),
+        new Entry("Drone Hum", SoundCategory.SoundEffect, 0.8f, "The vent drone hovering, looping while it's out: louder the nearer it is, pitched down, wavering.",
+            Magnetic + "/Looping/Magnetic industrial layer01 loop.wav").Looping(),
+        new Entry("Drone Servo", SoundCategory.SoundEffect, 0.5f, "The vent drone turning to look down another duct." + MadeInCode),
+        new Entry("Drone Lock", SoundCategory.SoundEffect, 1f, "The vent drone locking on to the player: a rising, tearing shriek." + MadeInCode),
+        new Entry("Drone Caught", SoundCategory.SoundEffect, 1f, "The vent drone reaching the player.", Magnetic + "/Magnetic hit 07.wav"),
+    };
+
     // The sets offered by the inspector's Add Defaults menu.
     public static readonly (string label, Entry[][] sets)[] Menu =
     {
         ("Tutorial", new[] { Player, Tutorial, Sonny }),
         ("Chapter 1", new[] { Player, Floor, Sonny, ChapterOne }),
+        ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents }),
+        ("Vents", new[] { Vents }),
         ("Floor (1 or 2)", new[] { Player, Floor }),
         ("Player Only", new[] { Player }),
     };

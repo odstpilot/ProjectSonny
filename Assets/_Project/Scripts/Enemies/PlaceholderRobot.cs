@@ -12,7 +12,7 @@ using UnityEngine;
 // time, changing its mind partway there, and snapping its eye about whenever it stops, so it can't be timed. Roaming
 // robots keep out of each other's way: none heads for where another is or is going, and they steer round each other.
 // With Smart Senses it's harder to sneak past: it catches movement out of the corner of its eye and hears footsteps
-// close behind it (crouching beats both), goes to look at anything it half saw, calls the others in the room over once
+// close behind it (crouching only dulls both), goes to look at anything it half saw, calls the others in the room over once
 // it's sure, and when it loses the player it heads the way they were running rather than to where they were.
 [RequireComponent(typeof(Health), typeof(Rigidbody2D))]
 public class PlaceholderRobot : MonoBehaviour
@@ -65,9 +65,9 @@ public class PlaceholderRobot : MonoBehaviour
     [Tooltip("Seconds for its suspicion to drain away once it can't see them.")]
     public float detectionFade = 2f;
     [Tooltip("A crouching player can only be seen from this fraction of Sight Range. Close Range still notices them.")]
-    [Range(0.1f, 1f)] public float crouchSightMultiplier = 0.6f;
+    [Range(0.1f, 1f)] public float crouchSightMultiplier = 0.85f;
     [Tooltip("How fast the ring fills while the player crouches, as a fraction of normal.")]
-    [Range(0.05f, 1f)] public float crouchDetectionMultiplier = 0.45f;
+    [Range(0.05f, 1f)] public float crouchDetectionMultiplier = 0.75f;
     [Tooltip("A sprinting player can be seen this many times further than Sight Range.")]
     [Range(1f, 3f)] public float sprintSightMultiplier = 1.3f;
     [Tooltip("How fast the ring fills while the player sprints, as a multiple of normal.")]
@@ -86,7 +86,7 @@ public class PlaceholderRobot : MonoBehaviour
     public float peripheralFieldOfView = 200f;
     [Range(0.1f, 1f)] public float peripheralRange = 0.55f;
     [Range(0.05f, 1f)] public float peripheralRate = 0.35f;
-    [Tooltip("It hears a walking (not crouching) player this close whichever way it's facing, filling the ring this much slower.")]
+    [Tooltip("It hears a walking player this close whichever way it's facing, filling the ring this much slower (slower still crouching).")]
     public float walkHearingRange = 2.2f;
     [Range(0.05f, 1f)] public float hearingRate = 0.5f;
     [Tooltip("Half sure, it stops what it's doing and goes to look where it glimpsed the player, at its roaming speed.")]
@@ -467,11 +467,12 @@ public class PlaceholderRobot : MonoBehaviour
         {
             seen = 1f;
         }
-        else if (smartSenses && !tracking && !PlayerCrouching)
+        else if (smartSenses && !tracking)
         {
-            // Out of the corner of its eye, or the sound of their footsteps behind it. Crouching gets past both.
-            if (distance <= sight * peripheralRange && angle <= peripheralFieldOfView * 0.5f) seen = peripheralRate;
-            else if (distance <= walkHearingRange && PlayerMoving) seen = hearingRate;
+            // Out of the corner of its eye, or the sound of their footsteps behind it. Crouching only dulls both.
+            float hush = PlayerCrouching ? crouchDetectionMultiplier : 1f;
+            if (distance <= sight * peripheralRange && angle <= peripheralFieldOfView * 0.5f) seen = peripheralRate * hush;
+            else if (distance <= walkHearingRange && PlayerMoving) seen = hearingRate * hush;
         }
         return seen > 0f && HasLineOfSight(player.position) ? seen : 0f;
     }

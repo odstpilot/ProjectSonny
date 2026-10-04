@@ -6,7 +6,7 @@ using UnityEngine;
 // moment the technician steps out of the restroom); this is what Pip says about them on the way. Walking near one the
 // first time, Pip says something: a few of them have lines of their own (the ones the technician met), the rest take
 // the next of the shared lines. After seeing enough of them, Pip works out what they had in common, their badges, and
-// that the technician's the only one without.
+// that the technician's the only one without. In Chapter 2 as it stands, Pip says nothing over them (no lines set).
 // Built by ChapterOneBuilder for ChapterTwoBuilder, which places the bodies where the crew were in Chapter 1.
 public class CrewAftermath : MonoBehaviour
 {
@@ -25,20 +25,10 @@ public class CrewAftermath : MonoBehaviour
 
     [Header("Pip")]
     [Tooltip("For the bodies with no lines of their own, one set each, in turn (| between lines). ~ opens a line with static.")]
-    [TextArea] public string[] sharedLines =
-    {
-        "~Another one. Their badge is still blinking.",
-        "~Those scorch marks... that wasn't the rubble. Something shot them.",
-        "~No vitals. Nothing, anywhere on this deck.|~Tech, I'm so sorry.",
-        "~Their badges all went off at the same time. Like something was looking for them.",
-    };
+    [TextArea] public string[] sharedLines = new string[0];
     [Tooltip("How many have to be found before Pip works it out.")]
     public int realizeAfter = 3;
-    [TextArea] public string[] pipRealizes =
-    {
-        "~Tech... everyone who had a badge is... like this.",
-        "~You're the only one on the station without one. Maybe that's why you're still here.",
-    };
+    [TextArea] public string[] pipRealizes = new string[0];
 
     private int nextShared;
 

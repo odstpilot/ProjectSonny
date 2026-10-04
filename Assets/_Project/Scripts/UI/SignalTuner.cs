@@ -56,6 +56,9 @@ public class SignalTuner : MonoBehaviour
     public static SignalTuner Current => instance;
 
     public bool IsOpen { get; private set; }
+    // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
+    public static bool AnyOpen => openCount > 0;
+    static int openCount;
     public bool IsLocked { get; private set; }
     public bool ShowingTransmission { get; private set; }
     public HackingTerminal Terminal { get; private set; }
@@ -119,6 +122,7 @@ public class SignalTuner : MonoBehaviour
 
     void OnDestroy()
     {
+        if (IsOpen) openCount--;
         if (instance == this) instance = null;
     }
 
@@ -128,6 +132,7 @@ public class SignalTuner : MonoBehaviour
 
         Terminal = terminal;
         IsOpen = true;
+        openCount++;
         openedFrame = Time.frameCount;
         frozenControls = PlayerControls.Freeze(player);
         playerHealth = player.GetComponent<Health>();
@@ -159,6 +164,7 @@ public class SignalTuner : MonoBehaviour
         StopAllCoroutines();
         typing = null;
         IsOpen = false;
+        openCount--;
         IsLocked = false;
         ShowingTransmission = false;
         dragging = -1;

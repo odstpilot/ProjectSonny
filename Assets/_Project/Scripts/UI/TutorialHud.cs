@@ -213,8 +213,8 @@ public class TutorialHud : MonoBehaviour
     // Below the health readout, when there is one in the corner.
     void LateUpdate()
     {
-        float below = HealthHud.CellsShowing ? HealthHud.Height + 24f : 0f;
-        objective.anchoredPosition = new Vector2(Margin, -Margin * 0.8f - below);
+        float top = HealthHud.CellsShowing ? HealthHud.Bottom + 22f : Margin * 0.8f;
+        objective.anchoredPosition = new Vector2(Margin, -top);
     }
 
     // What's showing now, empty for nothing.
@@ -302,6 +302,14 @@ public class TutorialHud : MonoBehaviour
             yield return WaitUnscaled(holdSeconds);
             yield return FadeText(titleText, 0f, 0.6f);
         }
+    }
+
+    // Clears a caption or title card left halfway, for a cutscene that's been skipped (its coroutine stopped with the
+    // cutscene's). The fade's left as it is.
+    public void CutAway()
+    {
+        captionGroup.alpha = 0f;
+        titleText.alpha = 0f;
     }
 
     void SetLetterbox(float height)

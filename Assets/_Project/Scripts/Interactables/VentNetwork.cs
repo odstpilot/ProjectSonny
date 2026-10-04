@@ -16,23 +16,35 @@ public enum VentCell : byte { Solid, Duct, Dent, Squeeze, Grate, Hatch }
 //   W crawls forward a cell, S backs up one, A and D turn. Hold C or Ctrl to crawl carefully (slow and quiet), or
 //   Shift to hurry (fast and loud). E climbs out over a grate.
 //   The flashlight only reaches a couple of cells (VentView). Past that it's black, though light from a grate shows further.
-//   Noise is what gives the player away. A dented panel bangs when crawled over (it only creaks if careful), hurrying
-//   is loud on any panel, and so is crawling head first into a wall. It fades again if they keep quiet.
-//   A tight squeeze takes one key at a time: a letter from W A S D comes up and has to be pressed before its time runs
-//   out. The right key inches the player through; the wrong one, or being too slow, scrapes loudly and slips them back.
+//   Noise is what gives the player away. Every cell crawled makes a little (none crawling carefully), a dented panel
+//   bangs when crawled over (it only creaks if careful), hurrying is loud on any panel, and crawling head first into a
+//   wall is a hollow bang that rings down the ducts. It fades again if they keep quiet.
+//   A tight squeeze takes one key at a time: a letter from anywhere on the keyboard comes up (SqueezeLetters: every
+//   letter but the ones the game already uses everywhere, like M for the map) and has to be pressed before its time
+//   runs out. There's a good while to find it. The right key inches the player through; the wrong one, or being too
+//   slow, scrapes loudly and slips them back.
 //   There's no room to turn inside a squeeze.
 //
 // The drone:
-//   When the noise fills up, eyes stare out of the dark for a moment, and then a drone is let out of the nearest hatch
-//   that isn't right on top of the player. It flies the ducts toward them. It keeps track of them while they're within
-//   earshot, in a straight line of sight down a duct, or making any real noise; lose it, and it searches around where
-//   it last knew they were, then goes back into its hatch. If it reaches them they're caught: the usual death, back at
-//   the last checkpoint. Climbing out at a grate gets away from it. Its hum is louder the nearer it is along the
-//   ducts, and comes from whichever side it's on.
+//   When the noise fills up, eyes stare out of the dark for a moment, and then a drone drops out of the nearest hatch
+//   that isn't right on top of the player. It doesn't chase. It hangs there and looks around, turning its red
+//   searchlight down one duct and then another (toward any real noise first), and after a while it rises back into its
+//   hatch. If its light finds the player straight down a duct, or they're right under it, it locks on with a shriek;
+//   still in its sight when the lock's done, and it's on them: caught, the usual death, back at the last checkpoint.
+//   Out of its sight before then, and it goes back to looking. Its hum is louder the nearer it is along the ducts, and
+//   comes from whichever side it's on.
+//
+// The dark:
+//   The whole time they're in, the ducts make noises from one side or the other (scareSounds): groans,
+//   knocking, something skittering, something breathing. A deeper loop sits under the ambience, and their heartbeat
+//   gets louder as the noise fills and while the drone is out.
+//   On an x cell, the first time, facing down a duct, a rat bolts out of the dark straight at them, squealing: a
+//   jump scare, and a lot of noise.
 //
 // The map is kept as text, one character per cell, top row first:
 //   # or space  solid        .  duct        d  dented panel        s  tight squeeze (keep them to straight runs)
 //   r           a drone hatch in the ceiling. With none, the drone comes from somewhere a few cells away.
+//   x           a duct where the rat comes at them
 //   1 - 9       a grate, where the VentGrate with that number opens into the ducts
 public class VentNetwork : MonoBehaviour
 {
@@ -47,8 +59,16 @@ public class VentNetwork : MonoBehaviour
 
     // Up, right, down, left the map, clockwise, so a direction times 90 is the angle the view faces.
     static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
-    static readonly KeyCode[] SqueezeKeys = { KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D };
-    const string SqueezeLetters = "WASD";
+    // Every letter but M (the map), L (Pip's log), P (pause), Q (looking at things), and F.
+    const string SqueezeLetters = "ABCDEGHIJKNORSTUVWXYZ";
+    static readonly KeyCode[] SqueezeKeys = MakeSqueezeKeys();
+
+    static KeyCode[] MakeSqueezeKeys()
+    {
+        var keys = new KeyCode[SqueezeLetters.Length];
+        for (int i = 0; i < keys.Length; i++) keys[i] = KeyCode.A + (SqueezeLetters[i] - 'A');
+        return keys;
+    }
 
     // What a new network starts with, and what the inspector's Example button puts back.
     public const string ExampleLayout =
@@ -75,17 +95,19 @@ public class VentNetwork : MonoBehaviour
     [Tooltip("Seconds to back up one cell.")]
     public float backUpTime = 0.9f;
     [Tooltip("Seconds to turn a quarter of the way round.")]
-    public float turnTime = 0.35f;
+    public float turnTime = 0.15f;
 
     [Header("Noise (1 fills the meter)")]
+    [Tooltip("Each cell crawled at a normal pace. Crawling carefully makes none.")]
+    public float crawlNoise = 0.035f;
     [Tooltip("Crawling over a dented panel.")]
     public float dentNoise = 0.45f;
     [Tooltip("Crawling carefully over a dented panel.")]
     public float carefulDentNoise = 0.1f;
     [Tooltip("Each cell crawled while hurrying.")]
     public float hurriedNoise = 0.12f;
-    [Tooltip("Crawling head first into a wall.")]
-    public float bumpNoise = 0.08f;
+    [Tooltip("Crawling head first into a wall: a bang that rings down the ducts.")]
+    public float bumpNoise = 0.35f;
     [Tooltip("Each wrong key, or too slow a key, in a squeeze.")]
     public float squeezeMistakeNoise = 0.5f;
     [Tooltip("Seconds of quiet before the noise starts to fade.")]
@@ -97,49 +119,71 @@ public class VentNetwork : MonoBehaviour
     [Tooltip("Keys to press to get through one squeeze cell.")]
     [Range(1, 20)] public int squeezeKeys = 6;
     [Tooltip("Seconds to press each one.")]
-    public float squeezeKeyTime = 1.1f;
+    public float squeezeKeyTime = 2.4f;
 
     [Header("Drone")]
     [Tooltip("Seconds the eyes stare out of the dark before the drone is let out.")]
     public float stareTime = 1.4f;
-    [Tooltip("Seconds for the drone to fly one cell while chasing. Normal crawling is 0.6, so only hurrying outruns it.")]
-    public float droneChaseCellTime = 0.5f;
-    [Tooltip("Seconds per cell while it searches, and on its way back to its hatch.")]
-    public float droneSearchCellTime = 0.85f;
-    [Tooltip("It hears the player this many cells away along the ducts, however quiet they are.")]
-    public int droneHearing = 2;
-    [Tooltip("It sees the player this many cells straight down a duct, with nothing in the way.")]
+    [Tooltip("It senses the player this many cells away, whichever way it's looking.")]
+    public int droneHearing = 1;
+    [Tooltip("Its light finds the player this many cells straight down the duct it's looking along, with nothing in the way.")]
     public int droneSight = 5;
-    [Tooltip("Noises louder than this bring it straight to the player wherever it is. Bumps and careful creaks are quieter.")]
+    [Tooltip("Noises louder than this turn it to look the way they came from. Bumps and careful creaks are quieter.")]
     public float droneAlertNoise = 0.1f;
-    [Tooltip("Seconds it searches around where it lost the player before going back into its hatch.")]
-    public float droneSearchTime = 6f;
+    [Tooltip("Seconds it looks around before rising back into its hatch.")]
+    public float droneSearchTime = 9f;
+    [Tooltip("Seconds it looks down each duct before turning to another.")]
+    public float droneLookEvery = 1.7f;
+    [Tooltip("Seconds of being seen before it's on them. Out of its sight before then, and it goes back to looking.")]
+    public float droneLockTime = 0.9f;
     [Tooltip("It comes out of the nearest hatch at least this many cells from the player along the ducts.")]
-    public int droneMinReleaseDistance = 5;
+    public int droneMinReleaseDistance = 3;
 
     [Header("Looks and Sound")]
     [Tooltip("Seconds for each half of the fade through black on the way in and out.")]
     public float fadeTime = 0.25f;
     [Tooltip("Font for the hints and the squeeze keys. Leave empty for TextMesh Pro's default.")]
     public TMP_FontAsset font;
+    [Header("Sounds (the scene's SoundManager, by name)")]
     [Tooltip("Loops while the player is in the ducts.")]
-    public AudioClip ambienceLoop;
-    [Range(0f, 1f)] public float ambienceVolume = 0.5f;
+    [SoundName] public string ambienceSound = "Vent Ambience";
+    [Tooltip("A deeper loop under the ambience.")]
+    [SoundName] public string deepSound = "Vent Deep Loop";
     [Tooltip("A hand or knee coming down on the metal. Played pitched down.")]
-    public AudioClip[] crawlClips = new AudioClip[0];
+    [SoundName] public string crawlSound = "Vent Crawl";
     [Tooltip("A dented panel banging. Also used, quieter, for creaks and bumps.")]
-    public AudioClip dentClip;
+    [SoundName] public string dentSound = "Vent Dent";
+    [Tooltip("Crawling head first into a duct wall: a hollow metal bang.")]
+    [SoundName] public string bangSound = "Vent Bang";
     [Tooltip("Scraping the duct on a wrong key in a squeeze.")]
-    public AudioClip scrapeClip;
+    [SoundName] public string scrapeSound = "Vent Scrape";
     [Tooltip("The noise filling up, as the eyes appear.")]
-    public AudioClip foundClip;
+    [SoundName] public string foundSound = "Vent Found";
+    [Tooltip("The player's heartbeat: louder as the noise fills, and while the drone is out. Loops.")]
+    [SoundName] public string heartbeatSound = "Vent Heartbeat";
     [Tooltip("The drone's hatch opening and it powering up.")]
-    public AudioClip droneReleaseClip;
+    [SoundName] public string droneReleaseSound = "Drone Release";
     [Tooltip("The drone's hum, looping while it's out.")]
-    public AudioClip droneLoop;
-    [Range(0f, 1f)] public float droneVolume = 0.8f;
+    [SoundName] public string droneHumSound = "Drone Hum";
+    [Tooltip("The drone turning to look somewhere else.")]
+    [SoundName] public string droneServoSound = "Drone Servo";
+    [Tooltip("The drone locking on.")]
+    [SoundName] public string droneLockSound = "Drone Lock";
     [Tooltip("The drone reaching the player.")]
-    public AudioClip caughtClip;
+    [SoundName] public string caughtSound = "Drone Caught";
+    [Tooltip("The rat's feet, and its squeal.")]
+    [SoundName] public string ratScurrySound = "Rat Scurry";
+    [SoundName] public string ratSquealSound = "Rat Squeal";
+
+    [Header("Scares")]
+    [Tooltip("Played now and then, one at random, from one side or the other while the player's in the ducts. Listed twice comes up twice as often.")]
+    [SoundName] public string[] scareSounds = { "Vent Scare", "Vent Scare", "Vent Creak", "Vent Creak", "Vent Skitter", "Vent Breath", "Vent Knock", "Vent Whisper" };
+    [Tooltip("Seconds between them, at least and at most.")]
+    public Vector2 scareEvery = new Vector2(4f, 10f);
+    [Tooltip("How much noise the rat makes bolting past (1 fills the meter).")]
+    public float ratNoise = 0.7f;
+    [Tooltip("Cells a second the rat runs.")]
+    public float ratSpeed = 7f;
 
     // True from climbing in at a grate until standing outside again. Locker.IsPlayerHidden counts this too.
     public static bool IsPlayerInside { get; private set; }
@@ -148,7 +192,7 @@ public class VentNetwork : MonoBehaviour
     public VentCell[,] Cells => cells;
 
     enum State { Outside, Climbing, Idle, Moving, Squeezing, Caught }
-    enum Drone { None, Chasing, Searching, Returning }
+    enum Drone { None, Looking, Locking, Returning }
 
     private VentCell[,] cells;
     private int[,] grateNumbers;
@@ -186,14 +230,22 @@ public class VentNetwork : MonoBehaviour
     private float squeezeGrace;
 
     private Drone drone;
-    private Vector2Int droneCell;           // the cell it's flying from
-    private Vector2Int droneNext;           // and the one it's flying to; the same when it's hovering
-    private Vector2Int droneLast;           // where it came from, so a search doesn't just double back
-    private Vector2Int droneHome;
-    private Vector2Int droneTarget;         // where it last knew the player was
-    private float droneStep;                // 0 to 1 from droneCell to droneNext
-    private float droneSearchTimer;
+    private Vector2Int droneCell;           // its hatch, where it hangs
+    private int droneFacing;                // which way it's looking, as an index into Directions
+    private float droneAngle;               // and the angle its light is at, turning toward that
+    private float droneLookTimer;           // until it goes back up
+    private float droneTurnTimer;           // until it looks somewhere else
+    private float droneLock;                // seconds into locking on
+    private float droneRise;                // 0 up in its hatch, 1 hanging in the duct
     private Vector2 dronePosition;
+
+    private AudioSource scareAudio;
+    private AudioSource deepAudio;
+    private AudioSource heartAudio;
+    private Coroutine haunting;
+    private string lastScare;
+    private readonly HashSet<Vector2Int> ratSpots = new HashSet<Vector2Int>();
+    private bool ratDone;
     private int[,] playerDistances;         // cells along the ducts from the player to everywhere
     private int[,] pathDistances;           // and from wherever the drone is heading
     private readonly Queue<Vector2Int> floodQueue = new Queue<Vector2Int>();
@@ -205,6 +257,9 @@ public class VentNetwork : MonoBehaviour
         sfx = NewAudioSource(false);
         ambience = NewAudioSource(true);
         droneAudio = NewAudioSource(true);
+        scareAudio = NewAudioSource(false);
+        deepAudio = NewAudioSource(true);
+        heartAudio = NewAudioSource(true);
     }
 
     // Edits to the map while playing take effect the next time the player climbs in.
@@ -224,6 +279,7 @@ public class VentNetwork : MonoBehaviour
         playerHealthHandler = found.GetComponent<PlayerHealthHandler>();
     }
 
+
     void OnDisable()
     {
         if (state == State.Outside) return;
@@ -240,7 +296,7 @@ public class VentNetwork : MonoBehaviour
             view.Close();
             view.SetFade(0f);
         }
-        if (ambience != null) ambience.Stop();
+        StopDark();
         if (player != null) ShowPlayer(entrance != null ? entrance.ExitPoint : (Vector2)player.position);
         IsPlayerInside = false;
         entrance = null;
@@ -271,7 +327,11 @@ public class VentNetwork : MonoBehaviour
         quietTime += Time.deltaTime;
         if (quietTime >= noiseFadeDelay) noise = Mathf.MoveTowards(noise, 0f, noiseFade * Time.deltaTime);
 
-        if (state == State.Idle) ReadInput();
+        if (state == State.Idle)
+        {
+            TryRat();
+            ReadInput();
+        }
         else if (state == State.Squeezing) UpdateSqueeze();
 
         if (drone != Drone.None && state != State.Caught) UpdateDrone();
@@ -286,10 +346,12 @@ public class VentNetwork : MonoBehaviour
         view.SetTight(state == State.Squeezing || (state != State.Caught && CellAt(cell) == VentCell.Squeeze));
         view.SetHint(state == State.Idle && CellAt(cell) == VentCell.Grate ? $"Press {ClimbOutKey} to climb out" : null);
         view.SetDrone(drone != Drone.None, dronePosition);
-        view.SetAlert(drone == Drone.Chasing ? VentView.Alert.Chasing
+        view.SetDroneLook(droneAngle, drone == Drone.Locking ? Mathf.Clamp01(droneLock / Mathf.Max(0.05f, droneLockTime)) : 0f, droneRise);
+        view.SetAlert(drone == Drone.Locking || state == State.Caught ? VentView.Alert.Chasing
             : drone != Drone.None ? VentView.Alert.Searching
             : VentView.Alert.None);
         UpdateDroneAudio();
+        UpdateHeartbeat();
     }
 
     // --- Getting in and out ---
@@ -301,7 +363,7 @@ public class VentNetwork : MonoBehaviour
         entrance = grate;
         HidePlayer(grate.transform.position);
         grate.Rattle();
-        Play(dentClip, 0.35f, 0.8f);
+        Play(dentSound, 0.35f, 0.8f);
 
         view = VentView.Get(font);
         yield return view.FadeTo(1f, fadeTime);
@@ -317,12 +379,7 @@ public class VentNetwork : MonoBehaviour
         RemoveDrone();
         view.Open(this);
         view.SetCamera(eye, angle, bob);
-        if (ambienceLoop != null)
-        {
-            ambience.clip = ambienceLoop;
-            ambience.volume = ambienceVolume;
-            ambience.Play();
-        }
+        StartDark();
 
         yield return view.FadeTo(0f, fadeTime);
         state = State.Idle;
@@ -335,7 +392,7 @@ public class VentNetwork : MonoBehaviour
         {
             // A number on the map with no grate in the level.
             view.FlashHint("Bolted shut", 1.5f);
-            Play(dentClip, 0.25f, 1.3f);
+            Play(dentSound, 0.25f, 1.3f);
             return;
         }
         StartCoroutine(ClimbOutThrough(grate));
@@ -349,13 +406,13 @@ public class VentNetwork : MonoBehaviour
         // Out of its reach. Whatever was after them stays in the ducts.
         StopAlarm();
         RemoveDrone();
-        ambience.Stop();
+        StopDark();
         view.Close();
         ShowPlayer(grate.ExitPoint);
         IsPlayerInside = false;
         entrance = null;
         grate.Rattle();
-        Play(dentClip, 0.35f, 0.8f);
+        Play(dentSound, 0.35f, 0.8f);
 
         yield return view.FadeTo(0f, fadeTime);
         state = State.Outside;
@@ -503,13 +560,13 @@ public class VentNetwork : MonoBehaviour
         {
             if (careful)
             {
-                Play(dentClip, 0.2f, 0.6f);
+                Play(dentSound, 0.2f, 0.6f);
                 view.Shake(0.15f);
                 AddNoise(carefulDentNoise, 0.3f);
             }
             else
             {
-                Play(dentClip, 1f, Random.Range(0.85f, 1f));
+                Play(dentSound, 1f, Random.Range(0.85f, 1f));
                 view.Shake(hurried ? 1f : 0.7f);
                 AddNoise(dentNoise + (hurried ? hurriedNoise : 0f), 1f);
             }
@@ -517,6 +574,10 @@ public class VentNetwork : MonoBehaviour
         else if (hurried)
         {
             AddNoise(hurriedNoise, 0.35f);
+        }
+        else if (!careful)
+        {
+            AddNoise(crawlNoise, 0.15f);
         }
     }
 
@@ -551,9 +612,9 @@ public class VentNetwork : MonoBehaviour
             if (!hit && progress >= 0.5f)
             {
                 hit = true;
-                Play(dentClip, 0.3f, 1.5f);
-                view.Shake(0.35f);
-                AddNoise(bumpNoise, 0.3f);
+                Play(bangSound, 1f, Random.Range(0.9f, 1.08f));
+                view.Shake(0.75f);
+                AddNoise(bumpNoise, 0.9f);
             }
             yield return null;
             if (state != State.Moving) yield break;
@@ -615,7 +676,7 @@ public class VentNetwork : MonoBehaviour
         {
             // The wrong key, or too slow: the duct scrapes, and the player slips back a little.
             squeezeDone = Mathf.Max(0, squeezeDone - 1);
-            Play(scrapeClip, 1f, Random.Range(0.9f, 1.1f));
+            Play(scrapeSound, 1f, Random.Range(0.9f, 1.1f));
             view.KeyMistake();
             AddNoise(squeezeMistakeNoise, 1f);
             NextSqueezeKey();
@@ -668,10 +729,10 @@ public class VentNetwork : MonoBehaviour
         quietTime = 0f;
         view.NoiseSpike(kick);
 
-        // A drone that's already out hears anything much and comes straight for it.
+        // A drone that's already out hears anything much and turns to look that way.
         if (drone != Drone.None)
         {
-            if (amount > droneAlertNoise) AlertDrone();
+            if (amount > droneAlertNoise && drone == Drone.Looking) LookToward(cell);
             return;
         }
         if (noise >= 1f && alarm == null) alarm = StartCoroutine(Stare());
@@ -682,7 +743,7 @@ public class VentNetwork : MonoBehaviour
     IEnumerator Stare()
     {
         view.SetPanic(true);
-        Play(foundClip, 1f);
+        Play(foundSound, 1f);
         for (float t = 0f; t < stareTime; t += Time.deltaTime)
         {
             view.SetEyes(Mathf.Clamp(OpenCellsAhead(), 0.49f, 6f));
@@ -705,7 +766,7 @@ public class VentNetwork : MonoBehaviour
     // --- The drone ---
 
     // Out of the nearest hatch that isn't right on top of the player, or failing that the furthest. With no hatches on
-    // the map, out of the dark somewhere about that far away.
+    // the map, out of the ceiling somewhere about that far away. It drops down looking the way the noise came from.
     void ReleaseDrone()
     {
         Flood(cell, playerDistances);
@@ -729,7 +790,7 @@ public class VentNetwork : MonoBehaviour
 
         if (!anyHatch)
         {
-            int wanted = droneMinReleaseDistance + 3;
+            int wanted = droneMinReleaseDistance + 1;
             for (int x = 0; x < cells.GetLength(0); x++)
             {
                 for (int y = 0; y < cells.GetLength(1); y++)
@@ -744,132 +805,149 @@ public class VentNetwork : MonoBehaviour
             }
         }
 
-        drone = Drone.Chasing;
-        droneHome = droneCell = droneNext = droneLast = best;
-        droneTarget = cell;
-        droneStep = 0f;
+        drone = Drone.Looking;
+        droneCell = best;
         dronePosition = Center(best);
+        droneRise = 0f;
+        droneLock = 0f;
+        droneLookTimer = droneSearchTime;
+        droneFacing = OpenDirection(best);
+        LookToward(cell);
+        droneAngle = droneFacing * 90f;
 
-        if (droneLoop != null)
-        {
-            droneAudio.clip = droneLoop;
-            droneAudio.volume = 0f;
-            droneAudio.Play();
-        }
+        SoundManager.Setup(droneAudio, droneHumSound);
+        droneAudio.loop = true;
+        droneAudio.volume = 0f;
+        if (droneAudio.clip != null) droneAudio.Play();
         UpdateDroneAudio();
-        if (droneReleaseClip != null) droneAudio.PlayOneShot(droneReleaseClip, 1f);
+        PlayDrone(droneReleaseSound, 1f);
     }
 
     void RemoveDrone()
     {
         drone = Drone.None;
+        droneLock = 0f;
         if (droneAudio != null) droneAudio.Stop();
         if (view != null) view.SetDrone(false, dronePosition);
     }
 
-    void AlertDrone()
+    // Turns it to look down whichever duct leads toward this cell.
+    void LookToward(Vector2Int goal)
     {
-        drone = Drone.Chasing;
-        droneTarget = cell;
+        Flood(goal, pathDistances);
+        int here = pathDistances[droneCell.x, droneCell.y];
+        for (int i = 0; i < Directions.Length && here > 0; i++)
+        {
+            Vector2Int next = droneCell + Directions[i];
+            if (CellAt(next) == VentCell.Solid || pathDistances[next.x, next.y] != here - 1) continue;
+            if (i != droneFacing) PlayDrone(droneServoSound, 0.5f);
+            droneFacing = i;
+            break;
+        }
+        droneTurnTimer = droneLookEvery * 1.4f;
     }
 
     void UpdateDrone()
     {
-        if (drone == Drone.Searching) droneSearchTimer -= Time.deltaTime;
-
-        if (droneNext == droneCell)
+        float dt = Time.deltaTime;
+        if (drone == Drone.Returning)
         {
-            ChooseDroneStep();
-        }
-        else
-        {
-            float cellTime = drone == Drone.Chasing ? droneChaseCellTime : droneSearchCellTime;
-            droneStep += Time.deltaTime / Mathf.Max(0.05f, cellTime);
-            if (droneStep >= 1f)
-            {
-                droneLast = droneCell;
-                droneCell = droneNext;
-                droneStep = 0f;
-                ChooseDroneStep();
-            }
-        }
-        if (drone == Drone.None) return;
-
-        dronePosition = Vector2.Lerp(Center(droneCell), Center(droneNext), droneStep);
-        if (Vector2.Distance(dronePosition, eye) < CatchDistance)
-        {
-            StopAllCoroutines();
-            alarm = null;
-            StartCoroutine(Caught());
-        }
-    }
-
-    // At each cell: listen and look for the player, then pick the next cell.
-    void ChooseDroneStep()
-    {
-        Flood(cell, playerDistances);
-        int toPlayer = playerDistances[droneCell.x, droneCell.y];
-        if (toPlayer >= 0 && (toPlayer <= droneHearing || DroneCanSee())) AlertDrone();
-
-        if (drone == Drone.Chasing && droneCell == droneTarget)
-        {
-            // Got to where it last knew they were, and they're not here.
-            drone = Drone.Searching;
-            droneSearchTimer = droneSearchTime;
-        }
-        if (drone == Drone.Searching && droneSearchTimer <= 0f) drone = Drone.Returning;
-        if (drone == Drone.Returning && droneCell == droneHome)
-        {
-            RemoveDrone();
+            droneRise = Mathf.MoveTowards(droneRise, 0f, dt / 0.8f);
+            if (droneRise <= 0f) RemoveDrone();
             return;
         }
 
-        droneNext = drone == Drone.Chasing ? StepToward(droneTarget)
-            : drone == Drone.Returning ? StepToward(droneHome)
-            : Wander();
+        droneRise = Mathf.MoveTowards(droneRise, 1f, dt / 0.8f);
+        droneAngle = Mathf.MoveTowardsAngle(droneAngle, droneFacing * 90f, dt * 220f);
+        dronePosition = Center(droneCell)
+            + new Vector2(Mathf.PerlinNoise(Time.time * 0.7f, 3f) - 0.5f, Mathf.PerlinNoise(Time.time * 0.7f, 8f) - 0.5f) * 0.12f;
+        bool sees = droneRise > 0.9f && DroneSees();
+
+        if (drone == Drone.Looking)
+        {
+            droneLookTimer -= dt;
+            droneTurnTimer -= dt;
+            if (sees)
+            {
+                drone = Drone.Locking;
+                droneLock = 0f;
+                PlayDrone(droneLockSound, 1f);
+                view.Shake(0.5f);
+                view.SetPanic(true);
+            }
+            else if (droneLookTimer <= 0f)
+            {
+                drone = Drone.Returning;
+                PlayDrone(droneServoSound, 0.6f);
+            }
+            else if (droneTurnTimer <= 0f)
+            {
+                LookSomewhereElse();
+            }
+        }
+        else if (drone == Drone.Locking)
+        {
+            if (sees)
+            {
+                droneLock += dt;
+                view.Shake(0.15f + 0.5f * droneLock / Mathf.Max(0.05f, droneLockTime));
+                if (droneLock >= droneLockTime)
+                {
+                    StopAllCoroutines();
+                    alarm = null;
+                    haunting = null;
+                    StartCoroutine(Caught());
+                }
+            }
+            else
+            {
+                // Lost them: back to looking, a little longer than it would have.
+                drone = Drone.Looking;
+                droneLock = 0f;
+                view.SetPanic(false);
+                droneTurnTimer = droneLookEvery;
+                droneLookTimer = Mathf.Max(droneLookTimer, 3f);
+            }
+        }
     }
 
-    // Straight down a duct in any direction, as far as its sight reaches and nothing solid is in the way.
-    bool DroneCanSee()
+    // Down another duct from its hatch, picked at random, never the one it's looking down already if there's another.
+    void LookSomewhereElse()
     {
-        foreach (Vector2Int step in Directions)
+        choices.Clear();
+        for (int i = 0; i < Directions.Length; i++)
+            if (i != droneFacing && CellAt(droneCell + Directions[i]) != VentCell.Solid) choices.Add(new Vector2Int(i, 0));
+        if (choices.Count > 0)
         {
-            Vector2Int at = droneCell;
-            for (int i = 0; i < droneSight; i++)
-            {
-                at += step;
-                if (CellAt(at) == VentCell.Solid) break;
-                if (at == cell) return true;
-            }
+            droneFacing = choices[Random.Range(0, choices.Count)].x;
+            PlayDrone(droneServoSound, 0.45f);
+        }
+        droneTurnTimer = droneLookEvery * Random.Range(0.8f, 1.3f);
+    }
+
+    // Right under it, or straight down the duct its light is on (once it's turned that way), with nothing in between.
+    bool DroneSees()
+    {
+        Vector2Int offset = cell - droneCell;
+        if (Mathf.Abs(offset.x) + Mathf.Abs(offset.y) <= droneHearing) return true;
+        if (Mathf.Abs(Mathf.DeltaAngle(droneAngle, droneFacing * 90f)) > 25f) return false;
+        Vector2Int at = droneCell;
+        for (int i = 0; i < droneSight; i++)
+        {
+            at += Directions[droneFacing];
+            if (CellAt(at) == VentCell.Solid) return false;
+            if (at == cell) return true;
         }
         return false;
     }
 
-    // The neighbouring cell that's one step nearer to where it's going along the ducts.
-    Vector2Int StepToward(Vector2Int goal)
+    // One of the drone's sounds, from where it is (its hum's source, panned its way). Its pitch is the hum's to keep.
+    void PlayDrone(string sound, float volume)
     {
-        Flood(goal, pathDistances);
-        int here = pathDistances[droneCell.x, droneCell.y];
-        if (here <= 0) return droneCell;
-        foreach (Vector2Int step in Directions)
-        {
-            Vector2Int next = droneCell + step;
-            if (CellAt(next) != VentCell.Solid && pathDistances[next.x, next.y] == here - 1) return next;
-        }
-        return droneCell;
-    }
-
-    // Any way on but back, unless it's a dead end.
-    Vector2Int Wander()
-    {
-        choices.Clear();
-        foreach (Vector2Int step in Directions)
-        {
-            Vector2Int next = droneCell + step;
-            if (CellAt(next) != VentCell.Solid && next != droneLast) choices.Add(next);
-        }
-        if (choices.Count == 0) return CellAt(droneLast) != VentCell.Solid ? droneLast : droneCell;
-        return choices[Random.Range(0, choices.Count)];
+        if (droneAudio == null) return;
+        float pitch = droneAudio.pitch;
+        SoundManager.PlayOneShot(droneAudio, sound, volume, 1f, VentSounds.Fallback(sound));
+        droneAudio.pitch = pitch;
     }
 
     // How many cells along the ducts every cell is from this one. -1 where it can't be reached.
@@ -896,19 +974,113 @@ public class VentNetwork : MonoBehaviour
         }
     }
 
-    // Its hum: louder the nearer it is along the ducts, not through walls, and from whichever side it's on.
+    // Its hum: louder the nearer it is along the ducts, not through walls, and from whichever side it's on. Pitched
+    // down and wavering, and dragged higher as it locks on.
     void UpdateDroneAudio()
     {
         if (drone == Drone.None || droneAudio == null) return;
 
+        Flood(cell, playerDistances);
         int away = playerDistances[droneCell.x, droneCell.y];
-        float closeness = away < 0 ? 0f : Mathf.Clamp01(1f - (away - droneStep) / DroneAudibleCells);
-        droneAudio.volume = droneVolume * Mathf.Max(0.08f, closeness * closeness);
+        float closeness = away < 0 ? 0f : Mathf.Clamp01(1f - away / (float)DroneAudibleCells);
+        droneAudio.volume = SoundManager.Volume(droneHumSound) * Mathf.Max(0.08f, closeness * closeness) * Mathf.Lerp(0.3f, 1f, droneRise);
+        float locking = drone == Drone.Locking ? droneLock / Mathf.Max(0.05f, droneLockTime) : 0f;
+        droneAudio.pitch = 0.78f + 0.06f * Mathf.Sin(Time.time * 1.7f) + 0.5f * locking;
 
         Vector2 toDrone = dronePosition - eye;
         float radians = angle * Mathf.Deg2Rad;
         var right = new Vector2(Mathf.Cos(radians), -Mathf.Sin(radians));
         droneAudio.panStereo = toDrone.sqrMagnitude > 0.01f ? Mathf.Clamp(Vector2.Dot(toDrone.normalized, right), -1f, 1f) * 0.8f : 0f;
+    }
+
+    // --- The dark ---
+
+    void StartDark()
+    {
+        StartLoop(ambience, ambienceSound, 1f);
+        StartLoop(deepAudio, deepSound, 1f);
+        deepAudio.pitch *= 0.8f;       // a little slow, deeper
+        StartLoop(heartAudio, heartbeatSound, 0f);
+        if (haunting != null) StopCoroutine(haunting);
+        haunting = StartCoroutine(Haunt());
+    }
+
+    void StopDark()
+    {
+        if (haunting != null) StopCoroutine(haunting);
+        haunting = null;
+        if (ambience != null) ambience.Stop();
+        if (deepAudio != null) deepAudio.Stop();
+        if (heartAudio != null) heartAudio.Stop();
+        if (scareAudio != null) scareAudio.Stop();
+        if (view != null) view.SetRat(false, Vector2.zero);
+    }
+
+    // Now and then, from one side or the other: something in the ducts that isn't them.
+    IEnumerator Haunt()
+    {
+        yield return new WaitForSeconds(Random.Range(1.5f, 3f));
+        while (true)
+        {
+            if (scareSounds.Length > 0 && (state == State.Idle || state == State.Moving || state == State.Squeezing))
+            {
+                string sound = scareSounds[Random.Range(0, scareSounds.Length)];
+                if (sound == lastScare) sound = scareSounds[Random.Range(0, scareSounds.Length)];
+                lastScare = sound;
+                scareAudio.panStereo = Random.Range(-0.9f, 0.9f);
+                SoundManager.PlayOneShot(scareAudio, sound, Random.Range(0.55f, 1f), Random.Range(0.85f, 1.05f), VentSounds.Fallback(sound));
+                if (sound == "Vent Knock") view.Shake(0.12f);
+            }
+            yield return new WaitForSeconds(Random.Range(scareEvery.x, scareEvery.y));
+        }
+    }
+
+    // Louder and quicker the closer they are to being found.
+    void UpdateHeartbeat()
+    {
+        if (heartAudio == null || heartAudio.clip == null) return;
+        float fear = Mathf.Max(noise * 0.8f, drone == Drone.Locking ? 1f : drone != Drone.None ? 0.7f : 0f);
+        heartAudio.volume = Mathf.MoveTowards(heartAudio.volume, SoundManager.Volume(heartbeatSound) * fear, Time.deltaTime * 0.8f);
+        heartAudio.pitch = 0.95f + 0.35f * fear;
+    }
+
+    // --- The rat ---
+
+    // On one of its cells for the first time, looking down a duct with room for it to run.
+    void TryRat()
+    {
+        if (ratDone || !ratSpots.Contains(cell) || OpenCellsAhead() < 2) return;
+        ratDone = true;
+        StartCoroutine(Rat());
+    }
+
+    // Out of the dark ahead, straight at them, squealing as it reaches the light, then under them and gone.
+    IEnumerator Rat()
+    {
+        Vector2 way = Directions[direction];
+        Vector2 side = new Vector2(way.y, -way.x);
+        float distance = Mathf.Min(OpenCellsAhead(), 5) + 0.3f;
+        scareAudio.panStereo = 0f;
+        SoundManager.PlayOneShot(scareAudio, ratScurrySound, 1f, 1f, VentSounds.Fallback(ratScurrySound));
+        bool squealed = false;
+        while (distance > -0.4f && state != State.Outside && state != State.Caught)
+        {
+            distance -= ratSpeed * Time.deltaTime;
+            view.SetRat(true, eye + way * distance + side * Mathf.Sin(distance * 5f) * 0.12f);
+            if (!squealed && distance < 1.6f)
+            {
+                squealed = true;
+                Play(ratSquealSound, 1f, Random.Range(0.95f, 1.1f));
+                view.Shake(1f);
+                view.SetPanic(true);
+                AddNoise(ratNoise, 1f);
+            }
+            yield return null;
+        }
+        view.SetRat(false, Vector2.zero);
+        yield return new WaitForSeconds(0.5f);
+        if (alarm == null && drone == Drone.None) view.SetPanic(false);
+        view.FlashHint("...Just a rat.", 1.8f);
     }
 
     // It got them. The view whips round to it, it comes at the player, and it's the usual death, back at the last
@@ -921,7 +1093,7 @@ public class VentNetwork : MonoBehaviour
         view.SetEyes(0f);
         view.SetPanic(true);
         view.SetAlert(VentView.Alert.Chasing);
-        Play(caughtClip, 1f);
+        Play(caughtSound, 1f);
 
         Vector2 toDrone = dronePosition - eye;
         float from = angle;
@@ -943,7 +1115,7 @@ public class VentNetwork : MonoBehaviour
         RemoveDrone();
         view.SetPanic(false);
         view.Close();
-        ambience.Stop();
+        StopDark();
         ShowPlayer(entrance != null ? entrance.ExitPoint : (Vector2)player.position);
         IsPlayerInside = false;
         entrance = null;
@@ -973,6 +1145,7 @@ public class VentNetwork : MonoBehaviour
 
         // Row 0 of the text is the top, so it's the highest y on the map.
         cells = new VentCell[mapWidth, mapHeight];
+        ratSpots.Clear();
         grateNumbers = new int[mapWidth, mapHeight];
         playerDistances = new int[mapWidth, mapHeight];
         pathDistances = new int[mapWidth, mapHeight];
@@ -984,7 +1157,7 @@ public class VentNetwork : MonoBehaviour
                 int y = mapHeight - 1 - r;
                 cells[x, y] = mark switch
                 {
-                    '.' => VentCell.Duct,
+                    '.' or 'x' => VentCell.Duct,
                     'd' => VentCell.Dent,
                     's' => VentCell.Squeeze,
                     'r' => VentCell.Hatch,
@@ -992,6 +1165,7 @@ public class VentNetwork : MonoBehaviour
                     _ => VentCell.Solid,
                 };
                 if (cells[x, y] == VentCell.Grate) grateNumbers[x, y] = mark - '0';
+                if (mark == 'x') ratSpots.Add(new Vector2Int(x, y));
             }
         }
     }
@@ -1055,17 +1229,22 @@ public class VentNetwork : MonoBehaviour
         return source;
     }
 
-    void Play(AudioClip clip, float volume, float pitch = 1f)
+    // One of the scene's sounds (SoundManager), at this share of its volume and this pitch. The ones made in code
+    // (VentSounds) play even when the scene doesn't list them yet.
+    void Play(string sound, float volume, float pitch = 1f)
     {
-        if (clip == null) return;
-        sfx.pitch = pitch;
-        sfx.PlayOneShot(clip, volume);
+        SoundManager.PlayOneShot(sfx, sound, volume, pitch, VentSounds.Fallback(sound));
+    }
+
+    // A loop on its own source, at this share of its volume.
+    void StartLoop(AudioSource source, string sound, float volume)
+    {
+        SoundManager.Setup(source, sound, VentSounds.Fallback(sound));
+        source.loop = true;
+        source.volume = SoundManager.Volume(sound) * volume;
+        if (source.clip != null) source.Play();
     }
 
     // Footsteps pitched down sound like hands and knees on sheet metal.
-    void PlayCrawl(float volume)
-    {
-        if (crawlClips == null || crawlClips.Length == 0) return;
-        Play(crawlClips[Random.Range(0, crawlClips.Length)], volume, Random.Range(0.6f, 0.75f));
-    }
+    void PlayCrawl(float volume) => Play(crawlSound, volume, Random.Range(0.6f, 0.75f));
 }

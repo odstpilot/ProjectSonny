@@ -91,6 +91,13 @@ public class InstallView : MonoBehaviour
     // Sonny's first boot, with its log.
     public static IEnumerator PlayBoot() => Show(view => view.BootUp());
 
+    // Gone at once, for a cutscene that's been skipped partway through a Play or PlayBoot.
+    public static void Abort()
+    {
+        foreach (InstallView view in FindObjectsByType<InstallView>()) Destroy(view.gameObject);
+        Playing = false;
+    }
+
     static IEnumerator Show(System.Func<InstallView, IEnumerator> steps)
     {
         Playing = true;

@@ -13,10 +13,10 @@ using UnityEngine.Tilemaps;
 //
 // Menu: Sonny > Fill In Vent Sounds
 //
-// Fills any empty sound or font slot on every VentNetwork in the open scene, for ducts added before a slot existed.
+// Adds the ducts' sounds (SoundDefaults.Vents) to the open scene's SoundManager, any it doesn't list yet, and fills in
+// the font on every VentNetwork that hasn't one.
 public static class VentPrototypeBuilder
 {
-    const string SfxFolder = "Assets/_Project/Audio/SFX";
     const string FontPath = "Assets/_Project/Art/Fonts/SdAsteroidB612-wo3e2 SDF.asset";
     const string GrateTilePath = "Assets/_Project/Art/Environment/Tilesets/ShipTiles/tileset_105.asset"; // a wall panel with a vent in it
     const int IgnoreRaycastLayer = 2;   // so a grate never blocks a robot's line of sight
@@ -60,19 +60,11 @@ public static class VentPrototypeBuilder
         Debug.Log(networks.Length == 0 ? "There's no VentNetwork in the open scene." : $"Filled in the empty sound slots on {networks.Length} VentNetwork(s).");
     }
 
-    // Also used by ChapterOneBuilder for its ducts.
+    // Also used by ChapterOneBuilder for its ducts: the font, and the ducts' sounds in the scene's SoundManager.
     internal static void FillEmptySlots(VentNetwork network)
     {
         if (network.font == null) network.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
-        if (network.ambienceLoop == null) network.ambienceLoop = Clip("700008__newlocknew__scimisc_low-steady-hum-2_em.wav");
-        if (network.crawlClips == null || network.crawlClips.Length == 0)
-            network.crawlClips = new[] { Clip("footstep1.wav"), Clip("footstep2.wav"), Clip("footstep3.wav"), Clip("footstep4.wav") };
-        if (network.dentClip == null) network.dentClip = Clip("Magnetic Sound fx/Wav/Magnetic hit 01.wav");
-        if (network.scrapeClip == null) network.scrapeClip = Clip("Magnetic Sound fx/Wav/Magnetic hit 04.wav");
-        if (network.foundClip == null) network.foundClip = Clip("eerie_sound_1.wav");
-        if (network.droneReleaseClip == null) network.droneReleaseClip = Clip("746988__gammagool__robot-awakening-power-on (1).wav");
-        if (network.droneLoop == null) network.droneLoop = Clip("Magnetic Sound fx/Wav/Looping/Magnetic industrial layer01 loop.wav");
-        if (network.caughtClip == null) network.caughtClip = Clip("Magnetic Sound fx/Wav/Magnetic hit 07.wav");
+        SoundDefaults.Fill(network.gameObject.scene, SoundDefaults.Vents);
     }
 
     static void MakeGrate(Transform parent, VentNetwork network, int number, Vector3 position, SpriteRenderer playerSprite)
@@ -101,12 +93,5 @@ public static class VentPrototypeBuilder
         var vent = grate.AddComponent<VentGrate>();
         vent.number = number;
         vent.network = network;
-    }
-
-    static AudioClip Clip(string file)
-    {
-        var clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{SfxFolder}/{file}");
-        if (clip == null) Debug.LogWarning($"No sound at {SfxFolder}/{file} for the vents.");
-        return clip;
     }
 }

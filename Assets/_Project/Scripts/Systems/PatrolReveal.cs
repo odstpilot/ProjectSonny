@@ -24,18 +24,10 @@ public class PatrolReveal : MonoBehaviour
     [Tooltip("The technician, seeing the bodies.")]
     [TextArea] public string[] technicianSees = { "Oh no. No, no, no..." };
     [Tooltip("Pip, after that. ~ opens a line with static; [C] shows a key.")]
-    [TextArea] public string[] pipCrewFound =
-    {
-        "~Tech... I found the crew.",
-        "~All of them. They're all out here.",
-    };
+    [TextArea] public string[] pipCrewFound = new string[0];
     [Tooltip("The technician, seeing the bots.")]
-    [TextArea] public string[] technicianBots = { "The maintenance bots... what are they doing?" };
-    [TextArea] public string[] pipBots =
-    {
-        "~They're not on their rounds. They're hunting.",
-        "~The escape pods are off the ship entrance. Let's get you off this station.",
-    };
+    [TextArea] public string[] technicianBots = { "The bots... they're hunting." };
+    [TextArea] public string[] pipBots = { "~Stay out of their sight. Escape pods, by the ship entrance." };
     [Tooltip("The card that pops up after that, on how sneaking about works (TipCard).")]
     public string tipsTitle = "Staying hidden";
     public string objective = "Find the escape pods";
@@ -114,16 +106,17 @@ public class PatrolReveal : MonoBehaviour
         TechnicianVoice.Hush();
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
 
-        yield return Wait(0.5f);
+        // Held only for the first look; the rest is said as they get moving.
+        yield return Wait(0.3f);
         yield return TechnicianVoice.Think(technicianSees);
         if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipCrewFound);
-        yield return TechnicianVoice.Think(technicianBots);
-        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipBots);
         yield return TipCard.Show(tipsTitle, StealthTips);
 
         player.ClearScriptedInput();
         TutorialHud.Get().SetObjective(objective);
         MapScreen.SetTarget(targetRoom, targetLabel);
+        if (technicianBots.Length > 0) TechnicianVoice.Say(technicianBots[0]);
+        if (SuitHelper.Exists) SuitHelper.Get().Tell(pipBots);
         Playing = false;
         revealed = true;
         yield return Wait(grace);

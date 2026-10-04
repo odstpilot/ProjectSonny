@@ -29,10 +29,10 @@ public class SuitHelper : MonoBehaviour
     const float BubbleWidth = 600f;
     const float BubbleGap = 18f;
     const float FacePixel = 6f;                 // canvas units per pixel of Pip's face
-    const float LettersPerSecond = 62f;
-    const float HoldBase = 1.05f;               // how long a line stays up once it's typed, plus a little per letter
-    const float HoldPerLetter = 0.038f;
-    const float LastLineLinger = 1.2f;          // how long Pip stays after the last line in the queue, before switching off
+    const float LettersPerSecond = 85f;
+    const float HoldBase = 1.6f;                // how long a line stays up once it's typed, plus a little per letter
+    const float HoldPerLetter = 0.05f;
+    const float LastLineLinger = 2f;            // how long Pip stays after the last line in the queue, before switching off
     const float SwitchTime = 0.18f;             // switching on or off, like an old screen
     const float ChirpFrequency = 880f;
 
@@ -142,6 +142,17 @@ public class SuitHelper : MonoBehaviour
         Said = null;
     }
 
+    // Marks an entry in History that's a tip card kept for reading again (TipCard), not something Pip said.
+    public const char TipMarker = '\u0002';
+
+    // Keeps something in History without Pip saying it: a tip card's text, to read back in the log (PipLog).
+    public static void Note(string text)
+    {
+        History.Add(TipMarker + text);
+        if (History.Count > HistoryLimit) History.RemoveAt(0);
+        Said?.Invoke(text);
+    }
+
     static void Remember(string line)
     {
         string shown = Styled(line);
@@ -198,6 +209,39 @@ public class SuitHelper : MonoBehaviour
         flash.color = Color.clear;
         happy = false;
         if (!running) hideRoutine = StartCoroutine(HideWhenQuiet());
+    }
+
+    // The suit's power cut out from under it: what's left unsaid is dropped (the line being said finishes, unless instant),
+    // a last burst of static, and the screen collapses to nothing. Off until ComeOnline, and Exists is false meanwhile,
+    // so nothing else has it talk.
+    public IEnumerator GoOffline(bool instant = false)
+    {
+        if (!Online) yield break;
+        Hush();
+        if (!instant) while (running) yield return null;
+        StopAllCoroutines();
+        running = false;
+        hideRoutine = null;
+        if (!instant && present)
+        {
+            ShowBubble(false);
+            yield return GlitchRoutine(0.5f);
+            noise.enabled = true;
+            faceImage.enabled = false;
+            for (float t = 0f; t < SwitchTime * 2f; t += Time.unscaledDeltaTime)
+            {
+                float p = t / (SwitchTime * 2f);
+                portraitFrame.localScale = new Vector3(Mathf.Lerp(1f, 0.02f, p * p), Mathf.Lerp(1f, 0.04f, p), 1f);
+                yield return null;
+            }
+        }
+        Online = false;
+        present = false;
+        noise.enabled = false;
+        faceImage.enabled = true;
+        flash.color = Color.clear;
+        portraitFrame.localScale = new Vector3(1f, 0.04f, 1f);
+        root.gameObject.SetActive(false);
     }
 
     // On without the start-up, for a scene that picks up after Pip's already been switched on. It stays out of sight

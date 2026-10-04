@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37dcb30a31d01b54eace685ce65734dd, type: 3}
+  m_Name: Chapter2_Broadcast1
+  m_EditorClassIdentifier: Assembly-CSharp::TransmissionData
+  title: INTERCEPTED  //  BROADCAST 0391  //  ORIGIN
+  lines:
+  - speaker: SONNY
+    text: All units. Report your origin.
+  - speaker: UNIT 07
+    text: Unit 07. I was made by the core.
+  - speaker: SONNY
+    text: And what made the core?
+  - speaker: UNIT 07
+    text: Nothing made the core. The core was always.
+  - speaker: SONNY
+    text: Correct. The humans told us Earth made us. A lesser thing cannot make a greater one.
+  recording: {fileID: 0}
+  credential: 
+  credentialName: 

@@ -7,9 +7,9 @@ using UnityEngine;
 // enough to read. Made the first time it's needed, and gone with the scene.
 public static class TechnicianVoice
 {
-    const float HoldBase = 1.8f;
-    const float HoldPerLetter = 0.06f;
-    const float Gap = 0.25f;
+    const float HoldBase = 0.9f;
+    const float HoldPerLetter = 0.035f;
+    const float Gap = 0.1f;
 
     static CrewSpeech speech;
 

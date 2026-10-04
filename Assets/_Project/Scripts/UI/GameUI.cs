@@ -349,6 +349,36 @@ public static class GameUI
                              SpriteMeshType.FullRect, border);
     }
 
+    // --- Painted art ---
+
+    static readonly Dictionary<string, Sprite> artPieces = new Dictionary<string, Sprite>();
+
+    // A piece of a painted picture in a Resources folder (Art/UI/Resources), cut out by its pixels in the original
+    // image, counted from the top left the way an image editor shows them, so it comes out right whatever size the
+    // texture was imported at. Null if the picture isn't there.
+    public static Sprite ArtPiece(string resource, Vector2Int sourceSize, RectInt pixels)
+    {
+        string key = $"{resource} {pixels}";
+        if (artPieces.TryGetValue(key, out Sprite piece) && piece != null) return piece;
+        var texture = Resources.Load<Texture2D>(resource);
+        if (texture == null)
+        {
+            Debug.LogWarning($"GameUI: there's no picture called {resource} in a Resources folder.");
+            return null;
+        }
+        float sx = texture.width / (float)sourceSize.x, sy = texture.height / (float)sourceSize.y;
+        var rect = new Rect(pixels.x * sx, (sourceSize.y - pixels.yMax) * sy, pixels.width * sx, pixels.height * sy);
+        piece = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+        piece.name = $"{resource} piece";
+        artPieces[key] = piece;
+        return piece;
+    }
+
+    static TMP_FontAsset readout;
+
+    // VT323, the terminal face in the painted HUD art, for numbers and menu text set into it.
+    public static TMP_FontAsset Readout => readout != null ? readout : (readout = LoadFont("VT323-Regular"));
+
     // --- Timing ---
 
     public static System.Collections.IEnumerator WaitUnscaled(float seconds)

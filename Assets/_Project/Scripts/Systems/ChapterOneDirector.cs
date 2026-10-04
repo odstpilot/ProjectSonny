@@ -5,8 +5,8 @@ using UnityEngine;
 // then the fade up on the ship entrance as the technician steps aboard, unarmed, into a common grounds full of crew going
 // about their day. The crew member waiting by the entrance (the
 // greeter) calls them over; talking to them (E) gets the hello, and they switch on Pip, the helper in the technician's
-// suit (SuitHelper). Pip boots up in the top right corner, says hello, unlocks the suit's map, and has the technician
-// open it (M) to see where the control room is; once they've looked and closed it, getting there is the objective.
+// suit (SuitHelper). Pip boots up in the top right corner, says hello, and pins the control room on the suit's map;
+// getting there is the objective. (requireMapLook brings back the stop to open the map and look.)
 // Walking into the control room plays the install (ControlRoomCutscene); if that happens before Pip's finished showing
 // the map, Pip's tour stops there, with the map left unlocked.
 // Continuing from a save (SaveGame.Resuming), it skips the arrival and sets the chapter up the way it was just after
@@ -23,12 +23,12 @@ public class ChapterOneDirector : MonoBehaviour
     [Header("Arrival")]
     [Tooltip("Shown on black, one line after another, before the scene fades up.")]
     public string[] titleCard = { "Chapter 1", "Arrival" };
-    public float titleHoldSeconds = 1.6f;
+    public float titleHoldSeconds = 1.2f;
     public float fadeUpSeconds = 1.4f;
     [Tooltip("The scene's sound played as the entrance opens and the player steps through. Empty for none.")]
     [SoundName] public string entranceSound = "Entrance Door";
     [Tooltip("Plays the pod docking with the station after the title card.")]
-    public bool playArrivalCutscene = true;
+    public bool playArrivalCutscene = false;
     [Tooltip("Skips the title card and the cutscene in the editor, for quick testing.")]
     public bool skipTitleInEditor = false;
 
@@ -42,8 +42,10 @@ public class ChapterOneDirector : MonoBehaviour
     [TextArea] public string[] pipHello =
     {
         "^Bzzt! Pip online! Your suit's Personal Integrated Pal.",
-        "Control room's clear across the station. Let's get you a map.",
+        "Control room's pinned on your map. [M] if you get lost!",
     };
+    [Tooltip("Has the technician open the map and look before the control room's the objective. Off to keep Chapter 1 short.")]
+    public bool requireMapLook = false;
     [TextArea] public string[] pipOpenMap = { "Press [M] to open your map!" };
     [Tooltip("Said while the map's open for the first time.")]
     [TextArea] public string[] pipOnMap =
@@ -53,7 +55,7 @@ public class ChapterOneDirector : MonoBehaviour
     };
     [TextArea] public string[] pipAfterMap = new string[0];
     [Tooltip("The technician, to themselves, once they've closed the map.")]
-    [TextArea] public string[] technicianAfterMap = { "East hallway, then the maintenance deck. Got it." };
+    [TextArea] public string[] technicianAfterMap = { "Through the maintenance deck. Got it." };
     [Tooltip("The room Pip marks on the map, by its marker in the layout, and what the pin over it says.")]
     public char mapTarget = 'o';
     public string mapTargetLabel = "Control Room";
@@ -157,7 +159,7 @@ public class ChapterOneDirector : MonoBehaviour
             case "to-control-room": finished = objectiveOpenMap; at = nearGreeter; break;
             case "install": finished = objectiveAfterGreeting; at = controlRoom + Vector2.down; break;
             case "breather": finished = RestroomBreak.Breather; at = controlRoom; break;
-            case "urge": finished = cutscene != null ? cutscene.objectiveAfter : null; at = controlRoom; break;
+            case "urge": finished = cutscene == null ? null : string.IsNullOrEmpty(cutscene.objectiveAfter) ? RestroomBreak.Breather : cutscene.objectiveAfter; at = controlRoom; break;
         }
         if (restroomBreak != null)
         {
@@ -219,6 +221,14 @@ public class ChapterOneDirector : MonoBehaviour
         yield return pip.Say(pipHello);
 
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
+        if (!requireMapLook)
+        {
+            MapScreen.Opened -= Looked;
+            hud.SetObjective(objectiveAfterGreeting);
+            TechnicianVoice.Say(technicianAfterMap.Length > 0 ? technicianAfterMap[0] : "");
+            meetPip = null;
+            yield break;
+        }
         if (!opened && !MapScreen.IsOpen)
         {
             hud.SetObjective(objectiveOpenMap);

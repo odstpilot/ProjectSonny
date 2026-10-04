@@ -10,8 +10,8 @@ using Map = TutorialLevelBuilder.Map;
 
 // Builds the whole station into a chapter's scene (ChapterOneBuilder, ChapterTwoBuilder), both floors as the blueprint
 // lays them out. Floor 1 is from the text map in Scenes/Levels/Station/Floor1Layout.txt: the common grounds (kitchen and lounge, restroom,
-// hallway, bedrooms) with the ship entrance at the west end, the storage room, the east hallway down to the stairs, the
-// maintenance deck, and the hallway up to the control room. Floor 2 (the comms ring, the upper maintenance deck, and the
+// hallway, bedrooms) with the ship entrance at the west end, the storage room, the maintenance deck (straight off the
+// east end of the common grounds hallway), and the hallway up to the control room. Floor 2 (the comms ring, the upper maintenance deck, and the
 // reactor core) is upstairs, as the blueprint has it: from Scenes/Levels/Station/Floor2Layout.txt, built above floor 1 in
 // the world, far enough off that neither shows from the other, with the stairs up on floor 1 (>) leading to the stairs
 // down on floor 2 (<) (Stairway). Every chapter's scene is built
@@ -42,8 +42,8 @@ using Map = TutorialLevelBuilder.Map;
 //   ! ? $    hallways that carry on: the same symbol at each end, on floor that runs into a dead end. Walking in takes
 //            the player straight through.
 //   X        a door that stays locked (the ship entrance)
-//   k w h b s v m c o   one cell in each room, which names it: kitchen and lounge, restroom, common grounds hallway,
-//            bedrooms, storage room, east hallway, maintenance deck, hallway to the control room, and control room. Everything the
+//   k w h b s m c o   one cell in each room, which names it: kitchen and lounge, restroom, common grounds hallway,
+//            bedrooms, storage room, maintenance deck, hallway to the control room, and control room. Everything the
 //            marker's floor reaches is that room.
 //   < >      stairs down and up, to the other floor (Stairway). Each floor's stairs are numbered from the left, and lead to
 //            the stairs with the same number on the other floor, as the blueprint lines them up.
@@ -55,7 +55,7 @@ public static class FloorOneBuilder
     const string PassageMarkers = "!?$";
     const float ArrivalGap = 1f;        // how far past a doorway's inner edge the player comes out
     const int SpreadFactor = 4;         // how much further apart the rooms are built than they're drawn
-    const float RoomScale = 1.5f;       // how much bigger each room is built than it's drawn
+    const float RoomScale = 1.15f;      // how much bigger each room is built than it's drawn
     // The two above, for the build going on: both 1 when it's built as drawn.
     static int spreadFactor = SpreadFactor;
     static float roomScale = RoomScale;
@@ -79,7 +79,6 @@ public static class FloorOneBuilder
         ('w', "Restroom"),
         ('b', "Common Grounds Bedrooms"),
         ('s', "Storage Room"),
-        ('v', "East Hallway"),
         ('m', "Maintenance Deck"),
         ('c', "Hallway to Control Room"),
         ('o', "Control Room"),
@@ -225,7 +224,7 @@ public static class FloorOneBuilder
     // floor, or -1 to leave the plain grating. Rooms not listed keep the grating.
     static readonly Dictionary<char, System.Func<Room, int, int, int>> FloorOneKits = new Dictionary<char, System.Func<Room, int, int, int>>
     {
-        { 'h', Corridor }, { 'v', Corridor }, { 'c', Corridor },
+        { 'h', Corridor }, { 'c', Corridor },
         { 'k', Lounge }, { 's', DarkFloor }, { 'm', Workshop }, { 'o', Bridge },
     };
 

@@ -7,6 +7,7 @@ using UnityEngine.Rendering.Universal;
 // The answers are all out there in intercepted broadcasts, for players who've been listening. On screen they're
 // scrambled, and decrypting them, hesitating, and answering wrong all draw Sonny's attention (see DoctrineScreen).
 // Pass and it hands over its credential. Get traced and it raises the alarm and locks the player out for a while.
+// It can be set to wait for comms nodes (waitingFor): until they're all tuned in it shows NO SIGNAL and won't open.
 // Setup: a solid Collider2D on this object for its footprint, and a DoctrineData. The relay's art is made in code
 // unless a sprite is set.
 public class DoctrineTerminal : Terminal
@@ -22,6 +23,10 @@ public class DoctrineTerminal : Terminal
     [Tooltip("Shown at the top of the check.")]
     public string displayName = "SONNY RELAY";
     public DoctrineData doctrine;
+    [Tooltip("Comms nodes that have to be tuned in before it'll talk (its questions are about their broadcasts). Empty for none.")]
+    public HackingTerminal[] waitingFor = new HackingTerminal[0];
+    [Tooltip("Off, its lens is dark and it can't be used (the power's out: CommsRing).")]
+    public bool powered = true;
 
     [Header("Tracing")]
     [Tooltip("Trace gained each second the player spends on a question. The whole meter is 1.")]
@@ -50,10 +55,25 @@ public class DoctrineTerminal : Terminal
     public float LockoutRemaining => Mathf.Max(0f, lockedUntil - Time.time);
 
     public override bool InUse => DoctrineScreen.Current != null && DoctrineScreen.Current.Terminal == this;
-    protected override string PromptText =>
-        LockoutRemaining > 0f ? $"LOCKED  {Mathf.CeilToInt(LockoutRemaining)}" : IsVerified ? "CONNECT" : "ANSWER";
+    protected override string PromptText => !powered ? "NO POWER" :
+        LockoutRemaining > 0f ? $"LOCKED  {Mathf.CeilToInt(LockoutRemaining)}" : IsVerified ? "CONNECT"
+        : Listening ? "ANSWER" : $"NO SIGNAL  {Tuned}/{waitingFor.Length}";
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
-    protected override bool Available => LockoutRemaining <= 0f;
+    protected override bool Available => powered && LockoutRemaining <= 0f && Listening;
+
+    // Every node it's waiting for tuned in.
+    public bool Listening => Tuned >= waitingFor.Length;
+
+    int Tuned
+    {
+        get
+        {
+            int count = 0;
+            foreach (HackingTerminal node in waitingFor)
+                if (node == null || node.IsHacked) count++;
+            return count;
+        }
+    }
 
     private float lockedUntil = -1f;
     private SpriteRenderer lens;
@@ -110,7 +130,12 @@ public class DoctrineTerminal : Terminal
     {
         float level;
         Color color;
-        if (LockoutRemaining > 0f)
+        if (!powered)
+        {
+            level = 0f;
+            color = Watching;
+        }
+        else if (LockoutRemaining > 0f)
         {
             level = Mathf.Repeat(Time.time * 3f, 1f) < 0.5f ? 1f : 0.2f;
             color = Watching;
@@ -126,11 +151,11 @@ public class DoctrineTerminal : Terminal
             color = Watching;
         }
 
-        if (lens != null) lens.color = new Color(color.r, color.g, color.b, Mathf.Lerp(0.4f, 1f, level));
+        if (lens != null) lens.color = new Color(color.r, color.g, color.b, powered ? Mathf.Lerp(0.4f, 1f, level) : 0f);
         if (glow != null)
         {
             glow.color = color;
-            glow.intensity = Mathf.Lerp(0.3f, 1f, level);
+            glow.intensity = powered ? Mathf.Lerp(0.3f, 1f, level) : 0f;
         }
     }
 

@@ -46,6 +46,9 @@ public class DoctrineScreen : MonoBehaviour
     public static DoctrineScreen Current => instance;
 
     public bool IsOpen { get; private set; }
+    // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
+    public static bool AnyOpen => openCount > 0;
+    static int openCount;
     public DoctrineTerminal Terminal { get; private set; }
     // 0 to 1. At 1 the player is caught.
     public float Trace { get; private set; }
@@ -107,6 +110,7 @@ public class DoctrineScreen : MonoBehaviour
 
     void OnDestroy()
     {
+        if (IsOpen) openCount--;
         if (instance == this) instance = null;
     }
 
@@ -116,6 +120,7 @@ public class DoctrineScreen : MonoBehaviour
 
         Terminal = terminal;
         IsOpen = true;
+        openCount++;
         openedFrame = Time.frameCount;
         frozenControls = PlayerControls.Freeze(player);
         playerHealth = player.GetComponent<Health>();
@@ -135,6 +140,7 @@ public class DoctrineScreen : MonoBehaviour
 
         StopAllCoroutines();
         IsOpen = false;
+        openCount--;
         phase = Phase.Closed;
         scriptDecrypting = false;
         if (playerHealth != null) playerHealth.Damaged -= OnPlayerHurt;

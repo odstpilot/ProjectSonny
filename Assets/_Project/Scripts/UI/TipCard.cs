@@ -7,6 +7,7 @@ using UnityEngine.UI;
 // A card that pops up over the game to explain how something works, a few rows of it: each with its keys (as key caps)
 // or a little picture, a heading, and a line or two under it. The game pauses while it's up; E, Space, Enter, or a
 // click puts it away. yield return TipCard.Show(title, rows) waits until it's gone.
+// Each one's kept in Pip's log (PipLog, L) too, so it can be read again.
 // Built from code the first time it's needed. Runs on unscaled time, since it pauses the game.
 public class TipCard : MonoBehaviour
 {
@@ -45,9 +46,24 @@ public class TipCard : MonoBehaviour
 
     public static IEnumerator Show(string title, params Row[] rows)
     {
+        Keep(title, rows);
         var card = new GameObject("TipCard", typeof(RectTransform)).AddComponent<TipCard>();
         yield return card.Run(title, rows);
         Destroy(card.gameObject);
+    }
+
+    // Into Pip's log: the title, then each row, its keys picked out in amber.
+    static void Keep(string title, Row[] rows)
+    {
+        var text = new System.Text.StringBuilder();
+        text.Append("<b>").Append(title.ToUpperInvariant()).Append("</b>");
+        foreach (Row row in rows)
+        {
+            text.Append("\n<b>").Append(row.heading).Append("</b>");
+            if (row.keys.Length > 0) text.Append("  <color=#FFAE52>[").Append(string.Join("] [", row.keys)).Append("]</color>");
+            text.Append(": ").Append(row.text);
+        }
+        SuitHelper.Note(text.ToString());
     }
 
     IEnumerator Run(string title, Row[] rows)

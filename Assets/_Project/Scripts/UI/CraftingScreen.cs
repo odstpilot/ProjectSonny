@@ -7,7 +7,8 @@ using UnityEngine.UI;
 // The workbench's screen (CraftingBench, Workshop): the parts the technician's carrying (Inventory), a picture and a
 // count of each along the top, and what they can be made into, a card each: a picture, what it's for, the parts it
 // takes (each with how many there are of how many it needs, green when there's enough, red when not), and whether it's
-// made already. Pick one with A/D, the arrow keys, the number keys, or the mouse, and make it with E, Enter, or a click:
+// made already, three to a row (scaled down to fit when there are more rows than fit). Pick one with A/D (W/S for the
+// row above or below), the arrow keys, the number keys, or the mouse, and make it with E, Enter, or a click:
 // a bar fills with the sound of soldering, and it's done (Crafted). Short of something, and the parts it's short of
 // flash red. Esc, Tab, or a click outside it closes it. The game's paused while it's up.
 // yield return CraftingScreen.Show(recipes) waits until it's closed.
@@ -16,6 +17,7 @@ public class CraftingScreen : MonoBehaviour
 {
     const int SortingOrder = 110;
     const float CardWidth = 520f, CardHeight = 500f, CardGap = 40f;
+    const int Columns = 3;                      // cards to a row; more go on the next row down
     const float CraftSeconds = 1.2f;
     const float FadeTime = 0.16f;
     static readonly Color PanelColor = new Color(0.05f, 0.05f, 0.06f, 0.97f);
@@ -51,6 +53,7 @@ public class CraftingScreen : MonoBehaviour
     private readonly List<Card> cards = new List<Card>();
     private readonly Dictionary<Inventory.Material, TextMeshProUGUI> carried = new Dictionary<Inventory.Material, TextMeshProUGUI>();
     private RectTransform panel;
+    private float fit = 1f;     // how far the panel's shrunk to fit the screen
     private int picked;
     private bool crafting;
     private AudioSource voice;
@@ -79,11 +82,11 @@ public class CraftingScreen : MonoBehaviour
         for (float t = 0f; t < FadeTime; t += Time.unscaledDeltaTime)
         {
             group.alpha = t / FadeTime;
-            panel.localScale = new Vector3(1f, Mathf.Lerp(0.04f, 1f, Mathf.SmoothStep(0f, 1f, t / FadeTime)), 1f);
+            panel.localScale = new Vector3(fit, fit * Mathf.Lerp(0.04f, 1f, Mathf.SmoothStep(0f, 1f, t / FadeTime)), 1f);
             yield return null;
         }
         group.alpha = 1f;
-        panel.localScale = Vector3.one;
+        panel.localScale = Vector3.one * fit;
         yield return null;      // so the E that opened it doesn't make something
 
         while (true)
@@ -115,6 +118,8 @@ public class CraftingScreen : MonoBehaviour
         int before = picked;
         if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) picked = Mathf.Max(0, picked - 1);
         if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) picked = Mathf.Min(cards.Count - 1, picked + 1);
+        if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && picked >= Columns) picked -= Columns;
+        if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && picked + Columns < cards.Count) picked += Columns;
         bool make = Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
         for (int i = 0; i < cards.Count && i < 9; i++)
         {
@@ -226,11 +231,16 @@ public class CraftingScreen : MonoBehaviour
         backdrop.raycastTarget = false;
         GameUI.Fill(backdrop.rectTransform);
 
-        float width = recipes.Length * CardWidth + (recipes.Length - 1) * CardGap + 120f;
+        int across = Mathf.Min(Columns, Mathf.Max(1, recipes.Length));
+        int rows = Mathf.Max(1, (recipes.Length + Columns - 1) / Columns);
+        float width = across * CardWidth + (across - 1) * CardGap + 120f;
+        float height = rows * CardHeight + (rows - 1) * CardGap + 240f;
         Image frame = GameUI.Sliced("Panel", root, GameUI.PanelSprite, PanelColor);
         panel = frame.rectTransform;
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
-        panel.sizeDelta = new Vector2(width, CardHeight + 240f);
+        panel.sizeDelta = new Vector2(width, height);
+        // Shrunk to fit the screen when there's a lot on it.
+        fit = Mathf.Min(1f, 1840f / width, 1040f / height);
         var edge = frame.gameObject.AddComponent<Outline>();
         edge.effectColor = Edge;
         edge.effectDistance = new Vector2(4f, -4f);
@@ -252,7 +262,7 @@ public class CraftingScreen : MonoBehaviour
             Icon(panel, material, new Vector2(1f, 1f), new Vector2(-right - 64f, -40f), 54f);
         }
 
-        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "A D / MOUSE  PICK      E / CLICK  MAKE      ESC  LEAVE", 22f, GameUI.Dim, TextAlignmentOptions.Bottom);
+        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "WASD / MOUSE  PICK      E / CLICK  MAKE      ESC  LEAVE", 22f, GameUI.Dim, TextAlignmentOptions.Bottom);
         GameUI.Anchor(hint.rectTransform, 0f, 0f, 1f, 0f, 60f, 28f, 60f, -64f);
 
         for (int i = 0; i < recipes.Length; i++)
@@ -265,7 +275,7 @@ public class CraftingScreen : MonoBehaviour
             card.rect.anchorMin = card.rect.anchorMax = new Vector2(0f, 1f);
             card.rect.pivot = new Vector2(0f, 1f);
             card.rect.sizeDelta = new Vector2(CardWidth, CardHeight);
-            card.rect.anchoredPosition = new Vector2(60f + i * (CardWidth + CardGap), -120f);
+            card.rect.anchoredPosition = new Vector2(60f + i % Columns * (CardWidth + CardGap), -120f - i / Columns * (CardHeight + CardGap));
             card.outline = card.back.gameObject.AddComponent<Outline>();
             card.outline.effectDistance = new Vector2(3f, -3f);
 

@@ -6,7 +6,8 @@ using UnityEngine.Rendering.Universal;
 
 // Everything that happens to the player through Health, the one place their health is kept.
 //   Hurt: the screen shakes, time freezes for a moment, and a red vignette flashes. At low health the vignette pulses and
-//   a heartbeat plays. HealthHud shows how much is left.
+//   a heartbeat plays. HealthHud shows how much is left, with the stamina under it. Every level with a player in it can
+//   be paused from here too (PauseMenu).
 //   Dying: a flatline. Time slows to a crawl, the camera closes in, the colour drains out, and the body falls. Then the
 //   screen cuts to Sonny's monitor (DeathScreen), where the player's life signs flatline under a line from Sonny, and the
 //   rest of the game goes silent. Any key restores the signal: static, and the player is back at RespawnPoint (the last
@@ -113,6 +114,8 @@ public class PlayerHealthHandler : MonoBehaviour
 
         hud = HealthHud.Get();
         hud.Track(health);
+        hud.TrackStamina(GetComponent<PlayerController>());
+        PauseMenu.Get();
         CreateDeathEffects();
     }
 
@@ -164,6 +167,9 @@ public class PlayerHealthHandler : MonoBehaviour
     {
         IsDying = true;
         SetFrozen(true);
+        // They go down where they were hit, whatever else tries to move them meanwhile (something that throws the
+        // player back on catching them, say), and only come back at RespawnPoint once the monitor's been and gone.
+        Vector3 diedAt = transform.position;
         bool wasSimulated = rb != null && rb.simulated;
         if (rb != null)
         {
@@ -185,6 +191,7 @@ public class PlayerHealthHandler : MonoBehaviour
         {
             float progress = t / fallTime;
             Time.timeScale = slowMotion;    // HitStop leaves time alone once something else has changed it
+            transform.position = diedAt;
             if (cam != null && cam.orthographic)
                 cam.orthographicSize = Mathf.Lerp(normalSize, normalSize * deathZoom, 1f - (1f - progress) * (1f - progress));
             if (deathEffects != null) deathEffects.weight = Mathf.SmoothStep(0f, 1f, progress);

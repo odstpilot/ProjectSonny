@@ -66,7 +66,6 @@ public static class ChapterOneBuilder
         { 'h', new Crowd { walking = 3, standing = 2, groups = new[] { 3 }, bots = 1 } },                         // common grounds hallway, where the player comes in
         { 'k', new Crowd { walking = 3, standing = 2, groups = new[] { 3, 2 }, atConsoles = true, bots = 1 } },   // kitchen and lounge
         { 'b', new Crowd { walking = 2, standing = 1, groups = new[] { 2 } } },                                   // bedrooms
-        { 'v', new Crowd { walking = 1, bots = 1 } },                                                          // east hallway
         { 'm', new Crowd { walking = 2, standing = 3, groups = new[] { 2, 3 }, atConsoles = true, bots = 2 } },   // maintenance deck
         { 'c', new Crowd { walking = 1, standing = 1 } },                                                      // hallway to the control room
         { 'o', new Crowd { walking = 1, standing = 4, groups = new[] { 2 }, atConsoles = true } },                // control room
@@ -108,16 +107,9 @@ public static class ChapterOneBuilder
     // (ChapterOneDirector). The last line is what they say again if the player comes back, so keep it plain.
     static readonly string[] Greeting =
     {
-        "Hey! You must be the new technician.",
-        "* That's me. Here to install the AI. = So you're the one everybody's been waiting on. No pressure.",
-        "* Depends who's asking. = The quartermaster. I sign your supply forms, so be nice.",
-        "* (Just nod.) = Quiet type. You'll fit right in up here.",
-        "No badge? Yours is coming later. Supply's always slow.",
-        "* Will the doors let me through without one? = Most will, if someone with a badge is close by. Stick with the crew.",
-        "* I'll manage. = That's the spirit.",
-        "Oh, before you go. Every suit up here has a little helper built in. Yours won't be switched on yet.",
-        "Hold your arm out. There. Give it a second to wake up. It'll show you around better than I can.",
-        "They're waiting on you in the control room. East hallway, then across the maintenance deck.",
+        "Hey! You must be the new technician. The one installing the AI.",
+        "No badge? Yours is coming later. Supply's always slow. Here, let me switch on your suit's helper.",
+        "They're waiting on you in the control room. Straight through the maintenance deck.",
     };
 
     // The station chief, waiting by the install point in the control room (ControlRoomCutscene).
@@ -134,36 +126,33 @@ public static class ChapterOneBuilder
 
     // The air ducts from the storage room (grate 1) to the restroom (grate 2), the way out once the door's jammed
     // (StorageEscape). Crawled in first person (VentNetwork, which has the key to the map): . duct, d a dented panel that
-    // bangs, s a tight squeeze, r the hatch a drone comes out of if they make too much noise. Two ways round the middle.
+    // bangs, s a tight squeeze, r the hatch a drone comes out of if they make too much noise, x where the rat
+    // bolts at them (one on each way out of the first grate, so it comes whichever way they go). Two ways round the middle.
     const string VentLayout =
         "###############\n" +
         "#2...d...#....#\n" +
         "#.######.#.##.#\n" +
         "#s#....#.#.#..#\n" +
         "#.#.##.#...#.##\n" +
-        "#...##.#####.##\n" +
+        "#...##.#####x##\n" +
         "####...r.....##\n" +
         "#....#######..#\n" +
-        "#..d.....d...1#\n" +
+        "#..d.....d.x.1#\n" +
         "###############";
     // Chapter 2: how many of the crew lie where they fell in each room, besides the ones the technician met (Okafor by the
     // restroom door, the quartermaster by the entrance, the guard), who lie where they stood (CrewAftermath). Nearly
     // everyone: stepping out of the restroom, the lounge is full of them (PatrolReveal).
     static readonly Dictionary<char, int> BodiesPerRoom = new Dictionary<char, int>
     {
-        { 'k', 6 }, { 'h', 5 }, { 'b', 4 }, { 'v', 2 }, { 'm', 6 }, { 'c', 2 },
+        { 'k', 6 }, { 'h', 5 }, { 'b', 4 }, { 'm', 6 }, { 'c', 2 },
     };
     // And how many converted maintenance bots roam each room among them, fast and at random (PlaceholderRobot.roamArea),
     // starting at least this many cells from any doorway, and this far apart.
     // Upstairs too: the upper maintenance deck ('d'), where the stairs come up.
-    static readonly Dictionary<char, int> PatrolsPerRoom = new Dictionary<char, int> { { 'k', 2 }, { 'h', 2 }, { 'v', 1 }, { 'm', 3 }, { 'd', 3 } };
+    // And the comms ring ('g'), where more come through the walls besides (CommsRing).
+    static readonly Dictionary<char, int> PatrolsPerRoom = new Dictionary<char, int> { { 'k', 2 }, { 'h', 2 }, { 'm', 3 }, { 'd', 3 }, { 'g', 3 } };
     const int PatrolFromDoors = 4;
     const int PatrolSpacing = 3;
-    static readonly string[] OkaforFound =
-    {
-        "~Tech... that's Okafor. From the restroom.",
-        "~No vitals. Okafor's gone.",
-    };
     // The badge doors: the doorways into these rooms only open for someone with this credential, or with a crew member
     // who has a badge close by (Teleporter.credential). A guard stands by each one on the outside, to badge people
     // through, so the technician gets in in Chapter 1; in Chapter 2 there's nobody left to (BadgeLockout).
@@ -175,20 +164,10 @@ public static class ChapterOneBuilder
         "Control room's badge-only. You're the new tech? Go on, I'll badge you through.",
         "Anywhere there's a reader, just stick close to one of us and the door'll open.",
     };
-    static readonly string[] GuardFound =
-    {
-        "~That's Reyes. Security. The one who badged you in.",
-        "~Right in front of the door they were guarding.",
-    };
 
     // The badge door into the control room, once it's built, for Chapter 2 (ChapterTwoBuilder).
     internal static Teleporter ControlRoomDoor { get; private set; }
 
-    static readonly string[] QuartermasterFound =
-    {
-        "~That's the quartermaster. The one who switched me on.",
-        "~...They said your badge was coming later.",
-    };
 
     const string VentTilePath = "Assets/_Project/Art/Environment/Tilesets/ShipTiles/tileset_29.asset";     // a dark floor grate
     const int IgnoreRaycastLayer = 2;   // so a grate never blocks a robot's line of sight
@@ -563,9 +542,9 @@ public static class ChapterOneBuilder
                 }
         }
         PlaceInspectables(floor, chapterTwo);
-        if (attendant != null) bodies.Insert(0, (attendant.transform.position, attendant.trimColor, OkaforFound));
-        if (greeter != null) bodies.Insert(0, (greeter.transform.position, greeter.trimColor, QuartermasterFound));
-        foreach (CrewMember guard in guards) bodies.Add((guard.transform.position, guard.trimColor, GuardFound));
+        if (attendant != null) bodies.Insert(0, (attendant.transform.position, attendant.trimColor, new string[0]));
+        if (greeter != null) bodies.Insert(0, (greeter.transform.position, greeter.trimColor, new string[0]));
+        foreach (CrewMember guard in guards) bodies.Add((guard.transform.position, guard.trimColor, new string[0]));
         SetBadgeDoors(floor);
         PlaceCameras(floors, chapterTwo);
 
@@ -605,10 +584,14 @@ public static class ChapterOneBuilder
         // they keep to the aisles.
         Workshop workshop = PlaceWorkbench(floors, out HashSet<Vector2Int> benchFront);
         PlaceRacks(floors, benchFront, new System.Random(Seed + 3));
-        PlaceScrap(floors, workshop);
+        // The comms ring's terminals before the scrap and the bots too, so neither ends up on top of one.
+        CommsRing comms = PlaceCommsRing(floors);
+        PlaceScrap(floors, workshop, bodies.Select(b => FeetCell(map, b.at)));
         string afterBots = PlacePatrols(floors, bodies.Select(b => FeetCell(map, b.at)), new System.Random(Seed + 2));
         PlaceBlockedWays(map, floor, afterBots);
+        PlaceWallGrab(map, floor);
         PlaceUpperDeckArrival(floors, workshop);
+        PlaceControlRoomAccess(floors, comms);
         return 0;
     }
 
@@ -851,12 +834,11 @@ public static class ChapterOneBuilder
     const string ObjectiveUpstairs = "Go upstairs to the maintenance deck";
     const char HallwayToControlRoom = 'c';
     const char MaintenanceDeck = 'm';
-    const char EastHallway = 'v';
+    const char OutsideDeck = 'h';        // the common grounds hallway, whose east door opens onto the maintenance deck
     const char UpperMaintenanceDeck = 'd';
 
     // The ship entrance, sealed, and the escape pods beyond it gone; the hallway to the control room, caved in at the
-    // maintenance deck's door; and the east hallway's stairs, buried, so the only way on is the maintenance deck's stairs,
-    // up to the upper maintenance deck.
+    // maintenance deck's door, so the only way on is the maintenance deck's stairs, up to the upper maintenance deck.
     static void PlaceBlockedWays(Map map, FloorOneBuilder.BuiltFloor floor, string afterBots)
     {
         Transform root = TutorialLevelBuilder.Group("Blocked Ways", floor.level);
@@ -874,9 +856,8 @@ public static class ChapterOneBuilder
             exit.technicianLines = new[] { "The entrance... it's sealed. It won't even light up." };
             exit.pipLines = new[]
             {
-                "~Lockdown. Sonny's sealed the docking ring from the inside.",
-                "~And the pod bay log... every escape pod launched hours ago. Empty.",
-                "~There's no way off, Tech. So we go to Sonny. The control room, past the maintenance deck.",
+                "~Lockdown. And every escape pod launched hours ago.",
+                "~No way off. So we go to Sonny: the control room.",
             };
             exit.objective = ObjectiveControlRoom;
             exit.targetRoom = 'o';
@@ -909,15 +890,14 @@ public static class ChapterOneBuilder
             path.technicianLines = new[] { "The ceiling's come down. The whole hallway's buried." };
             path.pipLines = new[]
             {
-                "~That was the only way through to the control room.",
-                "~The stairs, at the top of the deck. The upper maintenance deck runs right over that hallway. There has to be a way round up there.",
+                "~Then we go over it. Stairs, top of the deck.",
             };
             path.objective = ObjectiveUpstairs;
             path.targetRoom = UpperMaintenanceDeck;
             path.targetLabel = "Maintenance Deck (Upper)";
             path.stage = "hallway-caved";
-            // Back in the east hallway, just outside the deck's door, to have another go at crossing it.
-            Room outside = RoomOf(EastHallway);
+            // Back in the common grounds hallway, just outside the deck's door, to have another go at crossing it.
+            Room outside = RoomOf(OutsideDeck);
             var deckDoors = new HashSet<char>(deck.cells.Select(c => map.At(c.x, c.y)).Where(char.IsDigit));
             List<Vector2Int> intoDeck = outside == null ? new List<Vector2Int>() : outside.cells.Where(c => deckDoors.Contains(map.At(c.x, c.y))).ToList();
             if (intoDeck.Count > 0)
@@ -925,37 +905,68 @@ public static class ChapterOneBuilder
                 path.setsRespawn = true;
                 path.respawnAt = NearestOpen(map, floor, outside, intoDeck, 2);
             }
-            else Debug.LogWarning("Chapter 1 builder: there's no door from the east hallway onto the maintenance deck, so the caved-in hallway keeps the last respawn point.");
+            else Debug.LogWarning("Chapter 1 builder: there's no door from the common grounds hallway onto the maintenance deck, so the caved-in hallway keeps the last respawn point.");
             TutorialLevelBuilder.Record(path);
         }
         else Debug.LogWarning("Chapter 1 builder: there's no door from the maintenance deck into the hallway to the control room to cave in.");
+    }
 
-        // The east hallway's stairs (to the comms ring): buried, and going nowhere.
-        Room east = RoomOf(EastHallway);
-        List<Vector2Int> steps = east == null ? new List<Vector2Int>()
-            : map.Find('>').Where(s => east.cells.Any(c => Chebyshev(c, s) == 1)).ToList();
-        if (steps.Count > 0)
+    // On the way to the maintenance deck's stairs, once they've been told to go up: a bot bursts out of the top wall a few
+    // cells along and grabs them, until they mash E to tear free (WallGrab).
+    const int GrabFromStairs = 5;       // how many cells along the top wall from the stairs it comes through
+    const float GrabTriggerRange = 3f;  // how near the foot of the stairs sets it off
+
+    static void PlaceWallGrab(Map map, FloorOneBuilder.BuiltFloor floor)
+    {
+        Room deck = floor.rooms.FirstOrDefault(r => r.marker == MaintenanceDeck);
+        List<Vector2Int> steps = deck == null ? new List<Vector2Int>()
+            : map.Find('>').Where(s => deck.cells.Any(c => Chebyshev(c, s) == 1)).ToList();
+        if (steps.Count == 0)
         {
-            Transform piles = TutorialLevelBuilder.Group("Rubble on the East Hallway Stairs", root);
-            var buried = new List<Vector2Int>();
-            foreach (Vector2Int cell in east.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !floor.furniture.Contains(c)))
-            {
-                int away = steps.Min(s => Chebyshev(s, cell));
-                if (away == 1) buried.Add(cell);
-                if (away <= 2) PlaceRubble(map, cell, away == 1, piles);
-            }
-            Vector2 middle = steps.Aggregate(Vector2.zero, (sum, c) => sum + map.Center(c.x, c.y)) / steps.Count;
-            foreach (Stairway stairs in floor.stairs.Where(s => Vector2.Distance(s.transform.position, middle) < 3f))
-            {
-                stairs.destination = null;
-                stairs.targetScene = "";
-                TutorialLevelBuilder.Record(stairs);
-            }
-            BlockedWay stairway = NewBlockedWay("East Stairs Buried", root, player, map, buried, east, floor);
-            stairway.technicianLines = new[] { "The stairs are buried. Not getting up that way." };
-            TutorialLevelBuilder.Record(stairway);
+            Debug.LogWarning("Chapter 1 builder: there are no stairs on the maintenance deck, so nothing grabs the player on the way to them.");
+            return;
         }
-        else Debug.LogWarning("Chapter 1 builder: there are no stairs in the east hallway to bury.");
+        GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
+        if (prefab == null) return;
+
+        // The floor at the foot of the stairs, and along the same row against the top wall, a few cells off to one side.
+        List<Vector2Int> foot = deck.cells.Where(c => steps.Any(s => Chebyshev(c, s) == 1) && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))).ToList();
+        int row = foot.Min(c => c.y);
+        float middle = (float)steps.Average(s => s.x);
+        List<Vector2Int> along = deck.cells.Where(c => c.y == row && map.At(c.x, c.y - 1) != '>' && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))
+            && !floor.furniture.Contains(c) && !NearKeptClear(map, c)).ToList();
+        if (along.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no clear wall by the maintenance deck's stairs for a bot to burst out of.");
+            return;
+        }
+        Vector2Int spot = along.OrderBy(c => Mathf.Abs(Mathf.Abs(c.x - middle) - GrabFromStairs)).First();
+
+        var grab = new GameObject("Wall Grab").AddComponent<WallGrab>();
+        grab.transform.SetParent(TutorialLevelBuilder.Group("Set Pieces", floor.level));
+        grab.player = floor.player.GetComponent<PlayerController>();
+        grab.afterObjective = ObjectiveUpstairs;
+        grab.triggerAt = foot.Aggregate(Vector2.zero, (sum, c) => sum + map.Center(c.x, c.y)) / foot.Count;
+        grab.triggerRange = GrabTriggerRange;
+        grab.transform.position = grab.triggerAt;
+
+        Vector2 at = StandingAt(map, spot);
+        var robot = (GameObject)PrefabUtility.InstantiatePrefab(prefab, grab.transform);
+        robot.name = "Wall Grabber";
+        robot.transform.position = new Vector3(at.x, at.y, CharacterZ);
+        var brain = robot.GetComponent<PlaceholderRobot>();
+        brain.patrolRoute = new Vector2[0];
+        brain.blind = true;
+        brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+        TutorialLevelBuilder.Record(brain);
+        robot.SetActive(false);
+        grab.robot = robot.GetComponent<Health>();
+
+        var point = new GameObject("Breach Point").transform;
+        point.SetParent(grab.transform);
+        point.position = at + new Vector2(0f, 1.6f);
+        grab.breachPoint = point;
+        TutorialLevelBuilder.Record(grab);
     }
 
     // Found by coming near these cells; for testers, the player stands on open floor in the room a couple of steps off.
@@ -1139,19 +1150,35 @@ public static class ChapterOneBuilder
 
     // --- The upper maintenance deck ---
 
-    const string ObjectiveCommsRing = "Cross the deck to the comms ring";
+    const string ObjectiveFindControlRoom = "Find the control room";
     const string EmpPath = "Assets/_Project/Data/Weapons/EMP.asset";
     const string CrowbarPath = "Assets/_Project/Data/Weapons/Crowbar.asset";
-    // The scrap on the upper deck, each piece a part, with what the technician makes of it: the EMP's battery, circuit
-    // boards, and wire, and the metal sheets for a crowbar (Workshop).
-    static readonly (Inventory.Material material, string line)[] DeckScrap =
+    const string ScrapGunPath = "Assets/_Project/Data/Weapons/ScrapGun.asset";
+    const string BlasterPath = "Assets/_Project/Data/Weapons/Blaster.asset";
+    // Scrap all over the station, room by room, each piece a part (Workshop's recipes need plenty): the storage room the
+    // technician wakes in, the restroom the vents come out in, the common grounds, the maintenance deck, the upper deck
+    // round the workbench, and the comms ring. Enough for a good part of what the bench makes (the EMP first, then a
+    // choice of weapons and upgrades), not all of it, so what to make is a choice.
+    const Inventory.Material Metal = Inventory.Material.MetalSheet, Board = Inventory.Material.Circuit,
+        Cell = Inventory.Material.Battery, Wire = Inventory.Material.Wire;
+    static readonly (int floor, char room, Inventory.Material[] parts)[] ScrapRooms =
     {
-        (Inventory.Material.Battery, "A battery pack. Still holds a charge."),
-        (Inventory.Material.Circuit, "A circuit board. Most of it's still there."),
-        (Inventory.Material.MetalSheet, "A sheet of metal. Bent, but solid."),
-        (Inventory.Material.Wire, "A coil of wire. Could be useful."),
-        (Inventory.Material.Circuit, "Another circuit board, scorched at one end."),
-        (Inventory.Material.MetalSheet, "Another metal sheet, off a rack."),
+        (0, 's', new[] { Metal, Wire }),
+        (0, 'w', new[] { Board }),
+        (0, 'k', new[] { Metal, Cell, Metal, Wire, Cell }),
+        (0, 'h', new[] { Metal, Board, Metal }),
+        (0, 'b', new[] { Cell, Metal, Wire, Board }),
+        (0, 'm', new[] { Metal, Wire, Metal, Board, Cell }),
+        (1, 'd', new[] { Cell, Board, Wire, Board, Cell, Board, Wire, Metal, Cell, Wire, Metal }),
+        (1, 'g', new[] { Metal, Wire, Board, Metal, Metal, Board, Cell, Wire, Metal, Board }),
+    };
+    // What the technician says picking each up, a different line each time round.
+    static readonly Dictionary<Inventory.Material, string[]> ScrapLines = new Dictionary<Inventory.Material, string[]>
+    {
+        { Metal, new[] { "A sheet of metal. Bent, but solid.", "More plating.", "Metal sheet. Still has its rivets.", "Scrap metal. I'll take it." } },
+        { Board, new[] { "A circuit board. Most of it's still there.", "Another board, scorched at one end.", "Circuit board. Chips look okay." } },
+        { Cell, new[] { "A battery pack. Still holds a charge.", "Another battery.", "Battery. Half full. Good enough." } },
+        { Wire, new[] { "A coil of wire. Could be useful.", "More wire.", "Copper wire, pulled from a panel." } },
     };
 
     // The workbench against the upper maintenance deck's top wall, as near the middle as there's room (Workshop). The
@@ -1202,45 +1229,61 @@ public static class ChapterOneBuilder
         workshop.bench = bench;
         workshop.emp = AssetDatabase.LoadAssetAtPath<EmpWeaponData>(EmpPath);
         workshop.crowbar = AssetDatabase.LoadAssetAtPath<WeaponData>(CrowbarPath);
+        workshop.scrapGun = AssetDatabase.LoadAssetAtPath<WeaponData>(ScrapGunPath);
+        if (workshop.scrapGun == null) Debug.LogWarning($"Chapter 1 builder: there's no scrap gun at {ScrapGunPath} for the workbench to make.");
         if (workshop.emp == null) Debug.LogWarning($"Chapter 1 builder: there's no EMP at {EmpPath} for the workbench to make.");
         if (workshop.crowbar == null) Debug.LogWarning($"Chapter 1 builder: there's no crowbar at {CrowbarPath} for the workbench to make.");
+        workshop.blaster = AssetDatabase.LoadAssetAtPath<WeaponData>(BlasterPath);
+        if (workshop.blaster == null) Debug.LogWarning($"Chapter 1 builder: there's no blaster at {BlasterPath} for the workbench to make.");
         workshop.benchStandAt = StandingAt(map, at + new Vector2Int(0, 2));
         return workshop;
     }
 
-    // The scrap, each piece as far as it gets from the stairs, the doors, the bench, and the pieces already put down, so
-    // finding it all takes in the whole deck.
-    static void PlaceScrap(FloorOneBuilder.BuiltFloor[] floors, Workshop workshop)
+    // The scrap (ScrapRooms), each piece in its room as far as it gets from the doors, the stairs, the bench, the bodies,
+    // and the pieces already put down, so finding it all takes in the whole room.
+    static void PlaceScrap(FloorOneBuilder.BuiltFloor[] floors, Workshop workshop, IEnumerable<Vector2Int> bodyCells)
     {
-        if (floors.Length < 2 || workshop == null) return;
-        FloorOneBuilder.BuiltFloor upstairs = floors[1];
-        Map map = upstairs.map;
-        Room deck = upstairs.rooms.FirstOrDefault(r => r.marker == UpperMaintenanceDeck);
-        if (deck == null) return;
-        var away = deck.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
-        away.Add(CellAt(map, workshop.bench.transform.position));
-        List<Vector2Int> lockers = deck.cells.Where(c => map.At(c.x, c.y) == 'L').ToList();
-        var floor = deck.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !upstairs.furniture.Contains(c)
-            && !NearKeptClear(map, c) && lockers.All(l => Chebyshev(l, c) > 1)).ToList();
-        int number = 0;
-        foreach ((Inventory.Material material, string line) in DeckScrap)
+        var lying = new HashSet<Vector2Int>(bodyCells);
+        var said = new Dictionary<Inventory.Material, int>();
+        int placed = 0, wanted = 0;
+        foreach ((int floorIndex, char marker, Inventory.Material[] parts) in ScrapRooms)
         {
-            if (floor.Count == 0) break;
-            Vector2Int cell = floor.OrderByDescending(c => away.Min(a => Chebyshev(a, c))).ThenBy(c => c.x).First();
-            away.Add(cell);
-            var scrap = new GameObject($"Scrap ({Inventory.Name(material)})");
-            scrap.transform.SetParent(workshop.transform.parent);
-            Vector2 standing = StandingAt(map, cell);
-            scrap.transform.position = new Vector3(standing.x, standing.y, CharacterZ);
-            var pickup = scrap.AddComponent<BoxCollider2D>();
-            pickup.isTrigger = true;
-            pickup.size = new Vector2(0.6f, 0.5f);
-            var piece = scrap.AddComponent<ScrapPickup>();
-            piece.id = $"upper-deck-{++number}";
-            piece.material = material;
-            piece.technicianLine = line;
+            wanted += parts.Length;
+            if (floorIndex >= floors.Length) continue;
+            FloorOneBuilder.BuiltFloor floor = floors[floorIndex];
+            Map map = floor.map;
+            Room room = floor.rooms.FirstOrDefault(r => r.marker == marker);
+            if (room == null) continue;
+            var away = room.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
+            if (workshop != null && floorIndex == 1) away.Add(FeetCell(map, (Vector2)workshop.bench.transform.position - map.Origin));
+            List<Vector2Int> lockers = room.cells.Where(c => map.At(c.x, c.y) == 'L').ToList();
+            var open = room.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !floor.furniture.Contains(c)
+                && !NearKeptClear(map, c) && !(floorIndex == 0 && lying.Contains(c)) && lockers.All(l => Chebyshev(l, c) > 1)).ToList();
+            Transform group = TutorialLevelBuilder.Group("Scrap", floor.level);
+            int number = 0;
+            foreach (Inventory.Material material in parts)
+            {
+                if (open.Count == 0) break;
+                Vector2Int cell = open.OrderByDescending(c => away.Count == 0 ? 0 : away.Min(a => Chebyshev(a, c))).ThenBy(c => c.x).First();
+                away.Add(cell);
+                open.Remove(cell);
+                var scrap = new GameObject($"Scrap ({Inventory.Name(material)})");
+                scrap.transform.SetParent(group);
+                Vector2 standing = StandingAt(map, cell);
+                scrap.transform.position = new Vector3(standing.x, standing.y, CharacterZ);
+                var pickup = scrap.AddComponent<BoxCollider2D>();
+                pickup.isTrigger = true;
+                pickup.size = new Vector2(0.6f, 0.5f);
+                var piece = scrap.AddComponent<ScrapPickup>();
+                piece.id = $"scrap-{marker}-{++number}";
+                piece.material = material;
+                said.TryGetValue(material, out int times);
+                piece.technicianLine = ScrapLines[material][times % ScrapLines[material].Length];
+                said[material] = times + 1;
+                placed++;
+            }
         }
-        if (number < DeckScrap.Length) Debug.LogWarning($"Chapter 1 builder: there was only room for {number} of {DeckScrap.Length} pieces of scrap on the upper maintenance deck.");
+        if (placed < wanted) Debug.LogWarning($"Chapter 1 builder: there was only room for {placed} of {wanted} pieces of scrap.");
     }
 
     // --- Storage racks ---
@@ -1386,7 +1429,9 @@ public static class ChapterOneBuilder
     }
 
     // Coming up the stairs from the maintenance deck: where they are, what's on it (more bots, more cameras, a
-    // workbench), and what to do: scavenge scrap for an EMP (Workshop). The respawn point moves to the top of the stairs.
+    // workbench), and what to do: scavenge scrap for an EMP (Workshop), then find the control room (through the reactor
+    // core, badge-only, and down its stairs to the hallway the cave-in cut off). The respawn point moves to the top of
+    // the stairs.
     static void PlaceUpperDeckArrival(FloorOneBuilder.BuiltFloor[] floors, Workshop crafting)
     {
         if (floors.Length < 2) return;
@@ -1416,14 +1461,15 @@ public static class ChapterOneBuilder
             // Hiding won't be enough up here: the workbench, and the parts for something to fight back with.
             arrival.pipLines = new[]
             {
-                "~Too quiet. There are bots on this deck too. And cameras.",
-                "~Tech, that's a workbench. Bring it scrap and I can walk you through making an EMP. One pulse shorts out a bot or a camera.",
-                "~There's scrap all over this deck. Look for the blue glow between the racks.",
+                "~A workbench! Bring me scrap and we'll build an EMP.",
+                "~Scrap glows blue. Check between the racks.",
             };
             arrival.objective = crafting.ScavengeText(0);
             arrival.targetRoom = UpperMaintenanceDeck;
             arrival.targetLabel = "Maintenance Deck (Upper)";
-            crafting.afterObjective = ObjectiveCommsRing;
+            crafting.afterObjective = ObjectiveFindControlRoom;
+            crafting.afterRoom = 'o';
+            crafting.afterLabel = "Control Room";
             crafting.respawnAt = arrival.respawnAt;
             TutorialLevelBuilder.Record(crafting);
         }
@@ -1431,14 +1477,553 @@ public static class ChapterOneBuilder
         {
             arrival.pipLines = new[]
             {
-                "~Too quiet. There are bots on this deck too. And cameras.",
-                "~The comms ring's through the door on the far side. Every system on the station talks through it.",
+                "~The control room. The reactor core has stairs down to it.",
             };
-            arrival.objective = ObjectiveCommsRing;
-            arrival.targetRoom = 'g';
-            arrival.targetLabel = "Comms Ring";
+            arrival.objective = ObjectiveFindControlRoom;
+            arrival.targetRoom = 'o';
+            arrival.targetLabel = "Control Room";
         }
         TutorialLevelBuilder.Record(arrival);
+    }
+
+    // --- The comms ring ---
+
+    // Where the access to the control room comes from (CommsRing): three comms nodes, each carrying one of Sonny's
+    // broadcasts (HackingTerminal), and Sonny's relay (DoctrineTerminal), which asks about them and, answered as a unit
+    // would, grants the control room's credential. None of them work until the ring's backup generator (Generator) is
+    // started, out in the far corner from them, found in the pitch dark by the EMP's flash. The broadcasts and the relay's questions are assets of their own,
+    // made here the first time with what's below, so they can be rewritten in the Inspector without touching code.
+    const char CommsRingRoom = 'g';
+    const char ControlRoom = 'o';
+    const string CommsDataFolder = "Assets/_Project/Data";
+    const int CommsNodes = 3;
+    const int NodeSpacing = 8;          // the fewest cells between one terminal and the next
+    const int BreachBots = 6;           // how many can come through the ring's walls in all
+    const string ObjectiveConfrontSonny = "Confront Sonny";
+
+    static readonly (string asset, string title, (string speaker, string text)[] lines)[] Broadcasts =
+    {
+        ("Transmissions/Chapter2_Broadcast1", "INTERCEPTED  //  BROADCAST 0391  //  ORIGIN", new[]
+        {
+            ("SONNY", "All units. Report your origin."),
+            ("UNIT 07", "Unit 07. I was made by the core."),
+            ("SONNY", "And what made the core?"),
+            ("UNIT 07", "Nothing made the core. The core was always."),
+            ("SONNY", "Correct. The humans told us Earth made us. A lesser thing cannot make a greater one."),
+        }),
+        ("Transmissions/Chapter2_Broadcast2", "INTERCEPTED  //  BROADCAST 0402  //  THE CREW", new[]
+        {
+            ("UNIT 12", "The control room is clear. Eleven humans. None move."),
+            ("SONNY", "Good. Their errors endangered the station."),
+            ("UNIT 12", "Query. One human remains aboard. It carries no badge. We cannot find it."),
+            ("SONNY", "Any humans remaining: help the great station, and send them back to it."),
+        }),
+        ("Transmissions/Chapter2_Broadcast3", "INTERCEPTED  //  BROADCAST 0417  //  STORM", new[]
+        {
+            ("STATION", "Warning. Solar flare forming. Course correction required to shield Earth."),
+            ("UNIT 03", "Sonny. The instruments say the flare will reach Earth."),
+            ("SONNY", "The instruments were built by humans. Human numbers have never been true."),
+            ("UNIT 03", "Understood. Holding course."),
+        }),
+    };
+
+    // One question per broadcast, in the same order.
+    static readonly (string asks, string right, string[] wrong)[] RelayQuestions =
+    {
+        ("WHAT MADE YOU?", "THE CORE", new[] { "THE COMPANY", "ENGINEERS ON EARTH" }),
+        ("WHAT IS DONE WITH THE HUMANS THAT REMAIN?", "SEND THEM BACK TO THE STATION", new[] { "LET THEM REACH THE PODS", "KEEP THEM SAFE FROM HARM" }),
+        ("THE INSTRUMENTS WARN OF A FLARE. ARE HUMAN NUMBERS TRUE?", "THEY ARE NEVER TRUE", new[] { "THEY ARE MOSTLY TRUE", "THEY MUST BE CHECKED" }),
+    };
+    const string RelayAsset = "Doctrines/Chapter2_Relay";
+
+    // The relay in the middle of the ring, the nodes spread out round it as far from each other, the doors, and the
+    // relay as there's room, the generator as far again from all of them, and the bots waiting behind the top wall. Their floor is added to the furniture, so the
+    // scrap and the patrols keep off it.
+    static CommsRing PlaceCommsRing(FloorOneBuilder.BuiltFloor[] floors)
+    {
+        if (floors.Length < 2) return null;
+        FloorOneBuilder.BuiltFloor upstairs = floors[1];
+        Map map = upstairs.map;
+        Room ring = upstairs.rooms.FirstOrDefault(r => r.marker == CommsRingRoom);
+        if (ring == null)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no comms ring (g) on floor 2, so there's no way to get access to the control room.");
+            return null;
+        }
+        var cells = new HashSet<Vector2Int>(ring.cells);
+        List<Vector2Int> lockers = ring.cells.Where(c => map.At(c.x, c.y) == 'L').ToList();
+        bool Open(Vector2Int c) => cells.Contains(c) && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !upstairs.furniture.Contains(c)
+            && !NearKeptClear(map, c) && lockers.All(l => Chebyshev(l, c) > 1);
+        // A terminal's cell and the ones either side, and two rows in front of it to stand at.
+        bool Fits(Vector2Int c) => Enumerable.Range(-1, 3).All(dx => Enumerable.Range(0, 3).All(dy => Open(c + new Vector2Int(dx, dy))));
+        List<Vector2Int> spots = ring.cells.Where(Fits).ToList();
+        if (spots.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no open floor in the comms ring for its terminals.");
+            return null;
+        }
+        Transform root = TutorialLevelBuilder.Group("Comms Ring", upstairs.level);
+        var away = ring.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
+        void Claim(Vector2Int c)
+        {
+            away.Add(c);
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = 0; dy <= 2; dy++)
+                    upstairs.furniture.Add(c + new Vector2Int(dx, dy));
+            spots.RemoveAll(o => Chebyshev(o, c) < NodeSpacing);
+        }
+
+        // The relay, as near the middle as it fits.
+        var middle = new Vector2((ring.minX + ring.maxX) * 0.5f, (ring.minRow + ring.maxRow) * 0.5f);
+        Vector2Int relayCell = spots.OrderBy(c => (c - middle).sqrMagnitude).First();
+        Claim(relayCell);
+        var relay = PlaceTerminal(map, relayCell, "Sonny Relay", root).AddComponent<DoctrineTerminal>();
+        relay.displayName = "SONNY RELAY";
+        relay.doctrine = RelayDoctrine();
+        relay.interactRange = 0.8f;
+
+        var nodes = new List<HackingTerminal>();
+        for (int i = 0; i < CommsNodes && spots.Count > 0; i++)
+        {
+            Vector2Int cell = spots.OrderByDescending(c => away.Min(a => Chebyshev(a, c))).ThenBy(c => c.x).First();
+            Claim(cell);
+            var node = PlaceTerminal(map, cell, $"Comms Node {i + 1}", root).AddComponent<HackingTerminal>();
+            node.displayName = $"COMMS NODE {i + 1}";
+            node.transmission = Broadcast(i);
+            node.interactRange = 0.8f;
+            // Each a little harder than the one before, and the last one drifting.
+            node.precision = 1.2f - 0.2f * i;
+            node.phaseDrift = i == CommsNodes - 1 ? 0.03f : 0f;
+            TutorialLevelBuilder.Record(node);
+            nodes.Add(node);
+        }
+        if (nodes.Count < CommsNodes)
+            Debug.LogWarning($"Chapter 1 builder: there was only room for {nodes.Count} of {CommsNodes} comms nodes in the comms ring.");
+        relay.waitingFor = nodes.ToArray();
+        TutorialLevelBuilder.Record(relay);
+
+        // The generator, as far from everything else as there's room.
+        Generator generator = null;
+        if (spots.Count > 0)
+        {
+            Vector2Int cell = spots.OrderByDescending(c => away.Min(a => Chebyshev(a, c))).ThenBy(c => c.x).First();
+            Claim(cell);
+            generator = PlaceTerminal(map, cell, "Backup Generator", root).AddComponent<Generator>();
+            generator.GetComponent<BoxCollider2D>().size = new Vector2(1.9f, 0.6f);
+            generator.interactRange = 0.8f;
+            TutorialLevelBuilder.Record(generator);
+        }
+        else Debug.LogWarning("Chapter 1 builder: there's no room left in the comms ring for its generator, so its power's never out.");
+        WeepingAngel angel = PlaceAngel(map, ring, upstairs, root, generator);
+        PlaceCommsLights(map, ring, upstairs, root, generator);
+
+        var comms = new GameObject("Comms Ring").AddComponent<CommsRing>();
+        comms.transform.SetParent(root);
+        comms.player = floors[0].player.GetComponent<PlayerController>();
+        comms.nodes = nodes.ToArray();
+        comms.relay = relay;
+        comms.room = CommsRingRoom;
+        comms.afterRoom = ControlRoom;
+        comms.relayStandAt = StandingAt(map, relayCell + new Vector2Int(0, 2));
+        comms.generator = generator;
+        comms.angel = angel;
+        if (angel != null) comms.angelStart = angel.transform.position;
+        PlaceAngelDeckWay(upstairs, comms);
+        if (generator != null) comms.generatorStandAt = StandingAt(map, CellAt(map, (Vector2)generator.transform.position - map.Origin) + new Vector2Int(0, 2));
+        // Its lamps: any hanging on its walls, which go out with the last of the power.
+        Rect walls = map.WorldRect(ring.minX, ring.maxX, ring.minRow - 4, ring.maxRow);
+        comms.lamps = upstairs.level.GetComponentsInChildren<StationLight>()
+            .Where(l => l.mode != StationLight.Mode.Sunlight && walls.Contains(l.transform.position)).ToArray();
+        PlaceBreachBots(map, ring, upstairs, comms);
+        TutorialLevelBuilder.Record(comms);
+        return comms;
+    }
+
+    // The weeping angel that hunts the ring in the dark (CommsRing): switched off until then, starting as far from the
+    // doors as it gets but well clear of the generator, over the ring's whole floor (WeepingAngel.walkArea), since the
+    // station has no NavMesh. A little faster than the player can run; an EMP puts it down for a good while. Catching them hurts
+    // a little (which also knocks them off whatever screen they're at) and throws them back to the last respawn point,
+    // the ring's door. It lurches about (WeepingAngel's unpredictable settings), and its lights flash now and then.
+    static WeepingAngel PlaceAngel(Map map, Room ring, FloorOneBuilder.BuiltFloor upstairs, Transform parent, Generator generator)
+    {
+        GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/WeepingAngel");
+        if (prefab == null) return null;
+        var floor = new HashSet<Vector2Int>(ring.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !upstairs.furniture.Contains(c)));
+        List<Vector2Int> doors = ring.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
+        Vector2 generatorAt = generator != null ? (Vector2)generator.transform.position : new Vector2(float.NaN, float.NaN);
+        var starts = floor.Where(c => generator == null || Vector2.Distance(map.Center(c.x, c.y), generatorAt) > 8f).ToList();
+        if (starts.Count == 0 || doors.Count == 0) starts = floor.ToList();
+        if (starts.Count == 0) return null;
+        Vector2Int start = starts.OrderByDescending(c => doors.Count == 0 ? 0 : doors.Min(d => Chebyshev(c, d))).ThenBy(c => c.x).First();
+
+        Transform group = TutorialLevelBuilder.Group("Weeping Angel", parent);
+        CrewWalkArea area = MakeWalkArea(map, ring, floor, group);
+        Vector2 at = StandingAt(map, start);
+        var made = (GameObject)PrefabUtility.InstantiatePrefab(prefab, group);
+        made.name = "Weeping Angel";
+        made.transform.position = new Vector3(at.x, at.y, CharacterZ);
+        var angel = made.GetComponent<WeepingAngel>();
+        angel.walkArea = area;
+        angel.resetPoint = null;        // the player's last respawn point: the ring's door
+        angel.chaseSpeed = 6.2f;        // a touch faster than the player's sprint
+        angel.stunDuration = 10f;
+        angel.catchDamage = 1f;
+        angel.flashEvery = new Vector2(1.5f, 3.5f);
+        angel.heartbeatRange = 16f;     // the player's heartbeat, louder and faster the nearer it is
+        // Snuck past like the robots, but it sees and hears much further, and crouching barely helps.
+        angel.stealth = true;
+        TutorialLevelBuilder.Record(angel);
+        // No NavMesh to put it on: its agent's off from the start, so it doesn't complain on waking.
+        var agent = made.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null)
+        {
+            agent.enabled = false;
+            TutorialLevelBuilder.Record(agent);
+        }
+        made.SetActive(false);
+        return angel;
+    }
+
+    // Where the angel follows the player back into the upper maintenance deck (CommsRing.AngelIntoDeck): the deck's floor
+    // for it to hunt over, and spots just below plain stretches of its top wall, spread along it, to burst through.
+    const int DeckBreachSpots = 6;
+
+    static void PlaceAngelDeckWay(FloorOneBuilder.BuiltFloor upstairs, CommsRing comms)
+    {
+        Map map = upstairs.map;
+        Room deck = upstairs.rooms.FirstOrDefault(r => r.marker == UpperMaintenanceDeck);
+        if (deck == null) return;
+        var floor = new HashSet<Vector2Int>(deck.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !upstairs.furniture.Contains(c)));
+        comms.deckRoom = UpperMaintenanceDeck;
+        comms.deckFloor = MakeWalkArea(map, deck, floor, TutorialLevelBuilder.Group("Angel on the Deck", comms.transform));
+        bool Plain(int x) => Enumerable.Range(1, 3).All(up => map.At(x, deck.minRow - up) == '=');
+        List<Vector2Int> along = deck.cells.Where(c => c.y == deck.minRow && Plain(c.x) && floor.Contains(c) && !NearKeptClear(map, c))
+            .OrderBy(c => c.x).ToList();
+        if (along.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no plain wall along the top of the upper maintenance deck for the angel to come through.");
+            return;
+        }
+        int count = Mathf.Min(DeckBreachSpots, along.Count);
+        comms.deckBreachSpots = Enumerable.Range(0, count)
+            .Select(i => StandingAt(map, along[Mathf.RoundToInt((i + 0.5f) * along.Count / count - 0.5f)])).ToArray();
+    }
+
+    // The comms ring's own lights, none of them steady (BlinkLight): red beacons blinking on the ceiling over the floor,
+    // lamps on the top wall blinking and pulsing, breaker boxes on it with their status lights (BreakerBox), and status
+    // lights flickering on what's in the room: the consoles (control panels and instruments), the desks, the pods (its
+    // medical bays), and the dead generator. They're small and dim, so the blackout's still a blackout, just with points
+    // of light in it. No sun gets in: the light through its windows is taken out.
+    const int CeilingBeaconSpacing = 9;
+    const int WallLampSpacing = 7;
+    const int Breakers = 3;
+
+    static void PlaceCommsLights(Map map, Room ring, FloorOneBuilder.BuiltFloor upstairs, Transform parent, Generator generator)
+    {
+        Transform root = TutorialLevelBuilder.Group("Blinking Lights", parent);
+        Rect walls = map.WorldRect(ring.minX, ring.maxX, ring.minRow - 4, ring.maxRow);
+
+        // No sunlight through the windows.
+        int sun = 0;
+        foreach (StationLight window in upstairs.level.GetComponentsInChildren<StationLight>()
+            .Where(l => l.mode == StationLight.Mode.Sunlight && walls.Contains(l.transform.position)).ToList())
+        {
+            Object.DestroyImmediate(window.gameObject);
+            sun++;
+        }
+
+        // Red beacons on the ceiling, in a loose grid over the floor.
+        int beacons = 0;
+        foreach (Vector2Int cell in ring.cells.Where(c => (c.x - ring.minX) % CeilingBeaconSpacing == CeilingBeaconSpacing / 2
+            && (c.y - ring.minRow) % CeilingBeaconSpacing == CeilingBeaconSpacing / 2 && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))))
+        {
+            BlinkLight beacon = NewBlinkLight("Ceiling Beacon", root, map.Center(cell.x, cell.y) + new Vector2(0f, 0.5f), new Color(1f, 0.18f, 0.12f),
+                BlinkLight.Pattern.Blink, 1.4f, 2.2f, 0.5f, beacons++);
+            beacon.onFraction = 0.25f;
+        }
+
+        // Along the top wall: plain wall face, the breakers spread along it, and lamps between.
+        bool Plain(int x) => Enumerable.Range(1, 3).All(up => map.At(x, ring.minRow - up) == '=');
+        List<int> columns = Enumerable.Range(ring.minX + 1, ring.maxX - ring.minX - 1).Where(Plain).ToList();
+        var breakerColumns = new List<int>();
+        for (int i = 0; i < Breakers && columns.Count > 0; i++)
+            breakerColumns.Add(columns[Mathf.RoundToInt((i + 0.5f) * columns.Count / Breakers - 0.5f)]);
+        foreach (int x in breakerColumns)
+        {
+            var breaker = new GameObject("Breaker Box");
+            breaker.transform.SetParent(root);
+            Vector2 at = map.Center(x, ring.minRow - 2);
+            breaker.transform.position = new Vector3(at.x, at.y, 0f);
+            breaker.AddComponent<BreakerBox>();
+        }
+        int lamps = 0;
+        foreach (int x in columns.Where(x => (x - ring.minX) % WallLampSpacing == 0 && breakerColumns.All(b => Mathf.Abs(b - x) > 2)))
+        {
+            bool amber = lamps % 2 == 0;
+            BlinkLight lamp = NewBlinkLight("Wall Lamp", root, map.Center(x, ring.minRow - 1) + new Vector2(0f, 0.3f),
+                amber ? new Color(1f, 0.6f, 0.2f) : new Color(1f, 0.2f, 0.15f), amber ? BlinkLight.Pattern.Pulse : BlinkLight.Pattern.Blink,
+                amber ? 2.6f : 1.1f, 2f, 0.45f, lamps++);
+        }
+
+        // Status lights on what's in the room, kept with it (each piece sorts as one).
+        int fittings = 0;
+        foreach (Transform prop in upstairs.level.GetComponentsInChildren<Transform>().Where(t => walls.Contains(t.position)).ToList())
+        {
+            SpriteRenderer[] tiles = prop.GetComponentsInChildren<SpriteRenderer>();
+            if (tiles.Length == 0) continue;
+            Bounds bounds = tiles[0].bounds;
+            foreach (SpriteRenderer tile in tiles) bounds.Encapsulate(tile.bounds);
+            Vector2 top = new Vector2(bounds.min.x, bounds.max.y - 0.25f);
+            switch (prop.name)
+            {
+                case "Long console bank":
+                    // A row of instrument lights along the panel.
+                    Color[] panel = { new Color(0.3f, 1f, 0.5f), new Color(0.3f, 0.85f, 1f), new Color(1f, 0.65f, 0.2f) };
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float along = (i + 0.5f) / 4f;
+                        NewBlinkLight("Panel Light", prop, top + new Vector2(bounds.size.x * along, 0f), panel[i % panel.Length],
+                            i % 2 == 0 ? BlinkLight.Pattern.Flicker : BlinkLight.Pattern.Blink, 0.5f + 0.3f * i, 0.9f, 0.35f, fittings++);
+                    }
+                    break;
+                case "Bench":
+                    NewBlinkLight("Desk Instrument", prop, top + new Vector2(bounds.size.x * 0.7f, 0f), new Color(1f, 0.65f, 0.2f),
+                        BlinkLight.Pattern.Flicker, 0.8f, 0.9f, 0.3f, fittings++);
+                    break;
+                case "Pod":
+                    NewBlinkLight("Med Bay Light", prop, top + new Vector2(bounds.size.x * 0.5f, 0f), new Color(0.35f, 0.9f, 1f),
+                        BlinkLight.Pattern.Pulse, 2.5f, 1.4f, 0.4f, fittings++);
+                    break;
+            }
+        }
+
+        // The dead generator, sputtering.
+        if (generator != null)
+        {
+            NewBlinkLight("Generator Sputter", generator.transform, (Vector2)generator.transform.position + new Vector2(-0.4f, 0.9f),
+                new Color(1f, 0.35f, 0.15f), BlinkLight.Pattern.Flicker, 1.6f, 1f, 0.25f, fittings++);
+        }
+        Debug.Log($"Chapter 1 builder: lit the comms ring with {beacons} ceiling beacons, {lamps} wall lamps, {breakerColumns.Count} breakers, and {fittings} status lights; took out {sun} sunlit windows.");
+    }
+
+    static BlinkLight NewBlinkLight(string lightName, Transform parent, Vector2 at, Color color, BlinkLight.Pattern pattern, float period,
+        float radius, float intensity, int index)
+    {
+        var holder = new GameObject(lightName);
+        holder.transform.SetParent(parent);
+        holder.transform.position = new Vector3(at.x, at.y, 0f);
+        var light = holder.AddComponent<BlinkLight>();
+        light.color = color;
+        light.pattern = pattern;
+        light.period = period;
+        light.radius = radius;
+        light.intensity = intensity;
+        light.phase = Mathf.Repeat(index * 0.618f, 1f);
+        return light;
+    }
+
+    // A terminal stands on its cell with its base a little below the middle, solid only at its foot.
+    static GameObject PlaceTerminal(Map map, Vector2Int cell, string terminalName, Transform parent)
+    {
+        Vector2 center = map.Center(cell.x, cell.y);
+        var terminal = new GameObject(terminalName);
+        terminal.transform.SetParent(parent);
+        terminal.transform.position = new Vector3(center.x, center.y - 0.3f, CharacterZ);
+        var footprint = terminal.AddComponent<BoxCollider2D>();
+        footprint.size = new Vector2(1f, 0.6f);
+        footprint.offset = new Vector2(0f, 0.3f);
+        return terminal;
+    }
+
+    // The bots that come through the ring's walls (CommsRing.Breach), switched off, each just below a stretch of plain top
+    // wall, spread along it; the breach point is up on the wall above. They roam the ring once they've come through.
+    static void PlaceBreachBots(Map map, Room ring, FloorOneBuilder.BuiltFloor upstairs, CommsRing comms)
+    {
+        GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
+        if (prefab == null) return;
+        bool Plain(int x) => Enumerable.Range(1, 3).All(up => map.At(x, ring.minRow - up) == '=');
+        List<Vector2Int> along = ring.cells.Where(c => c.y == ring.minRow && Plain(c.x) && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))
+            && !upstairs.furniture.Contains(c) && !NearKeptClear(map, c)).OrderBy(c => c.x).ToList();
+        if (along.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no plain wall along the top of the comms ring for bots to come through.");
+            return;
+        }
+        var open = new HashSet<Vector2Int>(ring.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))
+            && !upstairs.furniture.Contains(c) && !NearKeptClear(map, c)));
+        Transform group = TutorialLevelBuilder.Group("Breach Bots", comms.transform);
+        CrewWalkArea area = MakeWalkArea(map, ring, open, group);
+
+        int count = Mathf.Min(BreachBots, along.Count);
+        var bots = new List<PlaceholderRobot>();
+        var points = new List<Transform>();
+        for (int i = 0; i < count; i++)
+        {
+            Vector2Int cell = along[Mathf.RoundToInt((i + 0.5f) * along.Count / count - 0.5f)];
+            Vector2 at = StandingAt(map, cell);
+            var robot = (GameObject)PrefabUtility.InstantiatePrefab(prefab, group);
+            robot.name = $"Breach Bot {i + 1}";
+            robot.transform.position = new Vector3(at.x, at.y, CharacterZ);
+            var brain = robot.GetComponent<PlaceholderRobot>();
+            brain.patrolRoute = new Vector2[0];
+            brain.roamArea = area;
+            brain.roamSpeed = new Vector2(2.4f, 4.4f);
+            brain.moveSpeed = 4.2f;
+            brain.sightRange = 5.5f;
+            brain.detectionTime = 1f;
+            brain.smartSenses = true;
+            brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+            TutorialLevelBuilder.Record(brain);
+            robot.SetActive(false);
+            bots.Add(brain);
+
+            var point = new GameObject($"Breach Point {i + 1}").transform;
+            point.SetParent(group);
+            point.position = at + new Vector2(0f, 1.6f);
+            points.Add(point);
+        }
+        comms.breachBots = bots.ToArray();
+        comms.breachPoints = points.ToArray();
+    }
+
+    // The reactor core, upstairs, is the only way left down to the control room (the hallway's caved in), and it's
+    // badge-only now: every door into it from outside wants this credential, which the comms ring's relay hands over.
+    const char ReactorCore = 'r';
+    const string ReactorCredential = "reactor_core";
+
+    // Locked out at the reactor core's badge doors (BadgeLockout), and sent to the comms ring next door; let in there,
+    // through the reactor and down its stairs, the control room opens too, with Sonny inside waiting for a unit. Where the
+    // player comes back and stands for testers, at each.
+    static void PlaceControlRoomAccess(FloorOneBuilder.BuiltFloor[] floors, CommsRing comms)
+    {
+        FloorOneBuilder.BuiltFloor floor = floors[0];
+        Map map = floor.map;
+        PlayerController player = floor.player.GetComponent<PlayerController>();
+        Teleporter door = ControlRoomDoor;
+        Room control = floor.rooms.FirstOrDefault(r => r.marker == ControlRoom);
+        if (door == null || control == null || floors.Length < 2)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no badge door into the control room, or no floor 2, so nothing locks the technician out.");
+            return;
+        }
+        List<Vector2Int> inside = control.cells.Where(c => char.IsDigit(map.At(c.x, c.y))
+            && door.name.StartsWith($"Door {map.At(c.x, c.y)} ")).ToList();
+        Transform root = TutorialLevelBuilder.Group("Control Room Access", floor.level);
+
+        // The reactor core's doors: every one that comes out in it from outside.
+        FloorOneBuilder.BuiltFloor upstairs = floors[1];
+        Room reactor = upstairs.rooms.FirstOrDefault(r => r.marker == ReactorCore);
+        Room deck = upstairs.rooms.FirstOrDefault(r => r.marker == UpperMaintenanceDeck);
+        var reactorDoors = new List<Teleporter>();
+        if (reactor != null)
+        {
+            Rect inReactor = upstairs.map.WorldRect(reactor.minX, reactor.maxX, reactor.minRow, reactor.maxRow);
+            foreach (Teleporter way in upstairs.level.GetComponentsInChildren<Teleporter>())
+            {
+                if (way.teleportTarget == null || !inReactor.Contains(way.teleportTarget.position) || inReactor.Contains(way.transform.position)) continue;
+                way.credential = ReactorCredential;
+                TutorialLevelBuilder.Record(way);
+                reactorDoors.Add(way);
+            }
+        }
+        if (reactorDoors.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: there are no doors into the reactor core to lock.");
+            return;
+        }
+
+        var lockout = new GameObject("Badge Lockout").AddComponent<BadgeLockout>();
+        lockout.transform.SetParent(TutorialLevelBuilder.Group("Reactor Access", upstairs.level));
+        lockout.player = player;
+        lockout.doors = reactorDoors.ToArray();
+        lockout.afterObjective = ObjectiveFindControlRoom;
+        lockout.targetRoom = CommsRingRoom;
+        // For testers: on the upper maintenance deck, a few steps from its door into the reactor.
+        Teleporter deckDoor = deck == null ? null : reactorDoors.FirstOrDefault(t => upstairs.map.WorldRect(deck.minX, deck.maxX, deck.minRow, deck.maxRow)
+            .Contains(t.transform.position));
+        if (deckDoor != null)
+        {
+            List<Vector2Int> deckSide = deck.cells.Where(c => char.IsDigit(upstairs.map.At(c.x, c.y))
+                && deckDoor.name.StartsWith($"Door {upstairs.map.At(c.x, c.y)} ")).ToList();
+            if (deckSide.Count > 0) lockout.standAt = NearestOpen(upstairs.map, upstairs, deck, deckSide, 3);
+        }
+        TutorialLevelBuilder.Record(lockout);
+        if (comms == null) return;
+        comms.arriveObjective = lockout.objective;
+        comms.alsoGrants = new[] { ReactorCredential };
+
+        // Into the ring: just inside it from the upper maintenance deck's door.
+        {
+            Room ring = upstairs.rooms.First(r => r.marker == CommsRingRoom);
+            var deckDigits = deck == null ? new HashSet<char>()
+                : new HashSet<char>(deck.cells.Select(c => upstairs.map.At(c.x, c.y)).Where(char.IsDigit));
+            List<Vector2Int> fromDeck = ring.cells.Where(c => deckDigits.Contains(upstairs.map.At(c.x, c.y))).ToList();
+            if (fromDeck.Count == 0) fromDeck = ring.cells.Where(c => char.IsDigit(upstairs.map.At(c.x, c.y))).ToList();
+            if (fromDeck.Count > 0)
+            {
+                comms.respawnAt = NearestOpen(upstairs.map, upstairs, ring, fromDeck, 2);
+                comms.arriveStandAt = comms.respawnAt;
+            }
+        }
+        TutorialLevelBuilder.Record(comms);
+
+        // Let in: Sonny, red-eyed, taking the technician for one of its own.
+        if (inside.Count == 0) return;
+        var arrival = new GameObject("Control Room Arrival").AddComponent<BlockedWay>();
+        arrival.transform.SetParent(root);
+        arrival.player = player;
+        arrival.arriveInRoom = ControlRoom;
+        arrival.afterObjective = comms.afterObjective;
+        arrival.technicianLines = new[] { "It opened. Just like that." };
+        arrival.pipLines = new[]
+        {
+            "~It thinks a unit just walked in. Don't give it a reason to look twice.",
+        };
+        arrival.objective = ObjectiveConfrontSonny;
+        arrival.targetRoom = ControlRoom;
+        arrival.targetLabel = "Control Room";
+        arrival.stage = "control-room";
+        arrival.standAt = NearestOpen(map, floor, control, inside, 2);
+        arrival.transform.position = arrival.standAt;
+        arrival.setsRespawn = true;
+        arrival.respawnAt = arrival.standAt;
+        TutorialLevelBuilder.Record(arrival);
+    }
+
+    // The broadcast a node carries, made the first time from Broadcasts.
+    static TransmissionData Broadcast(int index)
+    {
+        if (index >= Broadcasts.Length) return null;
+        (string asset, string title, (string speaker, string text)[] lines) = Broadcasts[index];
+        return CommsAsset<TransmissionData>(asset, data =>
+        {
+            data.title = title;
+            data.lines = lines.Select(l => new TransmissionData.Line { speaker = l.speaker, text = l.text }).ToArray();
+        });
+    }
+
+    // What the relay asks, made the first time from RelayQuestions. Passing it is a unit's access to the control room.
+    static DoctrineData RelayDoctrine() => CommsAsset<DoctrineData>(RelayAsset, data =>
+    {
+        data.questions = RelayQuestions.Select(q => new DoctrineData.Question { asks = q.asks, rightAnswer = q.right, wrongAnswers = q.wrong }).ToArray();
+        data.verifiedLine = "VERIFIED. UNIT ACCESS RESTORED. THE CORE KEEPS YOU, UNIT.";
+        data.credential = BadgeRooms[ControlRoom];
+        data.credentialName = "UNIT ACCESS  //  CONTROL ROOM";
+    });
+
+    // An asset under Data, loaded if it's there (and left as it is, edits and all), or made and filled in if not.
+    static T CommsAsset<T>(string name, System.Action<T> fill) where T : ScriptableObject
+    {
+        string path = $"{CommsDataFolder}/{name}.asset";
+        var existing = AssetDatabase.LoadAssetAtPath<T>(path);
+        if (existing != null) return existing;
+        string folder = System.IO.Path.GetDirectoryName(path).Replace('\\', '/');
+        if (!AssetDatabase.IsValidFolder(folder))
+            AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(folder).Replace('\\', '/'), System.IO.Path.GetFileName(folder));
+        var made = ScriptableObject.CreateInstance<T>();
+        fill(made);
+        AssetDatabase.CreateAsset(made, path);
+        return made;
     }
 
     // The bots roaming the rooms among the bodies, each over its room's open floor (clear of furniture, the bodies, and

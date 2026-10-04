@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 // Scrap lying about the station, each piece a kind of part (Inventory.Material): a sheet of metal, a circuit board, a
-// battery, a coil of wire. It bobs a little and glows a cold blue, so it can be found in the dark, and now and then it
-// glints. Walk up to it and press E to take it into the Inventory; the technician says what it is. Parts are made into
+// battery, a coil of wire. It bobs a little and gives off a faint cold blue, just enough to catch the eye in the dark,
+// and now and then it glints. Walk up to it and press E to take it into the Inventory; the technician says what it is. Parts are made into
 // things at a workbench (CraftingScreen), each thing needing its own mix of them.
 // Taken once, it's gone for good, saves and all (Inventory.Took, by its id).
 // The art is made in code until it has its own. Built by ChapterOneBuilder for Chapter 2.
@@ -43,7 +43,7 @@ public class ScrapPickup : Terminal
         glow.lightType = Light2D.LightType.Point;
         glow.color = GlowColor;
         glow.pointLightInnerRadius = 0f;
-        glow.pointLightOuterRadius = 1.4f;
+        glow.pointLightOuterRadius = 0.8f;
         glow.falloffIntensity = 0.6f;
     }
 
@@ -76,9 +76,9 @@ public class ScrapPickup : Terminal
         base.Update();
         float t = Time.time + phase;
         art.transform.localPosition = new Vector3(0f, 0.05f * Mathf.Sin(t * 2.5f), 0f);
-        glow.intensity = 0.55f + 0.25f * Mathf.Sin(t * 3.1f);
+        glow.intensity = 0.28f + 0.1f * Mathf.Sin(t * 3.1f);
         // A glint now and then.
-        if (Random.value < Time.deltaTime * 0.6f)
+        if (Random.value < Time.deltaTime * 0.25f)
             HitEffects.Sparks((Vector2)transform.position + new Vector2(0.15f, 0.2f), Vector2.up, 2, 1.2f, 90f, Color.white, GlowColor);
     }
 

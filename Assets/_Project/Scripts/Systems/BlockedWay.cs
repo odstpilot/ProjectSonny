@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 // Chapter 2, a way on that turns out to be shut: the ship entrance, sealed, with the escape pods beyond it gone; the
-// hallway to the control room, caved in; the east hallway's stairs, buried. Or, the same way, somewhere the player gets
+// hallway to the control room, caved in. Or, the same way, somewhere the player gets
 // to (arriveInRoom): the top of the stairs on the upper maintenance deck. The first time the player comes near it
 // (while the objective is afterObjective, if there is one), the technician says what they see, Pip says what it means,
 // and the objective moves on to objective, pinned on the map, with a respawn point of its own for the stage it starts.

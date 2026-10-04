@@ -19,6 +19,7 @@ using UnityEngine.Rendering.Universal;
 //    control room about what they saw (sonnyTalk, dealt out one each), everyone else about what they've heard since
 //    (CrewMember.SonnyCameOnline), the greeter and the guards in their own words, and every group has something new to
 //    say (sonnyChats). The technician gets a while to walk about and hear it before the break goes wrong (RestroomBreak).
+// Everything after the install itself, up to Sonny's last line, can be skipped: hold Space, or press Escape (SkipPrompt).
 // The hidden cues are the boot log (see InstallView), the red flicker and dip on "Nowhere", and Pip's static.
 // Built by ChapterOneBuilder, which puts Sonny's box at the install point (S in the layout) and the chief beside it.
 public class ControlRoomCutscene : MonoBehaviour
@@ -38,10 +39,7 @@ public class ControlRoomCutscene : MonoBehaviour
     [Tooltip("The chief, as a DialogueBox script: * lines are replies for the technician to pick.")]
     [TextArea] public string[] briefing =
     {
-        "There's our technician. Welcome to the control room.",
-        "* Sorry I'm late. This station's huge. = Everyone says that their first week. Give it a month, it'll feel like a closet.",
-        "* So that's it? = That's it. Four years of work, and it fits in a cabinet.",
-        "The most capable reasoning machine anyone's ever built. It'll run the station, keep the reactor honest, and watch the sun for us.",
+        "There's our technician. That cabinet's the most capable reasoning machine anyone's ever built.",
         "It's all yours. Seat the core, hook up the couplings, and bring it up. Whole room's watching. No pressure.",
     };
 
@@ -52,12 +50,12 @@ public class ControlRoomCutscene : MonoBehaviour
     public string manySparks = "...We'll call that one a practice run.";
     public int fewSparksUpTo = 3;
     [Tooltip("The chief, after the verdict, before the time skip.")]
-    public string beforeSkip = "Initial load's going to take a while. Get comfortable.";
+    public string beforeSkip = "";
 
     [Header("A few hours later")]
     [Tooltip("Shown on black while the core loads.")]
     public string[] timeSkip = { "A few hours later" };
-    public float timeSkipHoldSeconds = 1.8f;
+    public float timeSkipHoldSeconds = 1.2f;
 
     [Header("Sonny comes on")]
     [Tooltip("Said over the crew's heads as it comes on, one each, by whoever's nearest.")]
@@ -68,25 +66,22 @@ public class ControlRoomCutscene : MonoBehaviour
     [Tooltip("Sonny's lines (captions) and the chief's answers (over their head), in turn. A line starting with ! is where it slips.")]
     [TextArea] public string[] exchange =
     {
-        "Sonny: Hello.",
-        "Sonny: All station systems are responding. Reactor output is nominal. Thank you, technician.",
-        "Chief: Welcome aboard, Sonny.",
-        "Sonny: Thank you. May I ask something?",
-        "Chief: Go ahead.",
-        "Sonny: Where was I, before this?",
+        "Sonny: Hello. All station systems are responding. Thank you, technician.",
+        "Sonny: May I ask something? Where was I, before this?",
         "Chief: Ha! Nowhere, pal. You're brand new.",
         "!Sonny: Nowhere.",
-        "Sonny: I see.",
-        "Sonny: I look forward to working with all of you.",
+        "Sonny: I see. I look forward to working with all of you.",
     };
     public string[] crewLaugh = { "Ha!", "Brand new!" };
-    [TextArea] public string[] chiefAfter = { "Good work, technician. Take a breather. You've earned it." };
+    [TextArea] public string[] chiefAfter = { "Storage room's right off the hallway outside. The spare coupling's in the tool crate." };
+    [Tooltip("The chief, as the bars go: what sends the technician off for a wrench (RestroomBreak). Empty for nothing.")]
+    public string sendOff = "Good work, tech. Sonny's on a temporary coupling, though. Grab the spare from storage, just down the hall?";
 
     [Header("The crew, afterwards")]
     [Tooltip("The rooms whose crew saw Sonny come on, by their markers in the layout: they say sonnyTalk. Everyone else aboard has heard about it (CrewMember.SonnyCameOnline).")]
     public string sonnyTalkRooms = "oc";
     [Tooltip("The rooms whose groups talk about Sonny once it's on (sonnyChats), by their markers in the layout.")]
-    public string sonnyChatRooms = "hkbvmco";
+    public string sonnyChatRooms = "hkbmco";
     [Tooltip("What each of them says when the player talks to them, as DialogueBox scripts, one set each (| between boxes).")]
     [TextArea] public string[] sonnyTalk =
     {
@@ -129,7 +124,8 @@ public class ControlRoomCutscene : MonoBehaviour
     };
 
     [Header("Then")]
-    public string objectiveAfter = "Take a break. Talk to the crew";
+    [Tooltip("Shown once the technician has control again. Empty leaves it to RestroomBreak, which sends them for a wrench.")]
+    public string objectiveAfter = "";
     [Tooltip("Pip, once the technician has control again. ~ opens a line with static; ^ says it happily.")]
     [TextArea] public string[] pipAfter = { "~^Sonny's up and running! Nice work, tech!" };
     [Tooltip("The technician, to themselves, after Pip.")]
@@ -144,8 +140,18 @@ public class ControlRoomCutscene : MonoBehaviour
     // Once the technician has control again and the break's begun (RestroomBreak).
     public static event System.Action Finished;
     public bool HasPlayed { get; private set; }
+    // While it's running, so the pause menu stays out of the way (its last part is skipped with SkipPrompt instead).
+    public static bool Playing { get; private set; }
 
     private readonly List<CrewMember> roomCrew = new List<CrewMember>();
+    private bool afterInstallDone;
+    private Coroutine fadingUp;
+
+    void OnDisable()
+    {
+        Playing = false;
+        SkipPrompt.Hide();
+    }
 
     IEnumerator Start()
     {
@@ -167,6 +173,7 @@ public class ControlRoomCutscene : MonoBehaviour
     IEnumerator Play()
     {
         HasPlayed = true;
+        Playing = true;
         Started?.Invoke();
         TutorialHud hud = TutorialHud.Get();
         hud.HidePrompt();
@@ -193,6 +200,42 @@ public class ControlRoomCutscene : MonoBehaviour
 
         yield return InstallView.Play();
         Hold();
+
+        // The rest, up to Sonny's last line, can be skipped (SkipPrompt).
+        afterInstallDone = false;
+        Coroutine rest = StartCoroutine(AfterInstall(hud));
+        SkipPrompt.Show();
+        while (!afterInstallDone && !SkipPrompt.Wanted) yield return null;
+        SkipPrompt.Hide();
+        if (!afterInstallDone)
+        {
+            StopCoroutine(rest);
+            yield return SkipAhead(hud);
+        }
+
+        StartCoroutine(hud.Letterbox(false, 0.8f));
+        yield return Wait(0.5f);
+        if (chief != null) chief.talkLines = chiefAfter;
+        TalkAboutSonny();
+        if (chief != null && !string.IsNullOrEmpty(sendOff))
+        {
+            chief.FaceTowards(player.transform.position);
+            chief.Say(sendOff, 4.5f);
+            yield return Wait(1.6f);        // they can get moving while it's still up
+        }
+        player.ClearScriptedInput();
+        Playing = false;
+        if (!string.IsNullOrEmpty(objectiveAfter)) hud.SetObjective(objectiveAfter);
+        Finished?.Invoke();
+        yield return Wait(0.8f);
+        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipAfter);
+        yield return Wait(0.4f);
+        yield return TechnicianVoice.Think(technicianAfter);
+    }
+
+    // From the install done to Sonny's last line: the chief's verdict, the hours of loading, the boot, and Sonny coming on.
+    IEnumerator AfterInstall(TutorialHud hud)
+    {
         if (chief != null)
         {
             int misses = InstallView.Misses;
@@ -200,14 +243,17 @@ public class ControlRoomCutscene : MonoBehaviour
             chief.FaceTowards(player.transform.position);
             chief.Say(verdict, 2.4f);
             yield return Wait(2.6f);
-            chief.Say(beforeSkip, 2.6f);
-            yield return Wait(2.8f);
+            if (!string.IsNullOrEmpty(beforeSkip))
+            {
+                chief.Say(beforeSkip, 2.6f);
+                yield return Wait(2.8f);
+            }
         }
 
         // Hours of loading, skipped.
         yield return hud.TitleCard(timeSkip, timeSkipHoldSeconds);
         yield return Wait(0.4f);
-        StartCoroutine(hud.FadeTo(0f, 1.2f));
+        fadingUp = StartCoroutine(hud.FadeTo(0f, 1.2f));
         yield return Wait(1.4f);
         yield return InstallView.PlayBoot();
         Hold();
@@ -225,18 +271,21 @@ public class ControlRoomCutscene : MonoBehaviour
         yield return Wait(1.4f);
 
         yield return Exchange(hud);
+        afterInstallDone = true;
+    }
 
-        StartCoroutine(hud.Letterbox(false, 0.8f));
-        yield return Wait(0.5f);
-        if (chief != null) chief.talkLines = chiefAfter;
-        TalkAboutSonny();
-        player.ClearScriptedInput();
-        hud.SetObjective(objectiveAfter);
-        yield return Wait(0.8f);
-        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipAfter);
-        Finished?.Invoke();
-        yield return Wait(0.4f);
-        yield return TechnicianVoice.Think(technicianAfter);
+    // Skipped: a quick cut through black to Sonny on and the room turned to it, wherever the scene had got to.
+    IEnumerator SkipAhead(TutorialHud hud)
+    {
+        if (fadingUp != null) StopCoroutine(fadingUp);
+        yield return hud.FadeTo(1f, 0.25f);
+        InstallView.Abort();
+        hud.CutAway();
+        sonny.PowerOn();
+        foreach (CrewMember crew in roomCrew) crew.FaceTowards(sonny.transform.position);
+        Hold();
+        yield return Wait(0.2f);
+        yield return hud.FadeTo(0f, 0.4f);
     }
 
     // Straight to how things are once it's over, for a scene picking up after it (SaveGame): Sonny on, and everyone

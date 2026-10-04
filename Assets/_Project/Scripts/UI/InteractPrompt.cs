@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The "[E] Talk" tag over whatever the player can use right now: a small flat key cap and what it does, on a slim dark
-// glass tag (PromptBadge). Objects call Show every frame they're usable and Hide when they're not; if two ask at once,
-// the last one wins. Built from code the first time it's needed.
+// glass tag (PromptBadge). Objects call Show every frame they're usable and Hide when they're not; if two ask in the same
+// frame, the one nearer the player gets it, so a locker beside a vent grate shows one tag, not two fighting for it.
+// Built from code the first time it's needed.
 // Whatever has the prompt is the only thing E uses: objects ask Pressed(this) rather than reading the key themselves, so
 // a door and a person side by side can't both answer the same press.
 public class InteractPrompt : MonoBehaviour
@@ -20,6 +21,9 @@ public class InteractPrompt : MonoBehaviour
     private Vector3 worldPoint;
     private string text;
     private int pressTaken = -1;
+    private int claimedFrame = -1;          // the frame the tag was last asked for, and how far that asker was
+    private float claimedDistance;
+    private Transform player;
 
     // text is the key and what it does, two spaces apart, like "E  TUNE IN". Without the two spaces it's all label.
     // font is ignored: every prompt uses the game's own font, so they all match.
@@ -30,6 +34,12 @@ public class InteractPrompt : MonoBehaviour
             instance = new GameObject("InteractPrompt", typeof(RectTransform)).AddComponent<InteractPrompt>();
             instance.Build();
         }
+
+        // Already asked for this frame by something nearer: that keeps it.
+        float distance = instance.DistanceTo(owner);
+        if (instance.claimedFrame == Time.frameCount && instance.owner != owner && distance > instance.claimedDistance) return;
+        instance.claimedFrame = Time.frameCount;
+        instance.claimedDistance = distance;
 
         instance.owner = owner;
         instance.worldPoint = worldPoint;
@@ -57,6 +67,18 @@ public class InteractPrompt : MonoBehaviour
     void OnDestroy()
     {
         if (instance == this) instance = null;
+    }
+
+    // How far the player is from what's asking (its position, for anything in the level), for picking between askers.
+    float DistanceTo(Object asker)
+    {
+        if (player == null)
+        {
+            GameObject found = GameObject.FindWithTag("Player");
+            if (found != null) player = found.transform;
+        }
+        if (player == null || !(asker is Component component)) return 0f;
+        return Vector2.Distance(player.position, component.transform.position);
     }
 
     void LateUpdate()

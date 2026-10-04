@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 1's break, after the install (ControlRoomCutscene).
+// Chapter 1's break, after the install (ControlRoomCutscene). With skipRestroom (the default, to keep Chapter 1 short),
+// the first two parts are skipped: the chief asks for the spare coupling for Sonny as the cutscene ends, and it picks up at the storage room. (The
+// storage room lines and objectives below are written for the coupling; with skipRestroom off, Okafor asks for a wrench.)
 //  - A breather: the technician is free to walk about and talk to the crew, who all have something new to say now that
 //    Sonny's on. After a while of it (exploreSeconds of free time, or talking to talksBeforeUrge of them), the technician
 //    realizes they need the restroom, badly: the screen gives a jolt, they say so, and the restroom (its own room, off
@@ -38,6 +40,11 @@ public class RestroomBreak : MonoBehaviour
     public Transform attendantComesIn;
     public ToolCrate crate;
     public ToolShelf shelf;
+
+    [Tooltip("Straight to the storage room once Sonny's on: the chief asks for it (ControlRoomCutscene.sendOff), with no breather, " +
+        "no urge and no restroom scene. The toilet's broken already and Okafor's out of the stall, as if they'd asked. " +
+        "Off plays the whole break.")]
+    public bool skipRestroom = true;
 
     [Header("The breather")]
     [Tooltip("How long they get to walk about before the urge comes on, counted only while they're free to.")]
@@ -86,31 +93,31 @@ public class RestroomBreak : MonoBehaviour
         "* Not really my job. = Please. Nobody else up here knows which end of a wrench to hold. = And the chief hears about everything that happens on this deck. Everything. = Tools are in the storage room, the door on the east side of the lounge. I'll owe you.",
     };
     [Tooltip("What Okafor says if the player comes back to them.")]
-    [TextArea] public string[] attendantAfter = { "Storage room. East side of the lounge. A wrench should do it. I'll guard the last one." };
+    [TextArea] public string[] attendantAfter = { "Don't mind me. I'll guard the last working one." };
     [Tooltip("The technician, to themselves, after saying yes, and after saying no.")]
     [TextArea] public string[] agreed = { "Toilet duty. On day one.", "...Still. The new tech who fixes things. That'll look good to the chief." };
     [TextArea] public string[] refused = { "...He's not going to let this go, is he.", "Fine. The new tech fixing things on day one? That'll look good to the chief." };
-    public string objectiveFix = "Get a wrench from the storage room";
+    public string objectiveFix = "Get the spare coupling from the storage room";
     public char toolsRoom = 's';
     public string toolsLabel = "Storage Room";
 
     [Header("The storage room")]
     [Tooltip("The technician, walking in.")]
-    public string enterStorage = "Wrench, wrench, wrench...";
-    public string objectiveSearch = "Find a wrench";
+    public string enterStorage = "Spare coupling... where would they keep it?";
+    public string objectiveSearch = "Find the spare coupling";
     [Tooltip("The technician, at the crate or the shelf before anyone's asked for a wrench.")]
     public string nothingNeeded = "Nothing I need in there.";
     [Tooltip("The technician, opening the crate, and at it again after.")]
-    [TextArea] public string[] crateEmpty = { "Empty.", "\"Borrowed the wrench. Back soon. -D.\"", "...Of course.", "Wait. Something's shining under that shelf." };
+    [TextArea] public string[] crateEmpty = { "\"Took the spare coupling. Back soon. -D.\"", "...Wait. Something's shining under that shelf." };
     public string crateStillEmpty = "Still just the note.";
     public string objectiveShelf = "Check under the shelf";
     [Tooltip("The technician, at the shelf before they've looked in the crate.")]
-    public string crateFirst = "Tool crate first. That's where a wrench should be.";
+    public string crateFirst = "Tool crate first. That's where the spares live.";
 
     [Header("Reaching under")]
     [Tooltip("How many presses of E it takes to reach the wrench, and what they say along the way (one per press, from the first).")]
-    public int reachPresses = 5;
-    [TextArea] public string[] reachLines = { "Come on...", "", "Almost...", "", "Got... it..." };
+    public int reachPresses = 3;
+    [TextArea] public string[] reachLines = { "Come on...", "Almost...", "Got... it..." };
     public string gotIt = "Got it!";
 
     [Header("The quake")]
@@ -169,7 +176,18 @@ public class RestroomBreak : MonoBehaviour
     void BeginBreak()
     {
         breakBegun = true;
-        StartCoroutine(Urge());
+        if (skipRestroom) SendForCoupling();
+        else StartCoroutine(Urge());
+    }
+
+    // The short way (skipRestroom): the restroom as it is once Okafor's asked, and off to the storage room.
+    void SendForCoupling()
+    {
+        AlreadyAsked();
+        if (toilet != null) toilet.Done();
+        TutorialHud.Get().SetObjective(objectiveFix);
+        MapScreen.SetTarget(toolsRoom, toolsLabel);
+        StartCoroutine(WalkIntoStorage());
     }
 
     void OnTalked(CrewMember who)
@@ -225,7 +243,7 @@ public class RestroomBreak : MonoBehaviour
     // Whether finishing this objective is somewhere in the break (breather is the objective the break starts with,
     // ControlRoomCutscene.objectiveAfter), so ResumeFrom can pick up after it.
     public bool Knows(string finished, string breather) =>
-        finished == Breather || finished == breather || finished == objectiveUrge || finished == objectiveFix || finished == objectiveSearch || finished == objectiveShelf;
+        finished == Breather || (!string.IsNullOrEmpty(breather) && finished == breather) || finished == objectiveUrge || finished == objectiveFix || finished == objectiveSearch || finished == objectiveShelf;
 
     // Everything the way it was just after that objective was finished, and on from there: the urge having just come on,
     // the restroom about to be used, the storage room just walked into, the crate about to be opened, or the shelf about
@@ -239,7 +257,11 @@ public class RestroomBreak : MonoBehaviour
             return;
         }
         breakBegun = true;
-        if (finished == breather)
+        if (skipRestroom && (finished == breather || finished == objectiveUrge))
+        {
+            SendForCoupling();
+        }
+        else if (finished == breather)
         {
             urgent = true;
             FindTheRestroom();
@@ -382,10 +404,10 @@ public class RestroomBreak : MonoBehaviour
         hud.SetObjective("");
         Hold();
         yield return crate.Open();
-        yield return TechnicianVoice.Think(crateEmpty);
-        hud.SetObjective(objectiveShelf);
         player.ClearScriptedInput();
         crate.Done();
+        yield return TechnicianVoice.Think(crateEmpty);
+        hud.SetObjective(objectiveShelf);
     }
 
     void OnShelfUsed()
@@ -516,13 +538,12 @@ public class RestroomBreak : MonoBehaviour
 
     // --- Helpers ---
 
-    // A line to themselves, holding them still while it's said, then letting go of whatever they were using.
+    // A line to themselves, said as they carry on, letting go of whatever they were using straight away.
     IEnumerator Mutter(string line, System.Action done)
     {
-        Hold();
-        yield return TechnicianVoice.Think(line);
-        player.ClearScriptedInput();
+        TechnicianVoice.Say(line);
         done();
+        yield break;
     }
 
     // The boom, made in code until the scene's Station Quake sound has a clip.

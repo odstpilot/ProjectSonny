@@ -12,8 +12,7 @@ using UnityEngine.Rendering.Universal;
 // left it (all placed by ChapterOneBuilder, from the same crowds, so it lines up): the broken toilet, the knocked-about
 // shelf, and the storage room door jammed with rubble behind it, with the vents the only way out. Every other way on
 // is shut too (BlockedWay): the ship entrance is sealed and the escape pods gone, the hallway to the control room has
-// caved in, and the east hallway's stairs are buried, so the only way on is the maintenance deck's stairs, up to the
-// upper maintenance deck. The technician starts on the storage room floor, in front of the shelf, and
+// caved in, so the only way on is the maintenance deck's stairs, up to the upper maintenance deck. The technician starts on the storage room floor, in front of the shelf, and
 // ChapterTwoDirector wakes them up. Floor 2 (the comms ring, the upper maintenance deck, the reactor) is there, empty
 // for now.
 // It replaces everything in the scene but the Sound Manager.
@@ -24,8 +23,8 @@ public static class ChapterTwoBuilder
     // Emergency power: the ambient light at this much of what it is in Chapter 1, in this color.
     const float EmergencyLight = 0.4f;
     // The rooms past the lounge, with the power out altogether (DarkRooms): the common grounds hallway, the bedrooms, the
-    // east hallway, the maintenance deck, the hallway to the control room and the control room, and all of floor 2.
-    const string DarkRoomMarkers = "hbvmcodgr";
+    // maintenance deck, the hallway to the control room and the control room, and all of floor 2.
+    const string DarkRoomMarkers = "hbmcodgr";
     static readonly Color EmergencyColor = new Color(1f, 0.5f, 0.42f);
     static readonly Color SonnyLens = new Color(1f, 0.16f, 0.1f);
 

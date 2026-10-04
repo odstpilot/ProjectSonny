@@ -29,7 +29,7 @@ public class StorageEscape : MonoBehaviour
     [Tooltip("The technician, when they try the door.")]
     [TextArea] public string[] technicianDoorJammed = { "It won't budge. Something's jammed against the other side." };
     [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily; [W] shows a key.")]
-    [TextArea] public string[] pipDoorJammed = { "~There, on the floor. A vent! The ducts run all over this deck." };
+    [TextArea] public string[] pipDoorJammed = { "~Jammed. Take the vent on the floor." };
     [Tooltip("Pip, on how to get about in the ducts, said once the vent's been pointed out.")]
     [TextArea] public string[] pipVentHowTo = { "[W] crawls, [A] and [D] turn. Hold [C] to go slow and quiet." };
     public string objectiveVent = "Crawl through the vent";
@@ -37,7 +37,7 @@ public class StorageEscape : MonoBehaviour
     [Header("Out the other side")]
     [Tooltip("The technician, climbing out.")]
     [TextArea] public string[] technicianOut = { "The restroom. Of course." };
-    [TextArea] public string[] pipOut = { "~Still nothing on the crew channel. Let's find somebody." };
+    [TextArea] public string[] pipOut = new string[0];
     public string objectiveOut = "Find the crew";
 
     // Once they've climbed out in the restroom (CrewAftermath).

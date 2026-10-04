@@ -4,7 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A locker the player can hide in. Walk up to it and press E: the player climbs in and is taken out of the world
+// A locker the player can hide in. Walk up to it and press E (the same "[E] Hide" tag as everything else, InteractPrompt):
+// the player climbs in and is taken out of the world
 // (no sprite, no physics, so enemies can't see, touch, or hit them), and the screen switches to the view from
 // inside, looking out through the door's vent slats (see LockerView). Press E again to step back out the door.
 // Enemy scripts can check Locker.IsPlayerHidden to decide whether to keep hunting, Locker.Occupied for which locker
@@ -42,7 +43,7 @@ public class Locker : MonoBehaviour
     public SpriteRenderer Body => body;
     // Where the player looks out from while inside: the middle of the door, on the edge of the footprint.
     public Vector2 EyePoint => (Vector2)footprint.bounds.center + Vector2.Scale(DoorDirection, footprint.bounds.extents);
-    // Just above the top of the sprite, where the "Hide" prompt sits.
+    // Just above the top of the sprite, where the "[E] Hide" tag sits.
     public Vector3 PromptPoint =>
         new Vector3(transform.position.x, (body != null ? body.bounds.max.y : transform.position.y) + 0.2f, transform.position.z);
 
@@ -82,7 +83,7 @@ public class Locker : MonoBehaviour
     void OnDisable()
     {
         all.Remove(this);
-        LockerView.SetPrompt(this, false, font);
+        InteractPrompt.Hide(this);
 
         // Switched off or unloaded with the player inside: put everything back at once instead of trapping them.
         if (inUse == this) ForceOut();
@@ -112,10 +113,18 @@ public class Locker : MonoBehaviour
             return;
         }
 
-        bool canUse = state == State.Outside && inUse == null && Time.timeScale > 0f && IsClosestUsable();
-        LockerView.SetPrompt(this, canUse, font);
-        if (canUse && Input.GetKeyDown(InteractKey))
+        bool canUse = state == State.Outside && inUse == null && Time.timeScale > 0f && !DialogueBox.Busy && IsClosestUsable();
+        if (!canUse)
+        {
+            InteractPrompt.Hide(this);
+            return;
+        }
+        InteractPrompt.Show(this, PromptPoint, $"{InteractKey}  HIDE");
+        if (InteractPrompt.Pressed(this, InteractKey))
+        {
+            InteractPrompt.Hide(this);
             StartCoroutine(GetIn());
+        }
     }
 
     // For an enemy that saw the player climb in: the door flies open and the player is back outside at once, no fade.

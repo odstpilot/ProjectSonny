@@ -990,8 +990,9 @@ public class VentView : MonoBehaviour
         searchSign = MakeSign(SearchArt);
         alertSign = MakeSign(AlertArt);
 
-        // Letters and spaces only: the game's HUD font has no punctuation.
-        TextMeshProUGUI meterLabel = Label("Noise Label", insideRect, "NOISE", 24f, font);
+        // Letters and spaces only: the game's HUD font has no punctuation. The font leaves a wide gap after its N,
+        // which reads as a space at this size, so that pair is pulled together.
+        TextMeshProUGUI meterLabel = Label("Noise Label", insideRect, "N<space=-0.04em>OISE", 24f, font);
         meterLabel.color = new Color(0.8f, 0.84f, 0.9f, 0.45f);
         meterLabel.rectTransform.anchorMin = meterLabel.rectTransform.anchorMax = new Vector2(0.5f, MeterY);
         meterLabel.rectTransform.sizeDelta = new Vector2(120f, 40f);

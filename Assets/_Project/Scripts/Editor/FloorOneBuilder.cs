@@ -188,11 +188,11 @@ public static class FloorOneBuilder
             }
         },
         {
-            // Map (DEMO)'s dark storerooms, cut down to a closet: a pipe on the wall and a grid on the black floor. The
-            // shelf (Chapter 1) goes against the back wall.
+            // Map (DEMO)'s dark storerooms, cut down to a closet: a grid on the black floor. The shelf (Chapter 1) goes
+            // against the back wall, beside the door.
             's', new[]
             {
-                (WallPipe, 3, 0), (FloorGrid, 2, 3),
+                (FloorGrid, 2, 3),
             }
         },
         {
@@ -209,12 +209,13 @@ public static class FloorOneBuilder
             }
         },
         {
-            // Consoles under the windows, pods, and a row of desks.
+            // Consoles under the windows, pods, and a row of desks. The pods are only on the right: the left ones stood
+            // in the way from the door to the install point, where the technician walks in the cutscene.
             'o', new[]
             {
                 (LongConsoleBank, 1, 0), (Chair, 2, 0), (Chair, 5, 0), (Chair, 6, 0), (Chair, 9, 0),
                 (LongConsoleBank, 16, 0), (Chair, 17, 0), (Chair, 20, 0), (Chair, 21, 0), (Chair, 24, 0),
-                (Pod, 5, 5), (Pod, 9, 5), (Pod, 16, 5), (Pod, 20, 5),
+                (Pod, 16, 5), (Pod, 20, 5),
                 (Bench, 4, 12), (Chair, 5, 13), (Bench, 10, 12), (Chair, 11, 13), (Bench, 14, 12), (Chair, 15, 13), (Bench, 20, 12), (Chair, 21, 13),
             }
         },
@@ -297,13 +298,19 @@ public static class FloorOneBuilder
     static readonly Dictionary<char, (Stamp stamp, int x, int y)[]> FloorTwoFurnishings = new Dictionary<char, (Stamp, int, int)[]>
     {
         {
-            // Listening posts: consoles under the windows, desks in rows, and pods.
+            // Listening posts: consoles under the windows, desks in rows, and pods; more consoles, pods, and railings
+            // through the south half, so there's something to duck behind all the way across.
             'g', new[]
             {
                 (LongConsoleBank, 2, 0), (Chair, 3, 0), (Chair, 6, 0), (Chair, 7, 0), (Chair, 10, 0),
                 (LongConsoleBank, 31, 0), (Chair, 32, 0), (Chair, 35, 0), (Chair, 36, 0), (Chair, 39, 0),
+                (Bench, 18, 6), (Chair, 19, 7),
                 (Bench, 6, 9), (Chair, 7, 10), (Bench, 12, 9), (Chair, 13, 10), (Bench, 26, 9), (Chair, 27, 10), (Bench, 32, 9), (Chair, 33, 10),
+                (Bench, 1, 13), (Chair, 2, 14), (Bench, 38, 13), (Chair, 39, 14),
                 (Pod, 8, 16), (Pod, 12, 16), (Pod, 30, 16), (Pod, 34, 16),
+                (ConsoleBank, 4, 22), (Chair, 5, 22), (Chair, 7, 22), (ConsoleBank, 27, 22), (Chair, 28, 22), (Chair, 30, 22),
+                (Pod, 16, 21), (Pod, 20, 21),
+                (Railing(5), 10, 28), (Railing(5), 31, 29),
                 (Carpet, 20, 14), (Rug, 21, 24),
             }
         },
@@ -496,7 +503,7 @@ public static class FloorOneBuilder
             }
         }
 
-        SoundDefaults.Fill(scene, SoundDefaults.Player, SoundDefaults.Floor);
+        SoundDefaults.Fill(scene, SoundDefaults.Player, SoundDefaults.Floor, SoundDefaults.Combat);
         populate?.Invoke(built);
 
         EditorSceneManager.MarkSceneDirty(scene);

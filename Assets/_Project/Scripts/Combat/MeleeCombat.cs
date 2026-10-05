@@ -106,6 +106,7 @@ public class MeleeCombat : MonoBehaviour
         combat.Controller.SetAnimTrigger(charged ? PlayerAnimParams.ChargedSwing : PlayerAnimParams.Swing);
         combat.Visual.SetFacing(attackDirection);
         combat.Visual.PlaySwing(duration, charged);
+        Sfx.At("Melee Swing", transform.position, charged ? 1f : 0.8f, charged ? 0.85f : 1f);
 
         // Land the hit partway through the swing, when the weapon is crossing in front of the player.
         StartCoroutine(DealDamage(Weapon, charged, attackDirection, duration * 0.4f));
@@ -148,6 +149,7 @@ public class MeleeCombat : MonoBehaviour
 
         if (!landedHit) yield break;
 
+        Sfx.At("Melee Hit", origin, 1f, charged ? 0.85f : 1f);
         CameraShake.Shake(charged ? hitShake * 2f : hitShake);
         HitStop.Freeze(hitStopDuration);
     }

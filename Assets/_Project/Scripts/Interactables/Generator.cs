@@ -2,9 +2,10 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-// A backup generator, dead, in a room with the power out (the comms ring, CommsRing). In the pitch dark it gives off no
-// light of its own, but an EMP's flash shows it up: caught in a pulse's cone (EmpPulse.Swept), it crackles and its coil
-// lamps blink amber for a few seconds, so it can be found by firing into the dark. Walk up and press E to start it
+// A backup generator, dead, in a room with the power out (the comms ring, CommsRing). Even dead it glows, a slow amber
+// pulse from its coil lamps, so there's something to head for in the pitch dark; an EMP's flash shows it up brighter:
+// caught in a pulse's cone (EmpPulse.Swept), it crackles and its coil lamps blink for a few seconds. Running, it glows
+// green. Walk up and press E to start it
 // (GeneratorScreen): bring its coils up one at a time by engaging each as the rotor comes round into sync. A miss
 // backfires, loud enough to bring the bots (Backfired), and knocks a coil back down. All of them up and it starts.
 // Coils already up stay up between tries.
@@ -47,12 +48,15 @@ public class Generator : Terminal
     public event System.Action Backfired;
 
     public bool IsRunning { get; private set; }
+    // Won't take a start until the comms ring's stage begins (CommsRing), so a look round the ring early for scrap can't
+    // get the power back before the blackout it's meant to end.
+    [System.NonSerialized] public bool locked;
     // Up so far; kept between tries.
     public int CoilsLit { get; set; }
     public override bool InUse => GeneratorScreen.Current != null && GeneratorScreen.Current.Generator == this;
-    protected override string PromptText => IsRunning ? "RUNNING" : "START GENERATOR";
+    protected override string PromptText => IsRunning ? "RUNNING" : locked ? "OFFLINE" : "START GENERATOR";
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
-    protected override bool Available => !IsRunning;
+    protected override bool Available => !IsRunning && !locked;
 
     // The sync window for this coil, as a fraction of the gauge, and the needle's speed.
     public float WindowFor(int coil) => Mathf.Max(0.04f, window - windowShrink * coil);
@@ -133,24 +137,31 @@ public class Generator : Terminal
         Backfired?.Invoke();
     }
 
-    // Dark while it's dead, blinking amber after an EMP's caught it, the lit coils steady while it's being started, and
-    // all green once it runs.
+    // A slow amber pulse while it's dead, blinking after an EMP's caught it, the lit coils steady while it's being
+    // started, and all green, humming, once it runs.
     void UpdateLamps()
     {
         bool pinged = Time.time < pingUntil;
         bool blinkOn = Mathf.Repeat(Time.time * 3f, 1f) < 0.5f;
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
         for (int i = 0; i < lamps.Length; i++)
         {
-            Color color = Color.clear;
+            Color color;
             if (IsRunning) color = Running;
             else if (i < CoilsLit) color = Pinged;
-            else if (pinged && blinkOn) color = Pinged * 0.8f;
+            else if (pinged) color = blinkOn ? Pinged * 0.8f : Pinged * 0.3f;
+            else color = Pinged * (0.3f + 0.4f * pulse);
+            color.a = 1f;
             lamps[i].color = color;
         }
         if (glow == null) return;
-        glow.enabled = IsRunning || pinged || CoilsLit > 0;
+        glow.enabled = true;
         glow.color = IsRunning ? Running : Pinged;
-        glow.intensity = IsRunning ? 0.9f : pinged ? (blinkOn ? 0.8f : 0.3f) : 0.35f;
+        glow.pointLightOuterRadius = IsRunning ? 3.6f : 3f;
+        glow.intensity = IsRunning ? 1.1f + 0.08f * Mathf.Sin(Time.time * 20f)
+            : pinged ? (blinkOn ? 0.9f : 0.4f)
+            : CoilsLit > 0 ? 0.6f
+            : 0.3f + 0.35f * pulse;
     }
 
     void BuildArt()

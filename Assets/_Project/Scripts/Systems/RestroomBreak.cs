@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Chapter 1's break, after the install (ControlRoomCutscene). With skipRestroom (the default, to keep Chapter 1 short),
-// the first two parts are skipped: the chief asks for the spare coupling for Sonny as the cutscene ends, and it picks up at the storage room. (The
-// storage room lines and objectives below are written for the coupling; with skipRestroom off, Okafor asks for a wrench.)
+// the first two parts are skipped: the chief asks for the spare data chip for Sonny as the cutscene ends, and it picks up at the storage room. (The
+// storage room lines and objectives below are written for the data chip; with skipRestroom off, Okafor asks for a wrench.)
 //  - A breather: the technician is free to walk about and talk to the crew, who all have something new to say now that
 //    Sonny's on. After a while of it (exploreSeconds of free time, or talking to talksBeforeUrge of them), the technician
 //    realizes they need the restroom, badly: the screen gives a jolt, they say so, and the restroom (its own room, off
@@ -16,7 +16,7 @@ using UnityEngine;
 //    them to fix it. They can say yes or no, but Okafor won't let it go, and either way the technician decides to do it:
 //    the new tech who fixes things on day one will look good to the chief.
 //  - The storage room: the tool crate first (ToolCrate, E), where the wrench should be, and isn't, just a note. Then a
-//    glint under the shelf (ToolShelf, E): down on one knee, reaching (E, a few times) until they've got it. A far-off
+//    glint under the shelf (ToolShelf, E): down on one knee, an arm under the rack, and they've got it. A far-off
 //    rumble; a moment of quiet; then something big rumbles through the whole station (Sonny taking over, though nobody
 //    says so yet): a deep boom, the picture shaking harder and harder, every lamp stuttering. It rocks the rack until the
 //    crate on top tips off and lands on the technician's head. They go down, and it all goes black: "Chapter 2",
@@ -97,27 +97,26 @@ public class RestroomBreak : MonoBehaviour
     [Tooltip("The technician, to themselves, after saying yes, and after saying no.")]
     [TextArea] public string[] agreed = { "Toilet duty. On day one.", "...Still. The new tech who fixes things. That'll look good to the chief." };
     [TextArea] public string[] refused = { "...He's not going to let this go, is he.", "Fine. The new tech fixing things on day one? That'll look good to the chief." };
-    public string objectiveFix = "Get the spare coupling from the storage room";
+    public string objectiveFix = "Get the spare data chip from the storage room";
     public char toolsRoom = 's';
     public string toolsLabel = "Storage Room";
 
     [Header("The storage room")]
     [Tooltip("The technician, walking in.")]
-    public string enterStorage = "Spare coupling... where would they keep it?";
-    public string objectiveSearch = "Find the spare coupling";
+    public string enterStorage = "Spare data chip... where would they keep it?";
+    public string objectiveSearch = "Find the spare data chip";
     [Tooltip("The technician, at the crate or the shelf before anyone's asked for a wrench.")]
     public string nothingNeeded = "Nothing I need in there.";
     [Tooltip("The technician, opening the crate, and at it again after.")]
-    [TextArea] public string[] crateEmpty = { "\"Took the spare coupling. Back soon. -D.\"", "...Wait. Something's shining under that shelf." };
+    [TextArea] public string[] crateEmpty = { "\"Took the spare data chip. Back soon. -D.\"", "...Wait. Something's shining under that shelf." };
     public string crateStillEmpty = "Still just the note.";
     public string objectiveShelf = "Check under the shelf";
     [Tooltip("The technician, at the shelf before they've looked in the crate.")]
     public string crateFirst = "Tool crate first. That's where the spares live.";
 
     [Header("Reaching under")]
-    [Tooltip("How many presses of E it takes to reach the wrench, and what they say along the way (one per press, from the first).")]
-    public int reachPresses = 3;
-    [TextArea] public string[] reachLines = { "Come on...", "Almost...", "Got... it..." };
+    [Tooltip("The technician, feeling about under the rack, and once they've got it.")]
+    public string reachLine = "Come on... almost...";
     public string gotIt = "Got it!";
 
     [Header("The quake")]
@@ -176,12 +175,12 @@ public class RestroomBreak : MonoBehaviour
     void BeginBreak()
     {
         breakBegun = true;
-        if (skipRestroom) SendForCoupling();
+        if (skipRestroom) SendForChip();
         else StartCoroutine(Urge());
     }
 
     // The short way (skipRestroom): the restroom as it is once Okafor's asked, and off to the storage room.
-    void SendForCoupling()
+    void SendForChip()
     {
         AlreadyAsked();
         if (toilet != null) toilet.Done();
@@ -259,7 +258,7 @@ public class RestroomBreak : MonoBehaviour
         breakBegun = true;
         if (skipRestroom && (finished == breather || finished == objectiveUrge))
         {
-            SendForCoupling();
+            SendForChip();
         }
         else if (finished == breather)
         {
@@ -430,21 +429,12 @@ public class RestroomBreak : MonoBehaviour
         Hold();
         yield return Wait(0.3f);
 
-        // Reaching, a press at a time.
-        hud.ShowPrompt("Reach", Terminal.InteractKey.ToString());
-        yield return null;      // the press that got here doesn't count
-        for (int press = 0; press < reachPresses; )
-        {
-            if (Input.GetKeyDown(Terminal.InteractKey) && Time.timeScale > 0f)
-            {
-                if (press < reachLines.Length && !string.IsNullOrEmpty(reachLines[press])) TechnicianVoice.Say(reachLines[press], 1.2f);
-                press++;
-                CameraShake.Shake(0.05f);
-                StartCoroutine(shelf.Nudge(0.4f + 0.6f * press / reachPresses));
-            }
-            yield return null;
-        }
-        hud.CompletePrompt();
+        // An arm under the rack, feeling about, knocking it once or twice.
+        if (!string.IsNullOrEmpty(reachLine)) TechnicianVoice.Say(reachLine, 1.2f);
+        yield return shelf.Nudge(0.5f);
+        yield return Wait(0.25f);
+        CameraShake.Shake(0.05f);
+        yield return shelf.Nudge(0.8f);
         yield return shelf.Grab();
         TechnicianVoice.Say(gotIt, 1.4f);
         yield return Wait(1.3f);

@@ -25,7 +25,9 @@ public class EmpPulse : MonoBehaviour
         pulse.transform.SetPositionAndRotation(muzzle, Quaternion.Euler(0f, 0f, angle - 90f));
 
         float halfAngle = data.coneAngle * 0.5f;
-        PlaySound(data.fireClip, data.volume);
+        // Its own clip if the weapon has one, otherwise the scene's EMP Fire (or its placeholder).
+        if (data.fireClip != null) PlaySound(data.fireClip, data.volume);
+        else Sfx.Play("EMP Fire");
         pulse.StunAngels(origin, direction, halfAngle);
         ShortMachines(data, origin, direction, halfAngle);
         Fired?.Invoke();
@@ -83,7 +85,8 @@ public class EmpPulse : MonoBehaviour
     {
         HitEffects.Sparks(at, Vector2.up, 8, 3f, 360f, data.empCoreColor, data.empColor);
         LightFlash.Spawn(at, data.empColor, 1.2f, 0.8f, 0.25f);
-        PlaySound(data.readyClip, data.volume);
+        if (data.readyClip != null) PlaySound(data.readyClip, data.volume);
+        else Sfx.Play("EMP Ready");
     }
 
     void StunAngels(Vector2 origin, Vector2 direction, float halfAngle)

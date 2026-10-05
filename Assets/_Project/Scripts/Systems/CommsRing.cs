@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 2, the comms ring: getting the access to open the control room. Locked out of it at its badge door
-// (BadgeLockout), Pip sends the technician up here hoping for a badge.
+// Chapter 2, the comms ring: getting the access to open the control room. With the EMP made (Workshop), Pip sends the
+// technician here hoping for a badge: the way down to the control room is through the reactor core, badge-only.
 // The ring's power is out. Stepping in, what's left of it dies: the room goes pitch black (DarkRooms.SetBlackout), the
 // lamps go out, and the suit's own light and Pip go with them, Pip just managing to say to use the EMP's flash to see
 // by and find the generator (Generator), which shows up when a pulse catches it. Starting it (its own minigame,
@@ -53,7 +53,7 @@ public class CommsRing : MonoBehaviour
     [TextArea] public string[] technicianAngelFollows = { "It followed me!" };
 
     [Header("Objectives")]
-    [Tooltip("The objective that sends the player here (BadgeLockout). Getting into the ring while it's showing starts it.")]
+    [Tooltip("The objective that sends the player here (Workshop.afterObjective). Getting into the ring while it's showing starts it.")]
     public string arriveObjective = "Find a badge in the comms ring";
     public string generatorObjective = "Find the generator and get the power back on";
     [Tooltip("Shown with how many have been tuned in, like \"Intercept Sonny's broadcasts (1/3)\".")]
@@ -196,8 +196,11 @@ public class CommsRing : MonoBehaviour
         foreach (PlaceholderRobot bot in breachBots)
             if (bot != null) bot.gameObject.SetActive(false);
         if (angel != null) angel.gameObject.SetActive(false);
-        // The terminals are dead until the generator's going (with no generator, there's nothing to wait for).
+        // The terminals are dead until the generator's going (with no generator, there's nothing to wait for), and the
+        // generator won't start until they've come here for the stage: a look round early, while scavenging, is only
+        // for the scrap.
         SetPower(generator == null, true);
+        if (generator != null) generator.locked = true;
     }
 
     void Update()
@@ -243,6 +246,7 @@ public class CommsRing : MonoBehaviour
     IEnumerator Arrive()
     {
         arrived = true;
+        if (generator != null) generator.locked = false;
         SetRespawn();
         TechnicianVoice.Hush();
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
@@ -607,6 +611,7 @@ public class CommsRing : MonoBehaviour
             return;
         }
         arrived = true;
+        if (generator != null) generator.locked = false;
         SetRespawn();
         if (objective == generatorObjective)
         {

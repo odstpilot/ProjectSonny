@@ -5,6 +5,8 @@ using UnityEngine;
 // by the maintenance deck's stairs). It pins them where they stand, squeezing (a point of damage every so often while
 // they don't fight it), until E has been pressed enough times to tear free. Torn free, it's flung back against the wall
 // and the ceiling over the breach comes down on it. Once only, and only while the objective is afterObjective (if set).
+// While it has hold, the view closes in on them (CameraZoom), tighter as they fight, and the prompt to mash E fills the
+// screen (MashPrompt).
 // The same grab as the tutorial's (TutorialDirector.Grab), on its own. Built by ChapterOneBuilder for ChapterTwoBuilder.
 public class WallGrab : MonoBehaviour
 {
@@ -23,6 +25,8 @@ public class WallGrab : MonoBehaviour
     public int breakFreePresses = 8;
     [Tooltip("Seconds without a press before it squeezes for a point of damage.")]
     public float squeezeEvery = 1.4f;
+    [Tooltip("How far the view closes in while it has hold, as a fraction of its size: when it grabs, and by the last press.")]
+    public Vector2 grabZoom = new Vector2(0.72f, 0.6f);
     [TextArea] public string[] technicianGrabbed = { "Get OFF me!" };
     [TextArea] public string[] technicianFree = { "...They're in the walls." };
     [TextArea] public string[] pipFree = { "~Keep moving, Tech. Stairs!" };
@@ -32,7 +36,12 @@ public class WallGrab : MonoBehaviour
 
     private bool sprung;
 
-    void OnDisable() => Holding = false;
+    void OnDisable()
+    {
+        Holding = false;
+        CameraZoom.Release(this);
+        MashPrompt.Hide();
+    }
 
     void Update()
     {
@@ -48,7 +57,6 @@ public class WallGrab : MonoBehaviour
     {
         Holding = true;
         Transform target = player.transform;
-        TutorialHud hud = TutorialHud.Get();
         if (breachPoint != null) TutorialSetPieces.BlowInWall(breachPoint.position);
         robot.gameObject.SetActive(true);
         var brain = robot.GetComponent<PlaceholderRobot>();
@@ -57,6 +65,7 @@ public class WallGrab : MonoBehaviour
         if (body != null) body.linearVelocity = Vector2.zero;
         player.SetScriptedInput(Vector2.zero, false);
         HitStop.Hold(0.3f, 0.25f);
+        CameraZoom.Hold(this, grabZoom.x);
 
         // A leap, onto them.
         Vector2 from = robot.transform.position;
@@ -71,9 +80,11 @@ public class WallGrab : MonoBehaviour
         }
         CameraShake.Kick(Vector2.down, 0.25f);
         CameraShake.Shake(0.4f);
+        CameraZoom.Punch(0.08f);
+        Sfx.Play("Wall Grab");
         if (technicianGrabbed.Length > 0) TechnicianVoice.Say(technicianGrabbed[0], 1.4f);
 
-        hud.ShowPromptWithHint("Break free", "Press it, fast", "E");
+        MashPrompt.Show("MASH TO BREAK FREE", "E");
         yield return null;      // the press that got here doesn't count
         int presses = 0;
         float lastPress = Time.time;
@@ -88,12 +99,17 @@ public class WallGrab : MonoBehaviour
                 lastPress = Time.time;
                 CameraShake.Shake(0.12f);
                 CameraShake.Kick(Random.insideUnitCircle.normalized, 0.08f);
+                Sfx.Play("Grab Struggle", 0.8f, 0.9f + 0.3f * presses / breakFreePresses);
+                MashPrompt.Press(presses / (float)breakFreePresses);
+                CameraZoom.Hold(this, Mathf.Lerp(grabZoom.x, grabZoom.y, presses / (float)breakFreePresses));
             }
             // It squeezes while they don't fight it.
             if (Time.time - lastPress > squeezeEvery)
             {
                 lastPress = Time.time;
                 CameraShake.Shake(0.2f);
+                Sfx.Play("Grab Squeeze");
+                MashPrompt.Squeeze();
                 if (target.TryGetComponent(out Health health))
                 {
                     health.TakeDamage(new DamageInfo(1f, Vector2.down, 0f, robot.gameObject, target.position));
@@ -102,9 +118,12 @@ public class WallGrab : MonoBehaviour
             }
             yield return null;
         }
-        hud.CompletePrompt();
+        MashPrompt.Hide();
+        CameraZoom.Release(this);
 
         // Torn free: flung back against the wall, and the ceiling comes down on it.
+        Sfx.Play("Break Free");
+        CameraZoom.Punch(0.12f);
         CameraShake.Kick(Vector2.left, 0.35f);
         HitStop.Hold(0.4f, 0.2f);
         player.ClearScriptedInput();

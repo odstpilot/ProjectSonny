@@ -81,13 +81,13 @@ public class ChapterTwoDirector : MonoBehaviour
         BlockedWay passed = null;
         foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
             if (!string.IsNullOrEmpty(way.objective) && next == way.objective) passed = way;
-        // Or somewhere in scavenging and making the EMP on the upper maintenance deck.
-        var crafting = FindAnyObjectByType<Workshop>();
-        bool craftingStage = crafting != null && crafting.Owns(next);
-        // Or past it: locked out of the control room and up in the comms ring, or let into the control room after.
+        // Or past it: up in the comms ring (the EMP made sends them straight there), or let into the control room after.
         var lockout = FindAnyObjectByType<BadgeLockout>();
         var comms = FindAnyObjectByType<CommsRing>();
         bool commsStage = comms != null && comms.Owns(next);
+        // Or somewhere in scavenging and making the EMP on the upper maintenance deck.
+        var crafting = FindAnyObjectByType<Workshop>();
+        bool craftingStage = crafting != null && crafting.Owns(next) && !commsStage;
         bool pastComms = passed != null && comms != null && passed.afterObjective == comms.afterObjective;
         bool pastDeck = commsStage || pastComms;
         bool revealed = craftingStage || pastDeck || passed != null || (reveal != null && next == reveal.objective);
@@ -144,13 +144,6 @@ public class ChapterTwoDirector : MonoBehaviour
                 next = StageObjective("hallway-caved");
                 var grab = FindAnyObjectByType<WallGrab>();
                 at = grab != null ? grab.triggerAt + Vector2.down * (grab.triggerRange + 1.5f) : (Vector2?)null;
-                break;
-            case "control-door":
-                // The EMP made, a few steps from the reactor core's badge door, about to be turned away by it.
-                var workshop = FindAnyObjectByType<Workshop>();
-                var locked = FindAnyObjectByType<BadgeLockout>();
-                next = workshop != null ? workshop.afterObjective : null;
-                at = locked != null ? locked.standAt : (Vector2?)null;
                 break;
             case "comms-ring":
             case "comms-generator":

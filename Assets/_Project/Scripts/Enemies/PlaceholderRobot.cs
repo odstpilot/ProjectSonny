@@ -64,6 +64,10 @@ public class PlaceholderRobot : MonoBehaviour
     public float closeDetectionMultiplier = 2.5f;
     [Tooltip("Seconds for its suspicion to drain away once it can't see them.")]
     public float detectionFade = 2f;
+    [Tooltip("Only sensed, not seen (behind it, close by, or heard), the ring fills no further than this: it turns to look instead, and only gives chase once the player's in front of it.")]
+    [Range(0.1f, 0.99f)] public float sensedOnlyCap = 0.9f;
+    [Tooltip("Seconds after it first spots the player before it can attack, so being spotted up close isn't being hit at once.")]
+    public float spotReaction = 0.5f;
     [Tooltip("A crouching player can only be seen from this fraction of Sight Range. Close Range still notices them.")]
     [Range(0.1f, 1f)] public float crouchSightMultiplier = 0.85f;
     [Tooltip("How fast the ring fills while the player crouches, as a fraction of normal.")]
@@ -138,6 +142,9 @@ public class PlaceholderRobot : MonoBehaviour
     private Health playerHealth;
     private PlayerController playerController;
     private State state = State.Patrol;
+    private float nextChatter;          // when it next beeps to itself, on its rounds
+    private bool inView;                // the player's in front of it, in its view cone, this frame (not just sensed)
+    private float chaseSince;           // when it last went from not hunting to after the player
     private float stateTimer;
     private Vector2 attackDirection = Vector2.right;
     private Vector2 facing = Vector2.right;
@@ -155,6 +162,8 @@ public class PlaceholderRobot : MonoBehaviour
     private readonly List<RaycastHit2D> sightHits = new List<RaycastHit2D>();
     private readonly List<Vector2> roamPath = new List<Vector2>();
     private static readonly List<PlaceholderRobot> all = new List<PlaceholderRobot>();
+    // Every robot in the scene that's switched on (CameraZoom).
+    public static IReadOnlyList<PlaceholderRobot> All => all;
     private Vector2 roamGoal;           // where it's roaming to, so the others don't pick the same spot
     private float investigateSpeed;
     private Vector2 glimpse;            // where it last saw or heard the player, however briefly
@@ -257,6 +266,7 @@ public class PlaceholderRobot : MonoBehaviour
         switch (state)
         {
             case State.Patrol:
+                Chatter();
                 if (SpotPlayer() || Suspect()) break;
                 if (roamArea != null)
                 {
@@ -286,12 +296,18 @@ public class PlaceholderRobot : MonoBehaviour
                 else
                 {
                     Remember();
-                    if (DistanceToPlayer() <= attackRange)
+                    if (DistanceToPlayer() <= attackRange && Time.time - chaseSince >= spotReaction)
                     {
                         // Lock the lunge direction now, so the player can sidestep during the windup.
                         attackDirection = DirectionToPlayer();
                         Look(attackDirection);
                         Enter(State.Windup, windupTime);
+                    }
+                    else if (DistanceToPlayer() <= attackRange)
+                    {
+                        // Just spotted them, right there: it stops and faces them before it goes for them.
+                        rb.linearVelocity = Vector2.zero;
+                        Look(DirectionToPlayer());
                     }
                     else
                     {
@@ -419,8 +435,36 @@ public class PlaceholderRobot : MonoBehaviour
         StealthMeter.Clear(this);
     }
 
+    // Beeping to itself now and then on its rounds, so it can be heard coming before it's seen.
+    void Chatter()
+    {
+        if (nextChatter <= 0f) nextChatter = Time.time + Random.Range(2f, 8f);
+        if (Time.time < nextChatter) return;
+        nextChatter = Time.time + Random.Range(5f, 11f);
+        Sfx.At("Robot Beep", rb.position, 0.8f, Random.Range(0.85f, 1.2f), 12f);
+    }
+
+    // What it sounds like as it goes from one thing to the next.
+    void Voice(State next)
+    {
+        if (next == state) return;
+        Vector2 at = rb.position;
+        switch (next)
+        {
+            case State.Chase:
+                if (state != State.Windup && state != State.Lunge && state != State.Recover && state != State.Catch) Sfx.At("Robot Alert", at);
+                break;
+            case State.Investigate: Sfx.At("Robot Beep", at, 0.7f, 0.8f, 12f); break;
+            case State.Windup: Sfx.At("Robot Attack Windup", at); break;
+            case State.Lunge: Sfx.At("Robot Attack Lunge", at); break;
+            case State.Shorted: Sfx.At("Robot Shorted", at); break;
+        }
+    }
+
     void Enter(State next, float duration)
     {
+        if (next == State.Chase && !IsHunting) chaseSince = Time.time;
+        Voice(next);
         if (state == State.Windup) ResetBody();
         // Off its rounds, it'll pick somewhere new once it's back on them.
         if (next != State.Patrol) roamPath.Clear();
@@ -463,9 +507,11 @@ public class PlaceholderRobot : MonoBehaviour
 
         float angle = Vector2.Angle(facing, toPlayer);
         float seen = 0f;
+        inView = false;
         if (distance <= range && (tracking || distance <= allAround || angle <= fieldOfView * 0.5f))
         {
             seen = 1f;
+            inView = tracking || angle <= fieldOfView * 0.5f;
         }
         else if (smartSenses && !tracking)
         {
@@ -474,7 +520,9 @@ public class PlaceholderRobot : MonoBehaviour
             if (distance <= sight * peripheralRange && angle <= peripheralFieldOfView * 0.5f) seen = peripheralRate * hush;
             else if (distance <= walkHearingRange && PlayerMoving) seen = hearingRate * hush;
         }
-        return seen > 0f && HasLineOfSight(player.position) ? seen : 0f;
+        if (seen > 0f && !HasLineOfSight(player.position)) seen = 0f;
+        if (seen <= 0f) inView = false;
+        return seen;
     }
 
     // Nothing solid between it and the point, apart from itself, the player, and other robots.
@@ -507,6 +555,12 @@ public class PlaceholderRobot : MonoBehaviour
             else if (!hunting && PlayerSprinting) rate *= sprintDetectionMultiplier;
             if (!hunting) rate *= seen;
             detection = Mathf.Clamp01(detection + rate * Time.deltaTime);
+            // Sensed but not seen: it can't be sure until it's looked, so it turns to see what's there.
+            if (!hunting && !inView && detection >= sensedOnlyCap)
+            {
+                detection = sensedOnlyCap;
+                if (state != State.Windup && state != State.Lunge && state != State.Shorted && state != State.Stunned) Look(DirectionToPlayer());
+            }
             glimpse = player.position;
             glimpseTime = Time.time;
             if (playerVelocity.sqrMagnitude > 0.25f) playerHeading = playerVelocity.normalized;

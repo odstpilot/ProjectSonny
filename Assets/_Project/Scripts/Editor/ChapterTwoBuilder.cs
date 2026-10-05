@@ -11,8 +11,8 @@ using UnityEngine.Rendering.Universal;
 // stepping out of the restroom), Sonny's box glows red in the control room, and everything's where Chapter 1
 // left it (all placed by ChapterOneBuilder, from the same crowds, so it lines up): the broken toilet, the knocked-about
 // shelf, and the storage room door jammed with rubble behind it, with the vents the only way out. Every other way on
-// is shut too (BlockedWay): the ship entrance is sealed and the escape pods gone, the hallway to the control room has
-// caved in, so the only way on is the maintenance deck's stairs, up to the upper maintenance deck. The technician starts on the storage room floor, in front of the shelf, and
+// is shut too: the ship entrance is sealed and the escape pods gone (Pip says so, PatrolReveal), the hallway to the
+// control room has caved in (BlockedWay), so the only way on is the maintenance deck's stairs, up to the upper maintenance deck. The technician starts on the storage room floor, in front of the shelf, and
 // ChapterTwoDirector wakes them up. Floor 2 (the comms ring, the upper maintenance deck, the reactor) is there, empty
 // for now.
 // It replaces everything in the scene but the Sound Manager.

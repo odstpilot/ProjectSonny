@@ -73,9 +73,9 @@ public class ControlRoomCutscene : MonoBehaviour
         "Sonny: I see. I look forward to working with all of you.",
     };
     public string[] crewLaugh = { "Ha!", "Brand new!" };
-    [TextArea] public string[] chiefAfter = { "Storage room's right off the hallway outside. The spare coupling's in the tool crate." };
+    [TextArea] public string[] chiefAfter = { "Storage room's right off the hallway outside. The spare data chip's in the tool crate." };
     [Tooltip("The chief, as the bars go: what sends the technician off for a wrench (RestroomBreak). Empty for nothing.")]
-    public string sendOff = "Good work, tech. Sonny's on a temporary coupling, though. Grab the spare from storage, just down the hall?";
+    public string sendOff = "Good work, tech. Sonny's running off a temporary data chip, though. Grab the spare from storage, just down the hall?";
 
     [Header("The crew, afterwards")]
     [Tooltip("The rooms whose crew saw Sonny come on, by their markers in the layout: they say sonnyTalk. Everyone else aboard has heard about it (CrewMember.SonnyCameOnline).")]

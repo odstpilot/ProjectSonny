@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
 
-// The storage room's shelf: a metal rack against the wall, stacked with crates, with a spare coupling for Sonny's core
-// that's rolled underneath it. Walk up and press E to reach under it. Reaching nudges the rack (Nudge); pulling it out
+// The storage room's shelf: a metal rack against the wall, stacked with crates, with a spare data chip for Sonny's core
+// that's slid underneath it. Walk up and press E to reach under it. Reaching nudges the rack (Nudge); pulling it out
 // (Grab) clinks it free;
 // and something rocking the rack harder and harder tips the crate on top off onto whoever's under it (Topple). What happens when E is pressed is up to whoever's listening
 // (RestroomBreak, in Chapter 1): Used is raised, and the shelf stays in use until they call Done. With nobody listening
@@ -196,7 +196,9 @@ public class ToolShelf : Terminal
         var crateDark = new Color32(108, 78, 42, 255);
         var box = new Color32(96, 130, 150, 255);
         var boxDark = new Color32(66, 92, 108, 255);
-        var steel = new Color32(200, 206, 214, 255);
+        var board = new Color32(38, 120, 72, 255);
+        var gold = new Color32(222, 184, 80, 255);
+        var chip = new Color32(24, 26, 30, 255);
         var glow = new Color32(90, 230, 255, 255);
 
         Texture2D texture = PixelArt.MakeTexture(Width, Height, (x, y) =>
@@ -207,10 +209,15 @@ public class ToolShelf : Terminal
             if (y == 6 || y == 7 || y == 19 || y == 20 || y == 32 || y == 33) return y % 2 == 0 ? frame : frameLit;
             if (y < 6)
             {
-                // The spare coupling, rolled into the dark under the bottom shelf: a steel sleeve with a ring at each
-                // end and a lit status band round the middle.
+                // The spare data chip, slid into the dark under the bottom shelf: a little green board with gold
+                // contacts along one edge, a black chip on it, and a lit status light.
                 if (withWrench && y >= 1 && y <= 4 && x >= 18 && x <= 26)
-                    return x == 18 || x == 26 ? frameLit : x == 22 ? glow : steel;
+                {
+                    if (y == 1) return x % 2 == 0 ? gold : board;
+                    if (y >= 2 && y <= 3 && x >= 20 && x <= 23) return chip;
+                    if (y == 3 && x == 25) return glow;
+                    return board;
+                }
                 return gap;
             }
             // Crates on the bottom shelf, boxes above, a smaller box on top.

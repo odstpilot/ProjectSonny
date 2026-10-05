@@ -828,8 +828,8 @@ public static class ChapterOneBuilder
 
     // --- The ways that are shut (BlockedWay) ---
 
-    // The objectives they lead on to, in order: after the bots (PatrolReveal), the escape pods; then, with the exit
-    // sealed, the control room; then, with the hallway to it caved in, upstairs.
+    // The objectives they lead on to, in order: after the bots (PatrolReveal), the control room (the escape pods are
+    // gone, Pip says so there); then, with the hallway to it caved in, upstairs.
     const string ObjectiveControlRoom = "Get to the control room";
     const string ObjectiveUpstairs = "Go upstairs to the maintenance deck";
     const char HallwayToControlRoom = 'c';
@@ -837,38 +837,14 @@ public static class ChapterOneBuilder
     const char OutsideDeck = 'h';        // the common grounds hallway, whose east door opens onto the maintenance deck
     const char UpperMaintenanceDeck = 'd';
 
-    // The ship entrance, sealed, and the escape pods beyond it gone; the hallway to the control room, caved in at the
-    // maintenance deck's door, so the only way on is the maintenance deck's stairs, up to the upper maintenance deck.
+    // The hallway to the control room, caved in at the maintenance deck's door, so the only way on is the maintenance
+    // deck's stairs, up to the upper maintenance deck. (The ship entrance stays locked, but there's no going to look:
+    // Pip says the escape pods are gone at the reveal, PatrolReveal.)
     static void PlaceBlockedWays(Map map, FloorOneBuilder.BuiltFloor floor, string afterBots)
     {
         Transform root = TutorialLevelBuilder.Group("Blocked Ways", floor.level);
         PlayerController player = floor.player.GetComponent<PlayerController>();
         Room RoomOf(char marker) => floor.rooms.FirstOrDefault(r => r.marker == marker);
-
-        // The ship entrance: a door that never opened for anyone but the shuttle, and now won't at all.
-        List<Vector2Int> entrance = map.Find('X');
-        Room commonGrounds = RoomOf('h');
-        if (entrance.Count > 0 && commonGrounds != null)
-        {
-            BlockedWay exit = NewBlockedWay("Exit Sealed", root, player, map, entrance, commonGrounds, floor);
-            exit.range = 3f;
-            exit.afterObjective = afterBots;
-            exit.technicianLines = new[] { "The entrance... it's sealed. It won't even light up." };
-            exit.pipLines = new[]
-            {
-                "~Lockdown. And every escape pod launched hours ago.",
-                "~No way off. So we go to Sonny: the control room.",
-            };
-            exit.objective = ObjectiveControlRoom;
-            exit.targetRoom = 'o';
-            exit.targetLabel = "Control Room";
-            exit.stage = "exit-sealed";
-            // Back by the sealed entrance: a dead end the bots rarely come down.
-            exit.setsRespawn = true;
-            exit.respawnAt = exit.standAt;
-            TutorialLevelBuilder.Record(exit);
-        }
-        else Debug.LogWarning("Chapter 1 builder: there's no ship entrance (X) in the common grounds hallway, so there's no exit to find sealed.");
 
         // The hallway to the control room: the maintenance deck's door into it, caved in on the deck's side.
         Room deck = RoomOf(MaintenanceDeck), hallway = RoomOf(HallwayToControlRoom);
@@ -886,7 +862,7 @@ public static class ChapterOneBuilder
                 TutorialLevelBuilder.Record(door);
             }
             BlockedWay path = NewBlockedWay("Hallway Caved In", root, player, map, caved, deck, floor);
-            path.afterObjective = ObjectiveControlRoom;
+            path.afterObjective = afterBots;
             path.technicianLines = new[] { "The ceiling's come down. The whole hallway's buried." };
             path.pipLines = new[]
             {
@@ -1150,7 +1126,8 @@ public static class ChapterOneBuilder
 
     // --- The upper maintenance deck ---
 
-    const string ObjectiveFindControlRoom = "Find the control room";
+    // Where the EMP sends them: the comms ring, for a way into the reactor core (CommsRing).
+    const string ObjectiveCommsRing = "Find a badge in the comms ring";
     const string EmpPath = "Assets/_Project/Data/Weapons/EMP.asset";
     const string CrowbarPath = "Assets/_Project/Data/Weapons/Crowbar.asset";
     const string ScrapGunPath = "Assets/_Project/Data/Weapons/ScrapGun.asset";
@@ -1289,8 +1266,8 @@ public static class ChapterOneBuilder
     // --- Storage racks ---
 
     const int RackPeriod = 4;           // a line of racks, then three cells of aisle
-    const float RackBraid = 0.15f;      // how many of the maze's other walls are knocked through, for more than one way round
-    const float RackOuter = 0.9f;       // how much of the maze's outer edge has racks along it
+    const float RackBraid = 0.45f;      // how many of the maze's other walls are knocked through, for more than one way round
+    const float RackOuter = 0.5f;       // how much of the maze's outer edge has racks along it
 
     // The upper maintenance deck as a warren of storage racks: laid out as a maze over the deck, three-cell aisles
     // between racks a cell deep, with some of its walls knocked through so there's more than one way round and it loops
@@ -1429,8 +1406,8 @@ public static class ChapterOneBuilder
     }
 
     // Coming up the stairs from the maintenance deck: where they are, what's on it (more bots, more cameras, a
-    // workbench), and what to do: scavenge scrap for an EMP (Workshop), then find the control room (through the reactor
-    // core, badge-only, and down its stairs to the hallway the cave-in cut off). The respawn point moves to the top of
+    // workbench), and what to do: scavenge scrap for an EMP (Workshop), then the comms ring, for a way through the reactor
+    // core (badge-only) and down its stairs to the hallway the cave-in cut off. The respawn point moves to the top of
     // the stairs.
     static void PlaceUpperDeckArrival(FloorOneBuilder.BuiltFloor[] floors, Workshop crafting)
     {
@@ -1467,9 +1444,9 @@ public static class ChapterOneBuilder
             arrival.objective = crafting.ScavengeText(0);
             arrival.targetRoom = UpperMaintenanceDeck;
             arrival.targetLabel = "Maintenance Deck (Upper)";
-            crafting.afterObjective = ObjectiveFindControlRoom;
-            crafting.afterRoom = 'o';
-            crafting.afterLabel = "Control Room";
+            crafting.afterObjective = ObjectiveCommsRing;
+            crafting.afterRoom = CommsRingRoom;
+            crafting.afterLabel = "Comms Ring";
             crafting.respawnAt = arrival.respawnAt;
             TutorialLevelBuilder.Record(crafting);
         }
@@ -1477,11 +1454,11 @@ public static class ChapterOneBuilder
         {
             arrival.pipLines = new[]
             {
-                "~The control room. The reactor core has stairs down to it.",
+                "~The reactor core's the way down, and it's badge-only. Try the comms ring for a badge.",
             };
-            arrival.objective = ObjectiveFindControlRoom;
-            arrival.targetRoom = 'o';
-            arrival.targetLabel = "Control Room";
+            arrival.objective = ObjectiveCommsRing;
+            arrival.targetRoom = CommsRingRoom;
+            arrival.targetLabel = "Comms Ring";
         }
         TutorialLevelBuilder.Record(arrival);
     }
@@ -1891,9 +1868,9 @@ public static class ChapterOneBuilder
     const char ReactorCore = 'r';
     const string ReactorCredential = "reactor_core";
 
-    // Locked out at the reactor core's badge doors (BadgeLockout), and sent to the comms ring next door; let in there,
-    // through the reactor and down its stairs, the control room opens too, with Sonny inside waiting for a unit. Where the
-    // player comes back and stands for testers, at each.
+    // The reactor core's doors locked to its badge, so it can't be got into until the comms ring's done (the EMP sends
+    // them there, Workshop); let in there, through the reactor and down its stairs, the control room opens too, with
+    // Sonny inside waiting for a unit. Where the player comes back and stands for testers, at each.
     static void PlaceControlRoomAccess(FloorOneBuilder.BuiltFloor[] floors, CommsRing comms)
     {
         FloorOneBuilder.BuiltFloor floor = floors[0];
@@ -1932,24 +1909,15 @@ public static class ChapterOneBuilder
             return;
         }
 
-        var lockout = new GameObject("Badge Lockout").AddComponent<BadgeLockout>();
-        lockout.transform.SetParent(TutorialLevelBuilder.Group("Reactor Access", upstairs.level));
-        lockout.player = player;
-        lockout.doors = reactorDoors.ToArray();
-        lockout.afterObjective = ObjectiveFindControlRoom;
-        lockout.targetRoom = CommsRingRoom;
-        // For testers: on the upper maintenance deck, a few steps from its door into the reactor.
-        Teleporter deckDoor = deck == null ? null : reactorDoors.FirstOrDefault(t => upstairs.map.WorldRect(deck.minX, deck.maxX, deck.minRow, deck.maxRow)
-            .Contains(t.transform.position));
-        if (deckDoor != null)
+        // The rest of the workbench (Workshop) opens with the same access.
+        Workshop bench = upstairs.level.GetComponentInChildren<Workshop>();
+        if (bench != null)
         {
-            List<Vector2Int> deckSide = deck.cells.Where(c => char.IsDigit(upstairs.map.At(c.x, c.y))
-                && deckDoor.name.StartsWith($"Door {upstairs.map.At(c.x, c.y)} ")).ToList();
-            if (deckSide.Count > 0) lockout.standAt = NearestOpen(upstairs.map, upstairs, deck, deckSide, 3);
+            bench.unlockCredential = ReactorCredential;
+            TutorialLevelBuilder.Record(bench);
         }
-        TutorialLevelBuilder.Record(lockout);
         if (comms == null) return;
-        comms.arriveObjective = lockout.objective;
+        comms.arriveObjective = ObjectiveCommsRing;
         comms.alsoGrants = new[] { ReactorCredential };
 
         // Into the ring: just inside it from the upper maintenance deck's door.
@@ -2087,6 +2055,9 @@ public static class ChapterOneBuilder
         reveal.player = floors[0].player.GetComponent<PlayerController>();
         reveal.robots = robots.ToArray();
         reveal.restroomRoom = RestroomRoom;
+        reveal.objective = ObjectiveControlRoom;
+        reveal.targetRoom = ControlRoom;
+        reveal.targetLabel = "Control Room";
         TutorialLevelBuilder.Record(reveal);
         return reveal.objective;
     }

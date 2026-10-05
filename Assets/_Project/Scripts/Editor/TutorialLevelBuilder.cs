@@ -315,7 +315,7 @@ public static class TutorialLevelBuilder
         DressLevel(map, grid, lights);
         PlaceRailings(map, props);
 
-        SoundDefaults.Fill(scene, SoundDefaults.Player, SoundDefaults.Tutorial, SoundDefaults.Sonny);
+        SoundDefaults.Fill(scene, SoundDefaults.Player, SoundDefaults.Tutorial, SoundDefaults.Sonny, SoundDefaults.Combat);
 
         EditorSceneManager.MarkSceneDirty(scene);
         if (!EditorSceneManager.SaveScene(scene)) return Fail($"couldn't save {ScenePath}.");

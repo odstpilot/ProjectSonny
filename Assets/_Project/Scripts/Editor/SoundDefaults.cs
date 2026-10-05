@@ -150,12 +150,43 @@ public static class SoundDefaults
         new Entry("Drone Caught", SoundCategory.SoundEffect, 1f, "The vent drone reaching the player.", Magnetic + "/Magnetic hit 07.wav"),
     };
 
+    // Fighting, the robots, and the set pieces where they come through the walls, in every level with them. All played
+    // by Sfx, at a point in the level; the ones without clips are made in code there (Sfx.Placeholder).
+    const string MadeInSfx = " Made in code (Sfx) until it has a clip.";
+    public static readonly Entry[] Combat =
+    {
+        new Entry("Melee Swing", SoundCategory.SoundEffect, 0.5f, "A melee weapon (crowbar, wrench) swinging through the air: a whoosh. Lower for a charged swing." + MadeInSfx),
+        new Entry("Melee Hit", SoundCategory.SoundEffect, 0.8f, "A melee swing landing on something: a heavy metal clang.",
+            Magnetic + "/Magnetic hit 03.wav", Magnetic + "/Magnetic hit 05.wav"),
+        new Entry("Gun Shot", SoundCategory.SoundEffect, 0.6f, "The scrap gun firing: a crack and a thump." + MadeInSfx),
+        new Entry("Blaster Charge", SoundCategory.SoundEffect, 0.5f, "The blaster starting to charge: a rising whine." + MadeInSfx),
+        new Entry("Blaster Fire", SoundCategory.SoundEffect, 0.7f, "The blaster letting go a charged shot: a falling zap." + MadeInSfx),
+        new Entry("Blaster Blast", SoundCategory.SoundEffect, 0.8f, "A blaster shot blowing up where it lands." + MadeInSfx),
+        new Entry("Projectile Impact", SoundCategory.SoundEffect, 0.5f, "A bit of scrap from the scrap gun hitting a wall: a small clank.", Magnetic + "/Magnetic hit 06.wav"),
+        new Entry("EMP Fire", SoundCategory.SoundEffect, 0.8f, "The EMP going off: a buzzing pulse that sweeps out and crackles away.", Magnetic + "/Magnetic wave once 01.wav"),
+        new Entry("EMP Ready", SoundCategory.SoundEffect, 0.5f, "The EMP recharged and ready to fire again: two rising blips." + MadeInSfx),
+        new Entry("Robot Hit", SoundCategory.SoundEffect, 0.7f, "A robot taking a hit that doesn't kill it: crunching metal and a crackle.",
+            Magnetic + "/Magnetic hit 01.wav", Magnetic + "/Magnetic hit 02.wav"),
+        new Entry("Robot Explode", SoundCategory.SoundEffect, 0.9f, "A robot destroyed: a bang, a deep boom, and bits rattling down." + MadeInSfx),
+        new Entry("Robot Alert", SoundCategory.SoundEffect, 0.6f, "A robot spotting the player and giving chase: a sharp two-tone beep." + MadeInSfx),
+        new Entry("Robot Attack Windup", SoundCategory.SoundEffect, 0.6f, "A robot winding up to lunge at the player: a servo whining up." + MadeInSfx),
+        new Entry("Robot Attack Lunge", SoundCategory.SoundEffect, 0.7f, "A robot lunging: a whoosh and a snap." + MadeInSfx),
+        new Entry("Robot Beep", SoundCategory.SoundEffect, 0.35f, "A robot beeping to itself on its rounds, every so often, and when it goes to look at something. Pitch varies." + MadeInSfx),
+        new Entry("Robot Shorted", SoundCategory.SoundEffect, 0.6f, "A robot shorted out by the EMP: fizzing and sputtering." + MadeInSfx),
+        new Entry("Wall Breach", SoundCategory.SoundEffect, 1f, "A robot bursting out through a wall: a slam and rubble pouring down." + MadeInSfx),
+        new Entry("Wall Grab", SoundCategory.SoundEffect, 0.9f, "The robot out of the wall clamping onto the player.", Magnetic + "/Magnetic hit 07.wav"),
+        new Entry("Grab Struggle", SoundCategory.SoundEffect, 0.6f, "Each press of E fighting the wall grab: metal grinding.", Magnetic + "/Magnetic hit 04.wav"),
+        new Entry("Grab Squeeze", SoundCategory.SoundEffect, 0.7f, "The wall grab squeezing when the player stops fighting it: servos crushing down." + MadeInSfx),
+        new Entry("Break Free", SoundCategory.SoundEffect, 0.9f, "Tearing free of the wall grab: a heavy clang.", Magnetic + "/Magnetic hit 05.wav"),
+    };
+
     // The sets offered by the inspector's Add Defaults menu.
     public static readonly (string label, Entry[][] sets)[] Menu =
     {
-        ("Tutorial", new[] { Player, Tutorial, Sonny }),
-        ("Chapter 1", new[] { Player, Floor, Sonny, ChapterOne }),
-        ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents }),
+        ("Tutorial", new[] { Player, Tutorial, Sonny, Combat }),
+        ("Chapter 1", new[] { Player, Floor, Sonny, ChapterOne, Combat }),
+        ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents, Combat }),
+        ("Combat", new[] { Combat }),
         ("Vents", new[] { Vents }),
         ("Floor (1 or 2)", new[] { Player, Floor }),
         ("Player Only", new[] { Player }),

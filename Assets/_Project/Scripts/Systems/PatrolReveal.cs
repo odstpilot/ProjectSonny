@@ -3,8 +3,9 @@ using UnityEngine;
 
 // Chapter 2, the moment the technician steps out of the restroom (StorageEscape): the search for the crew is over before
 // it starts. They're all out here, dead, and the maintenance bots are roaming the rooms among them, fast and at random
-// (PlaceholderRobot.roamArea). The technician stops, Pip says what they're looking at, and the objective becomes
-// getting off the station, by the escape pods off the ship entrance, pinned on the map (it's shut: BlockedWay). The
+// (PlaceholderRobot.roamArea). The technician stops, Pip says what they're looking at, and that there's no getting
+// off the station (every escape pod launched hours ago), so the objective becomes the control room, Sonny's, pinned
+// on the map (the way there's caved in: BlockedWay). The
 // bots and the cameras (StationCamera) are blind until then, so nobody's caught standing in the doorway taking it in,
 // and for a moment after (grace) so there's a chance to move.
 // Caught from then on, the technician comes back in the restroom, where the bots never go, until a later stage moves
@@ -27,13 +28,18 @@ public class PatrolReveal : MonoBehaviour
     [TextArea] public string[] pipCrewFound = new string[0];
     [Tooltip("The technician, seeing the bots.")]
     [TextArea] public string[] technicianBots = { "The bots... they're hunting." };
-    [TextArea] public string[] pipBots = { "~Stay out of their sight. Escape pods, by the ship entrance." };
+    [TextArea] public string[] pipBots =
+    {
+        "~Stay out of their sight.",
+        "~And don't count on the escape pods. Every one launched hours ago. There's no way off.",
+        "~So we go to Sonny. The control room.",
+    };
     [Tooltip("The card that pops up after that, on how sneaking about works (TipCard).")]
     public string tipsTitle = "Staying hidden";
-    public string objective = "Find the escape pods";
+    public string objective = "Get to the control room";
     [Tooltip("The room pinned on the map for it, by its marker in the layout, and what the pin says.")]
-    public char targetRoom = 'h';
-    public string targetLabel = "Ship Entrance";
+    public char targetRoom = 'o';
+    public string targetLabel = "Control Room";
 
     // How sneaking about works, on the card that pops up once the bots have been seen.
     static readonly TipCard.Row[] StealthTips =

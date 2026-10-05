@@ -92,6 +92,7 @@ public class RangedCombat : MonoBehaviour
             AimAtMouse();
             charging = true;
             chargeStartTime = Time.time;
+            Sfx.At("Blaster Charge", transform.position);
         }
 
         ChargePercent = blaster.chargeTime > 0f ? Mathf.Clamp01((Time.time - chargeStartTime) / blaster.chargeTime) : 1f;
@@ -135,6 +136,7 @@ public class RangedCombat : MonoBehaviour
             return;
         }
 
+        Sfx.At(Weapon is BlasterWeaponData ? "Blaster Fire" : "Gun Shot", muzzle);
         Vector3 origin = new Vector3(attackOrigin.x, attackOrigin.y, transform.position.z);
         int count = Mathf.Max(1, Weapon.projectilesPerShot);
         for (int i = 0; i < count; i++)

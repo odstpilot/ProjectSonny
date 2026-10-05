@@ -198,6 +198,7 @@ public class TitleSettings
         AddToggle(gameplay, font, "HIT STOP", "A SPLIT-SECOND FREEZE WHEN A HIT LANDS, SO IT FEELS HEAVY.", () => GameSettings.FreezeOnHit, GameSettings.SetFreezeOnHit);
         AddToggle(gameplay, font, "SCREEN EFFECTS", "SCANLINES AND FILM GRAIN ON SCREENS AND MENUS.", () => GameSettings.ScreenEffects, GameSettings.SetScreenEffects);
         AddToggle(gameplay, font, "SHOW FPS", "A FRAME RATE COUNTER IN THE TOP LEFT CORNER.", () => GameSettings.ShowFps, GameSettings.SetShowFps);
+        AddToggle(gameplay, font, "TOGGLE CROUCH", "TAP C TO CROUCH AND AGAIN TO STAND, INSTEAD OF HOLDING IT.", () => GameSettings.ToggleCrouch, GameSettings.SetToggleCrouch);
 
         BuildControls(AddPage(font, "CONTROLS"), font);
 

@@ -27,6 +27,9 @@ public class EmpPulse : MonoBehaviour
         float halfAngle = data.coneAngle * 0.5f;
         PlaySound(data.fireClip, data.volume);
         pulse.StunAngels(origin, direction, halfAngle);
+        ShortMachines(data, origin, direction, halfAngle);
+        Fired?.Invoke();
+        Swept?.Invoke(origin, direction, data.stunRadius * 1.3f, halfAngle);
 
         EmpWave.Spawn(muzzle, direction, halfAngle, data.stunRadius, data.empColor, data.empCoreColor, data.waveCount, data.waveDuration);
         HitEffects.Ring(muzzle, data.empCoreColor, 1.3f);
@@ -35,6 +38,44 @@ public class EmpPulse : MonoBehaviour
 
         pulse.Run(pulse.LightCone());
         return pulse;
+    }
+
+    // Every time one goes off (Workshop ticks off its how-to prompt).
+    public static event System.Action Fired;
+    // And the cone it swept (from, which way, how far its light reaches, half its angle in degrees), for anything that
+    // shows up in its flash (Generator).
+    public static event System.Action<Vector2, Vector2, float, float> Swept;
+
+    // Whether a point is inside a cone that Swept describes.
+    public static bool InCone(Vector2 point, Vector2 origin, Vector2 direction, float radius, float halfAngle)
+    {
+        Vector2 to = point - origin;
+        return to.magnitude <= radius && (to.sqrMagnitude < 0.01f || Vector2.Angle(direction, to) <= halfAngle);
+    }
+
+    // The patrol robots and the security cameras in the cone short out for a while, with a burst of sparks on each.
+    static void ShortMachines(EmpWeaponData data, Vector2 origin, Vector2 direction, float halfAngle)
+    {
+        bool InCone(Vector2 point)
+        {
+            Vector2 to = point - origin;
+            return to.magnitude <= data.stunRadius && (to.sqrMagnitude < 0.01f || Vector2.Angle(direction, to) <= halfAngle);
+        }
+
+        foreach (PlaceholderRobot robot in FindObjectsByType<PlaceholderRobot>())
+        {
+            if (!InCone(robot.transform.position)) continue;
+            robot.Emp(data.robotShortSeconds);
+            HitEffects.Sparks(robot.transform.position, Vector2.up, 10, 4f, 360f, data.empCoreColor, data.empColor);
+        }
+        foreach (StationCamera watcher in StationCamera.All)
+        {
+            // Its eye on the floor, or the housing up on the wall: either in the cone counts.
+            Vector2 housing = (Vector2)watcher.transform.position + new Vector2(0f, watcher.mountHeight);
+            if (!InCone(watcher.transform.position) && !InCone(housing)) continue;
+            watcher.Shutdown(data.cameraShortSeconds);
+            HitEffects.Sparks(housing, Vector2.down, 12, 3f, 360f, data.empCoreColor, data.empColor);
+        }
     }
 
     // A little crackle so the player knows the EMP can fire again.

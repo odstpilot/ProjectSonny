@@ -22,8 +22,11 @@ Assets/
       Controllers/       .controller - state machines that play those clips
     Art/
       Characters/        Player/ and Warden/ sprite sequences, one folder per animation
+                         (Player/<Action>/<Direction>/, e.g. Walk/UpLeft - Sonny > Build Player
+                         Animator turns these into clips; see PlayerClipBuilder.cs)
       Environment/       Tilesets/ (the ship tile atlas + 471 sliced tiles), Palettes/
-      Fonts/             VT323, SdAsteroidB612, and the TMP font asset
+      Fonts/             the TMP font asset; Resources/ holds m6x11 and SdAsteroidB612, which GameUI
+                         loads at runtime as the in-game body and heading fonts (and VT323, for terminals)
       Props/             one-off scene objects: cameras, walkie talkie, etc.
       Title/             title-screen artwork
       UI/                buttons, dialogue boxes, mute/settings icons

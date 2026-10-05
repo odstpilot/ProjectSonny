@@ -42,7 +42,7 @@ public class MeleeCombat : MonoBehaviour
 
         if (!charging)
         {
-            if (Input.GetMouseButtonDown(0) && cooldownTimer <= 0f)
+            if (Input.GetMouseButtonDown(0) && cooldownTimer <= 0f && !PipLog.MouseOverIcon)
             {
                 if (Weapon.canCharge)
                 {

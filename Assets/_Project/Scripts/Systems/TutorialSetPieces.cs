@@ -52,14 +52,15 @@ public static class TutorialSetPieces
         return clip;
     }
 
-    // A sound that plays on through AudioListener.volume, so it can be heard over a silence the level has made.
-    public static AudioSource Speaker(GameObject host, AudioClip clip, bool loop)
+    // One of the scene's sounds (SoundManager), or the fallback while the scene has no clip for it, played on through
+    // AudioListener.volume, so it can be heard over a silence the level has made. Its volume is left to the caller.
+    public static AudioSource Speaker(GameObject host, string soundName, AudioClip fallback, bool loop)
     {
         AudioSource source = host.AddComponent<AudioSource>();
-        source.clip = clip;
+        source.spatialBlend = 0f;
+        SoundManager.Setup(source, soundName, fallback);
         source.loop = loop;
         source.playOnAwake = false;
-        source.spatialBlend = 0f;
         source.ignoreListenerVolume = true;
         return source;
     }

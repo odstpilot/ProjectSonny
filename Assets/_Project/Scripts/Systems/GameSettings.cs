@@ -5,7 +5,7 @@ using UnityEngine;
 // the title screen or not. Change them through the setters, which apply and store them; Save writes them to disk.
 // Display mode and resolution are here too, but Unity remembers those between sessions itself.
 // Music and Effects volumes aren't applied to every sound by themselves: an audio source follows them if its script
-// multiplies its volume by MusicVolume or EffectsVolume (AudioManager and the title screen do). Master volume covers
+// multiplies its volume by MusicVolume or EffectsVolume (SoundManager and the title screen do). Master volume covers
 // everything.
 public static class GameSettings
 {

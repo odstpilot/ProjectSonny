@@ -2,21 +2,25 @@ using TMPro;
 using UnityEngine;
 
 // What the player picked from the title menu.
-public enum TitleChoice { None, Start, Quit, Back }
+public enum TitleChoice { None, Start, Continue, Quit, Back }
 
 // The row of choices that replaces "press any button": START, SETTINGS, and QUIT, with brackets that slide over to the
-// one selected. SETTINGS opens the settings panel over the whole screen. TitleScreen calls Tick every frame.
+// one selected; with a save to go back to (SaveGame), CONTINUE, NEW GAME, SETTINGS, and QUIT, with CONTINUE picked to
+// begin with. SETTINGS opens the settings panel over the whole screen. TitleScreen calls Tick every frame.
 public class TitleMenu
 {
-    static readonly string[] Items = { "START", "SETTINGS", "QUIT" };
+    const string ContinueItem = "CONTINUE", NewGameItem = "NEW GAME", StartItem = "START", SettingsItem = "SETTINGS";
+    static readonly string[] FreshItems = { StartItem, SettingsItem, "QUIT" };
+    static readonly string[] SavedItems = { ContinueItem, NewGameItem, SettingsItem, "QUIT" };
+    readonly string[] Items;
     const float Spacing = 300f;
     static readonly Color Bright = new Color(0.82f, 1f, 0.98f);
     static readonly Color Dim = new Color(0.42f, 0.66f, 0.66f);
     static readonly Color Cyan = new Color(0.25f, 0.95f, 0.95f);
 
     readonly CanvasGroup group;
-    readonly TextMeshProUGUI[] labels = new TextMeshProUGUI[Items.Length];
-    readonly float[] scales = new float[Items.Length];
+    readonly TextMeshProUGUI[] labels;
+    readonly float[] scales;
     readonly HudShape leftBracket, rightBracket, underline;
     readonly TitleSettings settings;
     readonly MenuInput input = new MenuInput();
@@ -33,18 +37,21 @@ public class TitleMenu
     public TitleMenu(RectTransform parent, Vector2 position, RectTransform screen, TMP_FontAsset font, AudioSource sfx)
     {
         this.sfx = sfx;
+        Items = SaveGame.HasSave ? SavedItems : FreshItems;
+        labels = new TextMeshProUGUI[Items.Length];
+        scales = new float[Items.Length];
         moveClip = TitleUI.Tone("Move", 990f, 0.06f, 0.35f);
         selectClip = TitleUI.Tone("Select", 1320f, 0.09f, 0.45f);
         backClip = TitleUI.Tone("Back", 620f, 0.08f, 0.4f);
 
-        RectTransform row = TitleUI.Place(TitleUI.NewRect("Menu", parent), position, new Vector2(1000f, 90f));
+        RectTransform row = TitleUI.Place(TitleUI.NewRect("Menu", parent), position, new Vector2(Items.Length * Spacing, 90f));
         group = row.gameObject.AddComponent<CanvasGroup>();
         group.alpha = 0f;
 
         Material glow = TitleUI.GlowMaterial(font, TitleUI.Fade(Cyan, 0.4f), 0.8f, 0.3f);
         for (int i = 0; i < Items.Length; i++)
         {
-            labels[i] = TitleUI.Label(Items[i], row, font, 46f, Dim, new Vector2((i - 1) * Spacing, 0f), new Vector2(280f, 70f));
+            labels[i] = TitleUI.Label(Items[i], row, font, 46f, Dim, new Vector2((i - (Items.Length - 1) * 0.5f) * Spacing, 0f), new Vector2(290f, 70f));
             labels[i].characterSpacing = 10f;
             labels[i].fontSharedMaterial = glow;
             scales[i] = 1f;
@@ -119,11 +126,14 @@ public class TitleMenu
     TitleChoice Choose(float now)
     {
         chosenAt = now;
-        switch (selected)
+        switch (Items[selected])
         {
-            case 0:
-                return TitleChoice.Start;    // TitleScreen plays the start sound
-            case 1:
+            case StartItem:
+            case NewGameItem:
+                return TitleChoice.Start;    // TitleScreen plays the start sound, and starts over
+            case ContinueItem:
+                return TitleChoice.Continue;
+            case SettingsItem:
                 sfx.PlayOneShot(selectClip, 0.45f);
                 settings.Open(now);
                 return TitleChoice.None;

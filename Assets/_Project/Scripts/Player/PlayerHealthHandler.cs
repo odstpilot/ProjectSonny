@@ -6,7 +6,8 @@ using UnityEngine.Rendering.Universal;
 
 // Everything that happens to the player through Health, the one place their health is kept.
 //   Hurt: the screen shakes, time freezes for a moment, and a red vignette flashes. At low health the vignette pulses and
-//   a heartbeat plays. HealthHud shows how much is left.
+//   a heartbeat plays. HealthHud shows how much is left, with the stamina under it. Every level with a player in it can
+//   be paused from here too (PauseMenu).
 //   Dying: a flatline. Time slows to a crawl, the camera closes in, the colour drains out, and the body falls. Then the
 //   screen cuts to Sonny's monitor (DeathScreen), where the player's life signs flatline under a line from Sonny, and the
 //   rest of the game goes silent. Any key restores the signal: static, and the player is back at RespawnPoint (the last
@@ -27,8 +28,8 @@ public class PlayerHealthHandler : MonoBehaviour
     [Tooltip("At or below this much health, the vignette pulses and the heartbeat plays.")]
     public float lowHealthThreshold = 1f;
     [Range(0f, 1f)] public float lowHealthVignette = 0.35f;
-    public AudioClip heartbeatClip;
-    [Range(0f, 1f)] public float heartbeatVolume = 0.7f;
+    [Tooltip("The scene's sound for the heartbeat at low health, looping. Empty for none.")]
+    [SoundName] public string heartbeatSound = "Low Health Heartbeat";
 
     [Header("Dying")]
     [Tooltip("Real seconds of slow motion while the player goes down, before the monitor.")]
@@ -37,10 +38,10 @@ public class PlayerHealthHandler : MonoBehaviour
     [Range(0.05f, 1f)] public float slowMotion = 0.2f;
     [Tooltip("The camera closes in to this much of its normal view.")]
     [Range(0.3f, 1f)] public float deathZoom = 0.7f;
-    [Tooltip("The hit that kills.")]
-    public AudioClip deathClip;
-    [Tooltip("The monitor cutting back to the game.")]
-    public AudioClip staticClip;
+    [Tooltip("The scene's sound for the hit that kills. Empty for none.")]
+    [SoundName] public string deathSound = "Death Hit";
+    [Tooltip("The scene's sound for the monitor cutting back to the game. Empty for none.")]
+    [SoundName] public string staticSound = "Revive Static";
     [Tooltip("Font for Sonny's monitor. Leave empty for TextMesh Pro's default.")]
     public Font monitorFont;
     [Tooltip("Sonny logs each death with one of these.")]
@@ -71,6 +72,9 @@ public class PlayerHealthHandler : MonoBehaviour
         }
     }
 
+    // Once they're back on their feet at RespawnPoint.
+    public static event System.Action Respawned;
+
     // From the killing hit until they're back on their feet.
     public bool IsDying { get; private set; }
 
@@ -82,6 +86,7 @@ public class PlayerHealthHandler : MonoBehaviour
     private Vector2 lastHitDirection = Vector2.right;
     private HealthHud hud;
     private AudioSource heartbeat;
+    private float heartbeatLevel;   // eases between 0 and 1 as health gets low and recovers
     private AudioSource sfx;
     private Volume deathEffects;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
@@ -92,10 +97,9 @@ public class PlayerHealthHandler : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
 
         heartbeat = gameObject.AddComponent<AudioSource>();
-        heartbeat.clip = heartbeatClip;
-        heartbeat.loop = true;
-        heartbeat.playOnAwake = false;
         heartbeat.spatialBlend = 0f;
+        SoundManager.Setup(heartbeat, heartbeatSound);
+        heartbeat.loop = true;
         heartbeat.volume = 0f;
 
         sfx = gameObject.AddComponent<AudioSource>();
@@ -110,6 +114,8 @@ public class PlayerHealthHandler : MonoBehaviour
 
         hud = HealthHud.Get();
         hud.Track(health);
+        hud.TrackStamina(GetComponent<PlayerController>());
+        PauseMenu.Get();
         CreateDeathEffects();
     }
 
@@ -161,6 +167,9 @@ public class PlayerHealthHandler : MonoBehaviour
     {
         IsDying = true;
         SetFrozen(true);
+        // They go down where they were hit, whatever else tries to move them meanwhile (something that throws the
+        // player back on catching them, say), and only come back at RespawnPoint once the monitor's been and gone.
+        Vector3 diedAt = transform.position;
         bool wasSimulated = rb != null && rb.simulated;
         if (rb != null)
         {
@@ -171,7 +180,8 @@ public class PlayerHealthHandler : MonoBehaviour
         CameraShake.Shake(1f);
         CameraShake.Kick(Vector2.down, 0.3f);
         StationRumble.Punch(1f);
-        if (deathClip != null) sfx.PlayOneShot(deathClip);
+        sfx.volume = 1f;     // the static below turns it down to its own volume
+        SoundManager.PlayOneShot(sfx, deathSound);
 
         // Going down: slow motion, the camera closing in, the colour draining away, the body falling over.
         Camera cam = Camera.main;
@@ -181,6 +191,7 @@ public class PlayerHealthHandler : MonoBehaviour
         {
             float progress = t / fallTime;
             Time.timeScale = slowMotion;    // HitStop leaves time alone once something else has changed it
+            transform.position = diedAt;
             if (cam != null && cam.orthographic)
                 cam.orthographicSize = Mathf.Lerp(normalSize, normalSize * deathZoom, 1f - (1f - progress) * (1f - progress));
             if (deathEffects != null) deathEffects.weight = Mathf.SmoothStep(0f, 1f, progress);
@@ -216,26 +227,29 @@ public class PlayerHealthHandler : MonoBehaviour
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
+        AudioClip staticClip = SoundManager.Clip(staticSound);
         if (staticClip != null) StartCoroutine(PlayFor(staticClip, 0.6f));
         yield return screen.Hide();
 
         SetFrozen(false);
         IsDying = false;
+        Respawned?.Invoke();
     }
 
     void UpdateHeartbeat(bool lowHealth)
     {
-        if (heartbeatClip == null) return;
+        if (heartbeat.clip == null) return;
 
-        float target = lowHealth && !IsDying ? heartbeatVolume : 0f;
-        heartbeat.volume = Mathf.MoveTowards(heartbeat.volume, target, 1.5f * Time.unscaledDeltaTime);
-        if (heartbeat.volume > 0f && !heartbeat.isPlaying) heartbeat.Play();
-        else if (heartbeat.volume <= 0f && heartbeat.isPlaying) heartbeat.Stop();
+        heartbeatLevel = Mathf.MoveTowards(heartbeatLevel, lowHealth && !IsDying ? 1f : 0f, 2f * Time.unscaledDeltaTime);
+        heartbeat.volume = heartbeatLevel * SoundManager.Volume(heartbeatSound);
+        if (heartbeatLevel > 0f && !heartbeat.isPlaying) heartbeat.Play();
+        else if (heartbeatLevel <= 0f && heartbeat.isPlaying) heartbeat.Stop();
     }
 
     IEnumerator PlayFor(AudioClip clip, float seconds)
     {
         sfx.clip = clip;
+        sfx.volume = SoundManager.Volume(staticSound);
         sfx.Play();
         yield return new WaitForSecondsRealtime(seconds);
         if (sfx.clip == clip) sfx.Stop();

@@ -64,7 +64,7 @@ public class RangedCombat : MonoBehaviour
         else
         {
             bool fire = Weapon.automatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
-            if (fire && IsReady)
+            if (fire && IsReady && !PipLog.MouseOverIcon)
                 Fire();
         }
 

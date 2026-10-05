@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // A ranged weapon that fires an electromagnetic pulse instead of projectiles: a cone of crackling electricity toward
-// the mouse that stuns every weeping angel it reaches. Cooldown is how long it takes to recharge.
+// the mouse that stuns every weeping angel it reaches, and shorts out the patrol robots and security cameras in it.
+// Cooldown is how long it takes to recharge.
 // Damage, Knockback, and the Firing and Projectile settings don't apply to it.
 [CreateAssetMenu(menuName = "Sonny/Weapons/EMP", fileName = "NewEmp")]
 public class EmpWeaponData : RangedWeaponData
@@ -13,6 +14,10 @@ public class EmpWeaponData : RangedWeaponData
     public float stunRadius = 5f;
     [Tooltip("How wide the pulse is, in degrees, centered on the aim.")]
     [Range(10f, 360f)] public float coneAngle = 95f;
+    [Tooltip("Seconds it shorts out a patrol robot it reaches (PlaceholderRobot.Emp).")]
+    public float robotShortSeconds = 4f;
+    [Tooltip("Seconds it shorts out a security camera it reaches (StationCamera.Shutdown).")]
+    public float cameraShortSeconds = 6f;
 
     [Header("EMP Look")]
     [Tooltip("Color of the light, the wave's glow, and sparks.")]

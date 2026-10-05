@@ -7,6 +7,9 @@ using UnityEngine.Rendering.Universal;
 // cut straight to the new spot, so going through never shows as a jump. Two kinds:
 //   Walk Through: the player walks into the trigger and is taken through, for hallways that carry on somewhere else.
 //   Interact: a closed door. Walk up to it and press E; a locked door (or one with nowhere to go) just says it's locked.
+//   A badge door (credential set) only opens for someone with access: the player, once they hold that credential
+//   (AccessCredentials), or anyone standing close to a crew member with a badge, who lets them through. Without either,
+//   it says so (badgeText).
 // Levels can draw the doorway in code: a door in the wall with a lamp (green if it opens, red if not), or darkness
 // deepening toward the wall, so a hallway seems to carry on out of sight. wallDirection says which side the wall is on.
 // FloorOneBuilder places these in pairs, each one's target just inside the other.
@@ -44,13 +47,17 @@ public class Teleporter : MonoBehaviour
     [Tooltip("A locked door won't open; walking up to it only shows the locked text.")]
     public bool locked;
     public string lockedText = "LOCKED";
+    [Tooltip("Makes it a badge door: it only opens if the player holds this credential (AccessCredentials), or a crew member with a badge is close by. Empty for any door.")]
+    public string credential = "";
+    [Tooltip("How close a crew member with a badge has to be to the player to let them through.")]
+    public float escortRange = 4.5f;
+    public string badgeText = "BADGE REQUIRED";
 
     [Header("Going Through")]
     [Tooltip("Seconds for each half of the fade through black.")]
     public float fadeTime = 0.25f;
-    [Tooltip("Played as the screen goes dark.")]
-    public AudioClip sound;
-    [Range(0f, 1f)] public float volume = 0.7f;
+    [Tooltip("The scene's sound played as the screen goes dark. Empty for none.")]
+    [SoundName] public string sound = "";
 
     [Header("Look")]
     public Look look = Look.None;
@@ -72,7 +79,10 @@ public class Teleporter : MonoBehaviour
     private bool travelling;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
 
-    bool CanOpen => !locked && teleportTarget != null;
+    bool CanOpen => !locked && teleportTarget != null && HasAccess;
+    // No credential needed, or the player has it, or someone with a badge is right there with them.
+    public bool HasAccess => string.IsNullOrEmpty(credential) || AccessCredentials.Has(credential) || Escorted();
+    public bool NeedsBadge => !locked && teleportTarget != null && !HasAccess;
     Vector2 WallDirection => PlayerController.SnapToFourWay(wallDirection.sqrMagnitude > 0f ? wallDirection : Vector2.up);
 
     // Above the door, or just above the doorway.
@@ -135,21 +145,21 @@ public class Teleporter : MonoBehaviour
         if (mode != Mode.Interact) return;
 
         // timeScale 0 means a menu paused the game.
-        bool usable = player != null && !IsTravelling && Time.timeScale > 0f && !Locker.IsPlayerHidden && PlayerCanAct() && IsClosestInRange();
+        bool usable = player != null && !IsTravelling && !DialogueBox.Busy && Time.timeScale > 0f && !Locker.IsPlayerHidden && PlayerCanAct() && IsClosestInRange();
         if (!usable)
         {
             InteractPrompt.Hide(this);
             return;
         }
 
-        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : lockedText);
-        if (CanOpen && Input.GetKeyDown(Locker.InteractKey))
+        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : NeedsBadge ? badgeText : lockedText);
+        if (CanOpen && InteractPrompt.Pressed(this, Locker.InteractKey))
             StartCoroutine(Travel(player));
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (mode != Mode.WalkThrough || IsTravelling || teleportTarget == null || !other.CompareTag("Player")) return;
+        if (mode != Mode.WalkThrough || IsTravelling || DialogueBox.IsOpen || teleportTarget == null || !other.CompareTag("Player")) return;
         StartCoroutine(Travel(other.attachedRigidbody != null ? other.attachedRigidbody.transform : other.transform));
     }
 
@@ -162,7 +172,7 @@ public class Teleporter : MonoBehaviour
         if (animator != null) animator.SetTrigger("Teleport");
 
         ScreenFade fade = ScreenFade.Get();
-        fade.PlaySound(sound, volume);
+        fade.PlaySound(sound);
         yield return fade.FadeTo(1f, fadeTime);
 
         Vector3 arrival = teleportTarget.position;
@@ -205,6 +215,15 @@ public class Teleporter : MonoBehaviour
         foreach (Behaviour behaviour in frozen)
             if (behaviour != null) behaviour.enabled = true;
         frozen.Clear();
+    }
+
+    // A crew member (awake and about, not lying on the floor) near enough to the player to badge them through.
+    bool Escorted()
+    {
+        if (player == null) return false;
+        foreach (CrewMember crew in CrewMember.Everyone)
+            if (crew.isActiveAndEnabled && Vector2.Distance(crew.Position, player.position) <= escortRange) return true;
+        return false;
     }
 
     // Alive, not frozen by something else, and the nearest closed door in reach if several are.

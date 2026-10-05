@@ -28,6 +28,11 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Seconds to get down into a crouch, or back up out of one.")]
     public float crouchTransitionTime = 0.12f;
 
+    [Header("Facing")]
+    [Tooltip("Seconds to keep facing a diagonal after one of its two keys is let go. Letting go of both keys never " +
+             "happens on quite the same frame, so without this the player would nearly always stop facing straight.")]
+    public float diagonalReleaseGrace = 0.08f;
+
     [Header("Sprint Lean")]
     [Tooltip("How far the sprite tips forward while sprinting sideways, in degrees. Its feet stay planted.")]
     [Range(0f, 25f)] public float sprintLeanAngle = 8f;
@@ -43,7 +48,8 @@ public class PlayerController : MonoBehaviour
     public SpriteRenderer spriteRenderer;
 
     [Header("Footstep Settings")]
-    public AudioClip[] footstepClips;
+    [Tooltip("The scene's sound for a footstep.")]
+    [SoundName] public string footstepSound = "Footsteps";
     public float baseStepRate = 0.4f; // Normal walking step interval
     private float stepTimer;
     [SerializeField] private AudioSource audioSource;
@@ -56,8 +62,10 @@ public class PlayerController : MonoBehaviour
     // Sent to the Animator's WeaponType parameter every frame. Set by PlayerCombat.
     [System.NonSerialized] public WeaponType heldWeaponType = WeaponType.None;
 
-    // The way the player is looking: always straight up, down, left, or right.
+    // The way the player is looking: always straight up, down, left, or right. Aiming, hand positions, and attacks use this.
     public Vector2 Facing { get; private set; } = Vector2.down;
+    // The way the body is drawn: Facing, or a diagonal between two of its directions (SnapToEightWay).
+    public Vector2 FacingEightWay { get; private set; } = Vector2.down;
     // Robots see a crouching player from less far away and take longer to be sure of them (PlaceholderRobot).
     public bool IsCrouching { get; private set; }
     // Robots see a sprinting player from further away, make them out faster, and hear them coming from behind.
@@ -86,6 +94,15 @@ public class PlayerController : MonoBehaviour
     private readonly List<Vector3> carriedLightScales = new List<Vector3>();
     private bool hasFacingOverride;
     private Vector2 facingOverride;
+    private Vector2 pendingFacing;
+    private float pendingFacingTime;
+    private float faceSide = 1f;            // -1 left, 1 right: the side last faced
+    // Right, then counterclockwise, so index * 45 degrees is the angle. Diagonals are normalized.
+    private static readonly Vector2[] eightWay =
+    {
+        Vector2.right, new Vector2(1f, 1f).normalized, Vector2.up, new Vector2(-1f, 1f).normalized,
+        Vector2.left, new Vector2(-1f, -1f).normalized, Vector2.down, new Vector2(1f, -1f).normalized
+    };
     private int frozenDirection;
     private bool scripted;
     private Vector2 scriptedMove;
@@ -120,8 +137,17 @@ public class PlayerController : MonoBehaviour
         scripted = false;
     }
 
+    // True while a cutscene (or a screen like the map) is moving them, or holding them still.
+    public bool IsScripted => scripted;
+
     void Update()
     {
+        if (PauseMenu.IsPaused)
+        {
+            movement = Vector2.zero;
+            return;
+        }
+
         movement = scripted ? scriptedMove : new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         movement = movement.normalized;
         if (combatSpeedMultiplier <= 0f)
@@ -155,10 +181,8 @@ public class PlayerController : MonoBehaviour
         currentSpeed *= combatSpeedMultiplier;
 
         // Face where combat says (aiming a gun, mid-swing); otherwise face where you're walking.
-        if (hasFacingOverride)
-            Facing = facingOverride;
-        else if (isMoving)
-            Facing = SnapToFourWay(movement);
+        UpdateFacing(isMoving);
+        Facing = hasFacingOverride ? facingOverride : SnapToFourWay(FacingEightWay);
 
         UpdateAnimator(isMoving);
 
@@ -194,6 +218,7 @@ public class PlayerController : MonoBehaviour
         IsCrouching = false;
         IsSprinting = false;
         SetAnimBool(PlayerAnimParams.Crouching, false);
+        SetAnimBool(PlayerAnimParams.Sprinting, false);
         crouchAmount = 0f;
         sprintAmount = 0f;
         leanDirection = 0f;
@@ -314,6 +339,46 @@ public class PlayerController : MonoBehaviour
         return direction.y > 0 ? Vector2.up : Vector2.down;
     }
 
+    // The nearest of the eight directions: straight up, down, left, right, or a normalized diagonal. These are exactly
+    // the points in the player's animation blend trees (PlayerAnimatorBuilder), so one clip always plays at full weight.
+    public static Vector2 SnapToEightWay(Vector2 direction)
+    {
+        if (direction == Vector2.zero) return Vector2.down;
+        int octant = Mathf.RoundToInt(Mathf.Atan2(direction.y, direction.x) / (Mathf.PI / 4f));
+        return eightWay[(octant + 8) % 8];
+    }
+
+    // Turning off a diagonal onto one of its own two sides waits diagonalReleaseGrace, so stopping from a diagonal walk
+    // leaves the player facing that diagonal even when the two keys come up a frame or two apart.
+    void UpdateFacing(bool isMoving)
+    {
+        Vector2 target;
+        if (hasFacingOverride) target = facingOverride;
+        else if (isMoving) target = SnapToEightWay(movement);
+        else target = FacingEightWay;
+
+        bool easingOffDiagonal = !hasFacingOverride && FacingEightWay.x != 0f && FacingEightWay.y != 0f &&
+                                 Vector2.Dot(target, FacingEightWay) > 0.5f && (target.x == 0f || target.y == 0f);
+        if (target == FacingEightWay || !easingOffDiagonal)
+        {
+            FacingEightWay = target;
+            pendingFacingTime = 0f;
+        }
+        else
+        {
+            if (target != pendingFacing) pendingFacingTime = 0f;
+            pendingFacing = target;
+            pendingFacingTime += Time.deltaTime;
+            if (pendingFacingTime >= diagonalReleaseGrace)
+            {
+                FacingEightWay = target;
+                pendingFacingTime = 0f;
+            }
+        }
+
+        if (FacingEightWay.x != 0f) faceSide = Mathf.Sign(FacingEightWay.x);
+    }
+
     // Animator parameters are optional: ones the controller doesn't have are skipped,
     // so animations can be added a piece at a time. See PlayerAnimParams for the full list.
     public void SetAnimTrigger(int parameter)
@@ -328,9 +393,11 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateAnimator(bool isMoving)
     {
-        if (CanSetAnimParameter(PlayerAnimParams.FaceX)) animator.SetFloat(PlayerAnimParams.FaceX, Facing.x);
-        if (CanSetAnimParameter(PlayerAnimParams.FaceY)) animator.SetFloat(PlayerAnimParams.FaceY, Facing.y);
+        if (CanSetAnimParameter(PlayerAnimParams.FaceX)) animator.SetFloat(PlayerAnimParams.FaceX, FacingEightWay.x);
+        if (CanSetAnimParameter(PlayerAnimParams.FaceY)) animator.SetFloat(PlayerAnimParams.FaceY, FacingEightWay.y);
+        if (CanSetAnimParameter(PlayerAnimParams.FaceSide)) animator.SetFloat(PlayerAnimParams.FaceSide, faceSide);
         SetAnimBool(PlayerAnimParams.IsMoving, isMoving);
+        SetAnimBool(PlayerAnimParams.Sprinting, IsSprinting);
         SetAnimBool(PlayerAnimParams.Crouching, IsCrouching);
         if (CanSetAnimParameter(PlayerAnimParams.WeaponType)) animator.SetInteger(PlayerAnimParams.WeaponType, (int)heldWeaponType);
 
@@ -386,12 +453,14 @@ public class PlayerController : MonoBehaviour
 
         if (health != null) health.Kill(other);
         if (other.TryGetComponent<Warden>(out var warden))
-            warden.Reset();
+        {
+            //warden.Reset();
+        }
     }
 
     void HandleFootsteps(bool isMoving, bool isSprinting)
     {
-        if (!isMoving || footstepClips.Length == 0 || audioSource == null) return;
+        if (!isMoving || string.IsNullOrEmpty(footstepSound) || audioSource == null) return;
 
         stepTimer -= Time.deltaTime;
 
@@ -400,9 +469,8 @@ public class PlayerController : MonoBehaviour
 
         if (stepTimer <= 0f)
         {
-            AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];
-            audioSource.pitch = isSprinting ? 1.2f : IsCrouching ? 0.9f : 1f;
-            audioSource.PlayOneShot(clip, IsCrouching ? crouchFootstepVolume : 1f);
+            SoundManager.PlayOneShot(audioSource, footstepSound, IsCrouching ? crouchFootstepVolume : 1f,
+                isSprinting ? 1.2f : IsCrouching ? 0.9f : 1f);
             stepTimer = stepRate;
         }
     }

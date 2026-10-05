@@ -241,12 +241,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2af79cefce4fd4e4091bac630b44769f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 3.5
+  moveSpeed: 3.9
   sprintMultiplier: 1.5
-  stamina: 100
-  maxStamina: 100
-  staminaDrain: 25
-  staminaRegen: 15
+  stamina: 160
+  maxStamina: 160
+  staminaDrain: 20
+  staminaRegen: 22
   rb: {fileID: 4121180284899447739}
   animator: {fileID: 3200289562613747106}
   spriteRenderer: {fileID: 6946658232448837195}

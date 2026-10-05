@@ -47,7 +47,9 @@ public class DeathScreen : MonoBehaviour
     private TextMeshProUGUI prompt;
     private AudioSource beeper;
     private AudioSource tone;
-    private AudioClip beepClip;
+    private AudioClip beepClip;         // made in code, played until the scene's sounds have clips for them
+    private AudioClip flatlineClip;
+    private float toneLevel;
     private TMP_FontAsset font;
     private Coroutine traceRoutine;
 
@@ -170,16 +172,22 @@ public class DeathScreen : MonoBehaviour
             // A beep on each spike, then the long tone once it's gone flat.
             if (nextBeep < BeatTimes.Length && elapsed >= BeatTimes[nextBeep] + 0.16f)
             {
-                beeper.PlayOneShot(beepClip, 0.6f * BeatStrengths[nextBeep]);
+                SoundManager.PlayOneShot(beeper, "Monitor Beep", BeatStrengths[nextBeep], fallback: beepClip);
                 nextBeep++;
             }
             if (!flatlining && elapsed >= BeatTimes[BeatTimes.Length - 1] + 0.7f)
             {
                 flatlining = true;
-                tone.volume = 0.3f;
+                SoundManager.Setup(tone, "Flatline", flatlineClip);
+                tone.loop = true;
+                toneLevel = 1f;
                 tone.Play();
             }
-            if (flatlining) tone.volume = Mathf.Max(0.12f, tone.volume - 0.03f * Time.unscaledDeltaTime);
+            if (flatlining)
+            {
+                toneLevel = Mathf.Max(0.4f, toneLevel - 0.1f * Time.unscaledDeltaTime);
+                tone.volume = toneLevel * SoundManager.Volume("Flatline");
+            }
 
             yield return null;
         }
@@ -301,7 +309,7 @@ public class DeathScreen : MonoBehaviour
         tone.spatialBlend = 0f;
         tone.loop = true;
         tone.ignoreListenerPause = true;
-        tone.clip = Tone("Flatline", 880f, 1f, 0.5f, false);
+        flatlineClip = Tone("Flatline", 880f, 1f, 0.5f, false);
         beepClip = Tone("Beep", 1000f, 0.09f, 0.6f, true);
     }
 
@@ -332,7 +340,7 @@ public class DeathScreen : MonoBehaviour
     TextMeshProUGUI Label(string labelName, string text, float size, Color color, float anchorX, float anchorY, Vector2 area)
     {
         var label = NewRect(labelName, transform).gameObject.AddComponent<TextMeshProUGUI>();
-        if (font != null) label.font = font;
+        label.font = GameUI.Or(font);
         label.text = text;
         label.fontSize = size;
         label.color = color;

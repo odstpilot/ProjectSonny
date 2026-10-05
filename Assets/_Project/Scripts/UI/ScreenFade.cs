@@ -51,9 +51,10 @@ public class ScreenFade : MonoBehaviour
         SetAlpha(alpha);
     }
 
-    public void PlaySound(AudioClip clip, float volume)
+    // Plays one of the scene's sounds (SoundManager), or the fallback while the scene has no clip for it.
+    public void PlaySound(string soundName, AudioClip fallback = null)
     {
-        if (clip != null) audioSource.PlayOneShot(clip, volume);
+        if (!string.IsNullOrEmpty(soundName)) SoundManager.PlayOneShot(audioSource, soundName, fallback: fallback);
     }
 
     void OnDestroy()

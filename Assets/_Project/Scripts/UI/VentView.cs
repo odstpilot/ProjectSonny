@@ -9,7 +9,10 @@ using UnityEngine.UI;
 // grate, which shows from much further off. A rib at every cell boundary is the only way to count how far you've come.
 // Dented panels are crumpled floor plates, the way into a tight squeeze is a narrow collar with hazard stripes, and a
 // drone hatch is a square in the ceiling with a red rim.
-// Once the drone is out, its red lens shows in the dark from far away, and it throws red light on the duct around it.
+// Once the drone is out it hangs from its hatch: a body with claws folded under it and a cable up into the ceiling, its
+// red eye showing in the dark from far away, and a red searchlight thrown down whichever duct it's looking along. Its
+// eye burns when it's looking at you; locking on, it strobes, and the picture tears and runs red.
+// A rat, now and then, runs along the floor: a dark shape with two eyes that shine in the torchlight.
 // Over the view: the noise meter (the StealthMeter's colours, "?" and "!"), the walls closing in and the key to press
 // during a squeeze, a hint line, and the fade through black.
 // Built from code the first time a vent needs it, so there is no canvas to set up.
@@ -63,8 +66,16 @@ public class VentView : MonoBehaviour
     const float DroneRotorWidth = 0.46f;
     const float DroneRotorRise = 0.1f;      // how far above the body's middle the rotors spin
     const float DroneLensSize = 0.07f;
-    const float DroneLightReach = 1.6f;
-    const float DroneLightStrength = 0.9f;
+    const float DroneLightReach = 1.2f;
+    const float DroneLightStrength = 0.7f;
+    const float DroneBeamReach = 5.5f;      // its searchlight, down the duct it's looking along
+    const float DroneBeamStrength = 0.9f;
+    const float DroneBeamInner = 0.93f;     // cosines: full strength inside this, nothing outside the outer
+    const float DroneBeamOuter = 0.72f;
+
+    // The rat, in cells.
+    const float RatLength = 0.24f;
+    const float RatHeight = 0.07f;
 
     // The overlay.
     const float VignetteAlpha = 0.85f;
@@ -99,6 +110,9 @@ public class VentView : MonoBehaviour
     static readonly Color DroneRotorColor = new Color32(120, 126, 134, 255);
     static readonly Color DroneLensColor = new Color(1f, 0.24f, 0.16f);
     static readonly Color DroneLightColor = new Color(1f, 0.12f, 0.08f);
+    static readonly Color DroneClawColor = new Color32(40, 42, 46, 255);
+    static readonly Color RatColor = new Color32(70, 60, 54, 255);
+    static readonly Color RatEyeColor = new Color32(255, 200, 150, 255);
 
     // The StealthMeter's colours, so noise reads the same in here as being seen does out there.
     static readonly Color CalmColor = new Color(0.85f, 0.92f, 1f);
@@ -147,6 +161,12 @@ public class VentView : MonoBehaviour
     private Vector2 dronePosition;
     private float droneHover;
     private float droneGlow;                // how bright its lens is right now, 0 to 1
+    private float droneAngle;               // which way it's looking, degrees clockwise from up the map
+    private Vector2 droneFacing;
+    private float droneLock;                // 0 to 1 through locking on
+    private float droneRise = 1f;           // 0 up in its hatch, 1 hanging in the duct
+    private bool ratOut;
+    private Vector2 ratPosition;
     private Alert alert;
 
     private Image noiseBar;
@@ -200,7 +220,8 @@ public class VentView : MonoBehaviour
         cells = network.Cells;
         inside.SetActive(true);
         noise = shownNoise = noiseKick = 0f;
-        tight = showingKey = panic = droneOut = false;
+        tight = showingKey = panic = droneOut = ratOut = false;
+        droneLock = 0f;
         alert = Alert.None;
         squeezeClose = mistakeFlash = shake = eyesDepth = bob = 0f;
         steadyHint = flashHint = null;
@@ -240,6 +261,23 @@ public class VentView : MonoBehaviour
     {
         droneOut = isOut;
         dronePosition = position;
+    }
+
+    // Which way the drone is looking, how far through locking on it is (0 to 1), and how far down from its hatch it hangs.
+    public void SetDroneLook(float angleDegrees, float lockAmount, float rise)
+    {
+        droneAngle = angleDegrees;
+        float radians = angleDegrees * Mathf.Deg2Rad;
+        droneFacing = new Vector2(Mathf.Sin(radians), Mathf.Cos(radians));
+        droneLock = Mathf.Clamp01(lockAmount);
+        droneRise = Mathf.Clamp01(rise);
+    }
+
+    // The rat, if it's running, and where it is on the map.
+    public void SetRat(bool isOut, Vector2 position)
+    {
+        ratOut = isOut;
+        ratPosition = position;
     }
 
     public void SetAlert(Alert level) => alert = level;
@@ -322,7 +360,9 @@ public class VentView : MonoBehaviour
         Resize();
         Render();
         DrawEyes();
+        DrawRat();
         DrawDrone();
+        TearForLock();
         texture.SetPixels32(pixels);
         texture.Apply(false);
 
@@ -613,16 +653,31 @@ public class VentView : MonoBehaviour
         return glow * GrateStrength;
     }
 
-    // Red light from the drone's lens. It gets through the seams, so it can show on a wall before the drone comes round.
+    // Red light from the drone: a glow round it, and its searchlight thrown down the duct it's looking along, so the
+    // beam sweeping past a corner shows before the drone does.
     float DroneLight(Vector2 point, float surfaceHeight)
     {
         if (!droneOut) return 0f;
         float dx = point.x - dronePosition.x;
         float dy = point.y - dronePosition.y;
-        float dz = surfaceHeight - (DroneHeight + droneHover);
-        float reach = 1f - Mathf.Sqrt(dx * dx + dy * dy + dz * dz) / DroneLightReach;
-        return reach > 0f ? DroneLightStrength * reach * reach * droneGlow : 0f;
+        float dz = surfaceHeight - DroneZ;
+        float distance = Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
+        float light = 0f;
+        float reach = 1f - distance / DroneLightReach;
+        if (reach > 0f) light += DroneLightStrength * reach * reach * droneGlow;
+
+        float along = dx * droneFacing.x + dy * droneFacing.y;
+        if (along > 0f && distance < DroneBeamReach)
+        {
+            float cone = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(DroneBeamOuter, DroneBeamInner, along / Mathf.Max(0.001f, distance)));
+            float fall = 1f - distance / DroneBeamReach;
+            light += DroneBeamStrength * cone * fall * (0.7f + 0.3f * droneGlow + 0.6f * droneLock) * droneRise;
+        }
+        return light;
     }
+
+    // How high it hangs: down from the ceiling as it comes out of its hatch.
+    float DroneZ => Mathf.Lerp(DuctHeight + 0.15f, DroneHeight, droneRise) + droneHover;
 
     // Something in the dark looking back: two eyes that shine without any light on them.
     void DrawEyes()
@@ -644,11 +699,14 @@ public class VentView : MonoBehaviour
     {
         float time = Time.unscaledTime;
         droneHover = Mathf.Sin(time * 4f) * 0.03f;
-        droneGlow = alert == Alert.Chasing ? (Mathf.Repeat(time * 7f, 1f) < 0.6f ? 1f : 0.55f)
-            : 0.55f + 0.45f * Mathf.Sin(time * 3f);
+        droneGlow = droneLock > 0f ? (Mathf.Repeat(time * (8f + 14f * droneLock), 1f) < 0.55f ? 1f : 0.35f)
+            : alert == Alert.Chasing ? (Mathf.Repeat(time * 7f, 1f) < 0.6f ? 1f : 0.55f)
+            : 0.6f + 0.4f * Mathf.PerlinNoise(time * 3f, 0.5f);
     }
 
-    // A small maintenance drone: a flat body, a blur of rotors over it, and a red lens that shines by itself.
+    // A maintenance drone hanging from its hatch on a cable: a flat body, a blur of rotors over it, two claws folded under
+    // it, and one red eye. The eye burns bright and big when it's looking your way, and is a dull red slit when it's
+    // looking away.
     void DrawDrone()
     {
         if (!droneOut) return;
@@ -659,7 +717,8 @@ public class VentView : MonoBehaviour
 
         float scale = focal / depth;
         float middle = width * 0.5f + Vector2.Dot(toDrone, right) * scale;
-        float row = horizon + (DroneHeight + droneHover - (EyeHeight + bob)) * scale;
+        float row = horizon + (DroneZ - (EyeHeight + bob)) * scale;
+        float ceilingRow = horizon + (DuctHeight - (EyeHeight + bob)) * scale;
 
         float flash = 0f;
         if (depth < FlashReach)
@@ -674,13 +733,93 @@ public class VentView : MonoBehaviour
         body.a = 1f;
         Color rotor = DroneRotorColor * lit + DroneRotorColor * Ambient;
         rotor.a = 1f;
-        Color lens = Color.Lerp(DroneLensColor * 0.3f, DroneLensColor, droneGlow) * fog;
-        lens.a = 1f;
+        Color claw = DroneClawColor * lit + DroneClawColor * Ambient;
+        claw.a = 1f;
+
+        // How squarely it's looking at the player.
+        Vector2 back = -toDrone.normalized;
+        float facing = Mathf.Clamp01(Vector2.Dot(droneFacing, back));
+        float stare = Mathf.Max(facing * facing, droneLock);
+
+        // The cable up into the hatch.
+        for (float y = row; y < ceilingRow; y += 1f)
+            Ellipse(middle, y, 0.012f * scale, 0.6f, claw, depth);
 
         float spin = 0.65f + 0.35f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 40f));
         Ellipse(middle, row + DroneRotorRise * scale, DroneRotorWidth * 0.5f * scale * spin, 0.015f * scale, rotor, depth);
         Ellipse(middle, row, DroneBodyWidth * 0.5f * scale, DroneBodyHeight * 0.5f * scale, body, depth);
-        Ellipse(middle, row - 0.01f * scale, DroneLensSize * 0.5f * scale, DroneLensSize * 0.5f * scale, lens, depth);
+
+        // Claws, folded down under it, twitching.
+        float twitch = Mathf.Sin(Time.unscaledTime * 9f) * 0.015f * (1f + 3f * droneLock);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            float x = middle + side * (DroneBodyWidth * 0.32f + twitch) * scale;
+            for (int i = 0; i < 4; i++)
+                Ellipse(x + side * i * 0.012f * scale, row - (DroneBodyHeight * 0.5f + i * 0.035f) * scale, 0.014f * scale, 0.02f * scale, claw, depth);
+        }
+
+        // The eye: a dull slit looking away, a burning round eye looking at you, a strobing white-hot one locking on.
+        Color lensColor = Color.Lerp(DroneLensColor * 0.3f, DroneLensColor, droneGlow) * Mathf.Max(fog, 0.6f * stare);
+        lensColor.a = 1f;
+        float lensWide = DroneLensSize * (0.7f + 0.8f * stare + 0.5f * droneLock) * 0.5f * scale;
+        float lensTall = lensWide * Mathf.Lerp(0.35f, 1f, stare);
+        Ellipse(middle, row - 0.01f * scale, lensWide * 1.8f, lensTall * 1.8f, Color.Lerp(body, lensColor, 0.35f * stare), depth);
+        Ellipse(middle, row - 0.01f * scale, lensWide, lensTall, lensColor, depth);
+        if (stare > 0.4f)
+        {
+            Color core = Color.Lerp(lensColor, Color.white, 0.4f + 0.6f * droneLock * droneGlow);
+            core.a = 1f;
+            Ellipse(middle, row - 0.01f * scale, lensWide * 0.35f, lensTall * 0.35f, core, depth);
+        }
+    }
+
+    // The rat, low on the floor: a dark body and head, a tail behind, and two eyes that shine back in the torch.
+    void DrawRat()
+    {
+        if (!ratOut) return;
+        Vector2 toRat = ratPosition - eye;
+        float depth = Vector2.Dot(toRat, forward);
+        if (depth < NearClip || depth > MaxDistance) return;
+
+        float scale = focal / depth;
+        float middle = width * 0.5f + Vector2.Dot(toRat, right) * scale;
+        float row = horizon + (RatHeight * 0.6f - (EyeHeight + bob)) * scale;
+        float flash = depth < FlashReach ? FlashStrength * torch * Mathf.Pow(1f - depth / FlashReach, 2f) : 0f;
+        Color body = RatColor * (FlashTint * flash) + RatColor * (Ambient * 3f);
+        body.a = 1f;
+        Color eyes = Color.Lerp(Color.black, RatEyeColor, Mathf.Clamp01(0.35f + flash));
+        eyes.a = 1f;
+
+        float run = Mathf.Abs(Mathf.Sin(Time.unscaledTime * 30f)) * 0.012f * scale;
+        Ellipse(middle, row + run, RatLength * 0.5f * scale, RatHeight * 0.5f * scale, body, depth);
+        Ellipse(middle, row + run + RatHeight * 0.25f * scale, RatLength * 0.22f * scale, RatHeight * 0.45f * scale, body, depth);
+        Ellipse(middle - 0.035f * scale, row + run + RatHeight * 0.35f * scale, 0.012f * scale, 0.012f * scale, eyes, depth);
+        Ellipse(middle + 0.035f * scale, row + run + RatHeight * 0.35f * scale, 0.012f * scale, 0.012f * scale, eyes, depth);
+    }
+
+    // Locking on, the picture tears: rows slip sideways and the whole view runs red, worse the nearer the lock is done.
+    void TearForLock()
+    {
+        if (droneLock <= 0f) return;
+        int tears = Mathf.CeilToInt(height * 0.08f * droneLock);
+        for (int i = 0; i < tears; i++)
+        {
+            int y = Random.Range(0, height);
+            int slip = Random.Range(-3, 4);
+            int start = y * width;
+            for (int x = 0; x < width; x++)
+            {
+                int from = Mathf.Clamp(x + slip, 0, width - 1);
+                Color32 c = pixels[start + from];
+                pixels[start + x] = new Color32((byte)Mathf.Min(255, c.r + 60), (byte)(c.g / 2), (byte)(c.b / 2), 255);
+            }
+        }
+        float red = 0.18f * droneLock;
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            Color32 c = pixels[i];
+            pixels[i] = new Color32((byte)Mathf.Min(255, c.r + red * 120f), (byte)(c.g * (1f - red)), (byte)(c.b * (1f - red)), 255);
+        }
     }
 
     // A filled ellipse at this depth, hidden in any column where a wall is nearer.
@@ -919,7 +1058,7 @@ public class VentView : MonoBehaviour
     static TextMeshProUGUI Label(string name, Transform parent, string text, float size, TMP_FontAsset font)
     {
         var label = NewRect(name, parent).gameObject.AddComponent<TextMeshProUGUI>();
-        if (font != null) label.font = font;
+        label.font = GameUI.Or(font);
         label.text = text;
         label.fontSize = size;
         label.alignment = TextAlignmentOptions.Center;

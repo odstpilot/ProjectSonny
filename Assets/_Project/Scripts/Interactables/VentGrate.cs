@@ -88,7 +88,7 @@ public class VentGrate : MonoBehaviour
         }
 
         InteractPrompt.Show(this, PromptPoint, $"{InteractKey}  CRAWL IN");
-        if (Input.GetKeyDown(InteractKey))
+        if (InteractPrompt.Pressed(this, InteractKey))
         {
             InteractPrompt.Hide(this);
             vents.Enter(this);

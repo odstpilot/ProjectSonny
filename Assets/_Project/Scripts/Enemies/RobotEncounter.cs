@@ -17,8 +17,8 @@ public class RobotEncounter : MonoBehaviour
     public List<Health> robots = new List<Health>();
     [Tooltip("Robots stand dark and still until Activate is called, or until one of them is hit.")]
     public bool startDormant = true;
-    public AudioClip wakeClip;
-    [Range(0f, 1f)] public float wakeVolume = 0.6f;
+    [Tooltip("The scene's sound for them waking. Empty for none.")]
+    [SoundName] public string wakeSound = "Robot Wake";
     public UnityEvent onCleared = new UnityEvent();
 
     [Header("The Last One")]
@@ -87,8 +87,11 @@ public class RobotEncounter : MonoBehaviour
 
     IEnumerator WakeUp()
     {
-        if (wakeClip != null && Camera.main != null)
-            AudioSource.PlayClipAtPoint(wakeClip, Camera.main.transform.position, wakeVolume);
+        if (!string.IsNullOrEmpty(wakeSound) && Camera.main != null)
+        {
+            AudioClip clip = SoundManager.Clip(wakeSound);
+            if (clip != null) AudioSource.PlayClipAtPoint(clip, Camera.main.transform.position, SoundManager.Volume(wakeSound));
+        }
 
         // Their lights stutter on before they move.
         for (int i = 0; i < WakeBlinks; i++)

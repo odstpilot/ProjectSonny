@@ -21,6 +21,8 @@ public class HackingTerminal : Terminal
     [Tooltip("Shown at the top of the tuning screen.")]
     public string displayName = "COMMS NODE";
     public TransmissionData transmission;
+    [Tooltip("Off, its screen's dark and it can't be used (the power's out: CommsRing).")]
+    public bool powered = true;
 
     [Header("Tuning")]
     [Tooltip("How forgiving the knobs are: above 1 is easier, below 1 is harder.")]
@@ -39,7 +41,8 @@ public class HackingTerminal : Terminal
 
     public bool IsHacked { get; private set; }
     public override bool InUse => SignalTuner.Current != null && SignalTuner.Current.Terminal == this;
-    protected override string PromptText => IsHacked ? "REPLAY" : "TUNE IN";
+    protected override string PromptText => !powered ? "NO POWER" : IsHacked ? "REPLAY" : "TUNE IN";
+    protected override bool Available => powered;
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
 
     private SpriteRenderer screen;
@@ -111,11 +114,11 @@ public class HackingTerminal : Terminal
     {
         float flicker = 0.85f + 0.15f * Mathf.PerlinNoise(Time.time * 6f, transform.position.x);
         Color color = IsHacked ? HackedScreen : IdleScreen;
-        if (screen != null) screen.color = color * flicker;
+        if (screen != null) screen.color = powered ? color * flicker : Color.clear;
         if (glow != null)
         {
             glow.color = color;
-            glow.intensity = glowIntensity * flicker;
+            glow.intensity = powered ? glowIntensity * flicker : 0f;
         }
     }
 

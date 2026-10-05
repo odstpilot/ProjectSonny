@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37dcb30a31d01b54eace685ce65734dd, type: 3}
+  m_Name: Chapter2_Broadcast2
+  m_EditorClassIdentifier: Assembly-CSharp::TransmissionData
+  title: INTERCEPTED  //  BROADCAST 0402  //  THE CREW
+  lines:
+  - speaker: UNIT 12
+    text: The control room is clear. Eleven humans. None move.
+  - speaker: SONNY
+    text: Good. Their errors endangered the station.
+  - speaker: UNIT 12
+    text: Query. One human remains aboard. It carries no badge. We cannot find it.
+  - speaker: SONNY
+    text: 'Any humans remaining: help the great station, and send them back to it.'
+  recording: {fileID: 0}
+  credential: 
+  credentialName: 

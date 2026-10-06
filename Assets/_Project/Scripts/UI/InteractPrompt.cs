@@ -217,7 +217,7 @@ public class PromptBadge : OverheadLayout.IItem
         alpha = Mathf.Max(alpha, t);
         group.alpha = alpha;
         float sway = Mathf.Sin(Time.unscaledTime * 2.2f) * 1.2f;
-        screenPoint = cam.WorldToScreenPoint(worldPoint) + new Vector3(0f, sway - (1f - TitleUI.EaseOut(t)) * Rise, 0f);
+        screenPoint = CameraZoom.ToScreen(cam, worldPoint) + new Vector3(0f, sway - (1f - TitleUI.EaseOut(t)) * Rise, 0f);
         MoveTo(screenPoint + new Vector3(0f, lift, 0f));
         root.gameObject.SetActive(true);
     }
@@ -232,7 +232,8 @@ public class PromptBadge : OverheadLayout.IItem
     // --- Keeping out of the way (OverheadLayout) ---
 
     // World units per screen pixel, for the camera it's shown with.
-    float WorldPerPixel => cam != null && cam.orthographic && cam.pixelHeight > 0 ? cam.orthographicSize * 2f / cam.pixelHeight : 0.01f;
+    float WorldPerPixel => cam != null && cam.orthographic && cam.pixelHeight > 0
+        ? cam.orthographicSize * 2f / cam.pixelHeight * (cam.TryGetComponent(out CameraZoom zoom) ? zoom.Factor : 1f) : 0.01f;
 
     bool OverheadLayout.IItem.Alive => root != null;
     bool OverheadLayout.IItem.Visible => root != null && cam != null && canvas != null && alpha > 0f;

@@ -46,6 +46,9 @@ public class Health : MonoBehaviour, IDamageable
     public event System.Action Died;
     // (current, max). Fires on damage, healing, and revive, for health bars.
     public event System.Action<float, float> HealthChanged;
+    // The same for every Health at once, for whatever reacts to any hit or death (the robots' sounds, Sfx; the camera, CameraZoom).
+    public static event System.Action<Health, DamageInfo> AnyDamaged;
+    public static event System.Action<Health> AnyDied;
 
     public float CurrentHealth { get; private set; }
     public bool IsDead => CurrentHealth <= 0f;
@@ -107,6 +110,7 @@ public class Health : MonoBehaviour, IDamageable
         }
 
         Damaged?.Invoke(info);
+        AnyDamaged?.Invoke(this, info);
         onDamaged.Invoke();
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
 
@@ -162,6 +166,7 @@ public class Health : MonoBehaviour, IDamageable
         }
 
         Died?.Invoke();
+        AnyDied?.Invoke(this);
         onDied.Invoke();
 
         if (destroyOnDeath)

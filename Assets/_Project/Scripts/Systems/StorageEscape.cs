@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // Chapter 2's way out of the storage room, where the technician wakes up (ChapterTwoDirector).
@@ -7,7 +8,8 @@ using UnityEngine;
 // The first time they try it, the technician says so and Pip spots the floor vent: the air ducts (VentNetwork) run from here to the
 // restroom. The vent grates at both ends only work from the wake-up on. Getting caught in the ducts puts them back in
 // the storage room, where they woke. Climbing out in the restroom, the objective moves on to finding the crew, which is
-// over the moment they step out of it (PatrolReveal).
+// over the moment they step out of it (PatrolReveal). Until they do, the restroom's way out is pointed out
+// (ObjectiveHighlight), so there's no wondering which way to go.
 // Built by ChapterOneBuilder for ChapterTwoBuilder, which places the rubble, the grates, and the ducts.
 public class StorageEscape : MonoBehaviour
 {
@@ -122,6 +124,7 @@ public class StorageEscape : MonoBehaviour
         SetVents(true);
         if (!searching) return;
         TutorialHud.Get().SetObjective(objectiveOut);
+        StartCoroutine(PointOut());
         Escaped?.Invoke();
     }
 
@@ -139,10 +142,22 @@ public class StorageEscape : MonoBehaviour
         }
 
         hud.SetObjective(objectiveOut);
+        StartCoroutine(PointOut());
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
         yield return TechnicianVoice.Think(technicianOut);
         if (SuitHelper.Exists) SuitHelper.Get().Tell(pipOut);
         Escaped?.Invoke();
+    }
+
+    // The restroom's doors out, lit up, until they've gone through one.
+    IEnumerator PointOut()
+    {
+        var exits = new List<Teleporter>();
+        foreach (Teleporter door in FindObjectsByType<Teleporter>())
+            if (!door.locked && door.teleportTarget != null && InRoom(door.transform.position, restroomRoom)) exits.Add(door);
+        ObjectiveHighlight.Show(exits);
+        while (player == null || VentNetwork.IsPlayerInside || InRoom(player.transform.position, restroomRoom)) yield return null;
+        ObjectiveHighlight.Hide();
     }
 
     void SetVents(bool usable)

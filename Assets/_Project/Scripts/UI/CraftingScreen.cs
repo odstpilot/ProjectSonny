@@ -32,6 +32,10 @@ public class CraftingScreen : MonoBehaviour
         public string description;
         public Inventory.Stack[] cost = new Inventory.Stack[0];
         public Sprite picture;
+        // Set, it can't be made yet, and its card says this instead (Workshop: everything but the EMP, until the comms
+        // ring's done).
+        public string lockedText;
+        public bool Locked => !string.IsNullOrEmpty(lockedText);
     }
 
     public static bool IsOpen { get; private set; }
@@ -77,7 +81,7 @@ public class CraftingScreen : MonoBehaviour
         if (held) player.SetScriptedInput(Vector2.zero, false);
 
         CanvasGroup group = Build(recipes);
-        picked = Mathf.Max(0, cards.FindIndex(c => !Inventory.Made(c.recipe.id)));
+        picked = Mathf.Max(0, cards.FindIndex(c => !Inventory.Made(c.recipe.id) && !c.recipe.Locked));
         Refresh();
         for (float t = 0f; t < FadeTime; t += Time.unscaledDeltaTime)
         {
@@ -143,6 +147,19 @@ public class CraftingScreen : MonoBehaviour
     IEnumerator Make(Card card)
     {
         if (Inventory.Made(card.recipe.id)) yield break;
+        if (card.recipe.Locked)
+        {
+            if (denied == null) denied = TitleUI.Crackle("Craft Denied", 0.12f, 0.4f);
+            voice.PlayOneShot(denied, 0.6f);
+            for (int flash = 0; flash < 3; flash++)
+            {
+                card.status.color = Color.white;
+                yield return GameUI.WaitUnscaled(0.08f);
+                Refresh();
+                yield return GameUI.WaitUnscaled(0.08f);
+            }
+            yield break;
+        }
         if (!Inventory.Has(card.recipe.cost))
         {
             if (denied == null) denied = TitleUI.Crackle("Craft Denied", 0.12f, 0.4f);
@@ -197,6 +214,7 @@ public class CraftingScreen : MonoBehaviour
         {
             Card card = cards[i];
             bool made = Inventory.Made(card.recipe.id);
+            bool locked = !made && card.recipe.Locked;
             bool enough = Inventory.Has(card.recipe.cost);
             card.back.color = i == picked ? CardPicked : CardColor;
             card.outline.effectColor = i == picked ? GameUI.Amber : Edge;
@@ -204,11 +222,11 @@ public class CraftingScreen : MonoBehaviour
             {
                 Inventory.Stack need = card.recipe.cost[k];
                 int have = Inventory.Count(need.material);
-                card.costs[k].text = made ? $"{need.count}" : $"{Mathf.Min(have, need.count)}/{need.count}";
-                card.costs[k].color = made ? GameUI.Dim : have >= need.count ? GameUI.Green : GameUI.Red;
+                card.costs[k].text = made || locked ? $"{need.count}" : $"{Mathf.Min(have, need.count)}/{need.count}";
+                card.costs[k].color = made || locked ? GameUI.Dim : have >= need.count ? GameUI.Green : GameUI.Red;
             }
-            card.status.text = made ? "MADE" : enough ? $"[{i + 1}]  MAKE IT" : "NEED MORE PARTS";
-            card.status.color = made ? GameUI.Green : enough ? GameUI.Text : GameUI.Dim;
+            card.status.text = made ? "MADE" : locked ? card.recipe.lockedText : enough ? $"[{i + 1}]  MAKE IT" : "NEED MORE PARTS";
+            card.status.color = made ? GameUI.Green : locked ? GameUI.Red : enough ? GameUI.Text : GameUI.Dim;
             card.bar.anchorMax = new Vector2(made ? 1f : 0f, 1f);
         }
     }

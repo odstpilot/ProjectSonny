@@ -27,6 +27,8 @@ public static class GameSettings
     // Scanlines and film grain on screens and menus.
     public static bool ScreenEffects { get; private set; } = true;
     public static bool ShowFps { get; private set; }
+    // Tap to crouch and tap again to stand (PlayerController), instead of holding the key down.
+    public static bool ToggleCrouch { get; private set; }
 
     static bool focused = true;
 
@@ -43,6 +45,7 @@ public static class GameSettings
         FreezeOnHit = PlayerPrefs.GetInt(Prefix + "HitStop", 1) == 1;
         ScreenEffects = PlayerPrefs.GetInt(Prefix + "ScreenEffects", 1) == 1;
         ShowFps = PlayerPrefs.GetInt(Prefix + "ShowFps", 0) == 1;
+        ToggleCrouch = PlayerPrefs.GetInt(Prefix + "ToggleCrouch", 0) == 1;
         ApplyVolume();
         ApplyFrameRate();
         SettingsRunner.Ensure();
@@ -61,6 +64,7 @@ public static class GameSettings
         SetFreezeOnHit(true);
         SetScreenEffects(true);
         SetShowFps(false);
+        SetToggleCrouch(false);
     }
 
     public static void Save() => PlayerPrefs.Save();
@@ -127,6 +131,12 @@ public static class GameSettings
     {
         ShowFps = on;
         PlayerPrefs.SetInt(Prefix + "ShowFps", on ? 1 : 0);
+    }
+
+    public static void SetToggleCrouch(bool on)
+    {
+        ToggleCrouch = on;
+        PlayerPrefs.SetInt(Prefix + "ToggleCrouch", on ? 1 : 0);
     }
 
     // SettingsRunner calls this when the game's window gains or loses focus.

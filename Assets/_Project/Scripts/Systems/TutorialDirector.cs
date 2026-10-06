@@ -618,9 +618,10 @@ public class TutorialDirector : MonoBehaviour
         }
         CameraShake.Kick(Vector2.down, 0.25f);
         CameraShake.Shake(0.4f);
+        Sfx.Play("Wall Grab");
         TechnicianVoice.Say("Get OFF me!", 1.6f);
 
-        hud.ShowPromptWithHint("Break free", "Press it, fast", "E");
+        MashPrompt.Show("MASH TO BREAK FREE", "E");
         yield return null;      // the press that got here doesn't count
         int presses = 0;
         float lastPress = Time.time;
@@ -634,21 +635,26 @@ public class TutorialDirector : MonoBehaviour
                 lastPress = Time.time;
                 CameraShake.Shake(0.12f);
                 CameraShake.Kick(Random.insideUnitCircle.normalized, 0.08f);
+                Sfx.Play("Grab Struggle", 0.8f, 0.9f + 0.3f * presses / breakFreePresses);
+                MashPrompt.Press(presses / (float)breakFreePresses);
             }
             // It squeezes while they don't fight it.
             if (Time.time - lastPress > 1.4f)
             {
                 lastPress = Time.time;
                 CameraShake.Shake(0.2f);
+                Sfx.Play("Grab Squeeze");
+                MashPrompt.Squeeze();
                 if (player.TryGetComponent(out Health health))
                     health.TakeDamage(new DamageInfo(1f, Vector2.down, 0f, brain.gameObject, player.position));
                 if (controller != null) controller.SetScriptedInput(Vector2.zero, false);
             }
             yield return null;
         }
-        hud.CompletePrompt();
+        MashPrompt.Hide();
 
         // Torn free: it's flung back, stunned, then comes on again.
+        Sfx.Play("Break Free");
         CameraShake.Kick(Vector2.left, 0.35f);
         HitStop.Hold(0.4f, 0.2f);
         FrameView(1f, 0.5f);

@@ -106,6 +106,8 @@ public class Projectile : MonoBehaviour
 
         if (blaster != null)
             Explode(center, target);
+        else if (target == null)
+            Sfx.At("Projectile Impact", point);
         Finish();
     }
 
@@ -140,6 +142,7 @@ public class Projectile : MonoBehaviour
         }
 
         float size = Mathf.Max(blaster.blastRadius, blaster.ballSize);
+        Sfx.At("Blaster Blast", center);
         HitEffects.Ring(center, blaster.energyColor, size * 2.6f);
         HitEffects.Ring(center, blaster.coreColor, size * 1.3f);
         HitEffects.Sparks(center, Vector2.up, 30, 9f, 360f, blaster.coreColor, blaster.energyColor);

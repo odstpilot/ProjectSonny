@@ -12,9 +12,10 @@ using UnityEngine;
 // cone for a few seconds (EmpPulse) and recharges between pulses; Pip says so, and the prompt shows how to fire it
 // until they do. Further along the bench: the blaster (Data/Weapons/Blaster), which charges up before it fires, and two
 // upgrades to the suit, servo braces (faster on their feet) and armor plating (more health), for good once made. The
-// first time the bench is used, a card says how it all works (TipCard, kept in Pip's log to read again).
-// Then the objective is finding the control room, pinned on the map (its door is badge-only:
-// BadgeLockout, which sends them on to the comms ring, CommsRing). The crowbar's a swing (melee) for a bot that
+// first time the bench is used, a card says how it all works (TipCard, kept in Pip's log to read again); until then,
+// from arriving on the deck, a panel at the side of the screen says the gist of it (CraftingGuide).
+// Then the objective is the comms ring, pinned on the map: the only way on to the control room is through the reactor
+// core, which is badge-only, and if there's a badge left anywhere it's there (CommsRing). The crowbar's a swing (melee) for a bot that
 // gets too close, and the scrap gun fires bits of scrap at range. ChapterTwoDirector picks up from any of it on a save (Owns, Resume); the scrap and what's been made
 // come back with the Inventory.
 // Built by ChapterOneBuilder for ChapterTwoBuilder.
@@ -68,6 +69,12 @@ public class Workshop : MonoBehaviour
         new Inventory.Stack(Inventory.Material.Circuit, 1),
     };
 
+    [Tooltip("Everything on the bench but the EMP stays locked until the player has this credential (the comms ring's relay hands it over, CommsRing). Empty for nothing locked.")]
+    public string unlockCredential = "reactor_core";
+    public string lockedText = "LOCKED  COMMS RING";
+    [Tooltip("Pip, once the rest of the bench opens up.")]
+    [TextArea] public string[] pipUnlocked = { "^A unit's access opens the workbench's full plans too. Crowbar, scrap gun, all of it." };
+
     [Header("Upgrades")]
     [Tooltip("Servo braces: how much faster the technician moves, walking and running.")]
     public float servoSpeedBoost = 1.2f;
@@ -78,10 +85,11 @@ public class Workshop : MonoBehaviour
     [Tooltip("Shown with how many of the EMP's parts have been found, like \"Find parts for an EMP (1/4)\".")]
     public string scavengeObjective = "Find parts for an EMP";
     public string craftObjective = "Make an EMP at the workbench";
-    public string afterObjective = "Find the control room";
+    [Tooltip("The objective once the EMP's made: the comms ring's (CommsRing.arriveObjective), which starts it on getting there.")]
+    public string afterObjective = "Find a badge in the comms ring";
     [Tooltip("The room pinned on the map once the EMP's made, by its marker in the layout, and what the pin says.")]
-    public char afterRoom = 'o';
-    public string afterLabel = "Control Room";
+    public char afterRoom = 'g';
+    public string afterLabel = "Comms Ring";
 
     [Header("Lines")]
     [Tooltip("Pip, once there's everything for the EMP. ~ opens a line with static; ^ says it happily; [E] shows a key.")]
@@ -91,7 +99,8 @@ public class Workshop : MonoBehaviour
     {
         "^It works! One pulse shorts out any bot or camera in front of you for a few seconds.",
         "~It needs a moment to recharge between pulses. Make them count.",
-        "~Now the control room. The reactor core has stairs down to it.",
+        "~Now. The way down to the control room's through the reactor core, and the reactor's badge-only. Sonny cut off every badge.",
+        "~Try the comms ring, next door. If there's a badge left anywhere, it's there.",
     };
     [Tooltip("Pip, once the crowbar's made.")]
     [TextArea] public string[] pipCrowbarMade = { "~A crowbar. If a bot gets too close, swing first. The number keys switch what you're holding." };
@@ -107,7 +116,10 @@ public class Workshop : MonoBehaviour
     [Tooltip("Where the player stands for a tester's jump to after the EMP's made: in front of the bench.")]
     public Vector2 benchStandAt;
 
-    private bool toldEnough, teaching, toldHowTo;
+    private bool toldEnough, teaching, toldHowTo, guiding, toldUnlocked;
+
+    // Everything else on the bench is there to make: the comms ring's done.
+    public bool Unlocked => string.IsNullOrEmpty(unlockCredential) || AccessCredentials.Has(unlockCredential);
     private readonly HashSet<string> upgraded = new HashSet<string>();
     private readonly List<CraftingScreen.Recipe> madeAtBench = new List<CraftingScreen.Recipe>();
 
@@ -134,9 +146,20 @@ public class Workshop : MonoBehaviour
     void Update()
     {
         if (bench != null) bench.promptText = "USE WORKBENCH";
+        if (!toldUnlocked && Inventory.Made(EmpId) && Unlocked && !string.IsNullOrEmpty(unlockCredential))
+        {
+            toldUnlocked = true;
+            if (SuitHelper.Exists) SuitHelper.Get().Tell(pipUnlocked);
+        }
         if (Inventory.Made(EmpId)) return;
         TutorialHud hud = TutorialHud.Get();
         if (!hud.Objective.StartsWith(scavengeObjective) && hud.Objective != craftObjective) return;
+        // On the deck and after the EMP: how crafting works, at the side, until the bench is used.
+        if (!guiding && !toldHowTo)
+        {
+            guiding = true;
+            CraftingGuide.Show();
+        }
         bool enough = Inventory.Has(empCost);
         string want = enough ? craftObjective : ScavengeText(Inventory.Toward(empCost));
         if (hud.Objective == want) return;
@@ -157,7 +180,20 @@ public class Workshop : MonoBehaviour
         }
     }
 
-    public CraftingScreen.Recipe[] Recipes => new[]
+    // What's on the bench, everything but the EMP locked until the comms ring's done.
+    public CraftingScreen.Recipe[] Recipes
+    {
+        get
+        {
+            CraftingScreen.Recipe[] recipes = AllRecipes;
+            if (!Unlocked)
+                foreach (CraftingScreen.Recipe recipe in recipes)
+                    if (recipe.id != EmpId) recipe.lockedText = lockedText;
+            return recipes;
+        }
+    }
+
+    CraftingScreen.Recipe[] AllRecipes => new[]
     {
         new CraftingScreen.Recipe
         {
@@ -201,6 +237,8 @@ public class Workshop : MonoBehaviour
             "1", "2", "3"),
         new TipCard.Row(TipCard.Picture.None, "Upgrades",
             "Servo braces make you faster; armor plating lets you take more hits. Once made, they're yours for good."),
+        new TipCard.Row(TipCard.Picture.None, "EMP first",
+            "Only the EMP can be made for now. The rest of the bench unlocks once you've got a unit's access from the comms ring."),
     };
 
     void OnBench() => StartCoroutine(UseBench());
@@ -208,6 +246,11 @@ public class Workshop : MonoBehaviour
     IEnumerator UseBench()
     {
         madeAtBench.Clear();
+        if (guiding)
+        {
+            guiding = false;
+            CraftingGuide.Hide();
+        }
         if (!toldHowTo)
         {
             toldHowTo = true;

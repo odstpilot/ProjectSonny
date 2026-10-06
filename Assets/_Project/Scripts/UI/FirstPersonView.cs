@@ -9,8 +9,8 @@ using UnityEngine.UI;
 // floor, and anywhere with no tiles counts as wall so the edge of the map never shows. It is ray cast once when shown,
 // Wolfenstein style, into a low-resolution texture so it matches the pixel art, lit by ceiling lamps every few cells.
 // Characters and props are drawn over it every frame as flat cut-outs of their current sprite, placed, sized, and
-// darkened by distance and hidden behind walls, so robots can be watched walking past. Every so often a dark figure
-// walks across too. It's only for atmosphere: nothing in the game is really there.
+// darkened by distance and hidden behind walls, so robots can be watched walking past. The station's cameras show up
+// on the walls with their lights on, and the light they throw sweeps across the floor (StationCamera.LightAt).
 // Assumes the usual Grid: square cells one world unit across, not rotated.
 [RequireComponent(typeof(RawImage))]
 public class FirstPersonView : MonoBehaviour
@@ -43,91 +43,13 @@ public class FirstPersonView : MonoBehaviour
     static readonly Color LightTint = new Color(0.85f, 0.92f, 1f);   // cold station lighting
     static readonly Color FogColor = new Color32(5, 6, 8, 255);
 
-    // The dark figure.
-    const float ShadowHeight = 1.35f;
-    const float ShadowSpeed = 1.5f;
-    const float ShadowStepTime = 0.3f;      // seconds per walking frame
-    const float ShadowFirstDelayMin = 2.5f; // after climbing in
-    const float ShadowFirstDelayMax = 5f;
-    const float ShadowDelayMin = 8f;        // between walks
-    const float ShadowDelayMax = 16f;
-    static readonly Color ShadowColor = new Color32(2, 2, 4, 255);
-
-    // A hooded figure in a long coat, side-on and facing right: mid-stride, then legs together with the body a pixel
-    // lower. '#' is filled.
-    static readonly string[][] ShadowArt =
-    {
-        new[]
-        {
-            "......####......",
-            ".....######.....",
-            "....########....",
-            "....#########...",
-            "....#########...",
-            "....########....",
-            ".....######.....",
-            "....#########...",
-            "...###########..",
-            "...###########..",
-            "..############..",
-            "..#############.",
-            "..#############.",
-            "..#############.",
-            "..############..",
-            "..############..",
-            "..############..",
-            "..############..",
-            "..#############.",
-            ".##############.",
-            ".##############.",
-            ".###############",
-            "..#####..######.",
-            "..####....#####.",
-            "..###......####.",
-            ".####.......###.",
-            ".###........####",
-            ".###.........###",
-            "###..........###",
-            "###...........##",
-            "###...........##",
-            "####.........###",
-        },
-        new[]
-        {
-            "................",
-            "......####......",
-            ".....######.....",
-            "....########....",
-            "....#########...",
-            "....#########...",
-            "....########....",
-            ".....######.....",
-            "....#########...",
-            "...###########..",
-            "...###########..",
-            "..############..",
-            "..#############.",
-            "..#############.",
-            "..#############.",
-            "..############..",
-            "..############..",
-            "..############..",
-            "..############..",
-            "..#############.",
-            ".##############.",
-            ".##############.",
-            "..############..",
-            "....########....",
-            ".....###.###....",
-            ".....###.###....",
-            ".....###.###....",
-            ".....###.###....",
-            ".....###.###....",
-            ".....###.###....",
-            ".....###.####...",
-            "....####.#####..",
-        },
-    };
+    // The cameras.
+    const float CameraHeight = 2f;          // up near the top of the wall
+    const float HousingSize = 0.34f;
+    const float LensSize = 0.1f;
+    const float CameraLightStrength = 0.45f;
+    static readonly Color HousingColor = new Color32(22, 24, 29, 255);
+    static readonly Vector2 NoFloor = new Vector2(float.NaN, float.NaN);
 
     struct Cutout
     {
@@ -136,7 +58,9 @@ public class FirstPersonView : MonoBehaviour
         public Vector2 size;     // world units
         public bool flipX;
         public Color color;
-        public bool lit;         // lamps light it; the shadow figure stays dark
+        public float lift;       // world height of its bottom edge: 0 stands on the floor
+        public bool glows;       // a light: lamps don't shade it
+        public bool onWall;      // on the face of a wall, so the wall it's on doesn't hide it
         public float depth;
         public float x;          // texel column of its middle
     }
@@ -149,10 +73,14 @@ public class FirstPersonView : MonoBehaviour
     private Image flicker;
     private Texture2D texture;
     private Color32[] pixels;
+    private Color32[] basePixels;            // the hallway as rendered, before any camera light
+    private Vector2[] floorAt;               // the world point of floor each texel shows, or NoFloor
+    private bool cameraLit;                  // whether there's camera light on the texture now
     private float[] columnDepth;             // how far away the wall is in each column, for hiding cut-outs behind it
     private readonly List<Image> cutoutImages = new List<Image>();
     private readonly List<SpriteRenderer> standing = new List<SpriteRenderer>();
     private readonly List<Cutout> visible = new List<Cutout>();
+    private readonly List<StationCamera> cameras = new List<StationCamera>();
 
     private bool[,] walls;
     private int mapMinX, mapMinY;
@@ -165,16 +93,6 @@ public class FirstPersonView : MonoBehaviour
     private float refreshTimer;
     private float flickerTimer;
 
-    private Sprite[] shadowFrames;
-    private bool shadowWalking;
-    private float shadowTimer;               // until the next walk
-    private float shadowDepth;
-    private float shadowLateral;             // world units to the right of straight ahead
-    private float shadowDirection;           // 1 walks right, -1 walks left
-    private float shadowEnd;
-    private float shadowStepTimer;
-    private int shadowFrame;
-
     void Awake()
     {
         rect = (RectTransform)transform;
@@ -184,21 +102,11 @@ public class FirstPersonView : MonoBehaviour
         flicker = NewLayer("Flicker").gameObject.AddComponent<Image>();
         flicker.raycastTarget = false;
         flicker.enabled = false;
-
-        shadowFrames = new Sprite[ShadowArt.Length];
-        for (int i = 0; i < ShadowArt.Length; i++)
-            shadowFrames[i] = MakeSilhouette(ShadowArt[i]);
     }
 
     void OnDestroy()
     {
         if (texture != null) Destroy(texture);
-        foreach (Sprite frame in shadowFrames)
-        {
-            if (frame == null) continue;
-            Destroy(frame.texture);
-            Destroy(frame);
-        }
     }
 
     // eyePosition and lookDirection are in world space. eyeLevel01 is where eye level falls, as a fraction of this
@@ -224,6 +132,8 @@ public class FirstPersonView : MonoBehaviour
                 wrapMode = TextureWrapMode.Clamp
             };
             pixels = new Color32[width * height];
+            basePixels = new Color32[width * height];
+            floorAt = new Vector2[width * height];
             columnDepth = new float[width];
             image.texture = texture;
         }
@@ -232,18 +142,17 @@ public class FirstPersonView : MonoBehaviour
 
         ReadMap();
         Render();
+        cameraLit = false;
         FindStanding();
         refreshTimer = RefreshInterval;
         flickerTimer = Random.Range(1f, 3f);
-        shadowWalking = false;
-        shadowTimer = Random.Range(ShadowFirstDelayMin, ShadowFirstDelayMax);
         UpdateCutouts();
     }
 
     public void Hide()
     {
         standing.Clear();
-        shadowWalking = false;
+        cameras.Clear();
         foreach (Image cutout in cutoutImages)
             cutout.enabled = false;
         flicker.enabled = false;
@@ -260,7 +169,7 @@ public class FirstPersonView : MonoBehaviour
             refreshTimer = RefreshInterval;
             FindStanding();
         }
-        UpdateShadow(deltaTime);
+        UpdateCameraLight();
         UpdateCutouts();
         UpdateFlicker(deltaTime);
     }
@@ -328,10 +237,12 @@ public class FirstPersonView : MonoBehaviour
             {
                 float row = y + 0.5f;
                 Color32 color;
+                floorAt[y * width + x] = NoFloor;
                 if (row < wallBottom)
                 {
                     float distance = EyeHeight * focal / (eyeLevel - row);
                     color = FloorPixel(eyeLocal + ray * distance, distance);
+                    floorAt[y * width + x] = eye + ray * distance;
                 }
                 else if (row > wallTop)
                 {
@@ -351,8 +262,44 @@ public class FirstPersonView : MonoBehaviour
             }
         }
 
+        System.Array.Copy(pixels, basePixels, pixels.Length);
         texture.SetPixels32(pixels);
         texture.Apply(false);
+    }
+
+    // The cameras' light on the floor, redrawn every frame while any of them is throwing some, as they sweep.
+    void UpdateCameraLight()
+    {
+        bool any = false;
+        foreach (StationCamera watcher in cameras)
+            if (watcher != null && watcher.Lit) any = true;
+        if (!any && !cameraLit) return;
+
+        System.Array.Copy(basePixels, pixels, pixels.Length);
+        if (any)
+        {
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Vector2 point = floorAt[i];
+                if (float.IsNaN(point.x)) continue;
+                Color added = Color.clear;
+                foreach (StationCamera watcher in cameras)
+                {
+                    if (watcher == null) continue;
+                    float strength = watcher.LightAt(point);
+                    if (strength > 0f) added += watcher.LightColor * (strength * CameraLightStrength);
+                }
+                if (added.maxColorComponent <= 0f) continue;
+
+                float fog = Mathf.Exp(-FogDensity * Vector2.Dot(point - eye, forward));
+                Color lit = (Color)pixels[i] + added * fog;
+                lit.a = 1f;
+                pixels[i] = lit;
+            }
+        }
+        texture.SetPixels32(pixels);
+        texture.Apply(false);
+        cameraLit = any;
     }
 
     // Steps the ray from cell to cell until it enters a wall. Returns the depth, or MaxDistance if nothing is that close.
@@ -491,11 +438,19 @@ public class FirstPersonView : MonoBehaviour
         return (value % divisor + divisor) % divisor;
     }
 
-    // --- Characters, props, and the shadow ---
+    // --- Characters, props, and cameras ---
 
-    // Everything drawn on the same sorting layer as the characters, near enough to matter.
+    // Everything drawn on the same sorting layer as the characters, near enough to matter, and the cameras near enough
+    // for their light to reach.
     void FindStanding()
     {
+        cameras.Clear();
+        foreach (StationCamera watcher in StationCamera.All)
+        {
+            float lightReach = MaxDistance + watcher.range;
+            if (((Vector2)watcher.transform.position - eye).sqrMagnitude < lightReach * lightReach) cameras.Add(watcher);
+        }
+
         standing.Clear();
         float reach = (MaxDistance + 2f) * (MaxDistance + 2f);
         foreach (SpriteRenderer sprite in FindObjectsByType<SpriteRenderer>())
@@ -505,49 +460,6 @@ public class FirstPersonView : MonoBehaviour
             if (((Vector2)sprite.transform.position - eye).sqrMagnitude > reach) continue;
             standing.Add(sprite);
         }
-    }
-
-    // A dark figure walks across the hallway every so often, starting and ending just out of sight.
-    void UpdateShadow(float deltaTime)
-    {
-        if (!shadowWalking)
-        {
-            shadowTimer -= deltaTime;
-            if (shadowTimer <= 0f) StartShadow();
-            return;
-        }
-
-        shadowLateral += shadowDirection * ShadowSpeed * deltaTime;
-        shadowStepTimer -= deltaTime;
-        if (shadowStepTimer <= 0f)
-        {
-            shadowStepTimer = ShadowStepTime;
-            shadowFrame = (shadowFrame + 1) % shadowFrames.Length;
-        }
-
-        if (shadowDirection * (shadowLateral - shadowEnd) >= 0f)
-        {
-            shadowWalking = false;
-            shadowTimer = Random.Range(ShadowDelayMin, ShadowDelayMax);
-        }
-    }
-
-    void StartShadow()
-    {
-        // Somewhere between the door and the wall across from it.
-        float wall = columnDepth[columnDepth.Length / 2];
-        shadowDepth = Random.Range(1.4f, Mathf.Clamp(wall - 0.6f, 1.5f, 4f));
-
-        float offscreen = texture.width * 0.5f / focal * shadowDepth + ShadowHeight;
-        shadowDirection = Random.value < 0.5f ? -1f : 1f;
-        shadowLateral = -shadowDirection * offscreen;
-        shadowEnd = shadowDirection * offscreen;
-        shadowFrame = 0;
-        shadowStepTimer = ShadowStepTime;
-        shadowWalking = true;
-
-        // The lights stutter as it comes.
-        flickerTimer = 0f;
     }
 
     void UpdateCutouts()
@@ -565,22 +477,31 @@ public class FirstPersonView : MonoBehaviour
                 feet = new Vector2(bounds.center.x, bounds.min.y),
                 size = bounds.size,
                 flipX = sprite.flipX,
-                color = sprite.color,
-                lit = true
+                color = sprite.color
             });
         }
 
-        if (shadowWalking)
+        // The cameras: a dark housing up on the wall, its light on the front, a hair nearer so it draws over it.
+        foreach (StationCamera watcher in cameras)
         {
-            Sprite frame = shadowFrames[shadowFrame];
+            if (watcher == null || !watcher.isActiveAndEnabled) continue;
+            Vector2 at = watcher.transform.position;
             AddCutout(new Cutout
             {
-                sprite = frame,
-                feet = eye + forward * shadowDepth + right * shadowLateral,
-                size = new Vector2(ShadowHeight * frame.rect.width / frame.rect.height, ShadowHeight),
-                flipX = shadowDirection < 0f, // the art faces right
-                color = ShadowColor,
-                lit = false
+                feet = at,
+                size = new Vector2(HousingSize, HousingSize * 0.7f),
+                lift = CameraHeight - HousingSize * 0.35f,
+                color = HousingColor,
+                onWall = true
+            });
+            AddCutout(new Cutout
+            {
+                feet = at + (eye - at).normalized * 0.02f,
+                size = new Vector2(LensSize, LensSize),
+                lift = CameraHeight - LensSize * 0.5f,
+                color = watcher.LensColor,
+                glows = true,
+                onWall = true
             });
         }
 
@@ -595,13 +516,13 @@ public class FirstPersonView : MonoBehaviour
             cut.enabled = true;
             cut.sprite = cutout.sprite;
 
-            float light = cutout.lit ? Mathf.Min(1f, CutoutAmbient + LampLight(cutout.feet - origin, EyeHeight)) : 1f;
+            float light = cutout.glows ? 1f : Mathf.Min(1f, CutoutAmbient + LampLight(cutout.feet - origin, EyeHeight));
             Color shaded = Color.Lerp(cutout.color * light, FogColor, 1f - Mathf.Exp(-FogDensity * cutout.depth));
             shaded.a = cutout.color.a;
             cut.color = shaded;
 
             float scale = focal / cutout.depth;
-            float feetRow = eyeLevel - EyeHeight * scale;
+            float feetRow = eyeLevel + (cutout.lift - EyeHeight) * scale;
             RectTransform box = cut.rectTransform;
             box.anchoredPosition = new Vector2(cutout.x * texel.x, feetRow * texel.y);
             box.sizeDelta = new Vector2(cutout.size.x * scale * texel.x, cutout.size.y * scale * texel.y);
@@ -623,9 +544,10 @@ public class FirstPersonView : MonoBehaviour
         float halfWidth = cutout.size.x * 0.5f / cutout.depth * focal;
         if (cutout.x + halfWidth < 0f || cutout.x - halfWidth > texture.width) return;
 
-        // Hidden if the wall behind its middle is nearer than it is.
+        // Hidden if the wall behind its middle is nearer than it is (a little nearer, for something on that wall).
         int column = Mathf.FloorToInt(cutout.x);
-        if (column >= 0 && column < columnDepth.Length && columnDepth[column] < cutout.depth) return;
+        float slack = cutout.onWall ? 0.5f : 0f;
+        if (column >= 0 && column < columnDepth.Length && columnDepth[column] < cutout.depth - slack) return;
 
         visible.Add(cutout);
     }
@@ -643,33 +565,6 @@ public class FirstPersonView : MonoBehaviour
             cutoutImages.Add(cut);
         }
         return cutoutImages[index];
-    }
-
-    // White where the art is filled, so the Image color decides the shade.
-    static Sprite MakeSilhouette(string[] rows)
-    {
-        int height = rows.Length;
-        int width = 0;
-        foreach (string row in rows)
-            width = Mathf.Max(width, row.Length);
-
-        var art = new Texture2D(width, height, TextureFormat.RGBA32, false)
-        {
-            filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp
-        };
-        var filled = new Color32[width * height];
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < rows[y].Length; x++)
-            {
-                if (rows[y][x] == '#')
-                    filled[(height - 1 - y) * width + x] = new Color32(255, 255, 255, 255); // row 0 is the top
-            }
-        }
-        art.SetPixels32(filled);
-        art.Apply(false);
-        return Sprite.Create(art, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0f), height);
     }
 
     // The hallway lights stutter now and then: a short dip, sometimes twice in a row.

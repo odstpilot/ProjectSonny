@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
     [Header("Crouch (C or Ctrl)")]
     [Tooltip("Speed while crouching, as a fraction of walking speed. No sprinting while crouched.")]
     [Range(0.1f, 1f)] public float crouchSpeedMultiplier = 0.5f;
-    [Tooltip("Tap C or Ctrl to crouch and tap again to stand, instead of holding the key down.")]
+    [Tooltip("Tap C or Ctrl to crouch and tap again to stand, instead of holding the key down. The player can also turn this on in the settings (GameSettings.ToggleCrouch).")]
     public bool crouchToggles = false;
     [Tooltip("How loud footsteps are while crouching, as a fraction of normal.")]
     [Range(0f, 1f)] public float crouchFootstepVolume = 0.35f;
@@ -198,10 +198,10 @@ public class PlayerController : MonoBehaviour
         rb.linearVelocity = movement * currentSpeed;
     }
 
-    // Hold C or Ctrl to crouch, or tap to switch it on and off when crouchToggles is set.
+    // Hold C or Ctrl to crouch, or tap to switch it on and off when crouchToggles or the setting is on.
     void UpdateCrouch()
     {
-        if (crouchToggles)
+        if (crouchToggles || GameSettings.ToggleCrouch)
         {
             if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
                 IsCrouching = !IsCrouching;

@@ -4,7 +4,8 @@ using UnityEngine.Rendering.Universal;
 
 // A security camera up on a room's wall, the station's own, there since before anything went wrong. It sweeps the room
 // from side to side, easing into each end and resting there, sometimes stopping short partway as if something caught
-// its eye, with the patch of floor it can see drawn as a cone of light, clipped where walls and furniture block it.
+// its eye, with the patch of floor it can see drawn as a cone of light from its lens, clipped where walls and furniture
+// block it. The real light it throws is cut to the same shape, so it doesn't shine through a desk.
 //
 // In Chapter 1 it's harmless (hostile off): a green light blinking on it, a faint pale cone. Once Sonny's on
 // (CrewMember.SonnyOnline) it takes to following the technician a little when they cross its view.
@@ -101,12 +102,35 @@ public class StationCamera : MonoBehaviour
     private Light2D beam, lensGlow;
     private AudioSource voice;
     private readonly Vector3[] coneVertices = new Vector3[ConeRays + 1];
+    private readonly Vector3[] beamPath = new Vector3[ConeRays + 1];
+    private readonly float[] rayReach = new float[ConeRays];
     private readonly Color[] coneColors = new Color[ConeRays + 1];
     private readonly List<RaycastHit2D> hits = new List<RaycastHit2D>();
     private Color shownColor;
 
     public static IReadOnlyList<StationCamera> All => all;
     public bool IsAlarmed => state == State.Alarm;
+
+    // For the view from inside a locker (FirstPersonView): whether its light's on, its colour, and the lens.
+    public bool Lit => coneRenderer != null && coneRenderer.enabled;
+    public Color LightColor => shownColor;
+    public Color LensColor => lens.color;
+    public float LensHeight => mountHeight;
+
+    // How brightly its light falls on a point of the floor: 0 out of its view or behind something, up to 1 close in.
+    public float LightAt(Vector2 point)
+    {
+        if (!Lit) return 0f;
+        Vector2 to = point - (Vector2)transform.position;
+        float distance = to.magnitude;
+        if (distance >= range) return 0f;
+        float across = Mathf.DeltaAngle(aim - fieldOfView * 0.5f, Mathf.Atan2(to.y, to.x) * Mathf.Rad2Deg);
+        if (across < 0f || across > fieldOfView) return 0f;
+        float ray = across / fieldOfView * (ConeRays - 1);
+        int i = Mathf.Min((int)ray, ConeRays - 2);
+        if (distance > Mathf.Lerp(rayReach[i], rayReach[i + 1], ray - i)) return 0f;
+        return 1f - distance / range * 0.8f;
+    }
 
     void Awake()
     {
@@ -404,16 +428,18 @@ public class StationCamera : MonoBehaviour
         beam.enabled = near && power > 0f;
         if (!near || power <= 0f) return;
 
-        // The cone: fanned out across its view, each ray stopping at whatever's in the way.
+        // The cone: fanned out across its view from the eye, each ray stopping at whatever's in the way, and drawn
+        // from the lens up on the wall, so the light comes out of the camera.
         float alpha = hostile ? coneAlpha : coneAlpha * 0.45f;
         if (state == State.Alarm) alpha *= 1.6f;
-        coneVertices[0] = Vector3.zero;
+        coneVertices[0] = lens.transform.position - transform.position;
         coneColors[0] = new Color(shownColor.r, shownColor.g, shownColor.b, alpha);
         for (int i = 0; i < ConeRays; i++)
         {
             float angle = aim - fieldOfView * 0.5f + fieldOfView * i / (ConeRays - 1);
             Vector2 direction = Direction(angle);
             float reach = Reach(direction);
+            rayReach[i] = reach;
             coneVertices[i + 1] = direction * reach;
             coneColors[i + 1] = new Color(shownColor.r, shownColor.g, shownColor.b, alpha * 0.2f * (1f - reach / range * 0.5f));
         }
@@ -421,9 +447,12 @@ public class StationCamera : MonoBehaviour
         coneMesh.colors = coneColors;
         coneMesh.RecalculateBounds();
 
-        beam.transform.localRotation = Quaternion.Euler(0f, 0f, aim - 90f);
+        // The light, the same shape as the cone.
+        System.Array.Copy(coneVertices, beamPath, beamPath.Length);
+        beam.SetShapePath(beamPath);
         beam.color = shownColor;
-        beam.intensity = (hostile ? lightIntensity : lightIntensity * 0.4f) * (state == State.Alarm ? 1.4f : 1f);
+        // Even all over, unlike the round light it was, so a little dimmer to match.
+        beam.intensity = 0.6f * (hostile ? lightIntensity : lightIntensity * 0.4f) * (state == State.Alarm ? 1.4f : 1f);
     }
 
     void BuildArt()
@@ -479,14 +508,13 @@ public class StationCamera : MonoBehaviour
         coneRenderer.sortingLayerName = "FloorObject";
         coneRenderer.sortingOrder = 6;
 
-        // A spot of real light along it, so it lights the floor and whoever's standing in it.
+        // Real light over the cone, so it lights the floor and whoever's standing in it. Shaped to the cone each frame
+        // (Show), so it stops where the cone does: nothing in the level casts 2D shadows to stop it otherwise.
         beam = new GameObject("Beam").AddComponent<Light2D>();
         beam.transform.SetParent(transform, false);
-        beam.lightType = Light2D.LightType.Point;
-        beam.pointLightInnerAngle = fieldOfView * 0.6f;
-        beam.pointLightOuterAngle = fieldOfView;
-        beam.pointLightInnerRadius = 0f;
-        beam.pointLightOuterRadius = range;
+        beam.lightType = Light2D.LightType.Freeform;
+        beam.SetShapePath(new[] { Vector3.zero, new Vector3(0.1f, -0.1f, 0f), new Vector3(-0.1f, -0.1f, 0f) });
+        beam.shapeLightFalloffSize = 0.4f;
         beam.falloffIntensity = 0.6f;
         beam.shadowsEnabled = false;
 

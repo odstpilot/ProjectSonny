@@ -106,6 +106,7 @@ public static class TutorialSetPieces
         StationRumble.Punch(1f);
         StationRumble.PlayImpact(point);
         StationRumble.PlayImpact(point);
+        Sfx.At("Wall Breach", point, 1f, 1f, 30f);
 
         HitEffects.Explosion(point, Vector2.down, WallGrey, 26);
         HitEffects.Dust(point + Vector2.down * 1.2f, WallGrey, 2.2f);

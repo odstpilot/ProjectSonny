@@ -28,7 +28,7 @@ public class ChapterOneDirector : MonoBehaviour
     [Tooltip("The scene's sound played as the entrance opens and the player steps through. Empty for none.")]
     [SoundName] public string entranceSound = "Entrance Door";
     [Tooltip("Plays the pod docking with the station after the title card.")]
-    public bool playArrivalCutscene = false;
+    public bool playArrivalCutscene = true;
     [Tooltip("Skips the title card and the cutscene in the editor, for quick testing.")]
     public bool skipTitleInEditor = false;
 

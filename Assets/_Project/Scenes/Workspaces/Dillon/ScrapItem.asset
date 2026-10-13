@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50d360bfce2c79d4789b63893155ccbe, type: 3}
+  m_Name: ScrapItem
+  m_EditorClassIdentifier: Assembly-CSharp::MaterialItemData
+  itemName: Scrap
+  icon: {fileID: -1354674267222822324, guid: a6e83a305eefa884694eb3593b48f503, type: 3}
+  maxStack: 99

@@ -282033,8 +282033,8 @@ MonoBehaviour:
     description: Hands and knees on sheet metal, one per cell crawled. Played pitched down.
     credit: 
     clips:
-    - {fileID: 8300000, guid: cec998d90c410dc46a9d9b36b9b41e88, type: 3}
-    - {fileID: 8300000, guid: 827a7a64a46e23e4fae3889d46510777, type: 3}
+    - {fileID: 8300000, guid: 868a6b2a7a829f24b83b7b1271481b07, type: 3}
+    - {fileID: 8300000, guid: bbaec807126b2424b96f943985963591, type: 3}
     playFrom: {fileID: 0}
     output: {fileID: 0}
     mute: 0
@@ -282092,7 +282092,7 @@ MonoBehaviour:
     description: Scraping against the duct on a wrong key in a tight squeeze.
     credit: 
     clips:
-    - {fileID: 8300000, guid: 2ae3118968cedf843a57e26654d6dc30, type: 3}
+    - {fileID: 8300000, guid: aa80fa444e4901648bf66ca461f7912e, type: 3}
     playFrom: {fileID: 0}
     output: {fileID: 0}
     mute: 0
@@ -282215,7 +282215,7 @@ MonoBehaviour:
     description: 'One of the duct scares: a long metal groan. Made in code until it has a clip.'
     credit: 
     clips:
-    - {fileID: 8300000, guid: e9df9f62b8b9b9940921784ea9ca32e8, type: 3}
+    - {fileID: 8300000, guid: ddb3cabf33758b14ca271319af6a7297, type: 3}
     playFrom: {fileID: 0}
     output: {fileID: 0}
     mute: 0
@@ -282272,7 +282272,7 @@ MonoBehaviour:
     description: 'One of the duct scares: slow breathing in the dark that isn''t the player''s. Made in code until it has a clip.'
     credit: 
     clips:
-    - {fileID: 8300000, guid: d92240723e97565489e6a16f77a442f5, type: 3}
+    - {fileID: 8300000, guid: 7e37a91d822ae9847ab0d05016fe5042, type: 3}
     playFrom: {fileID: 0}
     output: {fileID: 0}
     mute: 0
@@ -282301,7 +282301,7 @@ MonoBehaviour:
     description: 'One of the duct scares: three knocks far off down the ducts. Made in code until it has a clip.'
     credit: 
     clips:
-    - {fileID: 8300000, guid: 501b2c57bcb26134090cdb1a6043d2c1, type: 3}
+    - {fileID: 8300000, guid: 6dd9c5be2e7259f42b0b921282530ef0, type: 3}
     playFrom: {fileID: 0}
     output: {fileID: 0}
     mute: 0

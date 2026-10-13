@@ -750,7 +750,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 176024979
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
@@ -905,7 +905,7 @@ MonoBehaviour:
 
     ########....r###d####
 
-    ################.####
+    ################....#
 
     ################...2#
 
@@ -915,6 +915,7 @@ MonoBehaviour:
   hurriedCrawlTime: 0.25
   backUpTime: 0.9
   turnTime: 0.25
+  crawlNoise: 0.035
   dentNoise: 0.45
   carefulDentNoise: 0.1
   hurriedNoise: 0.12
@@ -925,29 +926,42 @@ MonoBehaviour:
   squeezeKeys: 6
   squeezeKeyTime: 1.1
   stareTime: 1.4
-  droneChaseCellTime: 0.5
-  droneSearchCellTime: 0.85
   droneHearing: 2
   droneSight: 5
   droneAlertNoise: 0.1
   droneSearchTime: 6
+  droneLookEvery: 1.7
+  droneLockTime: 0.9
   droneMinReleaseDistance: 5
   fadeTime: 0.25
   font: {fileID: 11400000, guid: 76f516e884b8d904eb3f0e024f74029a, type: 2}
-  ambienceLoop: {fileID: 8300000, guid: 553b93527361a17448921d7d75480e7d, type: 3}
-  ambienceVolume: 0.5
-  crawlClips:
-  - {fileID: 8300000, guid: 42f7a1a162f7889479d326156626742a, type: 3}
-  - {fileID: 8300000, guid: ca0b3743204604c4594a23a4cc9c925c, type: 3}
-  - {fileID: 8300000, guid: 8026b53956844d14a892347cf9405d2a, type: 3}
-  - {fileID: 8300000, guid: 9740ebb4c9a07734cb007b3d8a3648da, type: 3}
-  dentClip: {fileID: 8300000, guid: 613cca64ea7356e4cba0fbf7845ba2b7, type: 3}
-  scrapeClip: {fileID: 8300000, guid: 3a1952a0c62cac34f9d4bcf0207e602a, type: 3}
-  foundClip: {fileID: 8300000, guid: c26d09ce773c07c4ca995380188a2b43, type: 3}
-  droneReleaseClip: {fileID: 0}
-  droneLoop: {fileID: 0}
-  droneVolume: 0.8
-  caughtClip: {fileID: 0}
+  ambienceSound: Vent Ambience
+  deepSound: Vent Deep Loop
+  crawlSound: Vent Crawl
+  dentSound: Vent Dent
+  bangSound: Vent Bang
+  scrapeSound: Vent Scrape
+  foundSound: Vent Found
+  heartbeatSound: Vent Heartbeat
+  droneReleaseSound: Drone Release
+  droneHumSound: Drone Hum
+  droneServoSound: Drone Servo
+  droneLockSound: Drone Lock
+  caughtSound: Drone Caught
+  ratScurrySound: Rat Scurry
+  ratSquealSound: Rat Squeal
+  scareSounds:
+  - Vent Scare
+  - Vent Scare
+  - Vent Creak
+  - Vent Creak
+  - Vent Skitter
+  - Vent Breath
+  - Vent Knock
+  - Vent Whisper
+  scareEvery: {x: 4, y: 10}
+  ratNoise: 0.7
+  ratSpeed: 7
 --- !u!4 &1096930506
 Transform:
   m_ObjectHideFlags: 0
@@ -1036,15 +1050,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7005373944925239045, guid: 1af7ba4a227c3344da09125f1dd35e34, type: 3}
       propertyPath: decryptTime
-      value: 1.5
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7005373944925239045, guid: 1af7ba4a227c3344da09125f1dd35e34, type: 3}
+      propertyPath: lockoutTime
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7005373944925239045, guid: 1af7ba4a227c3344da09125f1dd35e34, type: 3}
       propertyPath: decryptTrace
-      value: 0.05
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: 7005373944925239045, guid: 1af7ba4a227c3344da09125f1dd35e34, type: 3}
       propertyPath: hesitationTrace
-      value: 0.02
+      value: 0.01
       objectReference: {fileID: 0}
     - target: {fileID: 8378317974038926739, guid: 1af7ba4a227c3344da09125f1dd35e34, type: 3}
       propertyPath: m_LocalPosition.x
@@ -12622,6 +12640,8 @@ MonoBehaviour:
   debrisCount: 0
   deathShake: 0
   deathHitStop: 0
+  partsOnDeath: 7
+  partLifetime: 6
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

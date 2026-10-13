@@ -584,6 +584,8 @@ public static class ChapterOneBuilder
         // they keep to the aisles.
         Workshop workshop = PlaceWorkbench(floors, out HashSet<Vector2Int> benchFront);
         PlaceRacks(floors, benchFront, new System.Random(Seed + 3));
+        // Then what fills the rooms out, before the comms ring's terminals and the angel's and bots' floor are worked out.
+        DressRooms(floors, benchFront, new System.Random(Seed + 4));
         // The comms ring's terminals before the scrap and the bots too, so neither ends up on top of one.
         CommsRing comms = PlaceCommsRing(floors);
         PlaceScrap(floors, workshop, bodies.Select(b => FeetCell(map, b.at)));
@@ -1720,11 +1722,8 @@ public static class ChapterOneBuilder
         }
 
         // Along the top wall: plain wall face, the breakers spread along it, and lamps between.
-        bool Plain(int x) => Enumerable.Range(1, 3).All(up => map.At(x, ring.minRow - up) == '=');
-        List<int> columns = Enumerable.Range(ring.minX + 1, ring.maxX - ring.minX - 1).Where(Plain).ToList();
-        var breakerColumns = new List<int>();
-        for (int i = 0; i < Breakers && columns.Count > 0; i++)
-            breakerColumns.Add(columns[Mathf.RoundToInt((i + 0.5f) * columns.Count / Breakers - 0.5f)]);
+        List<int> columns = PlainWallColumns(map, ring);
+        List<int> breakerColumns = BreakerColumns(map, ring);
         foreach (int x in breakerColumns)
         {
             var breaker = new GameObject("Breaker Box");
@@ -1781,6 +1780,247 @@ public static class ChapterOneBuilder
                 new Color(1f, 0.35f, 0.15f), BlinkLight.Pattern.Flicker, 1.6f, 1f, 0.25f, fittings++);
         }
         Debug.Log($"Chapter 1 builder: lit the comms ring with {beacons} ceiling beacons, {lamps} wall lamps, {breakerColumns.Count} breakers, and {fittings} status lights; took out {sun} sunlit windows.");
+    }
+
+    // The columns along a room's top wall where its face is plain wall all the way up (no lamp, window, or door).
+    static List<int> PlainWallColumns(Map map, Room room) =>
+        Enumerable.Range(room.minX + 1, room.maxX - room.minX - 1).Where(x => Enumerable.Range(1, 3).All(up => map.At(x, room.minRow - up) == '=')).ToList();
+
+    // Where the comms ring's breakers hang on its top wall, spread along it.
+    static List<int> BreakerColumns(Map map, Room ring)
+    {
+        List<int> columns = PlainWallColumns(map, ring);
+        var breakers = new List<int>();
+        for (int i = 0; i < Breakers && columns.Count > 0; i++)
+            breakers.Add(columns[Mathf.RoundToInt((i + 0.5f) * columns.Count / Breakers - 0.5f)]);
+        return breakers;
+    }
+
+    // --- Set dressing (StationProp) ---
+
+    // What fills out the comms ring and the upper maintenance deck. Solid pieces stand in the band along the walls, one
+    // at a time, each only where it leaves every bit of the floor still reachable; pieces on the walls go on plain stretches
+    // of wall face, clear of the lamps, windows, pipes, and breakers; what's on the floor is walked over.
+    static void DressRooms(FloorOneBuilder.BuiltFloor[] floors, HashSet<Vector2Int> benchFront, System.Random dice)
+    {
+        if (floors.Length < 2) return;
+        FloorOneBuilder.BuiltFloor upstairs = floors[1];
+        Map map = upstairs.map;
+        Room ring = upstairs.rooms.FirstOrDefault(r => r.marker == CommsRingRoom);
+        Room deck = upstairs.rooms.FirstOrDefault(r => r.marker == UpperMaintenanceDeck);
+        int placed = 0;
+
+        if (ring != null)
+        {
+            Transform root = TutorialLevelBuilder.Group("Comms Ring Dressing", upstairs.level);
+            List<int> breakers = BreakerColumns(map, ring);
+            // Screens on the top wall, between the lamps and clear of the breakers.
+            foreach (int x in PlainWallColumns(map, ring).Where(x => (x - ring.minX) % 7 == 3 && breakers.All(b => Mathf.Abs(b - x) > 2)
+                && map.At(x - 1, ring.minRow - 2) == '=' && map.At(x + 1, ring.minRow - 2) == '='))
+                placed += WallProp(map, x, ring.minRow - 2, StationProp.Kind.WallScreen, root);
+            // Server racks along the walls, dishes and crates in the corners and along the bottom.
+            placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.ServerRack, 14, c => c.y == ring.minRow || c.x == ring.minX || c.x == ring.maxX);
+            placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.SignalDish, 3, c => c.y >= ring.maxRow - 1);
+            placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.Crates, 4, c => c.y >= ring.maxRow - 1 || c.x <= ring.minX + 1 || c.x >= ring.maxX - 1);
+            // Short rows of server racks out on the floor, like aisles in a server room, with room to walk round each.
+            placed += RackRows(map, upstairs, ring, benchFront, dice, root, 5, 3);
+            // Cables run across the open floor between it all.
+            placed += FloorProps(map, upstairs, ring, benchFront, dice, root, 18, at => NewProp(at, StationProp.Kind.CableRun, root, false));
+        }
+
+        if (deck != null)
+        {
+            Transform root = TutorialLevelBuilder.Group("Maintenance Deck Dressing", upstairs.level);
+            // Pegboards of tools on the top wall, clear of the pipes, the bench, and the lockers below.
+            var busy = new HashSet<int>(deck.cells.Where(c => c.y == deck.minRow && (upstairs.furniture.Contains(c) || map.At(c.x, c.y) == 'L')).Select(c => c.x));
+            int lastBoard = int.MinValue;
+            foreach (int x in PlainWallColumns(map, deck).Where(x => Enumerable.Range(-2, 5).All(dx => !busy.Contains(x + dx))
+                && map.At(x - 1, deck.minRow - 2) == '=' && map.At(x + 1, deck.minRow - 2) == '='))
+            {
+                if (x - lastBoard < 5) continue;
+                lastBoard = x;
+                placed += WallProp(map, x, deck.minRow - 2, StationProp.Kind.Pegboard, root);
+            }
+            // Gas tanks, drums, and crates stood along the walls.
+            System.Func<Vector2Int, bool> edge = c => c.y >= deck.maxRow - 1 || c.x <= deck.minX + 1 || c.x >= deck.maxX - 1;
+            placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.GasTanks, 4, edge);
+            placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.Drum, 5, edge);
+            placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.Crates, 4, edge);
+            // A toolbox left by the bench, leaks on the floor, and bits off robots lying about.
+            Workshop bench = upstairs.level.GetComponentInChildren<Workshop>();
+            if (bench != null && bench.bench != null)
+            {
+                Vector2 benchAt = bench.bench.transform.position;
+                foreach (int side in new[] { -2, 2 })
+                {
+                    Vector2Int cell = CellAt(map, benchAt - map.Origin) + new Vector2Int(side, 1);
+                    if (deck.cells.Contains(cell) && FloorOneBuilder.IsOpenFloor(map.At(cell.x, cell.y)) && !upstairs.furniture.Contains(cell))
+                    {
+                        NewProp(StandingAt(map, cell), StationProp.Kind.Toolbox, root, false);
+                        placed++;
+                    }
+                }
+            }
+            placed += FloorProps(map, upstairs, deck, benchFront, dice, root, 4, at =>
+            {
+                var stain = new GameObject("Leak");
+                stain.transform.SetParent(root);
+                stain.transform.position = at;
+                stain.AddComponent<FloorStain>().kind = FloorStain.Kind.Coolant;
+            });
+            placed += FloorProps(map, upstairs, deck, benchFront, dice, root, 6, at =>
+            {
+                var bits = new GameObject("Robot Parts");
+                bits.transform.SetParent(root);
+                bits.transform.position = at;
+                var debris = bits.AddComponent<FallingDebris>();
+                debris.startLanded = true;
+                debris.rubbleLifetime = 0f;
+                debris.kind = dice.NextDouble() < 0.5 ? FallingDebris.Kind.Scatter : FallingDebris.Kind.Circuit;
+                debris.size = 0.6f;
+            });
+        }
+        Debug.Log($"Chapter 1 builder: dressed the comms ring and the upper maintenance deck with {placed} props.");
+    }
+
+    // A prop on the wall face, at this cell of the wall.
+    static int WallProp(Map map, int x, int row, StationProp.Kind kind, Transform parent)
+    {
+        Vector2 at = map.Center(x, row);
+        var prop = new GameObject(kind.ToString());
+        prop.transform.SetParent(parent);
+        prop.transform.position = new Vector3(at.x, at.y, 0f);
+        prop.AddComponent<StationProp>().kind = kind;
+        return 1;
+    }
+
+    // A prop standing (or lying) on the floor at a point; solid ones get a footprint the bots and cameras can't see past.
+    static GameObject NewProp(Vector2 standing, StationProp.Kind kind, Transform parent, bool solid)
+    {
+        var prop = new GameObject(kind.ToString());
+        prop.transform.SetParent(parent);
+        prop.transform.position = new Vector3(standing.x, standing.y, solid || kind == StationProp.Kind.Toolbox ? CharacterZ : 0f);
+        if (solid)
+        {
+            var footprint = prop.AddComponent<BoxCollider2D>();
+            footprint.size = new Vector2(0.9f, 0.6f);
+            footprint.offset = new Vector2(0f, 0.3f - DepthSort.FeetToCenter);
+        }
+        prop.AddComponent<StationProp>().kind = kind;
+        return prop;
+    }
+
+    // Where a prop can stand: open floor in the room, nothing on it, not by a doorway, a locker, the bench, or right in
+    // front of furniture.
+    static bool FreeForProp(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, Vector2Int c)
+    {
+        if (!room.cells.Contains(c) || !FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) || floor.furniture.Contains(c)) return false;
+        if (NearKeptClear(map, c) || keepClear.Contains(c)) return false;
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+                if (map.At(c.x + dx, c.y + dy) == 'L') return false;
+        for (int dy = 1; dy <= 2; dy++)
+            if (floor.furniture.Contains(c + new Vector2Int(0, -dy))) return false;
+        return true;
+    }
+
+    // Up to count solid props of a kind on free cells where along says, never two side by side unless it's a rack run
+    // against a wall, and only where every bit of the room's floor can still be got to.
+    static int EdgeProps(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
+        StationProp.Kind kind, int count, System.Func<Vector2Int, bool> along)
+    {
+        int placed = 0;
+        var candidates = room.cells.Where(c => along(c) && FreeForProp(map, floor, room, keepClear, c)).OrderBy(_ => dice.Next()).ToList();
+        var mine = new List<Vector2Int>();
+        foreach (Vector2Int c in candidates)
+        {
+            if (placed >= count) break;
+            if (!FreeForProp(map, floor, room, keepClear, c)) continue;
+            if (kind != StationProp.Kind.ServerRack && mine.Any(m => Chebyshev(m, c) < 3)) continue;
+            floor.furniture.Add(c);
+            if (!RoomConnected(map, floor, room))
+            {
+                floor.furniture.Remove(c);
+                continue;
+            }
+            NewProp(StandingAt(map, c), kind, parent, true);
+            mine.Add(c);
+            placed++;
+        }
+        return placed;
+    }
+
+    // Up to count rows of length server racks side by side, away from the walls and from each other, each with open floor
+    // all round it, and only where every bit of the room can still be got to.
+    static int RackRows(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
+        int count, int length)
+    {
+        int placed = 0;
+        var rows = new List<Vector2Int>();
+        bool Clear(Vector2Int c) => FreeForProp(map, floor, room, keepClear, c);
+        var starts = room.cells.Where(c => c.x > room.minX + 3 && c.x + length < room.maxX - 3 && c.y > room.minRow + 3 && c.y < room.maxRow - 3)
+            .OrderBy(_ => dice.Next()).ToList();
+        foreach (Vector2Int start in starts)
+        {
+            if (rows.Count >= count) break;
+            if (rows.Any(r => Mathf.Abs(r.y - start.y) < 4 && Mathf.Abs(r.x - start.x) < length + 6)) continue;
+            // The row and a ring of open floor round it.
+            bool fits = true;
+            for (int dx = -1; dx <= length && fits; dx++)
+                for (int dy = -1; dy <= 1 && fits; dy++)
+                    fits = Clear(start + new Vector2Int(dx, dy));
+            if (!fits) continue;
+            var cells = Enumerable.Range(0, length).Select(i => start + new Vector2Int(i, 0)).ToList();
+            foreach (Vector2Int c in cells) floor.furniture.Add(c);
+            if (!RoomConnected(map, floor, room))
+            {
+                foreach (Vector2Int c in cells) floor.furniture.Remove(c);
+                continue;
+            }
+            foreach (Vector2Int c in cells) NewProp(StandingAt(map, c), StationProp.Kind.ServerRack, parent, true);
+            rows.Add(start);
+            placed += length;
+        }
+        return placed;
+    }
+
+    // Up to count things lying on the open floor, spread out, not counted as furniture.
+    static int FloorProps(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
+        int count, System.Action<Vector2> place)
+    {
+        int placed = 0;
+        var taken = new List<Vector2Int>();
+        foreach (Vector2Int c in room.cells.Where(c => FreeForProp(map, floor, room, keepClear, c)).OrderBy(_ => dice.Next()))
+        {
+            if (placed >= count) break;
+            if (taken.Any(t => Chebyshev(t, c) < 5)) continue;
+            taken.Add(c);
+            place(map.Center(c.x, c.y));
+            placed++;
+        }
+        return placed;
+    }
+
+    // Whether every open cell of the room's floor can still be walked to from every other.
+    static bool RoomConnected(Map map, FloorOneBuilder.BuiltFloor floor, Room room)
+    {
+        var open = new HashSet<Vector2Int>(room.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !floor.furniture.Contains(c)));
+        if (open.Count == 0) return true;
+        var reach = new HashSet<Vector2Int>();
+        var queue = new Queue<Vector2Int>();
+        Vector2Int first = open.First();
+        reach.Add(first);
+        queue.Enqueue(first);
+        while (queue.Count > 0)
+        {
+            Vector2Int c = queue.Dequeue();
+            foreach (Vector2Int step in new[] { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
+            {
+                Vector2Int n = c + step;
+                if (open.Contains(n) && reach.Add(n)) queue.Enqueue(n);
+            }
+        }
+        return reach.Count == open.Count;
     }
 
     static BlinkLight NewBlinkLight(string lightName, Transform parent, Vector2 at, Color color, BlinkLight.Pattern pattern, float period,

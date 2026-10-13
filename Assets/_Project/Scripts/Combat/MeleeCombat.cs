@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The melee half of combat. Swings toward the way the player is facing, never the mouse.
-// Click to swing; hold to charge a heavier swing. PlayerCombat turns this on while a melee weapon is in hand.
+// The melee half of combat. Swings left or right, whichever side the player faces, never up, down, or at the mouse:
+// facing up or down, they turn to the side they last faced. Click to swing; hold to charge a heavier swing.
+// PlayerCombat turns this on while a melee weapon is in hand.
 [RequireComponent(typeof(PlayerCombat))]
 public class MeleeCombat : MonoBehaviour
 {
@@ -13,6 +14,9 @@ public class MeleeCombat : MonoBehaviour
     public float hitStopDuration = 0.05f;
     [Tooltip("Screen shake when a swing lands, 0 to 1. Charged swings shake twice as hard.")]
     [Range(0f, 1f)] public float hitShake = 0.25f;
+    [Tooltip("Extra seconds before the next swing, on top of the weapon's own cooldown (which the swing animation " +
+             "finishes inside), so swings can't be spammed.")]
+    public float recoveryTime = 1f;
 
     public MeleeWeaponData Weapon { get; set; }
     public bool IsBusy => charging || lockTimer > 0f;
@@ -75,6 +79,7 @@ public class MeleeCombat : MonoBehaviour
     void UpdatePose()
     {
         PlayerController controller = combat.Controller;
+        controller.sideFacingOnly = charging;
 
         if (lockTimer > 0f)
         {
@@ -99,8 +104,9 @@ public class MeleeCombat : MonoBehaviour
     {
         float duration = charged ? Weapon.chargedSwingDuration : Weapon.swingDuration;
 
-        attackDirection = combat.Controller.Facing;
-        cooldownTimer = Mathf.Max(Weapon.cooldown, duration);
+        Vector2 facing = combat.Controller.Facing;
+        attackDirection = facing.x != 0f ? facing : combat.Controller.SideFacing;
+        cooldownTimer = Mathf.Max(Weapon.cooldown, duration) + recoveryTime;
         lockTimer = charged ? Weapon.chargedLockDuration : Weapon.lockDuration;
 
         combat.Controller.SetAnimTrigger(charged ? PlayerAnimParams.ChargedSwing : PlayerAnimParams.Swing);
@@ -186,6 +192,7 @@ public class MeleeCombat : MonoBehaviour
 
         if (combat == null || combat.Controller == null) return;
         combat.Controller.combatSpeedMultiplier = 1f;
+        combat.Controller.sideFacingOnly = false;
         combat.Controller.ClearFacingOverride();
         combat.Controller.SetAnimBool(PlayerAnimParams.Charging, false);
     }

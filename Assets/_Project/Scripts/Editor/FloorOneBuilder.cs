@@ -990,6 +990,7 @@ public static class FloorOneBuilder
             var stairway = stairs.AddComponent<Stairway>();
             stairway.index = i;
             stairway.arrival = arrival;
+            StairsDresser.Dress(stairway);      // the steps themselves, drawn over the trigger
             made.Add(stairway);
         }
         return made.ToArray();

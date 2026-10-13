@@ -15,7 +15,7 @@ using UnityEngine;
 // first time the bench is used, a card says how it all works (TipCard, kept in Pip's log to read again); until then,
 // from arriving on the deck, a panel at the side of the screen says the gist of it (CraftingGuide).
 // Then the objective is the comms ring, pinned on the map: the only way on to the control room is through the reactor
-// core, which is badge-only, and if there's a badge left anywhere it's there (CommsRing). The crowbar's a swing (melee) for a bot that
+// core, which is badge-only, and the technician's temp badge is dead; the ring's relay can switch it back on (CommsRing). The crowbar's a swing (melee) for a bot that
 // gets too close, and the scrap gun fires bits of scrap at range. ChapterTwoDirector picks up from any of it on a save (Owns, Resume); the scrap and what's been made
 // come back with the Inventory.
 // Built by ChapterOneBuilder for ChapterTwoBuilder.
@@ -73,7 +73,7 @@ public class Workshop : MonoBehaviour
     public string unlockCredential = "reactor_core";
     public string lockedText = "LOCKED  COMMS RING";
     [Tooltip("Pip, once the rest of the bench opens up.")]
-    [TextArea] public string[] pipUnlocked = { "^A unit's access opens the workbench's full plans too. Crowbar, scrap gun, all of it." };
+    [TextArea] public string[] pipUnlocked = { "^Oh, and a unit's access opens the workbench's full plans too, so crowbar, scrap gun, all of it" };
 
     [Header("Upgrades")]
     [Tooltip("Servo braces: how much faster the technician moves, walking and running.")]
@@ -86,29 +86,29 @@ public class Workshop : MonoBehaviour
     public string scavengeObjective = "Find parts for an EMP";
     public string craftObjective = "Make an EMP at the workbench";
     [Tooltip("The objective once the EMP's made: the comms ring's (CommsRing.arriveObjective), which starts it on getting there.")]
-    public string afterObjective = "Find a badge in the comms ring";
+    public string afterObjective = "Reactivate your badge in the comms ring";
     [Tooltip("The room pinned on the map once the EMP's made, by its marker in the layout, and what the pin says.")]
     public char afterRoom = 'g';
     public string afterLabel = "Comms Ring";
 
     [Header("Lines")]
     [Tooltip("Pip, once there's everything for the EMP. ~ opens a line with static; ^ says it happily; [E] shows a key.")]
-    [TextArea] public string[] pipEnoughScrap = { "^That's everything for the EMP. Get it to the workbench." };
+    [TextArea] public string[] pipEnoughScrap = { "^That's everything for the EMP, get it to the workbench!" };
     [Tooltip("Pip, once the EMP's made.")]
     [TextArea] public string[] pipEmpMade =
     {
-        "^It works! One pulse shorts out any bot or camera in front of you for a few seconds.",
-        "~It needs a moment to recharge between pulses. Make them count.",
-        "~Now. The way down to the control room's through the reactor core, and the reactor's badge-only. Sonny cut off every badge.",
-        "~Try the comms ring, next door. If there's a badge left anywhere, it's there.",
+        "^It works! One pulse shorts out any bot or camera in front of you for a few seconds",
+        "~It needs a sec to recharge between pulses though, so make them count",
+        "~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too",
+        "~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that",
     };
     [Tooltip("Pip, once the crowbar's made.")]
-    [TextArea] public string[] pipCrowbarMade = { "~A crowbar. If a bot gets too close, swing first. The number keys switch what you're holding." };
+    [TextArea] public string[] pipCrowbarMade = { "~A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding" };
     [Tooltip("Pip, once the scrap gun's made.")]
-    [TextArea] public string[] pipScrapGunMade = { "^A scrap gun! Point and click. Now we can hit back from a distance." };
-    [TextArea] public string[] pipBlasterMade = { "^The blaster. Hold to charge it, let go when it's full." };
-    [TextArea] public string[] pipServoMade = { "^Servo braces. You'll move faster now." };
-    [TextArea] public string[] pipPlatingMade = { "^Armor plating. You can take more hits." };
+    [TextArea] public string[] pipScrapGunMade = { "^A scrap gun! Point and click, and now we can hit back from a distance" };
+    [TextArea] public string[] pipBlasterMade = { "^The blaster! Hold to charge it and let go when it's full" };
+    [TextArea] public string[] pipServoMade = { "^Servo braces, you'll move way faster now" };
+    [TextArea] public string[] pipPlatingMade = { "^Armor plating, so you can take a few more hits" };
 
     [Header("Respawn and testing")]
     [Tooltip("Where the player comes back after dying, while they're on the deck (the top of the stairs).")]

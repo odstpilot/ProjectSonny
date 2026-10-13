@@ -94,6 +94,9 @@ public class PlayerController : MonoBehaviour
     private readonly List<Vector3> carriedLightScales = new List<Vector3>();
     private bool hasFacingOverride;
     private Vector2 facingOverride;
+    // Set by MeleeCombat while charging: the player can still turn by walking, but only ever to the left or right.
+    [System.NonSerialized] public bool sideFacingOnly;
+    public Vector2 SideFacing => new Vector2(faceSide, 0f);
     private Vector2 pendingFacing;
     private float pendingFacingTime;
     private float faceSide = 1f;            // -1 left, 1 right: the side last faced
@@ -108,6 +111,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 scriptedMove;
     private bool scriptedSprint;
     private HashSet<int> animatorParameters;
+    private bool hasCrouchArt, hasSprintArt;   // drawn crawl/run animations, so no squash or lean is needed
     // States in the old PlayerCont controller, indexed by its Direction parameter.
     private static readonly int[] directionStates =
     {
@@ -120,6 +124,9 @@ public class PlayerController : MonoBehaviour
         health = GetComponent<Health>();
         stepTimer = baseStepRate;
         CaptureStandingPose();
+        // Once the crawl and run art is in the controller (PlayerAnimatorBuilder), the art does the posing instead.
+        hasCrouchArt = animator != null && animator.HasState(0, Animator.StringToHash("Crouch"));
+        hasSprintArt = animator != null && animator.HasState(0, Animator.StringToHash("Sprint"));
         DepthSort.Group(gameObject);
     }
 
@@ -255,8 +262,8 @@ public class PlayerController : MonoBehaviour
     {
         float crouchStep = crouchTransitionTime > 0f ? Time.deltaTime / crouchTransitionTime : 1f;
         float sprintStep = sprintLeanTime > 0f ? Time.deltaTime / sprintLeanTime : 1f;
-        crouchAmount = Mathf.MoveTowards(crouchAmount, IsCrouching ? 1f : 0f, crouchStep);
-        sprintAmount = Mathf.MoveTowards(sprintAmount, IsSprinting ? 1f : 0f, sprintStep);
+        crouchAmount = Mathf.MoveTowards(crouchAmount, IsCrouching && !hasCrouchArt ? 1f : 0f, crouchStep);
+        sprintAmount = Mathf.MoveTowards(sprintAmount, IsSprinting && !hasSprintArt ? 1f : 0f, sprintStep);
 
         // Tips toward the way they're running: diagonals lean part way, and straight up or down doesn't tip at all.
         if (IsSprinting) leanDirection = Mathf.MoveTowards(leanDirection, movement.x, sprintStep * 2f);
@@ -356,6 +363,8 @@ public class PlayerController : MonoBehaviour
         if (hasFacingOverride) target = facingOverride;
         else if (isMoving) target = SnapToEightWay(movement);
         else target = FacingEightWay;
+        if (sideFacingOnly && !hasFacingOverride)
+            target = target.x != 0f ? new Vector2(Mathf.Sign(target.x), 0f) : SideFacing;
 
         bool easingOffDiagonal = !hasFacingOverride && FacingEightWay.x != 0f && FacingEightWay.y != 0f &&
                                  Vector2.Dot(target, FacingEightWay) > 0.5f && (target.x == 0f || target.y == 0f);

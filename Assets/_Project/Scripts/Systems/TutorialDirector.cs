@@ -750,7 +750,7 @@ public class TutorialDirector : MonoBehaviour
     {
         if (arenaEntrance != null) arenaEntrance.locked = true;
         yield return new WaitForSeconds(0.6f);
-        TechnicianVoice.Say("Jammed. Come on...", 1.8f);
+        TechnicianVoice.Say("Jammed... come on...", 1.8f);
         yield return new WaitForSeconds(1.2f);
 
         Vector2 wall = passageBreaches[0].point != null ? (Vector2)passageBreaches[0].point.position : (Vector2)arenaPassage.transform.position;
@@ -768,7 +768,7 @@ public class TutorialDirector : MonoBehaviour
         fighting = false;
         arenaPassage.gameObject.SetActive(true);
         yield return new WaitForSeconds(0.5f);
-        TechnicianVoice.Say("Through there, then.", 1.8f);
+        TechnicianVoice.Say("Through there, then", 1.8f);
     }
 
     // The wall at the breach blows in and the robot behind it comes through. Returns its brain.

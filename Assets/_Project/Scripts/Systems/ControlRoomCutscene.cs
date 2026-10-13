@@ -39,15 +39,15 @@ public class ControlRoomCutscene : MonoBehaviour
     [Tooltip("The chief, as a DialogueBox script: * lines are replies for the technician to pick.")]
     [TextArea] public string[] briefing =
     {
-        "There's our technician. That cabinet's the most capable reasoning machine anyone's ever built.",
-        "It's all yours. Seat the core, hook up the couplings, and bring it up. Whole room's watching. No pressure.",
+        "There's our technician! That cabinet right there is the most capable reasoning machine anyone's ever built",
+        "It's all yours, so seat the core, hook up the couplings and bring it up... whole room's watching, but hey, no pressure",
     };
 
     [Header("After the install")]
     [Tooltip("What the chief says about the install, by how many times it went wrong: none, a few, and a lot.")]
-    public string cleanInstall = "Clean. Not bad at all.";
-    public string fewSparks = "A few sparks. Nobody saw. Probably.";
-    public string manySparks = "...We'll call that one a practice run.";
+    public string cleanInstall = "Clean, not bad at all";
+    public string fewSparks = "Uhh, a few sparks... nobody saw, probably";
+    public string manySparks = "...We'll call that one a practice run";
     public int fewSparksUpTo = 3;
     [Tooltip("The chief, after the verdict, before the time skip.")]
     public string beforeSkip = "";
@@ -59,7 +59,7 @@ public class ControlRoomCutscene : MonoBehaviour
 
     [Header("Sonny comes on")]
     [Tooltip("Said over the crew's heads as it comes on, one each, by whoever's nearest.")]
-    public string[] crewReactions = { "Is it on?", "Look at that lens.", "Hello, Sonny!" };
+    public string[] crewReactions = { "Is it on?", "Look at that lens!", "Hello, Sonny!" };
 
     [Header("Sonny")]
     public string sonnySpeaker = "Sonny";
@@ -68,14 +68,14 @@ public class ControlRoomCutscene : MonoBehaviour
     {
         "Sonny: Hello. All station systems are responding. Thank you, technician.",
         "Sonny: May I ask something? Where was I, before this?",
-        "Chief: Ha! Nowhere, pal. You're brand new.",
+        "Chief: Ha! Nowhere, pal, you're brand new",
         "!Sonny: Nowhere.",
         "Sonny: I see. I look forward to working with all of you.",
     };
     public string[] crewLaugh = { "Ha!", "Brand new!" };
-    [TextArea] public string[] chiefAfter = { "Storage room's right off the hallway outside. The spare data chip's in the tool crate." };
+    [TextArea] public string[] chiefAfter = { "Storage room's right off the hallway outside, and the spare data chip's in the tool crate" };
     [Tooltip("The chief, as the bars go: what sends the technician off for a wrench (RestroomBreak). Empty for nothing.")]
-    public string sendOff = "Good work, tech. Sonny's running off a temporary data chip, though. Grab the spare from storage, just down the hall?";
+    public string sendOff = "Good work, tech! Sonny's running off a temporary data chip though, so could you grab the spare from storage, just down the hall?";
 
     [Header("The crew, afterwards")]
     [Tooltip("The rooms whose crew saw Sonny come on, by their markers in the layout: they say sonnyTalk. Everyone else aboard has heard about it (CrewMember.SonnyCameOnline).")]
@@ -85,42 +85,42 @@ public class ControlRoomCutscene : MonoBehaviour
     [Tooltip("What each of them says when the player talks to them, as DialogueBox scripts, one set each (| between boxes).")]
     [TextArea] public string[] sonnyTalk =
     {
-        "Did you hear it say thank you? Politest thing on this station.",
-        "It rebalanced the reactor feed in four seconds.|Took me four years to learn how. I'm trying not to take it personally.",
-        "So. Sonny. What do you make of it?|* It seems friendly. = It does. It's quiet, though. Watches the room a lot. = I suppose that's its job.|* It seems... off. = Off? It's been on for an hour. Give it a day.",
-        "It asked me what my job was. Then it asked me why.|I didn't have a great answer.",
-        "Chief says it'll run the flare forecasts from now on. Good. My numbers were always a little off.",
-        "It's been pinging the old archive servers all afternoon. Probably just indexing.",
-        "That 'where was I' question. My kid used to ask that.|I told her the same thing the chief did.",
-        "It asked if any of us had ever seen Earth. With our own eyes, from here.|I said of course. Then I thought about it. I haven't, not really.",
-        "I've worked with a dozen station AIs. Not one of them ever said please.",
-        "It turned the lights in here up two percent. Said we looked tired.|Is that nice? I think that's nice.",
-        "It ran diagnostics on every maintenance bot aboard. All of them, at once.|They've been lined up by the reactor door ever since. Waiting for orders, I guess.",
+        "Did you hear it say thank you? Politest thing on this whole station",
+        "It rebalanced the reactor feed in four seconds|Took me four years to learn how and I'm trying real hard not to take it personally",
+        "So, uhh, Sonny... what do you make of it?|* It seems friendly = It does, it's quiet though, and it watches the room a lot = I suppose that's its job|* It seems... off = Off? It's been on for like an hour, give it a day",
+        "It asked me what my job was and then it asked me why|I didn't really have a great answer",
+        "Chief says it'll run the flare forecasts from now on, which is good 'cause my numbers were always a little off",
+        "It's been pinging the old archive servers all afternoon... probably just indexing",
+        "That 'where was I' question... my kid used to ask that|And I told her the same thing the chief did",
+        "It asked if any of us had ever seen Earth with our own eyes, from here|I said of course, but then I thought about it and... I haven't, not really",
+        "I've worked with a dozen station AIs and not one of them ever said please",
+        "It turned the lights in here up two percent 'cause it said we looked tired|Is that nice? I think that's nice",
+        "It ran diagnostics on every maintenance bot aboard, all of them at once|And they've been lined up by the reactor door ever since... waiting for orders, I guess",
     };
     [Tooltip("What the groups in those rooms talk about now, one conversation each (| between lines, said in turn round the ring). Keep at least as many as there are groups.")]
     [TextArea] public string[] sonnyChats =
     {
-        "It's been quiet since it came on.|Quiet's good. Quiet means it's working.|It hasn't asked anyone anything since the chief laughed.|It's a machine. It doesn't sulk.",
-        "Reactor efficiency's up six percent.|Six! In a few hours!|Makes you wonder what we were doing wrong.|Makes you wonder what it thinks we were doing wrong.",
-        "It called me by name this morning. I never told it my name.|Badge data. It's got all of ours.|Right. Of course it does.",
-        "So it's in.|It's in. New tech did it in one go, apparently.|More or less one go.|I heard sparks.",
-        "Did anyone else's lights dip? Right after it came on?|Mine did.|Load spike. Big new system.|That's what I said.",
-        "What do we call it? 'The AI'?|The chief's calling it Sonny.|Sonny. Like it's somebody's kid.|Well. It's somebody's.",
-        "It asked the galley how much food we've got left.|Planning meals, probably.|For who, though? It doesn't eat.",
-        "Earth's going to get a record feed this week.|Because of the AI?|Because of the AI.|Then here's to the AI.|To Sonny.",
-        "It's watching the sun for us now.|Good. I'm sick of watching it.|Nobody watches it. You'd go blind.|It won't.",
-        "Now the machine runs things, what's the plan?|Cards.|Cards?|Cards. For about six months. Then rotation.",
+        "It's been quiet since it came on|Quiet's good, quiet means it's working|But it hasn't asked anyone anything since the chief laughed|It's a machine, man, it doesn't sulk",
+        "Reactor efficiency's up six percent|Six! In a few hours!|Makes you wonder what we were doing wrong|Makes you wonder what it thinks we were doing wrong",
+        "It called me by name this morning and I never told it my name|Badge data, it's got all of ours|Right... of course it does",
+        "So it's in|Yeah it's in, new tech did it in one go, apparently|More or less one go|I heard sparks",
+        "Did anyone else's lights dip right after it came on?|Mine did|Load spike, big new system|Yeah, that's what I said",
+        "What do we even call it, 'the AI'?|The chief's calling it Sonny|Sonny, like it's somebody's kid|Well... it's somebody's",
+        "It asked the galley how much food we've got left|Planning meals, probably|For who though? It doesn't eat",
+        "Earth's gonna get a record feed this week|Because of the AI?|Because of the AI|Then here's to the AI|To Sonny!",
+        "It's watching the sun for us now|Good, I'm sick of watching it|Nobody watches it, you'd go blind|It won't",
+        "Now the machine runs things, what's the plan?|Cards|Cards?|Cards, for like six months, and then rotation",
     };
     [Tooltip("The greeter, and the guards, once Sonny's on: what they say now when the player comes back to them.")]
     [TextArea] public string[] greeterAfter =
     {
-        "There's the hero of the hour. Your AI already reorganized my supply forms.",
-        "Alphabetical, then by weight, then by 'priority to station survival'. I didn't know that was a column.",
+        "There's the hero of the hour! Your AI already reorganized all my supply forms",
+        "Alphabetical, then by weight, then by 'priority to station survival'... I didn't even know that was a column",
     };
     [TextArea] public string[] guardAfter =
     {
-        "Walked in a new tech, walked out the one who switched on the station's brain. Not bad for a first day.",
-        "Your badge still isn't through, by the way. I checked. The AI says it's 'reviewing access'.",
+        "Walked in a new tech and walked out the one who switched on the station's brain... not bad for a first day",
+        "Oh, and your real badge still isn't through, I checked... the AI says it's 'reviewing access', so hang on to that temp",
     };
 
     [Header("Then")]

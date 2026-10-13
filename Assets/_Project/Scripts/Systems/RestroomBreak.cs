@@ -55,48 +55,48 @@ public class RestroomBreak : MonoBehaviour
     [Header("The urge")]
     public float urgeShake = 0.35f;
     [Tooltip("The technician, when it comes on.")]
-    [TextArea] public string[] urgeLines = { "Oof.", "I've been holding that since before the install. Restroom. Now." };
+    [TextArea] public string[] urgeLines = { "Oof", "Uhh, I've been holding that since before the install... restroom, right now" };
     [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipUrge = { "^Restroom's off the lounge. I pinned it on your map!" };
+    [TextArea] public string[] pipUrge = { "^Restroom's off the lounge, I pinned it on your map!" };
     [Tooltip("The technician, every nagSeconds until they get there, one after another, the last one again and again.")]
-    [TextArea] public string[] nags = { "Walk faster. Walk faster.", "Think dry thoughts. Think dry thoughts." };
+    [TextArea] public string[] nags = { "Walk faster, walk faster, walk faster", "Think dry thoughts... dry thoughts" };
     public float nagSeconds = 22f;
     public string objectiveUrge = "Find the restroom";
     [Tooltip("The room pinned on the map for the restroom, by its marker in the layout, and what the pin says.")]
     public char restroomRoom = 'w';
     public string restroomLabel = "Restroom";
     [Tooltip("The technician, if they use the toilet before they need to, and after they've been.")]
-    public string notYet = "I don't need to go. Not yet, anyway.";
-    public string alreadyWent = "Already went. I'm good.";
+    public string notYet = "I don't need to go, not yet anyway";
+    public string alreadyWent = "Already went, I'm good";
 
     [Header("Next door")]
     [SoundName] public string flushSound = "Toilet Flush";
     public float blackoutSeconds = 2.2f;
     [Tooltip("Okafor, from inside the stall, before and as it goes.")]
     public string beforeFlush = "Here goes nothing...";
-    public string asItBreaks = "No. No no no no no!";
+    public string asItBreaks = "No, no no no no no!";
     [Tooltip("The technician, as it gives out.")]
-    public string technicianHearsIt = "...That didn't sound good.";
+    public string technicianHearsIt = "...That didn't sound good";
 
     [Header("Asked to fix it")]
     [Tooltip("Okafor, as they come out.")]
-    public string attendantCallOut = "Oh, come ON. Not this one too!";
+    public string attendantCallOut = "Oh, come ON, not this one too!";
     [Tooltip("Okafor, as a DialogueBox script: * lines are replies for the technician to pick. Keep the last choice as fix it (first) or don't (second): what the technician says after goes by it.")]
     [TextArea] public string[] askToFix =
     {
-        "That's two down. Two! There's one toilet left on this whole deck, and I'm not sharing it with the night shift.",
-        "Hang on. The suit, no badge... You're the new technician. The one who brought the AI up.",
-        "* That's me. = Then you're exactly who I need.",
-        "* Who's asking? = Okafor. Life support. The man who's about to ask you a favor.",
+        "That's two down, two! There's one toilet left on this whole deck and I'm not sharing it with the night shift",
+        "Hang on, the suit, the temp badge... you're the new technician, the one who brought the AI up",
+        "* That's me = Then you're exactly who I need",
+        "* Who's asking? = Okafor, life support, and the guy who's about to ask you a favor",
         "Could you fix it up for me? Please?",
-        "* Sure, I'll fix it. = You're a lifesaver. Tools are in the storage room, the door on the east side of the lounge.",
-        "* Not really my job. = Please. Nobody else up here knows which end of a wrench to hold. = And the chief hears about everything that happens on this deck. Everything. = Tools are in the storage room, the door on the east side of the lounge. I'll owe you.",
+        "* Sure, I'll fix it = You're a lifesaver, man, tools are in the storage room, the door on the east side of the lounge",
+        "* Not really my job = C'mon, please, nobody else up here knows which end of a wrench to hold = And the chief hears about everything that happens on this deck... and I mean everything = Tools are in the storage room, the door on the east side of the lounge, and I'll owe you one",
     };
     [Tooltip("What Okafor says if the player comes back to them.")]
-    [TextArea] public string[] attendantAfter = { "Don't mind me. I'll guard the last working one." };
+    [TextArea] public string[] attendantAfter = { "Don't mind me, I'll just guard the last working one" };
     [Tooltip("The technician, to themselves, after saying yes, and after saying no.")]
-    [TextArea] public string[] agreed = { "Toilet duty. On day one.", "...Still. The new tech who fixes things. That'll look good to the chief." };
-    [TextArea] public string[] refused = { "...He's not going to let this go, is he.", "Fine. The new tech fixing things on day one? That'll look good to the chief." };
+    [TextArea] public string[] agreed = { "Toilet duty, on day one... damn", "...Still, the new tech who fixes things, that'll look good to the chief" };
+    [TextArea] public string[] refused = { "...He's not gonna let this go, is he", "Fine, fine... the new tech fixing stuff on day one? That'll look good to the chief, I guess" };
     public string objectiveFix = "Get the spare data chip from the storage room";
     public char toolsRoom = 's';
     public string toolsLabel = "Storage Room";
@@ -106,13 +106,13 @@ public class RestroomBreak : MonoBehaviour
     public string enterStorage = "Spare data chip... where would they keep it?";
     public string objectiveSearch = "Find the spare data chip";
     [Tooltip("The technician, at the crate or the shelf before anyone's asked for a wrench.")]
-    public string nothingNeeded = "Nothing I need in there.";
+    public string nothingNeeded = "Nothing I need in there";
     [Tooltip("The technician, opening the crate, and at it again after.")]
-    [TextArea] public string[] crateEmpty = { "\"Took the spare data chip. Back soon. -D.\"", "...Wait. Something's shining under that shelf." };
-    public string crateStillEmpty = "Still just the note.";
+    [TextArea] public string[] crateEmpty = { "\"Took the spare data chip. Back soon. -D.\"", "...Wait, something's shining under that shelf" };
+    public string crateStillEmpty = "Still just the note";
     public string objectiveShelf = "Check under the shelf";
     [Tooltip("The technician, at the shelf before they've looked in the crate.")]
-    public string crateFirst = "Tool crate first. That's where the spares live.";
+    public string crateFirst = "Tool crate first, that's where the spares live";
 
     [Header("Reaching under")]
     [Tooltip("The technician, feeling about under the rack, and once they've got it.")]

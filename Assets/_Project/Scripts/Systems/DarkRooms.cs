@@ -24,7 +24,7 @@ public class DarkRooms : MonoBehaviour
     [Tooltip("And in a blacked-out room.")]
     [Range(0.1f, 1f)] public float sightInBlackout = 0.5f;
     [Tooltip("Pip, the first time it's dark. ~ opens a line with static.")]
-    [TextArea] public string[] pipFirstDark = { "~Power's out ahead. Your suit light's all you've got." };
+    [TextArea] public string[] pipFirstDark = { "~Power's out ahead, so your suit light's all you've got" };
 
     static DarkRooms current;
     static readonly HashSet<char> blackedOut = new HashSet<char>();

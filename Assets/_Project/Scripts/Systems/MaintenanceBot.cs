@@ -39,8 +39,8 @@ public class MaintenanceBot : MonoBehaviour
 
     // Over its head as it works, and to the crew.
     static readonly string[] Beeps = { "BWEEP!", "Blip blip.", "*whirr*", "BWOOP.", "Beep?" };
-    static readonly string[] CrewToBot = { "Morning, little guy.", "Watch the feet!", "Not now, buddy.", "Good bot.", "Thanks, pal.", "Missed a spot." };
-    static readonly string[] CrewToBotAfter = { "You okay, buddy?", "Why'd it stop like that?", "Huh. It's never done that before.", "...Hello?" };
+    static readonly string[] CrewToBot = { "Morning, little guy", "Watch the feet!", "Not now, buddy", "Good bot", "Thanks, pal", "Missed a spot" };
+    static readonly string[] CrewToBotAfter = { "You okay, buddy?", "Why'd it stop like that?", "Huh, it's never done that before", "...Hello?" };
 
     private Rigidbody2D body;
     private SpriteRenderer art;
@@ -331,8 +331,8 @@ public class MaintenanceBot : MonoBehaviour
                 return new[]
                 {
                     "SCANNING. SCANNING.",
-                    "NO BADGE DETECTED. YOU ARE NOT IN MY RECORDS.",
-                    "* It's coming later. = ACKNOWLEDGED. RECORD PENDING. WELCOME ABOARD, UNKNOWN.",
+                    "TEMPORARY BADGE DETECTED. YOU ARE NOT IN MY RECORDS.",
+                    "* My real one's coming later. = ACKNOWLEDGED. RECORD PENDING. WELCOME ABOARD, UNKNOWN.",
                     "* I'm the new technician. = ACKNOWLEDGED. RECORD PENDING. WELCOME ABOARD, NEW TECHNICIAN.",
                 };
         }

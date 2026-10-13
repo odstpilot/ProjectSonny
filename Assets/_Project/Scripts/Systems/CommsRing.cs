@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Chapter 2, the comms ring: getting the access to open the control room. With the EMP made (Workshop), Pip sends the
-// technician here hoping for a badge: the way down to the control room is through the reactor core, badge-only.
+// technician here to get their dead temp badge working again: the way down to the control room is through the reactor
+// core, badge-only, and Sonny killed every badge when it took over (ChapterTwoDirector).
 // The ring's power is out. Stepping in, what's left of it dies: the room goes pitch black (DarkRooms.SetBlackout), the
 // lamps go out, and the suit's own light and Pip go with them, Pip just managing to say to use the EMP's flash to see
 // by and find the generator (Generator), which shows up when a pulse catches it. Starting it (its own minigame,
@@ -15,9 +16,9 @@ using UnityEngine;
 // and how to survive it (TipCard, kept in Pip's log); the only warning after that is the technician's heartbeat. And once
 // they've got the access and head back out through the upper maintenance deck, it follows them, bursting through the
 // deck's top wall.
-// There's no badge, but there's Sonny's relay
-// (DoctrineTerminal), where Sonny checks that whoever's at it is one of its units, and hands a unit's access to anyone
-// who answers as one would. What it asks is in its broadcasts, so first: three comms nodes (HackingTerminal) to tune in,
+// The way to do it is Sonny's relay
+// (DoctrineTerminal), where Sonny checks that whoever's at it is one of its units, and switches the badge of anyone
+// who answers as one would back on, with a unit's access. What it asks is in its broadcasts, so first: three comms nodes (HackingTerminal) to tune in,
 // one transmission each, counted as they're done ("Intercept Sonny's broadcasts (1/3)"). The relay won't talk until
 // all three are in. Answer it right and Sonny takes the technician for one of its own: the control room's credential is
 // granted (the relay's DoctrineData), and the objective is the control room again, pinned on the map.
@@ -54,7 +55,7 @@ public class CommsRing : MonoBehaviour
 
     [Header("Objectives")]
     [Tooltip("The objective that sends the player here (Workshop.afterObjective). Getting into the ring while it's showing starts it.")]
-    public string arriveObjective = "Find a badge in the comms ring";
+    public string arriveObjective = "Reactivate your badge in the comms ring";
     public string generatorObjective = "Find the generator and get the power back on";
     [Tooltip("Shown with how many have been tuned in, like \"Intercept Sonny's broadcasts (1/3)\".")]
     public string interceptObjective = "Intercept Sonny's broadcasts";
@@ -66,49 +67,49 @@ public class CommsRing : MonoBehaviour
 
     [Header("Lines")]
     [Tooltip("The technician, as the lights die.")]
-    [TextArea] public string[] technicianBlackout = { "No, no, no. The lights..." };
+    [TextArea] public string[] technicianBlackout = { "No, no, no... the lights..." };
     [Tooltip("Pip, as the suit's power goes, its last words before it's gone.")]
     [TextArea] public string[] pipBlackout =
     {
-        "~Tech, something's draining the suit. I'm going to lose you.",
-        "~Use the EMP. Its flash lights up whatever's in front of you.",
-        "~Find the generator and get the power back on. Then I can come b-",
+        "~Tech, something's draining the suit and I'm gonna lose you",
+        "~Use the EMP, its flash lights up whatever's in front of you",
+        "~Find the generator and get the power back on, then I can come b-",
     };
     [Tooltip("The technician, alone in the dark.")]
-    [TextArea] public string[] technicianAlone = { "Pip? ...Pip." };
+    [TextArea] public string[] technicianAlone = { "Pip? ...Pip" };
     [Tooltip("The technician, hearing it coming.")]
-    [TextArea] public string[] technicianAngel = { "...Footsteps. Fast ones." };
+    [TextArea] public string[] technicianAngel = { "...Footsteps, and fast ones" };
     [Tooltip("The technician, once the power's back on.")]
-    [TextArea] public string[] technicianPowerOn = { "Power. Finally." };
+    [TextArea] public string[] technicianPowerOn = { "Power, finally" };
     [Tooltip("Pip, coming back on with the power.")]
-    [TextArea] public string[] pipBack = { "~...Tech? There you are! You got the power back on." };
+    [TextArea] public string[] pipBack = { "~...Tech? There you are! You got the power back on" };
     [Tooltip("The technician, getting here with the power already on.")]
-    [TextArea] public string[] technicianArrive = { "Every screen up here's still running." };
+    [TextArea] public string[] technicianArrive = { "Every screen up here's still running" };
     [Tooltip("Pip, getting here. ~ opens a line with static; ^ says it happily; [E] shows a key.")]
     [TextArea] public string[] pipArrive =
     {
-        "~No badges up here. But that pillar with the red eye, that's Sonny's relay. It's how it checks on its units.",
-        "~If it thinks you're one of them, it'll give you a unit's access. And units get into the control room.",
-        "~It'll quiz you first. The comms nodes are carrying its broadcasts. Tune them in and listen to how the bots talk.",
+        "~See that pillar with the red eye? That's Sonny's relay, it's how it checks on its units, and it talks to every badge aboard",
+        "~If it thinks you're one of them it'll switch your badge back on with a unit's access, and units get into the control room",
+        "~But it'll quiz you first... the comms nodes are carrying its broadcasts, so tune them in and listen to how the bots talk",
     };
     [Tooltip("Pip, after each broadcast but the last, one line each in turn.")]
     [TextArea] public string[] pipIntercepted =
     {
-        "~It heard that. Something's moving in the walls.",
-        "~One more. Remember what they said: that's what it'll ask.",
+        "~Uh oh, it heard that... something's moving in the walls",
+        "~One more, and remember what they said, 'cause that's what it'll ask",
     };
     [Tooltip("Pip, once every broadcast's in.")]
     [TextArea] public string[] pipAllIntercepted =
     {
-        "~That's all of them. The relay's listening now.",
-        "~Answer like a bot would, not like you would. And don't hesitate. It notices.",
+        "~That's all of them, the relay's listening now",
+        "~Answer like a bot would, not like you would, and don't hesitate 'cause it notices",
     };
     [Tooltip("Pip, once the relay's passed.")]
     [TextArea] public string[] technicianVerified = { "It... thinks I'm one of them." };
     [TextArea] public string[] pipVerified =
     {
-        "^You're a unit now. The reactor and the control room will open for you.",
-        "~Through the reactor, down its stairs. Go.",
+        "^Your badge is back on as a unit's, so the reactor and the control room will open for you",
+        "~Through the reactor and down its stairs, go!",
     };
     [Tooltip("Pip, if the relay traces them.")]
     [TextArea] public string[] pipAlarm = { "~It knows! Get away from there, it'll let you try again in a bit." };

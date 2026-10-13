@@ -24,12 +24,12 @@ public class ChapterTwoDirector : MonoBehaviour
     public string[] titleCard = { "Chapter 2", "A few hours later" };
     public float titleHoldSeconds = 1.8f;
     [Tooltip("The technician, getting up.")]
-    [TextArea] public string[] technicianWakeUp = { "Ugh... my head." };
+    [TextArea] public string[] technicianWakeUp = { "Ugh... my head.", "...And my badge is dead, light's out" };
     [Tooltip("Pip, coming back on. ~ opens a line with static; ^ says it happily.")]
     [TextArea] public string[] pipWakeUp =
     {
-        "~Tech. You were out for hours.",
-        "~Something's wrong. Get out of this room.",
+        "~Tech? You were out for hours",
+        "~Something's wrong, get out of this room",
     };
     public string objectiveWakeUp = "Get out of the storage room";
     [Tooltip("Seconds the prompt for Pip's log (PipLog) stays up after waking, unless it's opened first.")]
@@ -45,6 +45,7 @@ public class ChapterTwoDirector : MonoBehaviour
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
+        BreakBadge();
         TutorialHud hud = TutorialHud.Get();
         hud.SetFade(1f);
         player.SetScriptedInput(Vector2.zero, false);
@@ -60,6 +61,18 @@ public class ChapterTwoDirector : MonoBehaviour
         if (!ArrivingFromChapterOne) yield return hud.TitleCard(titleCard, titleHoldSeconds);
         ArrivingFromChapterOne = false;
         yield return WakeUp(hud);
+    }
+
+    // Sonny's takeover killed every badge, the technician's temp one too: it's still on them, but it opens nothing until
+    // the comms ring's relay switches it back on (CommsRing), which a save past that point does again as it resumes.
+    void BreakBadge()
+    {
+        AccessCredentials.Grant(AccessCredentials.TempBadge);
+        AccessCredentials.Revoke(AccessCredentials.TempBadgeAccess);
+        var comms = FindAnyObjectByType<CommsRing>();
+        if (comms == null) return;
+        foreach (string credential in comms.alsoGrants) AccessCredentials.Revoke(credential);
+        if (comms.relay != null && comms.relay.doctrine != null) AccessCredentials.Revoke(comms.relay.doctrine.credential);
     }
 
     // Continuing from a checkpoint. Which one is told mostly by the objective that came next, since the way out of the

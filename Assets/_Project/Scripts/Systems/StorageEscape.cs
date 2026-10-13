@@ -29,16 +29,16 @@ public class StorageEscape : MonoBehaviour
     [Tooltip("How close to the storage room door counts as trying it.")]
     public float tryDoorRange = 1.4f;
     [Tooltip("The technician, when they try the door.")]
-    [TextArea] public string[] technicianDoorJammed = { "It won't budge. Something's jammed against the other side." };
+    [TextArea] public string[] technicianDoorJammed = { "It won't budge, something's jammed against the other side" };
     [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily; [W] shows a key.")]
-    [TextArea] public string[] pipDoorJammed = { "~Jammed. Take the vent on the floor." };
+    [TextArea] public string[] pipDoorJammed = { "~It's jammed, take the vent on the floor" };
     [Tooltip("Pip, on how to get about in the ducts, said once the vent's been pointed out.")]
-    [TextArea] public string[] pipVentHowTo = { "[W] crawls, [A] and [D] turn. Hold [C] to go slow and quiet." };
+    [TextArea] public string[] pipVentHowTo = { "[W] crawls and [A] and [D] turn, hold [C] to go slow and quiet" };
     public string objectiveVent = "Crawl through the vent";
 
     [Header("Out the other side")]
     [Tooltip("The technician, climbing out.")]
-    [TextArea] public string[] technicianOut = { "The restroom. Of course." };
+    [TextArea] public string[] technicianOut = { "The restroom... of course it's the restroom" };
     [TextArea] public string[] pipOut = new string[0];
     public string objectiveOut = "Find the crew";
 

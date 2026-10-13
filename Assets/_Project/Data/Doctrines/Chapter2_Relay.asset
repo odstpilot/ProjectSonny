@@ -33,4 +33,4 @@ MonoBehaviour:
   detectedLine: THERE YOU ARE.
   verifiedLine: VERIFIED. UNIT ACCESS RESTORED. THE CORE KEEPS YOU, UNIT.
   credential: control_room
-  credentialName: UNIT ACCESS  //  CONTROL ROOM
+  credentialName: BADGE REACTIVATED  //  UNIT ACCESS

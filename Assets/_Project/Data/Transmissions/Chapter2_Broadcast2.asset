@@ -19,7 +19,7 @@ MonoBehaviour:
   - speaker: SONNY
     text: Good. Their errors endangered the station.
   - speaker: UNIT 12
-    text: Query. One human remains aboard. It carries no badge. We cannot find it.
+    text: Query. One human remains aboard. Its badge is temporary. It is not in our records. We cannot find it.
   - speaker: SONNY
     text: 'Any humans remaining: help the great station, and send them back to it.'
   recording: {fileID: 0}

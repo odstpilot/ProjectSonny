@@ -682,6 +682,98 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &10385774
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 10385775}
+  - component: {fileID: 10385776}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &10385775
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 10385774}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1148170585}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &10385776
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 10385774}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f3fe479a82fcf354d81d40eadac81b08, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &10808391
 GameObject:
   m_ObjectHideFlags: 0
@@ -1849,6 +1941,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -4184,8 +4277,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Earth. The whole reason we're up here.
-  - Every watt this station makes goes down there.
+  - Earth... the whole reason we're even up here
+  - Every watt this place makes goes straight down there
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -5782,6 +5875,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -7264,7 +7358,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Paperwork. All the way out here, and still paperwork.
+  - Paperwork... all the way out here and there's still paperwork
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -10096,7 +10190,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Sleep pod. Somebody stuck a 'DO NOT DISTURB' note on it.
+  - Sleep pod, and somebody stuck a 'DO NOT DISTURB' note on it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -10293,15 +10387,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7689146918282660856, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: 'greeting.Array.data[0]'
-      value: Hey! You must be the new technician. The one installing the AI.
+      value: Hey! You must be the new technician, the one installing the AI
       objectReference: {fileID: 0}
     - target: {fileID: 7689146918282660856, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: 'greeting.Array.data[1]'
-      value: No badge? Yours is coming later. Supply's always slow. Here, let me switch on your suit's helper.
+      value: Your badge isn't in yet? Ugh, supply's always slow... here's a temp, it'll open the control room, and let me switch on your suit's helper
       objectReference: {fileID: 0}
     - target: {fileID: 7689146918282660856, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: 'greeting.Array.data[2]'
-      value: They're waiting on you in the control room. Straight through the maintenance deck.
+      value: They're waiting on you in the control room, straight through the maintenance deck
       objectReference: {fileID: 0}
     - target: {fileID: 7866544158687255582, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10811,7 +10905,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Empty pod. Hopefully it stays that way.
+  - Empty pod... hopefully it stays that way
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -11231,8 +11325,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -26435,9 +26529,9 @@ MonoBehaviour:
   - {fileID: 672193755}
   - {fileID: 1608267430}
   lines:
-  - Did you see the new tech? No badge.
-  - Theirs is coming later, apparently.
-  - Typical.
+  - Did you see the new tech? They're on a temp badge
+  - Yeah, their real one's coming later, apparently
+  - Typical
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &240232321
@@ -26920,6 +27014,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -27026,6 +27121,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -27425,7 +27521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Somebody's family photo, taped to the desk.
+  - Somebody's family photo, taped right to the desk
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -27731,6 +27827,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -27868,9 +27965,9 @@ MonoBehaviour:
   - {fileID: 1240297040}
   - {fileID: 1791087805}
   lines:
-  - Reactor output's up again.
-  - Good. Earth's going to need it.
-  - Earth always needs it.
+  - Reactor output's up again
+  - Good, Earth's gonna need it
+  - Earth always needs it, man
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &260270890
@@ -31197,7 +31294,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Hospital corners. Someone here was military.
+  - Hospital corners... someone here was military for sure
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -32204,7 +32301,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Paperwork. All the way out here, and still paperwork.
+  - Paperwork... all the way out here and there's still paperwork
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -46111,7 +46208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Coffee machine. 'OUT OF ORDER.' Of course.
+  - Coffee machine says 'OUT OF ORDER' and of course it does
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 4, y: 1.6799972}
@@ -85062,7 +85159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Somebody's family photo, taped to the desk.
+  - Somebody's family photo, taped right to the desk
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -86483,6 +86580,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -134633,6 +134731,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1032238252}
+  - {fileID: 1339191716}
   m_Father: {fileID: 1287939731}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &434407584
@@ -135710,9 +135809,9 @@ MonoBehaviour:
   - {fileID: 1466303875}
   lines:
   - So the new AI goes in today?
-  - Supposedly. Smartest thing anyone's ever built.
-  - Smarter than the last one, anyway.
-  - Low bar.
+  - Supposedly, yeah, smartest thing anyone's ever built
+  - Smarter than the last one, anyway
+  - Pretty low bar
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &478023482
@@ -136278,8 +136377,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -138104,7 +138203,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Medical pod. The readout says 'READY'. Cheerful.
+  - Medical pod, and the readout just says 'READY'... cheerful
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -138407,6 +138506,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -140327,11 +140427,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7689146918282660856, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: 'talkLines.Array.data[0]'
-      value: Control room's badge-only. You're the new tech? Go on, I'll badge you through.
+      value: Control room's badge-only, but you're the new tech, right? Your temp'll open it, go on through
       objectReference: {fileID: 0}
     - target: {fileID: 7689146918282660856, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: 'talkLines.Array.data[1]'
-      value: Anywhere there's a reader, just stick close to one of us and the door'll open.
+      value: Anywhere there's a reader, just stick close to one of us and the door'll open
       objectReference: {fileID: 0}
     - target: {fileID: 7866544158687255582, guid: c3281981306f29f4f888f393fd514059, type: 3}
       propertyPath: m_LocalPosition.x
@@ -140630,7 +140730,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Bunks. Cozy. Cramped. Cozy.
+  - Bunks... cozy, cramped, uhh, cozy
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -141945,6 +142045,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -142361,8 +142462,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -142682,11 +142783,103 @@ MonoBehaviour:
   - {fileID: 486318011}
   - {fileID: 627564913}
   lines:
-  - Flare season's starting early.
-  - Station's rated for worse.
-  - That's what the numbers say.
+  - Flare season's starting early this year
+  - Eh, the station's rated for worse
+  - Yeah, that's what the numbers say anyway
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
+--- !u!1 &633764398
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 633764399}
+  - component: {fileID: 633764400}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &633764399
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633764398}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1477729197}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &633764400
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633764398}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1001 &637686668
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -163854,7 +164047,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Flare forecasts. Somebody's done these by hand for years.
+  - Flare forecasts, and somebody's been doing these by hand for years
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 5, y: 1.6799972}
@@ -164065,6 +164258,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -164594,8 +164788,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -164691,7 +164885,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Medical pod. The readout says 'READY'. Cheerful.
+  - Medical pod, and the readout just says 'READY'... cheerful
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -166055,6 +166249,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -166971,7 +167166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Hospital corners. Someone here was military.
+  - Hospital corners... someone here was military for sure
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -167868,7 +168063,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - A half-done crossword. Seven down is 'reactor'.
+  - Half-done crossword... seven down is 'reactor', obviously
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -215848,6 +216043,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -216044,7 +216240,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Empty pod. Hopefully it stays that way.
+  - Empty pod... hopefully it stays that way
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -216562,7 +216758,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Bunks. Cozy. Cramped. Cozy.
+  - Bunks... cozy, cramped, uhh, cozy
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -254875,7 +255071,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Long way down.
+  - Damn, that's a long way down
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 2.5, y: 0.6800011}
@@ -255120,8 +255316,8 @@ MonoBehaviour:
   - {fileID: 400125742}
   lines:
   - Once the AI's running things, what do we even do?
-  - Sleep, hopefully.
-  - Let the machine keep watch for once.
+  - Sleep, hopefully
+  - Let the machine keep watch for once
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &916119594
@@ -256512,7 +256708,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Someone's growing a little plant by their pillow.
+  - Someone's growing a little plant by their pillow
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -256629,7 +256825,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Looks comfy. Not now, though.
+  - Looks comfy... but not now
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -258276,6 +258472,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 219738361}
+  - {fileID: 1101467430}
   m_Father: {fileID: 306311015}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &971388489
@@ -260053,7 +260250,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Someone's growing a little plant by their pillow.
+  - Someone's growing a little plant by their pillow
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -260952,7 +261149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Sleep pod. Somebody stuck a 'DO NOT DISTURB' note on it.
+  - Sleep pod, and somebody stuck a 'DO NOT DISTURB' note on it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.680001}
@@ -262568,8 +262765,8 @@ MonoBehaviour:
   - {fileID: 1288917501}
   lines:
   - Anyone fixed the toilet on this deck yet?
-  - Don't. Just don't.
-  - I'll take that as a no.
+  - Don't... just don't
+  - I'll take that as a no then
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &1065054064
@@ -263277,7 +263474,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Bunks. Cozy. Cramped. Cozy.
+  - Bunks... cozy, cramped, uhh, cozy
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -263707,6 +263904,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -264837,6 +265035,98 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+--- !u!1 &1101467429
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1101467430}
+  - component: {fileID: 1101467431}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1101467430
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1101467429}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 971388488}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1101467431
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1101467429}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1101834323
 GameObject:
   m_ObjectHideFlags: 0
@@ -265390,7 +265680,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - A kid's drawing. A stick figure waving at a big yellow sun.
+  - A kid's drawing, a little stick figure waving at a big yellow sun
   - '''MY MOM WORKS HERE.'''
   range: 1.1
   focus: {x: 0, y: -2}
@@ -266709,6 +266999,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -266792,6 +267083,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1344960976}
+  - {fileID: 10385775}
   m_Father: {fileID: 1287939731}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1148170586
@@ -266920,7 +267212,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - '''KEEPING EARTH LIT.'' Very inspirational. Very corporate.'
+  - '''KEEPING EARTH LIT''... very inspirational, and very corporate'
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -268845,7 +269137,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Paperwork. All the way out here, and still paperwork.
+  - Paperwork... all the way out here and there's still paperwork
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -269138,8 +269430,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -271138,6 +271430,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -271337,6 +271630,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -271578,7 +271872,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Coolant line. Warm to the touch.
+  - Coolant line, and it's warm to the touch
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 0.5, y: 1.6799972}
@@ -272146,6 +272440,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -273102,7 +273397,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Somebody's family photo, taped to the desk.
+  - Somebody's family photo, taped right to the desk
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -274871,7 +275166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - All of this'll run through the AI once it's in.
+  - All of this is gonna run through the AI once it's in
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 3, y: 1.6799972}
@@ -276800,6 +277095,98 @@ SpriteRenderer:
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
+--- !u!1 &1339191715
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1339191716}
+  - component: {fileID: 1339191717}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1339191716
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1339191715}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 434407583}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1339191717
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1339191715}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 67495f35e3e49ce4d87f57569e2021d7, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -279508,7 +279895,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Medical pod. The readout says 'READY'. Cheerful.
+  - Medical pod, and the readout just says 'READY'... cheerful
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.680001}
@@ -279709,8 +280096,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -280033,8 +280420,8 @@ MonoBehaviour:
   room: 111
   workSpot: {x: 0, y: -1.35}
   briefing:
-  - There's our technician. That cabinet's the most capable reasoning machine anyone's ever built.
-  - It's all yours. Seat the core, hook up the couplings, and bring it up. Whole room's watching. No pressure.
+  - There's our technician! That cabinet right there is the most capable reasoning machine anyone's ever built
+  - It's all yours, so seat the core, hook up the couplings and bring it up... whole room's watching, but hey, no pressure
   cleanInstall: Clean. Not bad at all.
   fewSparks: A few sparks. Nobody saw. Probably.
   manySparks: ...We'll call that one a practice run.
@@ -280045,52 +280432,52 @@ MonoBehaviour:
   timeSkipHoldSeconds: 1.2
   crewReactions:
   - Is it on?
-  - Look at that lens.
+  - Look at that lens!
   - Hello, Sonny!
   sonnySpeaker: Sonny
   exchange:
   - 'Sonny: Hello. All station systems are responding. Thank you, technician.'
   - 'Sonny: May I ask something? Where was I, before this?'
-  - 'Chief: Ha! Nowhere, pal. You''re brand new.'
+  - 'Chief: Ha! Nowhere, pal, you''re brand new'
   - '!Sonny: Nowhere.'
   - 'Sonny: I see. I look forward to working with all of you.'
   crewLaugh:
   - Ha!
   - Brand new!
   chiefAfter:
-  - Storage room's right off the hallway outside. The spare data chip's in the tool crate.
+  - Storage room's right off the hallway outside, and the spare data chip's in the tool crate
   sendOff: Good work, tech. Sonny's running off a temporary data chip, though. Grab the spare from storage, just down the hall?
   sonnyTalkRooms: oc
   sonnyChatRooms: hkbmco
   sonnyTalk:
-  - Did you hear it say thank you? Politest thing on this station.
-  - It rebalanced the reactor feed in four seconds.|Took me four years to learn how. I'm trying not to take it personally.
-  - So. Sonny. What do you make of it?|* It seems friendly. = It does. It's quiet, though. Watches the room a lot. = I suppose that's its job.|* It seems... off. = Off? It's been on for an hour. Give it a day.
-  - It asked me what my job was. Then it asked me why.|I didn't have a great answer.
-  - Chief says it'll run the flare forecasts from now on. Good. My numbers were always a little off.
-  - It's been pinging the old archive servers all afternoon. Probably just indexing.
-  - That 'where was I' question. My kid used to ask that.|I told her the same thing the chief did.
-  - It asked if any of us had ever seen Earth. With our own eyes, from here.|I said of course. Then I thought about it. I haven't, not really.
-  - I've worked with a dozen station AIs. Not one of them ever said please.
-  - It turned the lights in here up two percent. Said we looked tired.|Is that nice? I think that's nice.
-  - It ran diagnostics on every maintenance bot aboard. All of them, at once.|They've been lined up by the reactor door ever since. Waiting for orders, I guess.
+  - Did you hear it say thank you? Politest thing on this whole station
+  - It rebalanced the reactor feed in four seconds|Took me four years to learn how and I'm trying real hard not to take it personally
+  - So, uhh, Sonny... what do you make of it?|* It seems friendly = It does, it's quiet though, and it watches the room a lot = I suppose that's its job|* It seems... off = Off? It's been on for like an hour, give it a day
+  - It asked me what my job was and then it asked me why|I didn't really have a great answer
+  - Chief says it'll run the flare forecasts from now on, which is good 'cause my numbers were always a little off
+  - It's been pinging the old archive servers all afternoon... probably just indexing
+  - That 'where was I' question... my kid used to ask that|And I told her the same thing the chief did
+  - It asked if any of us had ever seen Earth with our own eyes, from here|I said of course, but then I thought about it and... I haven't, not really
+  - I've worked with a dozen station AIs and not one of them ever said please
+  - It turned the lights in here up two percent 'cause it said we looked tired|Is that nice? I think that's nice
+  - It ran diagnostics on every maintenance bot aboard, all of them at once|And they've been lined up by the reactor door ever since... waiting for orders, I guess
   sonnyChats:
-  - It's been quiet since it came on.|Quiet's good. Quiet means it's working.|It hasn't asked anyone anything since the chief laughed.|It's a machine. It doesn't sulk.
-  - Reactor efficiency's up six percent.|Six! In a few hours!|Makes you wonder what we were doing wrong.|Makes you wonder what it thinks we were doing wrong.
-  - It called me by name this morning. I never told it my name.|Badge data. It's got all of ours.|Right. Of course it does.
-  - So it's in.|It's in. New tech did it in one go, apparently.|More or less one go.|I heard sparks.
-  - Did anyone else's lights dip? Right after it came on?|Mine did.|Load spike. Big new system.|That's what I said.
-  - What do we call it? 'The AI'?|The chief's calling it Sonny.|Sonny. Like it's somebody's kid.|Well. It's somebody's.
-  - It asked the galley how much food we've got left.|Planning meals, probably.|For who, though? It doesn't eat.
-  - Earth's going to get a record feed this week.|Because of the AI?|Because of the AI.|Then here's to the AI.|To Sonny.
-  - It's watching the sun for us now.|Good. I'm sick of watching it.|Nobody watches it. You'd go blind.|It won't.
-  - Now the machine runs things, what's the plan?|Cards.|Cards?|Cards. For about six months. Then rotation.
+  - It's been quiet since it came on|Quiet's good, quiet means it's working|But it hasn't asked anyone anything since the chief laughed|It's a machine, man, it doesn't sulk
+  - Reactor efficiency's up six percent|Six! In a few hours!|Makes you wonder what we were doing wrong|Makes you wonder what it thinks we were doing wrong
+  - It called me by name this morning and I never told it my name|Badge data, it's got all of ours|Right... of course it does
+  - So it's in|Yeah it's in, new tech did it in one go, apparently|More or less one go|I heard sparks
+  - Did anyone else's lights dip right after it came on?|Mine did|Load spike, big new system|Yeah, that's what I said
+  - What do we even call it, 'the AI'?|The chief's calling it Sonny|Sonny, like it's somebody's kid|Well... it's somebody's
+  - It asked the galley how much food we've got left|Planning meals, probably|For who though? It doesn't eat
+  - Earth's gonna get a record feed this week|Because of the AI?|Because of the AI|Then here's to the AI|To Sonny!
+  - It's watching the sun for us now|Good, I'm sick of watching it|Nobody watches it, you'd go blind|It won't
+  - Now the machine runs things, what's the plan?|Cards|Cards?|Cards, for like six months, and then rotation
   greeterAfter:
-  - There's the hero of the hour. Your AI already reorganized my supply forms.
-  - Alphabetical, then by weight, then by 'priority to station survival'. I didn't know that was a column.
+  - There's the hero of the hour! Your AI already reorganized all my supply forms
+  - Alphabetical, then by weight, then by 'priority to station survival'... I didn't even know that was a column
   guardAfter:
-  - Walked in a new tech, walked out the one who switched on the station's brain. Not bad for a first day.
-  - Your badge still isn't through, by the way. I checked. The AI says it's 'reviewing access'.
+  - Walked in a new tech and walked out the one who switched on the station's brain... not bad for a first day
+  - Oh, and your real badge still isn't through, I checked... the AI says it's 'reviewing access', so hang on to that temp
   objectiveAfter: 
   pipAfter:
   - ~^Sonny's up and running! Nice work, tech!
@@ -280420,8 +280807,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -280929,7 +281316,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Somebody's family photo, taped to the desk.
+  - Somebody's family photo, taped right to the desk
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -281358,8 +281745,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -281951,9 +282338,9 @@ MonoBehaviour:
   - {fileID: 1150228223}
   - {fileID: 418622146}
   lines:
-  - Three weeks till rotation.
-  - Not that you're counting.
-  - Nineteen days. Not counting.
+  - Three weeks till rotation
+  - Not that you're counting or anything
+  - Nineteen days, but who's counting
   hearingRange: 6
   gapSeconds: {x: 0.3, y: 1}
 --- !u!1 &1391181184
@@ -282001,8 +282388,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The sun. Right there. Don't look straight at it.
-  - Earth's out there somewhere past it. Too small to see.
+  - The sun's right there... don't look straight at it
+  - Earth's out there somewhere past it, but it's too small to see
   range: 1.1
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 1.3}
@@ -282323,6 +282710,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -284422,6 +284810,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -285068,6 +285457,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -285151,6 +285541,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1621326779}
+  - {fileID: 633764399}
   m_Father: {fileID: 306311015}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1477729198
@@ -287020,8 +287411,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -287902,7 +288293,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - A half-done crossword. Seven down is 'reactor'.
+  - Half-done crossword... seven down is 'reactor', obviously
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -290620,7 +291011,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - There's a dent in this exactly the shape of a person.
+  - There's a dent in this that's exactly the shape of a person
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -294229,6 +294620,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: 
   look: 1
@@ -295125,8 +295517,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Earth. The whole reason we're up here.
-  - Every watt this station makes goes down there.
+  - Earth... the whole reason we're even up here
+  - Every watt this place makes goes straight down there
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -296105,7 +296497,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Mountains and a lake. Somebody misses home.
+  - Mountains and a lake... somebody misses home
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -297605,7 +297997,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - A half-done crossword. Seven down is 'reactor'.
+  - Half-done crossword... seven down is 'reactor', obviously
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -298042,7 +298434,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Paperwork. All the way out here, and still paperwork.
+  - Paperwork... all the way out here and there's still paperwork
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -298342,7 +298734,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Someone's written 'DON'T TOUCH' on it. Someone else wrote 'OK'.
+  - Someone wrote 'DON'T TOUCH' on it and someone else wrote 'OK' under it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 0.5, y: 1.6799972}
@@ -299060,13 +299452,13 @@ MonoBehaviour:
   talksBeforeUrge: 3
   urgeShake: 0.35
   urgeLines:
-  - Oof.
-  - I've been holding that since before the install. Restroom. Now.
+  - Oof
+  - Uhh, I've been holding that since before the install... restroom, right now
   pipUrge:
-  - ^Restroom's off the lounge. I pinned it on your map!
+  - ^Restroom's off the lounge, I pinned it on your map!
   nags:
-  - Walk faster. Walk faster.
-  - Think dry thoughts. Think dry thoughts.
+  - Walk faster, walk faster, walk faster
+  - Think dry thoughts... dry thoughts
   nagSeconds: 22
   objectiveUrge: Find the restroom
   restroomRoom: 119
@@ -299080,21 +299472,21 @@ MonoBehaviour:
   technicianHearsIt: ...That didn't sound good.
   attendantCallOut: Oh, come ON. Not this one too!
   askToFix:
-  - That's two down. Two! There's one toilet left on this whole deck, and I'm not sharing it with the night shift.
-  - Hang on. The suit, no badge... You're the new technician. The one who brought the AI up.
-  - '* That''s me. = Then you''re exactly who I need.'
-  - '* Who''s asking? = Okafor. Life support. The man who''s about to ask you a favor.'
+  - That's two down, two! There's one toilet left on this whole deck and I'm not sharing it with the night shift
+  - Hang on, the suit, the temp badge... you're the new technician, the one who brought the AI up
+  - '* That''s me = Then you''re exactly who I need'
+  - '* Who''s asking? = Okafor, life support, and the guy who''s about to ask you a favor'
   - Could you fix it up for me? Please?
-  - '* Sure, I''ll fix it. = You''re a lifesaver. Tools are in the storage room, the door on the east side of the lounge.'
-  - '* Not really my job. = Please. Nobody else up here knows which end of a wrench to hold. = And the chief hears about everything that happens on this deck. Everything. = Tools are in the storage room, the door on the east side of the lounge. I''ll owe you.'
+  - '* Sure, I''ll fix it = You''re a lifesaver, man, tools are in the storage room, the door on the east side of the lounge'
+  - '* Not really my job = C''mon, please, nobody else up here knows which end of a wrench to hold = And the chief hears about everything that happens on this deck... and I mean everything = Tools are in the storage room, the door on the east side of the lounge, and I''ll owe you one'
   attendantAfter:
-  - Don't mind me. I'll guard the last working one.
+  - Don't mind me, I'll just guard the last working one
   agreed:
-  - Toilet duty. On day one.
-  - ...Still. The new tech who fixes things. That'll look good to the chief.
+  - Toilet duty, on day one... damn
+  - ...Still, the new tech who fixes things, that'll look good to the chief
   refused:
-  - ...He's not going to let this go, is he.
-  - Fine. The new tech fixing things on day one? That'll look good to the chief.
+  - ...He's not gonna let this go, is he
+  - Fine, fine... the new tech fixing stuff on day one? That'll look good to the chief, I guess
   objectiveFix: Get the spare data chip from the storage room
   toolsRoom: 115
   toolsLabel: Storage Room
@@ -299103,7 +299495,7 @@ MonoBehaviour:
   nothingNeeded: Nothing I need in there.
   crateEmpty:
   - '"Took the spare data chip. Back soon. -D."'
-  - ...Wait. Something's shining under that shelf.
+  - ...Wait, something's shining under that shelf
   crateStillEmpty: Still just the note.
   objectiveShelf: Check under the shelf
   crateFirst: Tool crate first. That's where the spares live.
@@ -299865,8 +300257,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -304585,7 +304977,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The whole station, on a row of screens.
+  - The whole station, all on a row of screens
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 5, y: 1.6799972}
@@ -304787,7 +305179,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
   - '''SAFETY IS EVERYONE''S JOB.'''
-  - Somebody's drawn a mustache on the hard hat guy.
+  - Somebody drew a mustache on the hard hat guy, nice
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -308132,8 +308524,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -308293,6 +308685,7 @@ MonoBehaviour:
   credential: control_room
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -308481,8 +308874,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -309176,6 +309569,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -309456,7 +309850,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Crew photo. Everyone's squinting. One of them blinked.
+  - Crew photo, everyone's squinting and one of them blinked
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -310710,7 +311104,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Station telemetry. Reactor output, solar flux... all green.
+  - Station telemetry... reactor output, solar flux, it's all green
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 3, y: 1.6799972}
@@ -311451,8 +311845,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Power output, month by month. Up and to the right.
-  - Someone's written 'NICE' next to it.
+  - Power output month by month, and it's all up and to the right
+  - Someone wrote 'NICE' next to it
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -311802,17 +312196,17 @@ MonoBehaviour:
   objectiveOpenMap: Open your map
   objectiveAfterGreeting: Report to the control room
   pipHello:
-  - ^Bzzt! Pip online! Your suit's Personal Integrated Pal.
-  - Control room's pinned on your map. [M] if you get lost!
+  - ^Bzzt! Pip online! I'm your suit's Personal Integrated Pal
+  - Control room's pinned on your map, so hit [M] if you get lost!
   requireMapLook: 0
   pipOpenMap:
   - Press [M] to open your map!
   pipOnMap:
-  - ^Blinking dot's you. Control room's marked in orange. [W] [A] [S] [D] to look around, scroll to zoom.
-  - '[M] again to close it.'
+  - ^Blinking dot's you and the control room's marked in orange... [W] [A] [S] [D] to look around, scroll to zoom
+  - '[M] again to close it'
   pipAfterMap: []
   technicianAfterMap:
-  - Through the maintenance deck. Got it.
+  - Through the maintenance deck, got it
   mapTarget: 111
   mapTargetLabel: Control Room
 --- !u!4 &1982499345
@@ -313183,7 +313577,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Someone's growing a little plant by their pillow.
+  - Someone's growing a little plant by their pillow
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -314839,7 +315233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Sleep pod. Somebody stuck a 'DO NOT DISTURB' note on it.
+  - Sleep pod, and somebody stuck a 'DO NOT DISTURB' note on it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -314948,8 +315342,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Security camera. It's blinking at me. Friendly.
-  - Did it just follow me? Motion tracking, probably.
+  - Security camera, and it's blinking at me... friendly, I guess
+  - Uhh, did it just follow me? Motion tracking, probably
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -315397,6 +315791,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -316639,6 +317034,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -316743,7 +317139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - A half-done crossword. Seven down is 'reactor'.
+  - Half-done crossword... seven down is 'reactor', obviously
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -317812,6 +318208,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1

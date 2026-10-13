@@ -23,16 +23,16 @@ public class PatrolReveal : MonoBehaviour
 
     [Header("Stepping out")]
     [Tooltip("The technician, seeing the bodies.")]
-    [TextArea] public string[] technicianSees = { "Oh no. No, no, no..." };
+    [TextArea] public string[] technicianSees = { "Oh no... no, no, no..." };
     [Tooltip("Pip, after that. ~ opens a line with static; [C] shows a key.")]
     [TextArea] public string[] pipCrewFound = new string[0];
     [Tooltip("The technician, seeing the bots.")]
-    [TextArea] public string[] technicianBots = { "The bots... they're hunting." };
+    [TextArea] public string[] technicianBots = { "The bots... they're hunting" };
     [TextArea] public string[] pipBots =
     {
-        "~Stay out of their sight.",
-        "~And don't count on the escape pods. Every one launched hours ago. There's no way off.",
-        "~So we go to Sonny. The control room.",
+        "~Stay out of their sight",
+        "~And don't count on the escape pods, every one launched hours ago and there's no way off",
+        "~So we go to Sonny, in the control room",
     };
     [Tooltip("The card that pops up after that, on how sneaking about works (TipCard).")]
     public string tipsTitle = "Staying hidden";

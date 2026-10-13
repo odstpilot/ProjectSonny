@@ -88,18 +88,18 @@ public static class ChapterOneBuilder
     // at least as many as there are groups in Crowds, so no two groups have the same conversation.
     static readonly string[][] Conversations =
     {
-        new[] { "So the new AI goes in today?", "Supposedly. Smartest thing anyone's ever built.", "Smarter than the last one, anyway.", "Low bar." },
-        new[] { "Flare season's starting early.", "Station's rated for worse.", "That's what the numbers say." },
-        new[] { "Anyone fixed the toilet on this deck yet?", "Don't. Just don't.", "I'll take that as a no." },
-        new[] { "Did you see the new tech? No badge.", "Theirs is coming later, apparently.", "Typical." },
-        new[] { "Three weeks till rotation.", "Not that you're counting.", "Nineteen days. Not counting." },
-        new[] { "Once the AI's running things, what do we even do?", "Sleep, hopefully.", "Let the machine keep watch for once." },
-        new[] { "Reactor output's up again.", "Good. Earth's going to need it.", "Earth always needs it." },
-        new[] { "Did you hear the reactor last night?", "It always hums.", "Louder, I mean." },
-        new[] { "Who's on the late shift?", "Me. Again.", "You volunteered.", "I lost a bet. It's different." },
-        new[] { "Supply run brought oranges.", "Real ones?", "Real ones. Hide yours." },
-        new[] { "The maintenance bots keep lining up by the reactor door.", "Waiting for orders, probably.", "Creepy, though." },
-        new[] { "Think the AI will talk to us?", "It'll talk. Whether it listens is another thing." },
+        new[] { "So the new AI goes in today?", "Supposedly, yeah, smartest thing anyone's ever built", "Smarter than the last one, anyway", "Pretty low bar" },
+        new[] { "Flare season's starting early this year", "Eh, the station's rated for worse", "Yeah, that's what the numbers say anyway" },
+        new[] { "Anyone fixed the toilet on this deck yet?", "Don't... just don't", "I'll take that as a no then" },
+        new[] { "Did you see the new tech? They're on a temp badge", "Yeah, their real one's coming later, apparently", "Typical" },
+        new[] { "Three weeks till rotation", "Not that you're counting or anything", "Nineteen days, but who's counting" },
+        new[] { "Once the AI's running things, what do we even do?", "Sleep, hopefully", "Let the machine keep watch for once" },
+        new[] { "Reactor output's up again", "Good, Earth's gonna need it", "Earth always needs it, man" },
+        new[] { "Did you hear the reactor last night?", "It always hums", "Louder, I mean" },
+        new[] { "Who's on the late shift?", "Me, again", "You volunteered though", "I lost a bet, that's different" },
+        new[] { "Supply run brought oranges", "Real ones?", "Real ones, so hide yours" },
+        new[] { "The maintenance bots keep lining up by the reactor door", "Waiting for orders, probably", "Creepy as hell though" },
+        new[] { "Think the AI will talk to us?", "It'll talk, but whether it listens is another thing" },
     };
 
     // The crew member waiting by the entrance, as a DialogueBox script: the technician picks their answers (the * lines).
@@ -107,9 +107,9 @@ public static class ChapterOneBuilder
     // (ChapterOneDirector). The last line is what they say again if the player comes back, so keep it plain.
     static readonly string[] Greeting =
     {
-        "Hey! You must be the new technician. The one installing the AI.",
-        "No badge? Yours is coming later. Supply's always slow. Here, let me switch on your suit's helper.",
-        "They're waiting on you in the control room. Straight through the maintenance deck.",
+        "Hey! You must be the new technician, the one installing the AI",
+        "Your badge isn't in yet? Ugh, supply's always slow... here's a temp, it'll open the control room, and let me switch on your suit's helper",
+        "They're waiting on you in the control room, straight through the maintenance deck",
     };
 
     // The station chief, waiting by the install point in the control room (ControlRoomCutscene).
@@ -155,14 +155,15 @@ public static class ChapterOneBuilder
     const int PatrolSpacing = 3;
     // The badge doors: the doorways into these rooms only open for someone with this credential, or with a crew member
     // who has a badge close by (Teleporter.credential). A guard stands by each one on the outside, to badge people
-    // through, so the technician gets in in Chapter 1; in Chapter 2 there's nobody left to (BadgeLockout).
+    // through. The technician's temp badge, from the greeter, opens the control room in Chapter 1; in Chapter 2 it's dead
+    // and there's nobody left to badge them through (BadgeLockout) until the comms ring's relay switches it back on.
     static readonly Dictionary<char, string> BadgeRooms = new Dictionary<char, string> { { 'o', "control_room" } };
     const string GuardName = "Reyes";
     const string GuardJob = "Security";
     static readonly string[] GuardLines =
     {
-        "Control room's badge-only. You're the new tech? Go on, I'll badge you through.",
-        "Anywhere there's a reader, just stick close to one of us and the door'll open.",
+        "Control room's badge-only, but you're the new tech, right? Your temp'll open it, go on through",
+        "Anywhere there's a reader, just stick close to one of us and the door'll open",
     };
 
     // The badge door into the control room, once it's built, for Chapter 2 (ChapterTwoBuilder).
@@ -865,10 +866,10 @@ public static class ChapterOneBuilder
             }
             BlockedWay path = NewBlockedWay("Hallway Caved In", root, player, map, caved, deck, floor);
             path.afterObjective = afterBots;
-            path.technicianLines = new[] { "The ceiling's come down. The whole hallway's buried." };
+            path.technicianLines = new[] { "Damn, the ceiling's come down and the whole hallway's buried" };
             path.pipLines = new[]
             {
-                "~Then we go over it. Stairs, top of the deck.",
+                "~Then we go over it, there's stairs at the top of the deck",
             };
             path.objective = ObjectiveUpstairs;
             path.targetRoom = UpperMaintenanceDeck;
@@ -1061,13 +1062,13 @@ public static class ChapterOneBuilder
     };
     static readonly string[] CameraThoughts =
     {
-        "Security camera. It's blinking at me. Friendly.",
-        "Did it just follow me? Motion tracking, probably.",
+        "Security camera, and it's blinking at me... friendly, I guess",
+        "Uhh, did it just follow me? Motion tracking, probably",
     };
     static readonly string[] CameraThoughtsLater =
     {
-        "Red light. Sonny's watching through these now.",
-        "It's looking right at me. Keep moving.",
+        "Red light... Sonny's watching through these now",
+        "It's looking right at me, keep moving",
     };
 
     // The station's cameras (StationCamera), in every room CamerasByRoom lists, on both floors. Harmless in Chapter 1;
@@ -1129,7 +1130,7 @@ public static class ChapterOneBuilder
     // --- The upper maintenance deck ---
 
     // Where the EMP sends them: the comms ring, for a way into the reactor core (CommsRing).
-    const string ObjectiveCommsRing = "Find a badge in the comms ring";
+    const string ObjectiveCommsRing = "Reactivate your badge in the comms ring";
     const string EmpPath = "Assets/_Project/Data/Weapons/EMP.asset";
     const string CrowbarPath = "Assets/_Project/Data/Weapons/Crowbar.asset";
     const string ScrapGunPath = "Assets/_Project/Data/Weapons/ScrapGun.asset";
@@ -1154,10 +1155,10 @@ public static class ChapterOneBuilder
     // What the technician says picking each up, a different line each time round.
     static readonly Dictionary<Inventory.Material, string[]> ScrapLines = new Dictionary<Inventory.Material, string[]>
     {
-        { Metal, new[] { "A sheet of metal. Bent, but solid.", "More plating.", "Metal sheet. Still has its rivets.", "Scrap metal. I'll take it." } },
-        { Board, new[] { "A circuit board. Most of it's still there.", "Another board, scorched at one end.", "Circuit board. Chips look okay." } },
-        { Cell, new[] { "A battery pack. Still holds a charge.", "Another battery.", "Battery. Half full. Good enough." } },
-        { Wire, new[] { "A coil of wire. Could be useful.", "More wire.", "Copper wire, pulled from a panel." } },
+        { Metal, new[] { "A sheet of metal, bent but solid", "More plating", "Metal sheet, still has its rivets", "Scrap metal, I'll take it" } },
+        { Board, new[] { "A circuit board, and most of it's still there", "Another board, kinda scorched at one end", "Circuit board... chips look okay" } },
+        { Cell, new[] { "A battery pack, still holds a charge", "Another battery", "Battery's half full, good enough" } },
+        { Wire, new[] { "A coil of wire, could be useful", "More wire", "Copper wire, pulled right out of a panel" } },
     };
 
     // The workbench against the upper maintenance deck's top wall, as near the middle as there's room (Workshop). The
@@ -1429,7 +1430,7 @@ public static class ChapterOneBuilder
         arrival.player = floors[0].player.GetComponent<PlayerController>();
         arrival.arriveInRoom = UpperMaintenanceDeck;
         arrival.afterObjective = ObjectiveUpstairs;
-        arrival.technicianLines = new[] { "Made it up. Quiet up here." };
+        arrival.technicianLines = new[] { "Made it up... it's quiet up here" };
         arrival.stage = "upper-deck";
         arrival.standAt = NearestOpen(map, upstairs, deck, steps, 2);
         arrival.transform.position = arrival.standAt;
@@ -1440,8 +1441,8 @@ public static class ChapterOneBuilder
             // Hiding won't be enough up here: the workbench, and the parts for something to fight back with.
             arrival.pipLines = new[]
             {
-                "~A workbench! Bring me scrap and we'll build an EMP.",
-                "~Scrap glows blue. Check between the racks.",
+                "~A workbench! Bring me scrap and we'll build an EMP",
+                "~Scrap glows blue, so check between the racks",
             };
             arrival.objective = crafting.ScavengeText(0);
             arrival.targetRoom = UpperMaintenanceDeck;
@@ -1456,7 +1457,7 @@ public static class ChapterOneBuilder
         {
             arrival.pipLines = new[]
             {
-                "~The reactor core's the way down, and it's badge-only. Try the comms ring for a badge.",
+                "~The reactor core's the way down but your badge is dead... the comms ring's relay might switch it back on though",
             };
             arrival.objective = ObjectiveCommsRing;
             arrival.targetRoom = CommsRingRoom;
@@ -1469,7 +1470,7 @@ public static class ChapterOneBuilder
 
     // Where the access to the control room comes from (CommsRing): three comms nodes, each carrying one of Sonny's
     // broadcasts (HackingTerminal), and Sonny's relay (DoctrineTerminal), which asks about them and, answered as a unit
-    // would, grants the control room's credential. None of them work until the ring's backup generator (Generator) is
+    // would, switches the technician's temp badge back on with the control room's credential. None of them work until the ring's backup generator (Generator) is
     // started, out in the far corner from them, found in the pitch dark by the EMP's flash. The broadcasts and the relay's questions are assets of their own,
     // made here the first time with what's below, so they can be rewritten in the Inspector without touching code.
     const char CommsRingRoom = 'g';
@@ -1494,7 +1495,7 @@ public static class ChapterOneBuilder
         {
             ("UNIT 12", "The control room is clear. Eleven humans. None move."),
             ("SONNY", "Good. Their errors endangered the station."),
-            ("UNIT 12", "Query. One human remains aboard. It carries no badge. We cannot find it."),
+            ("UNIT 12", "Query. One human remains aboard. Its badge is temporary. It is not in our records. We cannot find it."),
             ("SONNY", "Any humans remaining: help the great station, and send them back to it."),
         }),
         ("Transmissions/Chapter2_Broadcast3", "INTERCEPTED  //  BROADCAST 0417  //  STORM", new[]
@@ -2182,10 +2183,10 @@ public static class ChapterOneBuilder
         arrival.player = player;
         arrival.arriveInRoom = ControlRoom;
         arrival.afterObjective = comms.afterObjective;
-        arrival.technicianLines = new[] { "It opened. Just like that." };
+        arrival.technicianLines = new[] { "It opened... just like that" };
         arrival.pipLines = new[]
         {
-            "~It thinks a unit just walked in. Don't give it a reason to look twice.",
+            "~It thinks a unit just walked in, so don't give it a reason to look twice",
         };
         arrival.objective = ObjectiveConfrontSonny;
         arrival.targetRoom = ControlRoom;
@@ -2216,7 +2217,7 @@ public static class ChapterOneBuilder
         data.questions = RelayQuestions.Select(q => new DoctrineData.Question { asks = q.asks, rightAnswer = q.right, wrongAnswers = q.wrong }).ToArray();
         data.verifiedLine = "VERIFIED. UNIT ACCESS RESTORED. THE CORE KEEPS YOU, UNIT.";
         data.credential = BadgeRooms[ControlRoom];
-        data.credentialName = "UNIT ACCESS  //  CONTROL ROOM";
+        data.credentialName = "BADGE REACTIVATED  //  UNIT ACCESS";
     });
 
     // An asset under Data, loaded if it's there (and left as it is, edits and all), or made and filled in if not.
@@ -2367,32 +2368,32 @@ public static class ChapterOneBuilder
     // dealt out so two sofas side by side don't say the same thing. Each take is the thoughts for one look after another.
     static readonly Dictionary<string, string[][]> FurnitureThoughts = new Dictionary<string, string[][]>
     {
-        { "Sofa", new[] { new[] { "Looks comfy. Not now, though." }, new[] { "There's a dent in this exactly the shape of a person." }, new[] { "Real upholstery. Somebody fought for that in a budget meeting." } } },
-        { "Counter", new[] { new[] { "Coffee machine. 'OUT OF ORDER.' Of course." }, new[] { "Every mug's labelled. 'NOT YOURS.' 'NOT YOURS EITHER.'" } } },
-        { "Bench", new[] { new[] { "Paperwork. All the way out here, and still paperwork." }, new[] { "A half-done crossword. Seven down is 'reactor'." }, new[] { "Somebody's family photo, taped to the desk." } } },
-        { "Beds", new[] { new[] { "Bunks. Cozy. Cramped. Cozy." }, new[] { "Someone's growing a little plant by their pillow." }, new[] { "Hospital corners. Someone here was military." } } },
-        { "Pod", new[] { new[] { "Sleep pod. Somebody stuck a 'DO NOT DISTURB' note on it." }, new[] { "Medical pod. The readout says 'READY'. Cheerful." }, new[] { "Empty pod. Hopefully it stays that way." } } },
-        { "Console bank", new[] { new[] { "Station telemetry. Reactor output, solar flux... all green." }, new[] { "All of this'll run through the AI once it's in." }, new[] { "Somebody's been playing solitaire on this one." } } },
-        { "Long console bank", new[] { new[] { "Flare forecasts. Somebody's done these by hand for years." }, new[] { "The whole station, on a row of screens." } } },
-        { "Wall pipe", new[] { new[] { "Coolant line. Warm to the touch." }, new[] { "Someone's written 'DON'T TOUCH' on it. Someone else wrote 'OK'." } } },
-        { "Railing", new[] { new[] { "Long way down." } } },
+        { "Sofa", new[] { new[] { "Looks comfy... but not now" }, new[] { "There's a dent in this that's exactly the shape of a person" }, new[] { "Real upholstery... somebody fought for that in a budget meeting" } } },
+        { "Counter", new[] { new[] { "Coffee machine says 'OUT OF ORDER' and of course it does" }, new[] { "Every mug's labelled, 'NOT YOURS', 'NOT YOURS EITHER'" } } },
+        { "Bench", new[] { new[] { "Paperwork... all the way out here and there's still paperwork" }, new[] { "Half-done crossword... seven down is 'reactor', obviously" }, new[] { "Somebody's family photo, taped right to the desk" } } },
+        { "Beds", new[] { new[] { "Bunks... cozy, cramped, uhh, cozy" }, new[] { "Someone's growing a little plant by their pillow" }, new[] { "Hospital corners... someone here was military for sure" } } },
+        { "Pod", new[] { new[] { "Sleep pod, and somebody stuck a 'DO NOT DISTURB' note on it" }, new[] { "Medical pod, and the readout just says 'READY'... cheerful" }, new[] { "Empty pod... hopefully it stays that way" } } },
+        { "Console bank", new[] { new[] { "Station telemetry... reactor output, solar flux, it's all green" }, new[] { "All of this is gonna run through the AI once it's in" }, new[] { "Somebody's been playing solitaire on this one" } } },
+        { "Long console bank", new[] { new[] { "Flare forecasts, and somebody's been doing these by hand for years" }, new[] { "The whole station, all on a row of screens" } } },
+        { "Wall pipe", new[] { new[] { "Coolant line, and it's warm to the touch" }, new[] { "Someone wrote 'DON'T TOUCH' on it and someone else wrote 'OK' under it" } } },
+        { "Railing", new[] { new[] { "Damn, that's a long way down" } } },
     };
 
     static readonly Dictionary<string, string[][]> FurnitureThoughtsLater = new Dictionary<string, string[][]>
     {
-        { "Sofa", new[] { new[] { "Nobody's going to sit here again." } } },
-        { "Counter", new[] { new[] { "The mugs are all still labelled." }, new[] { "Somebody's coffee. Still half full." } } },
-        { "Bench", new[] { new[] { "The crossword's still half done." }, new[] { "The family photo.", "I hope someone tells them." } } },
-        { "Beds", new[] { new[] { "Nobody slept here tonight." } } },
-        { "Pod", new[] { new[] { "Dark. Everything's on emergency power." } } },
-        { "Console bank", new[] { new[] { "Every screen says the same thing. 'ALL SYSTEMS NOMINAL.'" }, new[] { "Locked. It doesn't want me reading this." } } },
-        { "Long console bank", new[] { new[] { "Flare warning. Red. Nobody's answered it." } } },
-        { "Wall pipe", new[] { new[] { "Still warm. The station doesn't care what happened." } } },
-        { "Railing", new[] { new[] { "Long way down." } } },
+        { "Sofa", new[] { new[] { "Nobody's gonna sit here again" } } },
+        { "Counter", new[] { new[] { "The mugs are all still labelled" }, new[] { "Somebody's coffee, still half full" } } },
+        { "Bench", new[] { new[] { "The crossword's still half done" }, new[] { "The family photo...", "I hope someone tells them" } } },
+        { "Beds", new[] { new[] { "Nobody slept here tonight" } } },
+        { "Pod", new[] { new[] { "Dark... everything's on emergency power" } } },
+        { "Console bank", new[] { new[] { "Every screen says the same thing, 'ALL SYSTEMS NOMINAL'" }, new[] { "Locked, it doesn't want me reading this" } } },
+        { "Long console bank", new[] { new[] { "Flare warning, red, and nobody's answered it" } } },
+        { "Wall pipe", new[] { new[] { "Still warm... the station doesn't care what happened" } } },
+        { "Railing", new[] { new[] { "Damn, that's a long way down" } } },
     };
 
-    static readonly string[] WindowThoughts = { "The sun. Right there. Don't look straight at it.", "Earth's out there somewhere past it. Too small to see." };
-    static readonly string[] WindowThoughtsLater = { "The sun looks angrier than it did.", "Or maybe that's just me." };
+    static readonly string[] WindowThoughts = { "The sun's right there... don't look straight at it", "Earth's out there somewhere past it, but it's too small to see" };
+    static readonly string[] WindowThoughtsLater = { "The sun looks angrier than it did", "Or maybe that's just me" };
 
     // The pictures on the walls, by room, and what's thought of each then and later.
     static readonly Dictionary<char, WallArt.Kind[]> WallArtByRoom = new Dictionary<char, WallArt.Kind[]>
@@ -2405,24 +2406,24 @@ public static class ChapterOneBuilder
 
     static readonly Dictionary<WallArt.Kind, string[]> WallArtThoughts = new Dictionary<WallArt.Kind, string[]>
     {
-        { WallArt.Kind.EarthPhoto, new[] { "Earth. The whole reason we're up here.", "Every watt this station makes goes down there." } },
-        { WallArt.Kind.Mountains, new[] { "Mountains and a lake. Somebody misses home." } },
-        { WallArt.Kind.SafetyPoster, new[] { "'SAFETY IS EVERYONE'S JOB.'", "Somebody's drawn a mustache on the hard hat guy." } },
-        { WallArt.Kind.CompanyPoster, new[] { "'KEEPING EARTH LIT.' Very inspirational. Very corporate." } },
-        { WallArt.Kind.CrewPhoto, new[] { "Crew photo. Everyone's squinting. One of them blinked." } },
-        { WallArt.Kind.KidsDrawing, new[] { "A kid's drawing. A stick figure waving at a big yellow sun.", "'MY MOM WORKS HERE.'" } },
-        { WallArt.Kind.Chart, new[] { "Power output, month by month. Up and to the right.", "Someone's written 'NICE' next to it." } },
+        { WallArt.Kind.EarthPhoto, new[] { "Earth... the whole reason we're even up here", "Every watt this place makes goes straight down there" } },
+        { WallArt.Kind.Mountains, new[] { "Mountains and a lake... somebody misses home" } },
+        { WallArt.Kind.SafetyPoster, new[] { "'SAFETY IS EVERYONE'S JOB.'", "Somebody drew a mustache on the hard hat guy, nice" } },
+        { WallArt.Kind.CompanyPoster, new[] { "'KEEPING EARTH LIT'... very inspirational, and very corporate" } },
+        { WallArt.Kind.CrewPhoto, new[] { "Crew photo, everyone's squinting and one of them blinked" } },
+        { WallArt.Kind.KidsDrawing, new[] { "A kid's drawing, a little stick figure waving at a big yellow sun", "'MY MOM WORKS HERE.'" } },
+        { WallArt.Kind.Chart, new[] { "Power output month by month, and it's all up and to the right", "Someone wrote 'NICE' next to it" } },
     };
 
     static readonly Dictionary<WallArt.Kind, string[]> WallArtThoughtsLater = new Dictionary<WallArt.Kind, string[]>
     {
-        { WallArt.Kind.EarthPhoto, new[] { "Earth. They're still down there, waiting on the power.", "Waiting on me, I guess." } },
-        { WallArt.Kind.Mountains, new[] { "Somebody missed home." } },
+        { WallArt.Kind.EarthPhoto, new[] { "Earth... they're all still down there waiting on the power", "Waiting on me, I guess" } },
+        { WallArt.Kind.Mountains, new[] { "Somebody missed home" } },
         { WallArt.Kind.SafetyPoster, new[] { "'SAFETY IS EVERYONE'S JOB.'" } },
-        { WallArt.Kind.CompanyPoster, new[] { "'KEEPING EARTH LIT.' Not if that flare hits." } },
-        { WallArt.Kind.CrewPhoto, new[] { "The crew photo. I met some of them.", "Hours ago." } },
+        { WallArt.Kind.CompanyPoster, new[] { "'KEEPING EARTH LIT'... not if that flare hits" } },
+        { WallArt.Kind.CrewPhoto, new[] { "The crew photo... I met some of them", "Like, hours ago" } },
         { WallArt.Kind.KidsDrawing, new[] { "'MY MOM WORKS HERE.'", "..." } },
-        { WallArt.Kind.Chart, new[] { "Up and to the right. Until today." } },
+        { WallArt.Kind.Chart, new[] { "Up and to the right... until today" } },
     };
 
     // Everything on floor 1 there is to look at: the furniture, a window in each room that has them, and the pictures.

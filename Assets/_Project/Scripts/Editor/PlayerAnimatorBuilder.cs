@@ -364,7 +364,8 @@ public static class PlayerAnimatorBuilder
     //   Charge                -> first frame of Swing (the raised pose), else Idle
     //   Swing, Shoot          -> Idle
     //   Sprint                -> Walk
-    //   a diagonal            -> the straight direction Facing uses (e.g. DownLeft -> Down), for attacks and sprints,
+    //   a diagonal            -> for attacks and sprints, its left or right side if only that has art (DownLeft -> Left),
+    //                            else the straight direction Facing uses (e.g. DownLeft -> Down),
     //                            and for a Melee/Ranged Idle or Walk that has its own clip that way
     //   Idle                  -> first frame of the same hold's Walk
     //   Melee/Ranged Idle/Walk -> the Unarmed version
@@ -380,6 +381,10 @@ public static class PlayerAnimatorBuilder
         // Attacks and sprints come in four directions at most, so a diagonal borrows the straight one.
         bool standing = action == "Idle" || action == "Walk";
         int straight = System.Array.IndexOf(Directions, StraightFor(dir));
+        // If only the side art exists (like the left/right swings), a diagonal uses that side rather than up or down.
+        int side = System.Array.IndexOf(Directions, RawDirections[dir].x > 0 ? "Right" : "Left");
+        if (IsDiagonal(dir) && !standing && !HasAttackArt(hold, action, straight) && HasAttackArt(hold, action, side))
+            return ResolveClip(hold, action, side);
         if (IsDiagonal(dir) && (!standing || (hold != "Unarmed" && clips.ContainsKey($"{hold}_{action}_{Directions[straight]}"))))
             return ResolveClip(hold, action, straight);
 
@@ -413,6 +418,13 @@ public static class PlayerAnimatorBuilder
             return oldIdle;
         AnimationClip unarmedWalk = ResolveClip("Unarmed", "Walk", dir);
         return unarmedWalk != null ? FirstFrameOf(unarmedWalk) : null;
+    }
+
+    // Whether an action has drawn art facing this way, counting the swing that charging and charged swings borrow.
+    static bool HasAttackArt(string hold, string action, int dir)
+    {
+        if (clips.ContainsKey($"{hold}_{action}_{Directions[dir]}")) return true;
+        return (action == "Charge" || action == "ChargedSwing") && clips.ContainsKey($"{hold}_Swing_{Directions[dir]}");
     }
 
     // Crouch and CrouchIdle come in Left and Right. A missing CrouchIdle holds the first frame of Crouch facing the

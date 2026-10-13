@@ -1081,7 +1081,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -2961,8 +2961,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -5363,8 +5363,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Earth. They're still down there, waiting on the power.
-  - Waiting on me, I guess.
+  - Earth... they're all still down there waiting on the power
+  - Waiting on me, I guess
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -5610,31 +5610,31 @@ MonoBehaviour:
   unlockCredential: reactor_core
   lockedText: LOCKED  COMMS RING
   pipUnlocked:
-  - ^A unit's access opens the workbench's full plans too. Crowbar, scrap gun, all of it.
+  - ^Oh, and a unit's access opens the workbench's full plans too, so crowbar, scrap gun, all of it
   servoSpeedBoost: 1.2
   platingHealth: 2
   scavengeObjective: Find parts for an EMP
   craftObjective: Make an EMP at the workbench
-  afterObjective: Find a badge in the comms ring
+  afterObjective: Reactivate your badge in the comms ring
   afterRoom: 103
   afterLabel: Comms Ring
   pipEnoughScrap:
-  - ^That's everything for the EMP. Get it to the workbench.
+  - ^That's everything for the EMP, get it to the workbench!
   pipEmpMade:
-  - ^It works! One pulse shorts out any bot or camera in front of you for a few seconds.
-  - ~It needs a moment to recharge between pulses. Make them count.
-  - ~Now. The way down to the control room's through the reactor core, and the reactor's badge-only. Sonny cut off every badge.
-  - ~Try the comms ring, next door. If there's a badge left anywhere, it's there.
+  - ^It works! One pulse shorts out any bot or camera in front of you for a few seconds
+  - ~It needs a sec to recharge between pulses though, so make them count
+  - ~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too
+  - ~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that
   pipCrowbarMade:
-  - ~A crowbar. If a bot gets too close, swing first. The number keys switch what you're holding.
+  - ~A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding
   pipScrapGunMade:
-  - ^A scrap gun! Point and click. Now we can hit back from a distance.
+  - ^A scrap gun! Point and click, and now we can hit back from a distance
   pipBlasterMade:
-  - ^The blaster. Hold to charge it, let go when it's full.
+  - ^The blaster! Hold to charge it and let go when it's full
   pipServoMade:
-  - ^Servo braces. You'll move faster now.
+  - ^Servo braces, you'll move way faster now
   pipPlatingMade:
-  - ^Armor plating. You can take more hits.
+  - ^Armor plating, so you can take a few more hits
   respawnAt: {x: 216.5, y: 207.74}
   benchStandAt: {x: 205.5, y: 206.74}
 --- !u!1 &101795009
@@ -8531,8 +8531,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -9439,7 +9439,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody's going to sit here again.
+  - Nobody's gonna sit here again
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -10008,8 +10008,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -13169,8 +13169,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -13358,7 +13358,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.680001}
@@ -14162,6 +14162,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 544854411}
+  - {fileID: 1971081554}
   m_Father: {fileID: 890596394}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &241317436
@@ -14220,6 +14221,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -40215,6 +40217,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -40670,7 +40673,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - '''KEEPING EARTH LIT.'' Not if that flare hits.'
+  - '''KEEPING EARTH LIT''... not if that flare hits'
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -40811,7 +40814,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Locked. It doesn't want me reading this.
+  - Locked, it doesn't want me reading this
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 3, y: 1.6799972}
@@ -41633,6 +41636,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -42003,6 +42007,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -42902,6 +42907,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -43606,7 +43612,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -45561,6 +45567,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1579925443}
+  - {fileID: 776128880}
   m_Father: {fileID: 226738029}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &348933272
@@ -45995,7 +46002,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -46869,6 +46876,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2078141111}
+  - {fileID: 580741845}
   m_Father: {fileID: 226738029}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &365330889
@@ -47348,6 +47356,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -48213,9 +48222,9 @@ MonoBehaviour:
   arriveInRoom: 0
   afterObjective: Get to the control room
   technicianLines:
-  - The ceiling's come down. The whole hallway's buried.
+  - Damn, the ceiling's come down and the whole hallway's buried
   pipLines:
-  - ~Then we go over it. Stairs, top of the deck.
+  - ~Then we go over it, there's stairs at the top of the deck
   objective: Go upstairs to the maintenance deck
   targetRoom: 100
   targetLabel: Maintenance Deck (Upper)
@@ -49479,8 +49488,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -49654,14 +49663,14 @@ MonoBehaviour:
   restroomRoom: 119
   grace: 1.5
   technicianSees:
-  - Oh no. No, no, no...
+  - Oh no... no, no, no...
   pipCrewFound: []
   technicianBots:
-  - The bots... they're hunting.
+  - The bots... they're hunting
   pipBots:
-  - ~Stay out of their sight.
-  - ~And don't count on the escape pods. Every one launched hours ago. There's no way off.
-  - ~So we go to Sonny. The control room.
+  - ~Stay out of their sight
+  - ~And don't count on the escape pods, every one launched hours ago and there's no way off
+  - ~So we go to Sonny, in the control room
   tipsTitle: Staying hidden
   objective: Get to the control room
   targetRoom: 111
@@ -50254,6 +50263,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -51061,8 +51071,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -102125,9 +102135,9 @@ MonoBehaviour:
   technicianGrabbed:
   - Get OFF me!
   technicianFree:
-  - ...They're in the walls.
+  - ...They're in the damn walls
   pipFree:
-  - ~Keep moving, Tech. Stairs!
+  - ~Keep moving, Tech, stairs!
 --- !u!1 &505790322
 GameObject:
   m_ObjectHideFlags: 0
@@ -106277,6 +106287,98 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!1 &580741844
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 580741845}
+  - component: {fileID: 580741846}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &580741845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580741844}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 365330888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &580741846
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 580741844}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &581445249
 GameObject:
   m_ObjectHideFlags: 0
@@ -107478,8 +107580,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -108360,7 +108462,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Flare warning. Red. Nobody's answered it.
+  - Flare warning, red, and nobody's answered it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 5, y: 1.6799972}
@@ -108663,6 +108765,7 @@ MonoBehaviour:
   credential: control_room
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -175072,7 +175175,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -175978,9 +176081,10 @@ MonoBehaviour:
   titleHoldSeconds: 1.8
   technicianWakeUp:
   - Ugh... my head.
+  - ...And my badge is dead, light's out
   pipWakeUp:
-  - ~Tech. You were out for hours.
-  - ~Something's wrong. Get out of this room.
+  - ~Tech? You were out for hours
+  - ~Something's wrong, get out of this room
   objectiveWakeUp: Get out of the storage room
   logPromptSeconds: 10
 --- !u!1 &689132019
@@ -178148,6 +178252,98 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &726186188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 726186189}
+  - component: {fileID: 726186190}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &726186189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 726186188}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 983247630}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &726186190
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 726186188}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 67495f35e3e49ce4d87f57569e2021d7, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 2}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &726385251
 GameObject:
   m_ObjectHideFlags: 0
@@ -178422,7 +178618,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Up and to the right. Until today.
+  - Up and to the right... until today
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -179535,7 +179731,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -179744,7 +179940,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -179861,7 +180057,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -193673,6 +193869,98 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &776128879
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 776128880}
+  - component: {fileID: 776128881}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &776128880
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 776128879}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 348933271}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &776128881
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 776128879}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &777700692
 GameObject:
   m_ObjectHideFlags: 0
@@ -194353,6 +194641,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -194794,6 +195083,7 @@ MonoBehaviour:
   credential: reactor_core
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -195450,8 +195740,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -196719,6 +197009,7 @@ MonoBehaviour:
   credential: reactor_core
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -202411,7 +202702,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Still warm. The station doesn't care what happened.
+  - Still warm... the station doesn't care what happened
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 0.5, y: 1.6799972}
@@ -203496,6 +203787,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -205908,7 +206200,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -208050,6 +208342,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1907912573}
+  - {fileID: 726186189}
   m_Father: {fileID: 890596394}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &983247631
@@ -209968,6 +210261,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -211468,14 +211762,14 @@ MonoBehaviour:
   jammedText: WON'T BUDGE
   tryDoorRange: 1.4
   technicianDoorJammed:
-  - It won't budge. Something's jammed against the other side.
+  - It won't budge, something's jammed against the other side
   pipDoorJammed:
-  - ~Jammed. Take the vent on the floor.
+  - ~It's jammed, take the vent on the floor
   pipVentHowTo:
-  - '[W] crawls, [A] and [D] turn. Hold [C] to go slow and quiet.'
+  - '[W] crawls and [A] and [D] turn, hold [C] to go slow and quiet'
   objectiveVent: Crawl through the vent
   technicianOut:
-  - The restroom. Of course.
+  - The restroom... of course it's the restroom
   pipOut: []
   objectiveOut: Find the crew
 --- !u!1 &1037994212
@@ -211924,8 +212218,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -224482,7 +224776,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Long way down.
+  - Damn, that's a long way down
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 2.5, y: 0.6800011}
@@ -225170,6 +225464,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -227086,6 +227381,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -227784,6 +228080,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -228457,7 +228754,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Still warm. The station doesn't care what happened.
+  - Still warm... the station doesn't care what happened
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 0.5, y: 1.6799972}
@@ -246594,6 +246891,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -250154,8 +250452,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -250294,7 +250592,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -250548,7 +250846,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -251929,7 +252227,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -257201,7 +257499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -257739,10 +258037,10 @@ MonoBehaviour:
   arriveInRoom: 100
   afterObjective: Go upstairs to the maintenance deck
   technicianLines:
-  - Made it up. Quiet up here.
+  - Made it up... it's quiet up here
   pipLines:
-  - ~A workbench! Bring me scrap and we'll build an EMP.
-  - ~Scrap glows blue. Check between the racks.
+  - ~A workbench! Bring me scrap and we'll build an EMP
+  - ~Scrap glows blue, so check between the racks
   objective: Find parts for an EMP (0/7)
   targetRoom: 100
   targetLabel: Maintenance Deck (Upper)
@@ -258096,8 +258394,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -258492,6 +258790,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -259351,7 +259650,7 @@ MonoBehaviour:
   - {x: 229.5, y: 208.74}
   technicianAngelFollows:
   - It followed me!
-  arriveObjective: Find a badge in the comms ring
+  arriveObjective: Reactivate your badge in the comms ring
   generatorObjective: Find the generator and get the power back on
   interceptObjective: Intercept Sonny's broadcasts
   answerObjective: Answer Sonny at its relay
@@ -259359,36 +259658,36 @@ MonoBehaviour:
   afterRoom: 111
   afterLabel: Control Room
   technicianBlackout:
-  - No, no, no. The lights...
+  - No, no, no... the lights...
   pipBlackout:
-  - ~Tech, something's draining the suit. I'm going to lose you.
-  - ~Use the EMP. Its flash lights up whatever's in front of you.
-  - ~Find the generator and get the power back on. Then I can come b-
+  - ~Tech, something's draining the suit and I'm gonna lose you
+  - ~Use the EMP, its flash lights up whatever's in front of you
+  - ~Find the generator and get the power back on, then I can come b-
   technicianAlone:
-  - Pip? ...Pip.
+  - Pip? ...Pip
   technicianAngel:
-  - ...Footsteps. Fast ones.
+  - ...Footsteps, and fast ones
   technicianPowerOn:
-  - Power. Finally.
+  - Power, finally
   pipBack:
-  - ~...Tech? There you are! You got the power back on.
+  - ~...Tech? There you are! You got the power back on
   technicianArrive:
-  - Every screen up here's still running.
+  - Every screen up here's still running
   pipArrive:
-  - ~No badges up here. But that pillar with the red eye, that's Sonny's relay. It's how it checks on its units.
-  - ~If it thinks you're one of them, it'll give you a unit's access. And units get into the control room.
-  - ~It'll quiz you first. The comms nodes are carrying its broadcasts. Tune them in and listen to how the bots talk.
+  - ~See that pillar with the red eye? That's Sonny's relay, it's how it checks on its units, and it talks to every badge aboard
+  - ~If it thinks you're one of them it'll switch your badge back on with a unit's access, and units get into the control room
+  - ~But it'll quiz you first... the comms nodes are carrying its broadcasts, so tune them in and listen to how the bots talk
   pipIntercepted:
-  - ~It heard that. Something's moving in the walls.
-  - '~One more. Remember what they said: that''s what it''ll ask.'
+  - ~Uh oh, it heard that... something's moving in the walls
+  - ~One more, and remember what they said, 'cause that's what it'll ask
   pipAllIntercepted:
-  - ~That's all of them. The relay's listening now.
-  - ~Answer like a bot would, not like you would. And don't hesitate. It notices.
+  - ~That's all of them, the relay's listening now
+  - ~Answer like a bot would, not like you would, and don't hesitate 'cause it notices
   technicianVerified:
   - It... thinks I'm one of them.
   pipVerified:
-  - ^You're a unit now. The reactor and the control room will open for you.
-  - ~Through the reactor, down its stairs. Go.
+  - ^Your badge is back on as a unit's, so the reactor and the control room will open for you
+  - ~Through the reactor and down its stairs, go!
   pipAlarm:
   - ~It knows! Get away from there, it'll let you try again in a bit.
   breachBots:
@@ -263823,6 +264122,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -264250,7 +264550,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -265405,7 +265705,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Flare warning. Red. Nobody's answered it.
+  - Flare warning, red, and nobody's answered it
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 5, y: 1.6799972}
@@ -267142,8 +267442,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The sun looks angrier than it did.
-  - Or maybe that's just me.
+  - The sun looks angrier than it did
+  - Or maybe that's just me
   range: 1.1
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 1.3}
@@ -269495,7 +269795,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Somebody missed home.
+  - Somebody missed home
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -273828,7 +274128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -277225,7 +277525,7 @@ MonoBehaviour:
   sightInDark: 0.7
   sightInBlackout: 0.5
   pipFirstDark:
-  - ~Power's out ahead. Your suit light's all you've got.
+  - ~Power's out ahead, so your suit light's all you've got
 --- !u!1 &1626022209
 GameObject:
   m_ObjectHideFlags: 0
@@ -277311,7 +277611,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -277626,7 +277926,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The mugs are all still labelled.
+  - The mugs are all still labelled
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 4, y: 1.6799972}
@@ -279467,8 +279767,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -283954,8 +284254,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -284803,8 +285103,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -284990,9 +285290,9 @@ MonoBehaviour:
   arriveInRoom: 111
   afterObjective: Get into the control room
   technicianLines:
-  - It opened. Just like that.
+  - It opened... just like that
   pipLines:
-  - ~It thinks a unit just walked in. Don't give it a reason to look twice.
+  - ~It thinks a unit just walked in, so don't give it a reason to look twice
   objective: Confront Sonny
   targetRoom: 111
   targetLabel: Control Room
@@ -287315,6 +287615,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -287603,7 +287904,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.6799972}
@@ -288059,8 +288360,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -288742,8 +289043,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crew photo. I met some of them.
-  - Hours ago.
+  - The crew photo... I met some of them
+  - Like, hours ago
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -289329,6 +289630,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -290448,7 +290750,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Dark. Everything's on emergency power.
+  - Dark... everything's on emergency power
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 2.680001}
@@ -291541,7 +291843,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Every screen says the same thing. 'ALL SYSTEMS NOMINAL.'
+  - Every screen says the same thing, 'ALL SYSTEMS NOMINAL'
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 3, y: 1.6799972}
@@ -295476,7 +295778,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -297039,6 +297341,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -297143,8 +297446,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -297499,7 +297802,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}
@@ -298988,7 +299291,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The crossword's still half done.
+  - The crossword's still half done
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -300239,6 +300542,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -301096,6 +301400,98 @@ MonoBehaviour:
   solid: 1
   rubbleLifetime: 0
   startLanded: 1
+--- !u!1 &1971081553
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1971081554}
+  - component: {fileID: 1971081555}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1971081554
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1971081553}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 240501967}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1971081555
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1971081553}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f3fe479a82fcf354d81d40eadac81b08, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1971844420
 GameObject:
   m_ObjectHideFlags: 0
@@ -331294,6 +331690,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: 
   look: 1
@@ -333420,8 +333817,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -333530,8 +333927,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Earth. They're still down there, waiting on the power.
-  - Waiting on me, I guess.
+  - Earth... they're all still down there waiting on the power
+  - Waiting on me, I guess
   range: 1.1
   focus: {x: 0, y: -2}
   tagOffset: {x: 0, y: 0.7}
@@ -335067,8 +335464,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Red light. Sonny's watching through these now.
-  - It's looking right at me. Keep moving.
+  - Red light... Sonny's watching through these now
+  - It's looking right at me, keep moving
   range: 1.2
   focus: {x: 0, y: 0}
   tagOffset: {x: 0, y: 2.5}
@@ -336909,6 +337306,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -339155,7 +339553,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody's going to sit here again.
+  - Nobody's gonna sit here again
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.6799972}
@@ -339928,8 +340326,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - The family photo.
-  - I hope someone tells them.
+  - The family photo...
+  - I hope someone tells them
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1.5, y: 1.680001}
@@ -340833,7 +341231,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inspectable
   thoughts:
-  - Nobody slept here tonight.
+  - Nobody slept here tonight
   range: 0.9
   focus: {x: 0, y: 0}
   tagOffset: {x: 1, y: 1.6800001}

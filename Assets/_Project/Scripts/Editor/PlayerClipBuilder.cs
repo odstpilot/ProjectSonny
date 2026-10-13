@@ -19,7 +19,8 @@ public static class PlayerClipBuilder
     const string ArtFolder = "Assets/_Project/Art/Characters/Player";
     const string ClipsFolder = "Assets/_Project/Animation/Clips/Player";
 
-    // Every frame is 392x488 (49x61 art pixels drawn at 8x) with the feet on the same row, so one pivot fits all of them.
+    // Most frames are 392x488 (49x61 art pixels drawn at 8x). Bigger poses (crawl 456 wide, swing 520 tall) are padded
+    // so standing feet stay 228px below the centre, so the centre pivot fits all of them.
     const float PixelsPerUnit = 100f;
 
     static readonly string[] Holds = { "Melee", "Ranged" };
@@ -38,7 +39,11 @@ public static class PlayerClipBuilder
         { "Sprint", 0.48f },
         { "Crouch", 1.12f },
         { "CrouchIdle", 1f },
+        // Attacks play once, finishing just inside the crowbar's 0.45s cooldown so the next swing starts it fresh.
+        { "Swing", 0.42f },
+        { "ChargedSwing", 0.42f },
     };
+    static readonly HashSet<string> PlayOnce = new HashSet<string> { "Swing", "ChargedSwing", "Shoot" };
     const float DefaultFramesPerSecond = 8f;
 
     // Builds or updates every clip, and returns how many there are.
@@ -156,7 +161,7 @@ public static class PlayerClipBuilder
         AnimationUtility.SetObjectReferenceCurve(clip, binding, keys);
 
         AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
-        settings.loopTime = true;
+        settings.loopTime = !PlayOnce.Contains(action);
         AnimationUtility.SetAnimationClipSettings(clip, settings);
 
         if (isNew) AssetDatabase.CreateAsset(clip, path);

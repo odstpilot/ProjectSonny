@@ -520,7 +520,10 @@ public class PlaceholderRobot : MonoBehaviour
             if (distance <= sight * peripheralRange && angle <= peripheralFieldOfView * 0.5f) seen = peripheralRate * hush;
             else if (distance <= walkHearingRange && PlayerMoving) seen = hearingRate * hush;
         }
-        if (seen > 0f && !HasLineOfSight(player.position)) seen = 0f;
+        // Aim at their body, not the sprite: the art is centre-pivoted, so with their feet against a wall at the top of
+        // a room the pivot sits inside the wall's collider and the line would always hit the wall first.
+        Vector2 body = playerCollider != null ? (Vector2)playerCollider.bounds.center : (Vector2)player.position;
+        if (seen > 0f && !HasLineOfSight(body)) seen = 0f;
         if (seen <= 0f) inView = false;
         return seen;
     }
@@ -532,7 +535,9 @@ public class PlaceholderRobot : MonoBehaviour
         Physics2D.Linecast(rb.position, target, solidOnly, sightHits);
         foreach (RaycastHit2D hit in sightHits)
         {
-            if (hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(player)) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
+            // Hits come nearest first, so once it reaches the player nothing past them is in the way.
+            if (hit.transform.IsChildOf(player)) return true;
             if (hit.collider.GetComponentInParent<PlaceholderRobot>() != null) continue;
             return false;
         }

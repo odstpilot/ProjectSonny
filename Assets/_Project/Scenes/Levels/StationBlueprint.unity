@@ -1028,6 +1028,98 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!1 &25516095
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 25516096}
+  - component: {fileID: 25516097}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &25516096
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 25516095}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1191458852}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &25516097
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 25516095}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: 67495f35e3e49ce4d87f57569e2021d7, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 2}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &28022137
 GameObject:
   m_ObjectHideFlags: 0
@@ -3619,6 +3711,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -9014,6 +9107,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -11028,6 +11122,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -12006,6 +12101,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -17139,6 +17235,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -30231,6 +30328,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 371433461}
+  - {fileID: 1813184214}
   m_Father: {fileID: 1262327850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &418729458
@@ -45247,6 +45345,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: 
   look: 1
@@ -45905,6 +46004,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -59710,6 +59810,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -65205,6 +65306,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -66392,6 +66494,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -82645,6 +82748,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -83725,6 +83829,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -121657,6 +121762,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -126384,6 +126490,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1907166127}
+  - {fileID: 1446410209}
   m_Father: {fileID: 2056499280}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1097625802
@@ -128420,6 +128527,98 @@ MonoBehaviour:
           rid: -2
         m_Provider2DCache:
           rid: -2
+--- !u!1 &1144161782
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1144161783}
+  - component: {fileID: 1144161784}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1144161783
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1144161782}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1618760326}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1144161784
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1144161782}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1147087614
 GameObject:
   m_ObjectHideFlags: 0
@@ -130428,6 +130627,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 470698695}
+  - {fileID: 25516096}
   m_Father: {fileID: 2056499280}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1191458853
@@ -134382,6 +134582,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -136207,6 +136408,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -137329,6 +137531,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -143725,6 +143928,98 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4420000000000000002, guid: 4b9e6d2f8a1c47e5b3d0a9c7e5f2b618, type: 3}
   m_PrefabInstance: {fileID: 1446097821}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1446410208
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1446410209}
+  - component: {fileID: 1446410210}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1446410209
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446410208}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1097561043}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1446410210
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446410208}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f3fe479a82fcf354d81d40eadac81b08, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1448786871
 GameObject:
   m_ObjectHideFlags: 0
@@ -144296,6 +144591,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -154938,6 +155234,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2031474292}
+  - {fileID: 1144161783}
   m_Father: {fileID: 1262327850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1618760327
@@ -155058,6 +155355,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -155994,6 +156292,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -158984,6 +159283,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -163496,6 +163796,98 @@ SortingGroup:
   m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
+--- !u!1 &1813184213
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1813184214}
+  - component: {fileID: 1813184215}
+  m_Layer: 0
+  m_Name: Steps
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1813184214
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1813184213}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 418729457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1813184215
+SpriteRenderer:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1813184213}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 1674927075
+  m_SortingLayer: 1
+  m_SortingOrder: 5
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 21300000, guid: f04d5958c4bcde649848394a731af22c, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 3, y: 3}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!1 &1813831665
 GameObject:
   m_ObjectHideFlags: 0
@@ -165034,6 +165426,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -165140,6 +165533,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -166151,6 +166545,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -193287,6 +193682,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1
@@ -255317,6 +255713,7 @@ MonoBehaviour:
   credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
+  inactiveBadgeText: BADGE INACTIVE
   fadeTime: 0.25
   sound: Door
   look: 1

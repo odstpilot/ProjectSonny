@@ -41,8 +41,8 @@ public class ChapterOneDirector : MonoBehaviour
     [Tooltip("Pip's first words, once it's booted. A line starting with ^ is said happily; [M] shows a key.")]
     [TextArea] public string[] pipHello =
     {
-        "^Bzzt! Pip online! Your suit's Personal Integrated Pal.",
-        "Control room's pinned on your map. [M] if you get lost!",
+        "^Bzzt! Pip online! I'm your suit's Personal Integrated Pal",
+        "Control room's pinned on your map, so hit [M] if you get lost!",
     };
     [Tooltip("Has the technician open the map and look before the control room's the objective. Off to keep Chapter 1 short.")]
     public bool requireMapLook = false;
@@ -50,12 +50,12 @@ public class ChapterOneDirector : MonoBehaviour
     [Tooltip("Said while the map's open for the first time.")]
     [TextArea] public string[] pipOnMap =
     {
-        "^Blinking dot's you. Control room's marked in orange. [W] [A] [S] [D] to look around, scroll to zoom.",
-        "[M] again to close it.",
+        "^Blinking dot's you and the control room's marked in orange... [W] [A] [S] [D] to look around, scroll to zoom",
+        "[M] again to close it",
     };
     [TextArea] public string[] pipAfterMap = new string[0];
     [Tooltip("The technician, to themselves, once they've closed the map.")]
-    [TextArea] public string[] technicianAfterMap = { "Through the maintenance deck. Got it." };
+    [TextArea] public string[] technicianAfterMap = { "Through the maintenance deck, got it" };
     [Tooltip("The room Pip marks on the map, by its marker in the layout, and what the pin over it says.")]
     public char mapTarget = 'o';
     public string mapTargetLabel = "Control Room";

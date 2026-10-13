@@ -204,7 +204,7 @@ public class PlayerHealthHandler : MonoBehaviour
         AudioListener.pause = true;
         DeathScreen screen = DeathScreen.Get(monitorFont);
         string line = deathLines.Length > 0 ? deathLines[Random.Range(0, deathLines.Length)] : "";
-        yield return screen.Show("TECHNICIAN  /  NO BADGE ON FILE", line);
+        yield return screen.Show("TECHNICIAN  /  TEMP BADGE  /  NOT ON FILE", line);
 
         float waitingSince = Time.unscaledTime;
         while (!screen.ContinuePressed && (autoContinueAfter <= 0f || Time.unscaledTime - waitingSince < autoContinueAfter))

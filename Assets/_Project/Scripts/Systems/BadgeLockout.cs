@@ -2,11 +2,11 @@ using System.Collections;
 using UnityEngine;
 
 // Chapter 2, at a badge door (Teleporter.credential) the technician can't open: the reactor core's, the only way left
-// down to the control room. Nobody's alive to badge them through, and the technician never had a badge of their own.
+// down to the control room. Nobody's alive to badge them through, and their temp badge died with Sonny's takeover
+// (ChapterTwoDirector).
 // Any of its doors will do (doors).
 // The first time they walk up to one while they're looking for the control room (afterObjective), Pip says why (Sonny
-// cut every badge off), and sends them to the comms ring next door, hoping there's a badge there (there isn't, but
-// there's a way to get a unit's access: CommsRing). That's the objective after, pinned on the map.
+// cut every badge off), and sends them to the comms ring next door, whose relay can switch theirs back on (CommsRing). That's the objective after, pinned on the map.
 // Built by ChapterOneBuilder for ChapterTwoBuilder.
 public class BadgeLockout : MonoBehaviour
 {
@@ -19,14 +19,14 @@ public class BadgeLockout : MonoBehaviour
     public string afterObjective = "";
 
     [Tooltip("The technician, at the door.")]
-    [TextArea] public string[] technicianLines = { "The reactor core's badge-only. Of course it is." };
+    [TextArea] public string[] technicianLines = { "My badge is dead, the reader won't even blink" };
     [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily.")]
     [TextArea] public string[] pipLines =
     {
-        "~Sonny cut off every badge on the station.",
-        "~Try the comms ring, next door. If there's a badge left anywhere, it's there.",
+        "~Sonny cut off every badge on the station, yours included",
+        "~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that",
     };
-    public string objective = "Find a badge in the comms ring";
+    public string objective = "Reactivate your badge in the comms ring";
     [Tooltip("The room pinned on the map for it, by its marker in the layout (it's on floor 2), and what the pin says.")]
     public char targetRoom = 'g';
     public string targetLabel = "Comms Ring";

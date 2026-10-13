@@ -8,8 +8,8 @@ using UnityEngine.Rendering.Universal;
 //   Walk Through: the player walks into the trigger and is taken through, for hallways that carry on somewhere else.
 //   Interact: a closed door. Walk up to it and press E; a locked door (or one with nowhere to go) just says it's locked.
 //   A badge door (credential set) only opens for someone with access: the player, once they hold that credential
-//   (AccessCredentials), or anyone standing close to a crew member with a badge, who lets them through. Without either,
-//   it says so (badgeText).
+//   (AccessCredentials, like the temp badge's), or anyone standing close to a crew member with a badge, who lets them
+//   through. Without either, it says so (badgeText), or that their badge is dead if they carry one (inactiveBadgeText).
 // Levels can draw the doorway in code: a door in the wall with a lamp (green if it opens, red if not), or darkness
 // deepening toward the wall, so a hallway seems to carry on out of sight. wallDirection says which side the wall is on.
 // FloorOneBuilder places these in pairs, each one's target just inside the other.
@@ -52,6 +52,8 @@ public class Teleporter : MonoBehaviour
     [Tooltip("How close a crew member with a badge has to be to the player to let them through.")]
     public float escortRange = 4.5f;
     public string badgeText = "BADGE REQUIRED";
+    [Tooltip("Said instead when the player carries a badge that won't open it: the temp badge, once Sonny's killed it.")]
+    public string inactiveBadgeText = "BADGE INACTIVE";
 
     [Header("Going Through")]
     [Tooltip("Seconds for each half of the fade through black.")]
@@ -152,7 +154,7 @@ public class Teleporter : MonoBehaviour
             return;
         }
 
-        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : NeedsBadge ? badgeText : lockedText);
+        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : NeedsBadge ? (AccessCredentials.HasBadge ? inactiveBadgeText : badgeText) : lockedText);
         if (CanOpen && InteractPrompt.Pressed(this, Locker.InteractKey))
             StartCoroutine(Travel(player));
     }

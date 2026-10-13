@@ -28,8 +28,8 @@ public class WallGrab : MonoBehaviour
     [Tooltip("How far the view closes in while it has hold, as a fraction of its size: when it grabs, and by the last press.")]
     public Vector2 grabZoom = new Vector2(0.72f, 0.6f);
     [TextArea] public string[] technicianGrabbed = { "Get OFF me!" };
-    [TextArea] public string[] technicianFree = { "...They're in the walls." };
-    [TextArea] public string[] pipFree = { "~Keep moving, Tech. Stairs!" };
+    [TextArea] public string[] technicianFree = { "...They're in the damn walls" };
+    [TextArea] public string[] pipFree = { "~Keep moving, Tech, stairs!" };
 
     // While it has hold of them, for anything that shouldn't happen meanwhile.
     public static bool Holding { get; private set; }

@@ -105,7 +105,6 @@ public class StationCamera : MonoBehaviour
     private readonly Vector3[] beamPath = new Vector3[ConeRays + 1];
     private readonly float[] rayReach = new float[ConeRays];
     private readonly Color[] coneColors = new Color[ConeRays + 1];
-    private readonly List<RaycastHit2D> hits = new List<RaycastHit2D>();
     private Color shownColor;
 
     public static IReadOnlyList<StationCamera> All => all;
@@ -333,38 +332,10 @@ public class StationCamera : MonoBehaviour
         Vector2 eye = transform.position;
         Vector2 toPlayer = (Vector2)player.position - eye;
         if (toPlayer.magnitude > range || Vector2.Angle(Direction(aim), toPlayer) > fieldOfView * 0.5f) return 0f;
-        if (Blocked(eye, player.position)) return 0f;
+        // No line-of-sight check: it hangs from the ceiling looking down over everything, so walls and furniture
+        // don't hide the player from it. Only the cone and range do (and lockers, above).
         lastSeen = player.position;
         return playerController != null && playerController.IsCrouching ? crouchRate : 1f;
-    }
-
-    // Something solid between it and the point: a wall, furniture, a locker. Not the player, and not the robots.
-    bool Blocked(Vector2 from, Vector2 to)
-    {
-        var solidOnly = new ContactFilter2D { useTriggers = false };
-        Physics2D.Linecast(from, to, solidOnly, hits);
-        foreach (RaycastHit2D hit in hits)
-            if (Blocks(hit.collider)) return true;
-        return false;
-    }
-
-    bool Blocks(Collider2D collider)
-    {
-        if (player != null && collider.transform.IsChildOf(player)) return false;
-        if (collider.GetComponentInParent<PlaceholderRobot>() != null || collider.GetComponentInParent<MaintenanceBot>() != null) return false;
-        if (collider.GetComponentInParent<CrewMember>() != null) return false;
-        return true;
-    }
-
-    // How far it can see along a direction before something's in the way.
-    float Reach(Vector2 direction)
-    {
-        var solidOnly = new ContactFilter2D { useTriggers = false };
-        Physics2D.Raycast(transform.position, direction, solidOnly, hits, range);
-        float nearest = range;
-        foreach (RaycastHit2D hit in hits)
-            if (Blocks(hit.collider) && hit.distance < nearest) nearest = hit.distance;
-        return nearest;
     }
 
     // --- Being put out ---
@@ -428,7 +399,7 @@ public class StationCamera : MonoBehaviour
         beam.enabled = near && power > 0f;
         if (!near || power <= 0f) return;
 
-        // The cone: fanned out across its view from the eye, each ray stopping at whatever's in the way, and drawn
+        // The cone: fanned out across its view from the eye at full range (it sees over walls from the ceiling), drawn
         // from the lens up on the wall, so the light comes out of the camera.
         float alpha = hostile ? coneAlpha : coneAlpha * 0.45f;
         if (state == State.Alarm) alpha *= 1.6f;
@@ -438,7 +409,7 @@ public class StationCamera : MonoBehaviour
         {
             float angle = aim - fieldOfView * 0.5f + fieldOfView * i / (ConeRays - 1);
             Vector2 direction = Direction(angle);
-            float reach = Reach(direction);
+            float reach = range;
             rayReach[i] = reach;
             coneVertices[i + 1] = direction * reach;
             coneColors[i + 1] = new Color(shownColor.r, shownColor.g, shownColor.b, alpha * 0.2f * (1f - reach / range * 0.5f));

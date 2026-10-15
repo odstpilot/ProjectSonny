@@ -80,6 +80,8 @@ public class MeleeCombat : MonoBehaviour
     {
         PlayerController controller = combat.Controller;
         controller.sideFacingOnly = charging;
+        // Straining as it winds up: a light tremble at first, a hard shake once it's fully charged.
+        controller.chargeShake = chargeVisible ? (ChargePercent >= 1f ? 1f : Mathf.Lerp(0.25f, 0.7f, ChargePercent)) : 0f;
 
         if (lockTimer > 0f)
         {
@@ -193,6 +195,7 @@ public class MeleeCombat : MonoBehaviour
         if (combat == null || combat.Controller == null) return;
         combat.Controller.combatSpeedMultiplier = 1f;
         combat.Controller.sideFacingOnly = false;
+        combat.Controller.chargeShake = 0f;
         combat.Controller.ClearFacingOverride();
         combat.Controller.SetAnimBool(PlayerAnimParams.Charging, false);
     }

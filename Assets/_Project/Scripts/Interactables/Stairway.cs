@@ -7,7 +7,9 @@ using UnityEngine.SceneManagement;
 // scene (every chapter has the whole station in it, one floor beside the other), or, with no destination, the stairs
 // with the same index in targetScene, which is loaded. The floor builders number each floor's stairs from left to right,
 // the way the blueprint lines them up, so the first stairs on floor 1 lead to the first on floor 2, and so on. With
-// neither they go nowhere (a chapter that keeps the player on one floor).
+// neither they go nowhere (a chapter that keeps the player on one floor). Locked, they don't take the player anywhere:
+// stepping on them has the technician say why (lockedLine), like the reactor's, until its bots are dealt with
+// (ReactorFight).
 // Setup: a trigger Collider2D over the stairs, and arrival on the floor beside them, clear of the trigger.
 [RequireComponent(typeof(Collider2D))]
 public class Stairway : MonoBehaviour
@@ -23,6 +25,10 @@ public class Stairway : MonoBehaviour
     public float fadeTime = 0.35f;
     [Tooltip("The scene's sound played as the screen goes dark. Empty for none.")]
     [SoundName] public string sound = "Stairs";
+    [Tooltip("Won't take the player anywhere while it's on.")]
+    public bool locked;
+    [Tooltip("What the technician says, stepping on them while they're locked.")]
+    public string lockedLine = "";
 
     // The stairs the player is on their way to, across the scene load.
     static string arrivingScene;
@@ -61,6 +67,11 @@ public class Stairway : MonoBehaviour
     {
         if (leaving || (destination == null && string.IsNullOrEmpty(targetScene)) || !other.CompareTag("Player")) return;
         if (Teleporter.IsTravelling || DialogueBox.IsOpen) return;
+        if (locked)
+        {
+            TechnicianVoice.Say(lockedLine);
+            return;
+        }
         StartCoroutine(Leave(other.attachedRigidbody != null ? other.attachedRigidbody.gameObject : other.gameObject));
     }
 

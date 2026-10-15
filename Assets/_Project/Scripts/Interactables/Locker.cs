@@ -127,12 +127,33 @@ public class Locker : MonoBehaviour
         }
     }
 
-    // For an enemy that saw the player climb in: the door flies open and the player is back outside at once, no fade.
-    public void PullPlayerOut()
+    // For an enemy that saw the player climb in. Seen from inside: something blocks the light through the vent, the door
+    // shakes, then it's torn open and a robot lunges in (LockerView.PullOut). Then the player's back outside, and
+    // whenOut is called, for the enemy to land its hit. Takes LockerView.PullOutSeconds; at once if they're not inside.
+    public void PullPlayerOut(System.Action whenOut = null)
     {
-        if (inUse != this || !inLocker) return;
-        ForceOut();
-        StartCoroutine(Rattle());
+        if (inUse != this || !inLocker)
+        {
+            whenOut?.Invoke();
+            return;
+        }
+        StopAllCoroutines();
+        state = State.GettingOut;
+        StartCoroutine(PulledOut(whenOut));
+    }
+
+    IEnumerator PulledOut(System.Action whenOut)
+    {
+        yield return LockerView.Get(font).PullOut();
+
+        // Out, as ForceOut does, but from in here: ForceOut would stop this coroutine before whenOut.
+        ShowPlayer();
+        LockerView.ForceClose();
+        if (body != null) body.transform.localPosition = bodyBasePosition;
+        inUse = null;
+        state = State.Outside;
+        whenOut?.Invoke();
+        yield return Rattle();
     }
 
     IEnumerator GetIn()

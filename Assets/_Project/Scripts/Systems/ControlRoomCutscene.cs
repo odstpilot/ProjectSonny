@@ -188,7 +188,10 @@ public class ControlRoomCutscene : MonoBehaviour
             chief.FaceTowards(player.transform.position);
             chief.Say("Over here, tech!", 1.8f);
         }
-        yield return WalkTo((Vector2)sonny.transform.position + workSpot);
+        // Round Sonny's rig, not through it: down from the door to the clear strip in front, then along it.
+        Vector2 workAt = (Vector2)sonny.transform.position + workSpot;
+        yield return WalkTo(new Vector2(player.transform.position.x, workAt.y), false);
+        yield return WalkTo(workAt);
         yield return FaceUp();
 
         if (chief != null && briefing.Length > 0)
@@ -393,18 +396,27 @@ public class ControlRoomCutscene : MonoBehaviour
     void Hold() => player.SetScriptedInput(Vector2.zero, false);
 
     // Walks them over, and if something's in the way, fades out and puts them there.
-    IEnumerator WalkTo(Vector2 spot)
+    // Walks there in a straight line. Caught on something (barely moving for a moment) or out of time, it fades over
+    // instead, or for a leg of the way (fadeIfStuck off), just carries on from where it got to.
+    IEnumerator WalkTo(Vector2 spot, bool fadeIfStuck = true)
     {
         const float GiveUpAfter = 5f;
+        const float StuckAfter = 0.5f;
+        Vector2 lastPlace = player.transform.position;
+        float stillFor = 0f;
         for (float t = 0f; t < GiveUpAfter; t += Time.deltaTime)
         {
-            Vector2 offset = spot - (Vector2)player.transform.position;
+            Vector2 at = player.transform.position;
+            Vector2 offset = spot - at;
             if (offset.magnitude < 0.15f) break;
+            stillFor = (at - lastPlace).sqrMagnitude < 0.0004f ? stillFor + Time.deltaTime : 0f;
+            lastPlace = at;
+            if (stillFor > StuckAfter) break;
             player.SetScriptedInput(offset.normalized, false);
             yield return null;
         }
         Hold();
-        if (Vector2.Distance(player.transform.position, spot) < 0.6f) yield break;
+        if (!fadeIfStuck || Vector2.Distance(player.transform.position, spot) < 0.6f) yield break;
 
         ScreenFade fade = ScreenFade.Get();
         yield return fade.FadeTo(1f, 0.3f);

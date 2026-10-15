@@ -47,8 +47,8 @@ MonoBehaviour:
     end: -85
     arcWidth: 1
     arcHeight: 1
-  range: 1.25
-  arcAngle: 150
+  range: 1.7
+  arcAngle: 180
   swingDuration: 0.16
   canCharge: 1
   tapThreshold: 0.15

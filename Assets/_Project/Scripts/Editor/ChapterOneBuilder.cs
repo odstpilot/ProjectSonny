@@ -68,7 +68,7 @@ public static class ChapterOneBuilder
         { 'b', new Crowd { walking = 2, standing = 1, groups = new[] { 2 } } },                                   // bedrooms
         { 'm', new Crowd { walking = 2, standing = 3, groups = new[] { 2, 3 }, atConsoles = true, bots = 2 } },   // maintenance deck
         { 'c', new Crowd { walking = 1, standing = 1 } },                                                      // hallway to the control room
-        { 'o', new Crowd { walking = 1, standing = 4, groups = new[] { 2 }, atConsoles = true } },                // control room
+        { 'o', new Crowd { walking = 1, standing = 4, groups = new[] { 2 } } },                                   // control room (Sonny's rig fills it; no desks)
         // The storage room stays empty: it's where the player ends up alone.
     };
 
@@ -150,7 +150,16 @@ public static class ChapterOneBuilder
     // starting at least this many cells from any doorway, and this far apart.
     // Upstairs too: the upper maintenance deck ('d'), where the stairs come up.
     // And the comms ring ('g'), where more come through the walls besides (CommsRing).
-    static readonly Dictionary<char, int> PatrolsPerRoom = new Dictionary<char, int> { { 'k', 2 }, { 'h', 2 }, { 'm', 3 }, { 'd', 3 }, { 'g', 3 } };
+    // And the reactor core ('r'), among the radiation, besides the crew at its stairs (PlaceReactorGauntlet).
+    static readonly Dictionary<char, int> PatrolsPerRoom = new Dictionary<char, int> { { 'k', 2 }, { 'h', 2 }, { 'm', 3 }, { 'd', 3 }, { 'g', 3 }, { 'r', 5 } };
+    // What kinds of turned maintenance bot they are, room by room, in turn (TurnInto): sweepers anywhere not listed.
+    static readonly Dictionary<char, PlaceholderRobot.BotKind[]> PatrolLooks = new Dictionary<char, PlaceholderRobot.BotKind[]>
+    {
+        { 'm', new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Hauler } },
+        { 'd', new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Hauler } },
+        { 'g', new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Sweeper } },
+        { 'r', new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler, PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Sweeper } },
+    };
     const int PatrolFromDoors = 4;
     const int PatrolSpacing = 3;
     // The badge doors: the doorways into these rooms only open for someone with this credential, or with a crew member
@@ -589,6 +598,8 @@ public static class ChapterOneBuilder
         DressRooms(floors, benchFront, new System.Random(Seed + 4));
         // The comms ring's terminals before the scrap and the bots too, so neither ends up on top of one.
         CommsRing comms = PlaceCommsRing(floors);
+        // The reactor core's rubble, containment, lockdown, and leaks before the scrap and the bots too.
+        PlaceReactorGauntlet(floors, comms, new System.Random(Seed + 5));
         PlaceScrap(floors, workshop, bodies.Select(b => FeetCell(map, b.at)));
         string afterBots = PlacePatrols(floors, bodies.Select(b => FeetCell(map, b.at)), new System.Random(Seed + 2));
         PlaceBlockedWays(map, floor, afterBots);
@@ -620,6 +631,7 @@ public static class ChapterOneBuilder
             return;
         }
         sonny.startPowered = false;
+        sonny.look = SonnyBox.Look.Installed;
         sonny.lensColor = SonnyLens;
         if (sonny.glow != null) sonny.glow.color = SonnyLens;
         TutorialLevelBuilder.Record(sonny);
@@ -1137,7 +1149,7 @@ public static class ChapterOneBuilder
     const string BlasterPath = "Assets/_Project/Data/Weapons/Blaster.asset";
     // Scrap all over the station, room by room, each piece a part (Workshop's recipes need plenty): the storage room the
     // technician wakes in, the restroom the vents come out in, the common grounds, the maintenance deck, the upper deck
-    // round the workbench, and the comms ring. Enough for a good part of what the bench makes (the EMP first, then a
+    // round the workbench, the comms ring, and the reactor core. Enough for a good part of what the bench makes (the EMP first, then a
     // choice of weapons and upgrades), not all of it, so what to make is a choice.
     const Inventory.Material Metal = Inventory.Material.MetalSheet, Board = Inventory.Material.Circuit,
         Cell = Inventory.Material.Battery, Wire = Inventory.Material.Wire;
@@ -1151,6 +1163,7 @@ public static class ChapterOneBuilder
         (0, 'm', new[] { Metal, Wire, Metal, Board, Cell }),
         (1, 'd', new[] { Cell, Board, Wire, Board, Cell, Board, Wire, Metal, Cell, Wire, Metal }),
         (1, 'g', new[] { Metal, Wire, Board, Metal, Metal, Board, Cell, Wire, Metal, Board }),
+        (1, 'r', new[] { Metal, Cell, Board, Wire, Metal, Cell, Board, Metal, Wire, Cell }),
     };
     // What the technician says picking each up, a different line each time round.
     static readonly Dictionary<Inventory.Material, string[]> ScrapLines = new Dictionary<Inventory.Material, string[]>
@@ -1478,6 +1491,7 @@ public static class ChapterOneBuilder
     const string CommsDataFolder = "Assets/_Project/Data";
     const int CommsNodes = 3;
     const int NodeSpacing = 8;          // the fewest cells between one terminal and the next
+    const int CameraClearance = 6;      // the fewest cells between a terminal and a security camera, where there's room
     const int BreachBots = 6;           // how many can come through the ring's walls in all
     const string ObjectiveConfrontSonny = "Confront Sonny";
 
@@ -1516,8 +1530,9 @@ public static class ChapterOneBuilder
     };
     const string RelayAsset = "Doctrines/Chapter2_Relay";
 
-    // The relay in the middle of the ring, the nodes spread out round it as far from each other, the doors, and the
-    // relay as there's room, the generator as far again from all of them, and the bots waiting behind the top wall. Their floor is added to the furniture, so the
+    // The relay in the middle of the ring, the nodes spread out round it as far from each other, the doors, the relay,
+    // and the security cameras as there's room (never right under a camera, if there's anywhere else), the generator as
+    // far again from all of them, and the bots waiting behind the top wall. Their floor is added to the furniture, so the
     // scrap and the patrols keep off it.
     static CommsRing PlaceCommsRing(FloorOneBuilder.BuiltFloor[] floors)
     {
@@ -1544,6 +1559,13 @@ public static class ChapterOneBuilder
         }
         Transform root = TutorialLevelBuilder.Group("Comms Ring", upstairs.level);
         var away = ring.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
+        // The ring's cameras (PlaceCameras, already up): nothing to do at a terminal goes on right under one.
+        List<Vector2Int> cameras = upstairs.level.GetComponentsInChildren<StationCamera>()
+            .Where(c => c.room == CommsRingRoom).Select(c => CellAt(map, (Vector2)c.transform.position - map.Origin)).ToList();
+        away.AddRange(cameras);
+        List<Vector2Int> clearOfCameras = spots.Where(c => cameras.All(cam => Chebyshev(cam, c) >= CameraClearance)).ToList();
+        if (clearOfCameras.Count > 0) spots = clearOfCameras;
+        else if (cameras.Count > 0) Debug.LogWarning("Chapter 1 builder: there's nowhere in the comms ring clear of its cameras for the terminals.");
         void Claim(Vector2Int c)
         {
             away.Add(c);
@@ -2199,6 +2221,372 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(arrival);
     }
 
+    // --- The reactor core (Chapter 2) ---
+
+    // The way through to the stairs down is round the reactor: in at the front, up its far side, and along behind it to
+    // the stairs, since the short way up the near side's caved in. Behind the reactor is its containment, fenced off
+    // (ReactorGate), with gates in the fence. Radiation's leaking all over the floor (RadiationLeak): wide yellow pools
+    // that slow the technician to a crawl so the bots catch them, and vents that burst. Bots roam it (PatrolsPerRoom).
+    // Coming round the back sets off the lockdown (ReactorLockdown): a blast gate slams shut across the far side behind
+    // them, and bots roll out of the containment gates a wave at a time, till they're all down; only then do the stairs
+    // go. The room's heat shows on screen (ReactorAmbience). And every so often the core surges (ReactorSurge): a wave of
+    // heat across the whole room that only lead shield walls (RadiationShield) keep off, while every bot bows to it.
+    static readonly PlaceholderRobot.BotKind[][] LockdownWaves =
+    {
+        new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper },
+        new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler },
+        new[] { PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler, PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc },
+    };
+    const int ReactorPools = 26;
+    const int ReactorVents = 6;
+    const int LeakSpacing = 6;          // the fewest cells between one leak and the next
+    const int GateFromMiddle = 6;       // how far either side of the reactor's middle the containment gates are, in cells
+    const int LockdownGateRows = 10;    // how far back from the reactor's middle the blast gate crosses its far side
+    static readonly Vector2 PoolReach = new Vector2(2.6f, 1.6f);   // a little past the edge of its art, so it's hard to skirt
+    const int Shields = 13;
+    const int ShieldsBehind = 3;        // of them, out behind the reactor, where the lockdown is
+    const int ShieldSpacing = 6;
+    const int ShieldNear = 7, ShieldFar = 19;   // how far from the reactor's middle, in cells
+    static readonly Vector2 VentReach = new Vector2(1.1f, 0.75f);
+
+    // A turned maintenance bot of this kind (PlaceholderRobot.look): a hauler's slow and tough and hits hard; an arc bot
+    // keeps its distance and calls down lightning (ArcCaster), and goes down easier; a sweeper's as it was.
+    static void TurnInto(PlaceholderRobot brain, PlaceholderRobot.BotKind look)
+    {
+        brain.look = look;
+        var health = brain.GetComponent<Health>();
+        switch (look)
+        {
+            case PlaceholderRobot.BotKind.Hauler:
+                health.maxHealth = Mathf.Round(health.maxHealth * 1.8f);
+                brain.moveSpeed *= 0.75f;
+                brain.damage = 2f;
+                brain.knockback = 1.2f;
+                brain.windupTime = 0.6f;
+                brain.attackRange = 1.3f;
+                brain.hitReach = 0.85f;
+                brain.hitRadius = 0.6f;
+                break;
+            case PlaceholderRobot.BotKind.Arc:
+                health.maxHealth = Mathf.Max(3f, Mathf.Round(health.maxHealth * 0.7f));
+                if (brain.GetComponent<ArcCaster>() == null) brain.gameObject.AddComponent<ArcCaster>();
+                break;
+        }
+        TutorialLevelBuilder.Record(health);
+        TutorialLevelBuilder.Record(brain);
+    }
+
+    static void PlaceReactorGauntlet(FloorOneBuilder.BuiltFloor[] floors, CommsRing comms, System.Random dice)
+    {
+        if (floors.Length < 2) return;
+        FloorOneBuilder.BuiltFloor upstairs = floors[1];
+        Map map = upstairs.map;
+        Room room = upstairs.rooms.FirstOrDefault(r => r.marker == ReactorCore);
+        global::ReactorCore core = upstairs.level.GetComponentInChildren<global::ReactorCore>();
+        if (room == null || core == null)
+        {
+            Debug.LogWarning("Chapter 1 builder: there's no reactor core on floor 2, so there's nothing to get round in it.");
+            return;
+        }
+        // The reactor's middle sits on a corner of the grid: the cell just below and right of it.
+        Vector2 corePosition = core.transform.position;
+        Vector2 local = corePosition - map.Origin;
+        var middle = new Vector2Int(Mathf.RoundToInt(local.x), map.Height - Mathf.RoundToInt(local.y));
+        int rearWidth = Mathf.CeilToInt(global::ReactorCore.RearHalfWidth), rearDepth = Mathf.CeilToInt(global::ReactorCore.RearDepth);
+        float halfWidth = global::ReactorCore.RearHalfWidth, depth = global::ReactorCore.RearDepth;
+        var cells = new HashSet<Vector2Int>(room.cells);
+        bool Walkable(Vector2Int c) => cells.Contains(c) && !upstairs.furniture.Contains(c) && map.At(c.x, c.y) != 'L';
+
+        List<Vector2Int> doors = room.cells.Where(c => char.IsDigit(map.At(c.x, c.y))).ToList();
+        List<Vector2Int> stairCells = map.Find('<').Concat(map.Find('>')).Where(s => room.cells.Any(c => Chebyshev(c, s) == 1)).ToList();
+        List<Vector2Int> stairFoot = room.cells.Where(c => stairCells.Any(s => Chebyshev(c, s) == 1) && Walkable(c)).ToList();
+        if (doors.Count == 0 || stairFoot.Count == 0)
+        {
+            Debug.LogWarning("Chapter 1 builder: the reactor core needs a door in and stairs down to lay out the way between.");
+            return;
+        }
+        Transform root = TutorialLevelBuilder.Group("Reactor Gauntlet", upstairs.level);
+        PlayerController player = floors[0].player.GetComponent<PlayerController>();
+
+        // The short way, up the near side between the wall and the reactor, caved in: rubble right across it, as low as
+        // the reactor's side goes while it's still the narrow way up and not the open floor in front.
+        var rubbleCells = new List<Vector2Int>();
+        for (int row = middle.y - 6; row >= middle.y - rearDepth + 2 && rubbleCells.Count == 0; row--)
+        {
+            List<Vector2Int> across = room.cells.Where(c => c.y == row && c.x < middle.x - rearWidth).ToList();
+            if (across.Count == 0 || across.Count > 10 || across.Min(c => c.x) < middle.x - rearWidth - 12) continue;
+            if (across.Any(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y)))) continue;
+            rubbleCells = across;
+        }
+        if (rubbleCells.Count > 0)
+        {
+            Transform rubble = TutorialLevelBuilder.Group("Caved In", root);
+            foreach (Vector2Int c in rubbleCells)
+            {
+                PlaceRubble(map, c, true, rubble);
+                upstairs.furniture.Add(c);
+            }
+            BlockedWay caved = NewBlockedWay("Near Side Caved In", root, player, map, rubbleCells, room, upstairs);
+            caved.technicianLines = new[] { "Caved in... and it's glowing under there, no way through" };
+            caved.range = 3f;
+            TutorialLevelBuilder.Record(caved);
+        }
+        else Debug.LogWarning("Chapter 1 builder: there's no narrow way up the reactor's near side to cave in, so the short way to the stairs is open.");
+
+        if (!WayThrough(doors, stairFoot, Walkable))
+            Debug.LogWarning("Chapter 1 builder: there's no way from the reactor core's doors round to its stairs. Move something.");
+
+        // The containment behind the reactor (solid already, ReactorCore): a fence along the back with two gates in it the
+        // bots come out of, and fence up either side.
+        Transform containment = TutorialLevelBuilder.Group("Containment", root);
+        float back = corePosition.y + depth;
+        var spawnGates = new List<ReactorGate>();
+        float left = corePosition.x - halfWidth, right = corePosition.x + halfWidth;
+        float gateLeft = corePosition.x - GateFromMiddle - 1.5f, gateRight = corePosition.x + GateFromMiddle - 1.5f;
+        NewGate(containment, ReactorGate.Kind.Fence, new Vector2((left + gateLeft) * 0.5f, back), gateLeft - left);
+        spawnGates.Add(NewGate(containment, ReactorGate.Kind.Gate, new Vector2(gateLeft + 1.5f, back), 3f));
+        NewGate(containment, ReactorGate.Kind.Fence, new Vector2((gateLeft + 3f + gateRight) * 0.5f, back), gateRight - gateLeft - 3f);
+        spawnGates.Add(NewGate(containment, ReactorGate.Kind.Gate, new Vector2(gateRight + 1.5f, back), 3f));
+        NewGate(containment, ReactorGate.Kind.Fence, new Vector2((gateRight + 3f + right) * 0.5f, back), right - gateRight - 3f);
+        for (float y = corePosition.y + 2f; y < back; y += 1f)
+            foreach (float x in new[] { left, right })
+                NewGate(containment, ReactorGate.Kind.SideFence, new Vector2(x, y), Mathf.Min(1f, back - y));
+
+        // The blast gate across the far side, open till the lockdown: from the containment to the wall.
+        int gateRow = middle.y - LockdownGateRows;
+        List<Vector2Int> across2 = room.cells.Where(c => c.y == gateRow && c.x >= middle.x + rearWidth).OrderBy(c => c.x).ToList();
+        var blastGates = new List<ReactorGate>();
+        if (across2.Count > 0)
+        {
+            float from = Mathf.Min(map.Origin.x + across2[0].x, right), to = map.Origin.x + across2[across2.Count - 1].x + 1f;
+            float foot = map.Origin.y + map.Height - 1 - gateRow;
+            ReactorGate blast = NewGate(root, ReactorGate.Kind.Gate, new Vector2((from + to) * 0.5f, foot), to - from);
+            blast.solid = true;
+            blast.startsOpen = true;
+            TutorialLevelBuilder.Record(blast);
+            blastGates.Add(blast);
+        }
+        else Debug.LogWarning("Chapter 1 builder: there's no floor across the reactor's far side for the lockdown's blast gate.");
+
+        // The lockdown: who comes out, wave by wave, waiting behind the gates till then.
+        var lockdown = new GameObject("Reactor Lockdown").AddComponent<ReactorLockdown>();
+        lockdown.transform.SetParent(root);
+        lockdown.player = player;
+        Vector2 stairWorld = map.Center(stairCells[0].x, stairCells[0].y);
+        lockdown.stairs = upstairs.stairs.OrderBy(s => Vector2.Distance(s.transform.position, stairWorld)).FirstOrDefault();
+        lockdown.wakeArea = map.WorldRect(middle.x + 2, room.maxX, room.minRow, middle.y - LockdownGateRows - 5);
+        lockdown.blastGates = blastGates.ToArray();
+        lockdown.spawnGates = spawnGates.ToArray();
+        GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
+        var waves = new List<ReactorLockdown.Wave>();
+        int made = 0;
+        if (prefab != null)
+        {
+            Transform waiting = TutorialLevelBuilder.Group("Behind the Gates", lockdown.transform);
+            foreach (PlaceholderRobot.BotKind[] lineUp in LockdownWaves)
+            {
+                var bots = new List<PlaceholderRobot>();
+                foreach (PlaceholderRobot.BotKind look in lineUp)
+                {
+                    ReactorGate gate = spawnGates[made % spawnGates.Count];
+                    var robot = (GameObject)PrefabUtility.InstantiatePrefab(prefab, waiting);
+                    robot.name = $"Lockdown {look} {++made}";
+                    robot.transform.position = new Vector3(gate.transform.position.x, gate.transform.position.y, CharacterZ);
+                    var brain = robot.GetComponent<PlaceholderRobot>();
+                    brain.patrolRoute = new Vector2[0];
+                    brain.moveSpeed = 4.2f;
+                    brain.sightRange = 12f;
+                    brain.detectionTime = 0.3f;
+                    brain.smartSenses = true;
+                    brain.eyeGlowRadius = 1.3f;
+                    TurnInto(brain, look);
+                    robot.SetActive(false);
+                    bots.Add(brain);
+                }
+                waves.Add(new ReactorLockdown.Wave { bots = bots.ToArray() });
+            }
+        }
+        lockdown.waves = waves.ToArray();
+        // For the Checkpoint Tester: on the far side just short of setting it off (above the blast gate), and by the stairs.
+        Vector2Int shortOf = room.cells.Where(c => Walkable(c) && c.x >= middle.x + rearWidth && c.y < gateRow - 1 && c.y > middle.y - LockdownGateRows - 5)
+            .OrderBy(c => c.y).ThenBy(c => c.x).LastOrDefault();
+        lockdown.standAt = StandingAt(map, shortOf);
+        Vector2 footAt = stairFoot.Aggregate(Vector2.zero, (sum, c) => sum + (Vector2)c) / stairFoot.Count;
+        Vector2Int byStairs = room.cells.Where(c => Walkable(c) && stairFoot.All(f => Chebyshev(f, c) >= 2))
+            .OrderBy(c => ((Vector2)c - footAt).sqrMagnitude).FirstOrDefault();
+        lockdown.clearedStandAt = StandingAt(map, byStairs);
+        TutorialLevelBuilder.Record(lockdown);
+
+        // Coming back after dying: just inside, clear of everything.
+        Vector2 doorsAt = doors.Aggregate(Vector2.zero, (sum, c) => sum + (Vector2)c) / doors.Count;
+        Vector2Int backIn = room.cells.Where(c => Walkable(c) && !NearKeptClear(map, c) && doors.All(d => Chebyshev(d, c) >= 2))
+            .OrderBy(c => ((Vector2)c - doorsAt).sqrMagnitude).FirstOrDefault();
+
+        // Lead shield walls round the reactor, to get behind when it surges: across the screen in front of and behind it,
+        // running up the screen beside it, so they always stand between it and whoever's behind them. Some out behind it,
+        // where the lockdown is. Never cutting off the way through.
+        Transform shieldGroup = TutorialLevelBuilder.Group("Lead Shields", root);
+        var shieldCells = new List<Vector2Int>();
+        var rollOuts = spawnGates.Select(g => CellAt(map, (Vector2)g.transform.position + lockdown.rollOut - map.Origin)).ToList();
+        int shields = 0;
+        foreach (bool behindOnly in new[] { true, false })
+        {
+            int wanted = behindOnly ? ShieldsBehind : Shields - ShieldsBehind;
+            foreach (Vector2Int c in room.cells.OrderBy(_ => dice.Next()).ToList())
+            {
+                if (shields >= wanted) break;
+                Vector2Int v = c - middle;
+                int far = Mathf.Max(Mathf.Abs(v.x), Mathf.Abs(v.y));
+                if (far < ShieldNear || far > ShieldFar || (behindOnly && c.y >= middle.y - rearDepth)) continue;
+                if (shieldCells.Any(o => Chebyshev(o, c) < ShieldSpacing)) continue;
+                bool across = Mathf.Abs(v.x) < Mathf.Abs(v.y) * 1.2f;
+                List<Vector2Int> under = across
+                    ? new List<Vector2Int> { c + Vector2Int.left, c, c + Vector2Int.right }
+                    : new List<Vector2Int> { c, c + Vector2Int.down, c + Vector2Int.down * 2 };
+                if (!under.All(u => Walkable(u) && !NearKeptClear(map, u) && doors.All(d => Chebyshev(d, u) >= 4)
+                        && stairFoot.All(f => Chebyshev(f, u) >= 3) && Chebyshev(backIn, u) >= 3 && rollOuts.All(r => Chebyshev(r, u) >= 3)
+                        && !(u.x >= middle.x + rearWidth - 1 && Mathf.Abs(u.y - gateRow) <= 2))) continue;
+                foreach (Vector2Int u in under) upstairs.furniture.Add(u);
+                if (!WayThrough(doors, stairFoot, Walkable))
+                {
+                    foreach (Vector2Int u in under) upstairs.furniture.Remove(u);
+                    continue;
+                }
+                var shield = new GameObject("Lead Shield").AddComponent<RadiationShield>();
+                shield.transform.SetParent(shieldGroup);
+                Vector2 center = map.Center(c.x, c.y);
+                shield.transform.position = new Vector3(center.x, center.y - 0.5f, CharacterZ);
+                shield.across = across;
+                shield.cells = 3;
+                TutorialLevelBuilder.Record(shield);
+                shieldCells.Add(c);
+                shields++;
+            }
+            if (behindOnly) shields = 0;
+        }
+        shields = shieldCells.Count;
+
+        // The radiation, all over: pools wherever there's room for one, vents among them. None by a door, the stairs,
+        // where the player comes back, the blast gate, or where the bots roll out, and spread out.
+        Transform leaks = TutorialLevelBuilder.Group("Radiation", root);
+        var rollOutCells = spawnGates.Select(g => CellAt(map, (Vector2)g.transform.position + lockdown.rollOut - map.Origin)).ToList();
+        var leakCells = new List<Vector2Int>();
+        bool Clear(Vector2Int c) => Walkable(c) && !FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))
+            && doors.All(d => Chebyshev(d, c) >= 4) && stairFoot.All(f => Chebyshev(f, c) >= 3) && Chebyshev(backIn, c) >= 3
+            && !(c.x >= middle.x + rearWidth - 1 && Mathf.Abs(c.y - gateRow) <= 2) && rollOutCells.All(r => Chebyshev(r, c) >= 3)
+            && leakCells.All(o => Chebyshev(o, c) >= LeakSpacing);
+        List<Vector2Int> order = room.cells.OrderBy(_ => dice.Next()).ToList();
+        int pools = 0, vents = 0;
+        // One right below the rubble, where it's leaking from.
+        if (rubbleCells.Count > 0)
+        {
+            Vector2Int below = rubbleCells[rubbleCells.Count / 2] + new Vector2Int(0, 2);
+            if (Walkable(below))
+            {
+                NewLeak(map, below, RadiationLeak.Kind.Pool, PoolReach, leaks, 0f);
+                leakCells.Add(below);
+            }
+        }
+        foreach (Vector2Int c in order)
+        {
+            if (pools >= ReactorPools) break;
+            if (!Clear(c)) continue;
+            NewLeak(map, c, RadiationLeak.Kind.Pool, PoolReach, leaks, 0f);
+            leakCells.Add(c);
+            pools++;
+        }
+        foreach (Vector2Int c in order)
+        {
+            if (vents >= ReactorVents) break;
+            if (!Clear(c)) continue;
+            NewLeak(map, c, RadiationLeak.Kind.Vent, VentReach, leaks, (float)dice.NextDouble());
+            leakCells.Add(c);
+            vents++;
+        }
+
+        // The heat, on screen, all over the room.
+        Rect roomRect = map.WorldRect(room.minX, room.maxX, room.minRow, room.maxRow);
+        var ambience = new GameObject("Reactor Heat").AddComponent<ReactorAmbience>();
+        ambience.transform.SetParent(root);
+        ambience.transform.position = roomRect.center;
+        ambience.room = ReactorCore;
+        ambience.glowRadius = roomRect.size.magnitude * 0.5f + 4f;
+        TutorialLevelBuilder.Record(ambience);
+
+        // The surges.
+        var surge = new GameObject("Reactor Surges").AddComponent<ReactorSurge>();
+        surge.transform.SetParent(root);
+        surge.core = core;
+        surge.room = ReactorCore;
+        surge.reach = roomRect.size.magnitude * 0.6f;
+        TutorialLevelBuilder.Record(surge);
+
+        // Walking in: the heat, and Pip on what's ahead.
+        var arrival = new GameObject("Reactor Arrival").AddComponent<BlockedWay>();
+        arrival.transform.SetParent(root);
+        arrival.player = player;
+        arrival.arriveInRoom = ReactorCore;
+        arrival.technicianLines = new[] { "Damn it's hot in here... like standing right next to the sun" };
+        arrival.pipLines = new[]
+        {
+            "~Radiation's leaking out all over, and wading through that yellow stuff's gonna slow you right down",
+            "~Stairs down are round the back of the reactor... and uhh, there's a lot of bots in here",
+            "~And if the core starts flaring, get behind one of those lead walls",
+        };
+        arrival.setsRespawn = true;
+        arrival.respawnAt = StandingAt(map, backIn);
+        arrival.standAt = arrival.respawnAt;
+        arrival.transform.position = arrival.respawnAt;
+        TutorialLevelBuilder.Record(arrival);
+
+        Debug.Log($"Chapter 1 builder: the reactor core has {rubbleCells.Count} cells of rubble, {made} bots behind its containment gates in " +
+                  $"{waves.Count} waves, {blastGates.Count} blast gate, {shields} lead shields, and {pools} radiation pools and {vents} vents.");
+    }
+
+    // Whether there's any way at all from these cells to those, over what's walkable.
+    static bool WayThrough(List<Vector2Int> from, List<Vector2Int> to, System.Func<Vector2Int, bool> walkable)
+    {
+        var seen = new HashSet<Vector2Int>(from);
+        var queue = new Queue<Vector2Int>(from);
+        var goals = new HashSet<Vector2Int>(to);
+        while (queue.Count > 0)
+        {
+            Vector2Int c = queue.Dequeue();
+            if (goals.Contains(c)) return true;
+            foreach (Vector2Int step in new[] { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
+            {
+                Vector2Int next = c + step;
+                if (seen.Contains(next) || !walkable(next)) continue;
+                seen.Add(next);
+                queue.Enqueue(next);
+            }
+        }
+        return false;
+    }
+
+    static ReactorGate NewGate(Transform parent, ReactorGate.Kind kind, Vector2 foot, float length)
+    {
+        var gate = new GameObject(kind.ToString()).AddComponent<ReactorGate>();
+        gate.transform.SetParent(parent);
+        gate.transform.position = new Vector3(foot.x, foot.y, CharacterZ);
+        gate.kind = kind;
+        gate.length = length;
+        TutorialLevelBuilder.Record(gate);
+        return gate;
+    }
+
+    static void NewLeak(Map map, Vector2Int cell, RadiationLeak.Kind kind, Vector2 reach, Transform parent, float phase)
+    {
+        var leak = new GameObject(kind == RadiationLeak.Kind.Pool ? "Radiation Pool" : "Radiation Vent").AddComponent<RadiationLeak>();
+        leak.transform.SetParent(parent);
+        Vector2 at = map.Center(cell.x, cell.y);
+        leak.transform.position = new Vector3(at.x, at.y, 0f);
+        leak.kind = kind;
+        leak.radius = reach;
+        leak.phase = phase;
+        TutorialLevelBuilder.Record(leak);
+    }
+
     // The broadcast a node carries, made the first time from Broadcasts.
     static TransmissionData Broadcast(int index)
     {
@@ -2285,6 +2673,8 @@ public static class ChapterOneBuilder
                 brain.blind = true;
                 brain.smartSenses = true;
                 brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+                if (PatrolLooks.TryGetValue(room.marker, out PlaceholderRobot.BotKind[] looks))
+                    TurnInto(brain, looks[starts.IndexOf(cell) % looks.Length]);
                 TutorialLevelBuilder.Record(brain);
                 TutorialLevelBuilder.Record(robot.transform);
                 robots.Add(brain);
@@ -2316,6 +2706,7 @@ public static class ChapterOneBuilder
         if (body.TryGetComponent(out Animator animator)) animator.enabled = false;
         foreach (Collider2D solid in body.GetComponents<Collider2D>()) solid.enabled = false;
         body.transform.rotation = Quaternion.Euler(0f, 0f, dice.NextDouble() < 0.5 ? 90f : -90f);
+        BodyColliders.MakeSolid(body);      // walked round, not through
         if (body.TryGetComponent(out SpriteRenderer sprite))
         {
             Color c = sprite.color;
@@ -2401,7 +2792,6 @@ public static class ChapterOneBuilder
         { 'k', new[] { WallArt.Kind.EarthPhoto, WallArt.Kind.SafetyPoster, WallArt.Kind.Mountains } },
         { 'h', new[] { WallArt.Kind.CompanyPoster, WallArt.Kind.CrewPhoto } },
         { 'b', new[] { WallArt.Kind.KidsDrawing, WallArt.Kind.EarthPhoto } },
-        { 'o', new[] { WallArt.Kind.Chart } },
     };
 
     static readonly Dictionary<WallArt.Kind, string[]> WallArtThoughts = new Dictionary<WallArt.Kind, string[]>

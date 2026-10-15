@@ -43,6 +43,14 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Seconds to lean into a sprint, or straighten back up out of one.")]
     public float sprintLeanTime = 0.15f;
 
+    [Header("Charging a Swing")]
+    [Tooltip("How far the player trembles either way, in degrees, at full charge (MeleeCombat sets how charged).")]
+    [Range(0f, 10f)] public float chargeShakeAngle = 4f;
+    // 0 to 1 while straining to charge a swing; MeleeCombat sets it every frame.
+    [System.NonSerialized] public float chargeShake;
+    const float TrembleInterval = 0.035f;
+    private float nextTremble, trembleAngle, trembleSquash = 1f;
+
     public Rigidbody2D rb;
     public Animator animator;
     public SpriteRenderer spriteRenderer;
@@ -186,6 +194,8 @@ public class PlayerController : MonoBehaviour
         }
 
         currentSpeed *= combatSpeedMultiplier;
+        // Wading through radiation in the reactor core (RadiationLeak).
+        currentSpeed *= RadiationLeak.SpeedFactor;
 
         // Face where combat says (aiming a gun, mid-swing); otherwise face where you're walking.
         UpdateFacing(isMoving);
@@ -273,8 +283,26 @@ public class PlayerController : MonoBehaviour
         Vector2 crouchSquash = Vector2.Lerp(Vector2.one, new Vector2(crouchWidth, crouchHeight), crouch);
         Vector2 sprintStretch = Vector2.Lerp(Vector2.one, new Vector2(sprintWidth, sprintHeight), sprint);
 
+        // Straining with a charged swing (MeleeCombat): a quick tremble, tipping a few degrees either way and squeezing
+        // a touch, picked fresh every few hundredths of a second so it buzzes rather than sways.
+        Vector2 strain = Vector2.one;
+        if (chargeShake > 0f)
+        {
+            if (Time.time >= nextTremble)
+            {
+                nextTremble = Time.time + TrembleInterval;
+                trembleAngle = Random.Range(-1f, 1f) * chargeShakeAngle * chargeShake;
+                trembleSquash = 1f - Random.Range(0f, 0.035f) * chargeShake;
+            }
+            strain = new Vector2(2f - trembleSquash, trembleSquash);
+        }
+        else
+        {
+            trembleAngle = 0f;
+        }
+
         // Negative turns clockwise, tipping the top of the sprite toward the right.
-        ApplyPose(Vector2.Scale(crouchSquash, sprintStretch), -leanDirection * sprintLeanAngle * sprint);
+        ApplyPose(Vector2.Scale(Vector2.Scale(crouchSquash, sprintStretch), strain), -leanDirection * sprintLeanAngle * sprint + trembleAngle);
     }
 
     // Poses the sprite: squashed or stretched, and tipped by lean degrees, always around its planted feet. The sprite,

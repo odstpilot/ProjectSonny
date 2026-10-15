@@ -55,6 +55,9 @@ public static class CheckpointJump
         new Stage("Chapter2", "comms-power", "Comms ring, power back: tune in the broadcasts (bots through the walls)"),
         new Stage("Chapter2", "comms-relay", "Comms ring: every broadcast in, answer Sonny's relay"),
         new Stage("Chapter2", "comms-done", "Relay passed: a unit's access, back to the control room"),
+        new Stage("Chapter2", "reactor", "Reactor core: arriving (radiation, bots roaming)"),
+        new Stage("Chapter2", "reactor-lockdown", "Reactor core, far side: a step short of the lockdown (armed)"),
+        new Stage("Chapter2", "reactor-cleared", "Reactor core: lockdown beaten, at the stairs down (armed)"),
         new Stage("Chapter2", "control-room", "In the control room, let in as a unit"),
     };
 

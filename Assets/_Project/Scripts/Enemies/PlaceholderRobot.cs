@@ -14,6 +14,11 @@ using UnityEngine;
 // With Smart Senses it's harder to sneak past: it catches movement out of the corner of its eye and hears footsteps
 // close behind it (crouching only dulls both), goes to look at anything it half saw, calls the others in the room over once
 // it's sure, and when it loses the player it heads the way they were running rather than to where they were.
+// It looks like one of the station's maintenance bots, turned (look, drawn at the tileset's 32 pixels to a cell, in
+// Resources/Bots): a sweeper with a saw for a skirt, a hauler with crushing clamps, or an arc bot with its antenna wound
+// into a coil, which keeps its distance and calls down lightning (ArcCaster) instead of going for the player itself.
+// In the reactor core, when the core surges (ReactorSurge), it stops whatever it's doing, turns to face the core, and
+// bows low to it till the surge has passed (Bow), then picks up where it left off. The surge doesn't touch it.
 [RequireComponent(typeof(Health), typeof(Rigidbody2D))]
 public class PlaceholderRobot : MonoBehaviour
 {
@@ -22,6 +27,11 @@ public class PlaceholderRobot : MonoBehaviour
     const float ArriveDistance = 0.2f;
     const float StuckCheckInterval = 0.5f;  // how often it checks whether a wall has stopped it
     const float CatchStandOff = 0.8f;       // how far in front of a locker's exit it stands to pull the player out
+
+    public enum BotKind { Placeholder, Sweeper, Hauler, Arc }
+
+    [Tooltip("Which turned maintenance bot it looks like. Placeholder keeps the old sprite. An arc bot fights with an ArcCaster.")]
+    public BotKind look = BotKind.Sweeper;
 
     [Header("Patrol")]
     [Tooltip("Points to walk between, relative to where the robot starts: in order, then back to the first. Leave empty to stand guard.")]
@@ -174,6 +184,12 @@ public class PlaceholderRobot : MonoBehaviour
     private float roamSpeedNow;
     private float nextDodge;
     private UnityEngine.Rendering.Universal.Light2D eyeGlow;
+    private Sprite[] lookFrames;
+    private float frameTimer;
+    private int frameIndex;
+    private ArcCaster caster;           // an arc bot's lightning, if it has it
+    private float bowUntil;             // bowing to the reactor core till then (Bow)
+    private bool bowing;
     private float nextSwerve;
     private float nextGlance;
 
@@ -196,7 +212,10 @@ public class PlaceholderRobot : MonoBehaviour
         {
             bodyBasePosition = body.transform.localPosition;
             bodyBaseColor = body.color;
+            ApplyLook();
         }
+        caster = GetComponent<ArcCaster>();
+        if (look == BotKind.Arc && caster == null) caster = gameObject.AddComponent<ArcCaster>();
         home = transform.position;
         roamGoal = home;
         investigateSpeed = moveSpeed;
@@ -253,13 +272,15 @@ public class PlaceholderRobot : MonoBehaviour
     void Update()
     {
         UpdateSquash();
-        UpdateEyeGlow();
+        if (!bowing) UpdateEyeGlow();
+        UpdateLookFrames();
 
         if (health.IsDead)
         {
             StealthMeter.Clear(this);
             return;
         }
+        if (UpdateBow()) return;
         stateTimer -= Time.deltaTime;
         UpdateDetection();
 
@@ -292,6 +313,11 @@ public class PlaceholderRobot : MonoBehaviour
                 else if (!CanSeePlayer(true))
                 {
                     LoseTrack();
+                }
+                else if (caster != null)
+                {
+                    Remember();
+                    KeepDistanceAndCast();
                 }
                 else
                 {
@@ -387,6 +413,7 @@ public class PlaceholderRobot : MonoBehaviour
     public void Emp(float seconds)
     {
         if (health.IsDead) return;
+        if (caster != null) caster.Interrupt();
         lockerToOpen = null;
         detection = 0f;
         glimpseTime = -1f;
@@ -528,7 +555,7 @@ public class PlaceholderRobot : MonoBehaviour
         return seen;
     }
 
-    // Nothing solid between it and the point, apart from itself, the player, and other robots.
+    // Nothing solid between it and the point, apart from itself, the player, other robots, and the crew (bodies too).
     bool HasLineOfSight(Vector2 target)
     {
         var solidOnly = new ContactFilter2D { useTriggers = false };
@@ -539,6 +566,7 @@ public class PlaceholderRobot : MonoBehaviour
             // Hits come nearest first, so once it reaches the player nothing past them is in the way.
             if (hit.transform.IsChildOf(player)) return true;
             if (hit.collider.GetComponentInParent<PlaceholderRobot>() != null) continue;
+            if (hit.collider.GetComponentInParent<CrewMember>() != null) continue;     // the crew, standing or fallen
             return false;
         }
         return true;
@@ -675,18 +703,25 @@ public class PlaceholderRobot : MonoBehaviour
         Enter(State.Search, searchTime);
     }
 
-    // Yanks the locker open and hits the player as they come out.
+    // Yanks the locker open (the player sees it from inside, Locker.PullPlayerOut) and hits them as they come out. It
+    // stands there while that plays, then recovers as after any hit.
     void CatchPlayer()
     {
         Locker locker = lockerToOpen;
         lockerToOpen = null;
-        locker.PullPlayerOut();
+        Look(-locker.DoorDirection);
+        Enter(State.Recover, LockerView.PullOutSeconds + recoverTime);
+        locker.PullPlayerOut(HitPulledOut);
+    }
 
+    void HitPulledOut()
+    {
+        // Shorted or knocked back meanwhile: the player's out, but it's in no state to hit them.
+        if (!isActiveAndEnabled || player == null || state != State.Recover) return;
         attackDirection = DirectionToPlayer();
         Look(attackDirection);
         IDamageable target = playerCollider != null ? Damageable.FromCollider(playerCollider) : player.GetComponent<IDamageable>();
         target?.TakeDamage(new DamageInfo(catchDamage, attackDirection, knockback, gameObject, player.position));
-        Enter(State.Recover, recoverTime);
     }
 
     // --- Roaming ---
@@ -821,7 +856,100 @@ public class PlaceholderRobot : MonoBehaviour
             body.flipX = facing.x < 0f;
     }
 
+    // --- Bowing to the core ---
+
+    // Stops where it is, faces the point (the reactor core), and bows low to it for this long, whatever it was doing;
+    // then carries on. Shorted out, it can't.
+    public void Bow(Vector2 toward, float seconds)
+    {
+        if (health.IsDead || state == State.Shorted) return;
+        if (caster != null) caster.Interrupt();
+        Look(toward - rb.position);
+        bowUntil = Mathf.Max(bowUntil, Time.time + seconds);
+    }
+
+    public bool IsBowing => bowing;
+
+    // True while it's bowing: dead still, low, its eye dim. Coming up again, it's straight back to what it was doing.
+    bool UpdateBow()
+    {
+        bool now = Time.time < bowUntil;
+        if (now == bowing)
+        {
+            if (now) rb.linearVelocity = Vector2.zero;
+            return now;
+        }
+        bowing = now;
+        if (body != null)
+        {
+            body.transform.localScale = now ? new Vector3(1.08f, 0.78f, 1f) : Vector3.one;
+            body.transform.localPosition = bodyBasePosition + (now ? new Vector3(0f, -0.12f, 0f) : Vector3.zero);
+        }
+        if (eyeGlow != null) eyeGlow.intensity = now ? 0.15f : eyeGlow.intensity;
+        if (now)
+        {
+            rb.linearVelocity = Vector2.zero;
+            if (state == State.Windup || state == State.Lunge) Enter(State.Recover, 0.2f);
+        }
+        return now;
+    }
+
+    // --- Looks ---
+
+    // The turned maintenance bot's frames, in place of the placeholder's sprite.
+    void ApplyLook()
+    {
+        if (look == BotKind.Placeholder) return;
+        var frames = new[] { Resources.Load<Sprite>($"Bots/Bot_{look}_0"), Resources.Load<Sprite>($"Bots/Bot_{look}_1") };
+        if (frames[0] == null) return;
+        if (frames[1] == null) frames[1] = frames[0];
+        lookFrames = frames;
+        body.sprite = frames[0];
+        frameIndex = Random.Range(0, 2);
+    }
+
+    // Its treads rolling and its body bobbing: quick while it's moving, a slow idle rock otherwise.
+    void UpdateLookFrames()
+    {
+        if (lookFrames == null || body == null || health.IsDead || state == State.Shorted || bowing) return;
+        frameTimer -= Time.deltaTime;
+        if (frameTimer > 0f) return;
+        frameTimer = rb.linearVelocity.sqrMagnitude > 0.05f ? 0.12f : 0.55f;
+        frameIndex = 1 - frameIndex;
+        body.sprite = lookFrames[frameIndex];
+    }
+
     // --- Attacking and getting hit ---
+
+    // An arc bot in a fight: it doesn't come in close. It holds off at a distance, backing away if the player closes in,
+    // and while its lightning's ready and they're in reach and in sight, it stops and calls it down on them (ArcCaster),
+    // standing still till the strikes land. Hitting it spoils the cast.
+    void KeepDistanceAndCast()
+    {
+        float distance = DistanceToPlayer();
+        Vector2 toPlayer = DirectionToPlayer();
+        Look(toPlayer);
+        if (caster.Ready && distance <= caster.range && Time.time - chaseSince >= spotReaction)
+        {
+            rb.linearVelocity = Vector2.zero;
+            caster.Cast(player.position, playerVelocity);
+            Enter(State.Recover, caster.CastSeconds);
+            return;
+        }
+        if (distance < caster.keepAway)
+        {
+            rb.linearVelocity = -toPlayer * moveSpeed * 0.7f;
+            if (!HasLineOfSight(rb.position - toPlayer * 1.2f)) rb.linearVelocity = new Vector2(-toPlayer.y, toPlayer.x) * moveSpeed * 0.7f;
+        }
+        else if (distance > caster.range * 0.85f) WalkTo(player.position, moveSpeed);
+        else
+        {
+            // In reach and waiting on its coil: edging round them.
+            Vector2 side = new Vector2(-toPlayer.y, toPlayer.x) * (Mathf.PerlinNoise(Time.time * 0.4f, home.x) > 0.5f ? 1f : -1f);
+            rb.linearVelocity = side * moveSpeed * 0.35f;
+        }
+    }
+
 
     void TryHitPlayer()
     {
@@ -842,6 +970,7 @@ public class PlaceholderRobot : MonoBehaviour
 
     void OnDamaged(DamageInfo info)
     {
+        if (caster != null) caster.Interrupt();
         // Getting hit cancels whatever it was doing, and gives away where the player is.
         detection = 1f;
         if (player != null && !Locker.IsPlayerHidden) Remember();
@@ -853,6 +982,7 @@ public class PlaceholderRobot : MonoBehaviour
 
     void OnDied()
     {
+        if (caster != null) caster.Interrupt();
         rb.linearVelocity = Vector2.zero;
         ResetBody();
     }

@@ -176,6 +176,26 @@ public class ChapterTwoDirector : MonoBehaviour
                     default: next = ring.afterObjective; at = ring.relayStandAt; break;
                 }
                 break;
+            case "reactor":
+            case "reactor-lockdown":
+            case "reactor-cleared":
+                // Past the comms ring, let into the reactor core: just inside, on the far side a step short of the
+                // lockdown, or with it beaten, by the stairs down. For the fight, armed with what the bench makes.
+                var comms = FindAnyObjectByType<CommsRing>();
+                var lockdown = FindAnyObjectByType<ReactorLockdown>();
+                next = comms != null ? comms.afterObjective : null;
+                BlockedWay arrival = System.Array.Find(FindObjectsByType<BlockedWay>(), w => w.arriveInRoom == 'r');
+                if (checkpoint.stage == "reactor") at = arrival != null ? arrival.standAt : (Vector2?)null;
+                else
+                {
+                    at = lockdown == null ? (Vector2?)null : checkpoint.stage == "reactor-lockdown" ? lockdown.standAt : lockdown.clearedStandAt;
+                    if (arrival != null) arrival.ResumePassed();
+                    if (lockdown != null && checkpoint.stage == "reactor-cleared") lockdown.SkipToCleared();
+                    Inventory.Reset();
+                    foreach (string made in new[] { Workshop.EmpId, Workshop.CrowbarId, Workshop.ScrapGunId }) Inventory.Grant(made);
+                    checkpoint.inventory = Inventory.Save();
+                }
+                break;
             case "bench-stocked":
                 // Up on the deck, at the bench, with enough of every part for everything on it.
                 var bench = FindAnyObjectByType<Workshop>();

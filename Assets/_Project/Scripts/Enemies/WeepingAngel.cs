@@ -5,6 +5,8 @@ using UnityEngine.AI;
 // only an EMP shuts it down (Stun), and a hit from a weapon staggers it for a moment. It can't be destroyed - the EMP
 // and running are the only answers.
 //
+// Catching the player, it jumpscares them (AngelJumpscare), its face filling the screen, and sends them back.
+//
 // It gives off no light of its own, so in a dark corridor its footsteps are the only warning the player gets. They
 // quicken as it works up to speed, and stop dead the instant it's shut down.
 //
@@ -99,6 +101,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     public float catchCooldown = 1.5f;
     [Range(0f, 1f)] public float catchShake = 0.8f;
     public float catchHitStop = 0.12f;
+    [Tooltip("Its face slams up to fill the screen when it catches the player (AngelJumpscare).")]
+    public bool jumpscare = true;
+    [Tooltip("The face for the jumpscare. Empty uses its own sprite.")]
+    public Sprite jumpscareFace;
+    [Tooltip("The scene's sound for the jumpscare, on top of catchClip. Empty for none.")]
+    [SoundName] public string jumpscareSound = "Wall Grab";
 
     [Header("Look")]
     [Tooltip("Its sparks, and the flash when something hits it. It casts no light of its own.")]
@@ -650,6 +658,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         HitEffects.Sparks(transform.position, direction, 18, 6f, 200f, huntColor, Color.white);
         LightFlash.Spawn(transform.position, huntColor, 3f, 1.6f, 0.35f);
         PlayOneShot(catchClip);
+        if (jumpscare)
+        {
+            AngelJumpscare.Play(jumpscareFace != null ? jumpscareFace : body != null ? body.sprite : null);
+            Sfx.Play(jumpscareSound, 1f, 0.8f);
+            Sfx.Play("Robot Alert", 1f, 0.55f);
+        }
 
         if (catchDamage > 0f)
         {

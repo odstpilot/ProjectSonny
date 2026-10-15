@@ -308,6 +308,7 @@ public static class TutorialLevelBuilder
         director.alarms = PlaceAlarms(map, lights);
         PlaceSunlight(map, lights);
         director.sonny = PlaceSonny(map, props);
+        if (director.sonny != null) director.sonny.look = SonnyBox.Look.Shadow;    // only a shape in the dark, here
         PlaceLockers(map, lockerPrefab, Group("Lockers", level));   // none in the tutorial now, but a layout can still have them
         PlaceFurniture(map, Group("Furniture", level));
         PlaceRubble(map, Group("Rubble", level));

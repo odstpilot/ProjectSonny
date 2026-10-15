@@ -7,7 +7,8 @@ using UnityEngine;
 //   Wander  walk from one spot in their room to another (a CrewWalkArea), stopping a while at each
 //   Stand   stay put, looking about now and then, and glance at the player when they come close
 //   Chat    stand in a ring with others and talk in turns (CrewChat runs the conversation and turns them to face)
-//   Greet   wait by the entrance, call out to the player when they come near, and greet them when they come over
+//   Greet   wait by the entrance, call out to the player when they come near, and greet them when they come over;
+//           until they have, a "!" bobs over their head so it's plain who to talk to
 // Anyone not caught up in a group conversation can be talked to: walk up to them and press E, and they stop what they're
 // doing, turn to the player, and say their piece in the dialogue box (DialogueBox), one line at a time. The greeter says
 // their greeting; everyone else says their talkLines, or a bit of small talk picked for them: about the new technician
@@ -71,6 +72,10 @@ public class CrewMember : MonoBehaviour
     [Tooltip("Said over their head to get the player to come over, until they have.")]
     public string callOut = "Hey! New tech? Over here!";
     public float callOutCooldown = 8f;
+    [Tooltip("Before they've greeted the player, call out to them from this far off (further than greetRange).")]
+    public float callOutRange = 9f;
+    [Tooltip("A \"!\" bobbing over their head until they've greeted the player.")]
+    public bool markUntilGreeted = true;
     [TextArea] public string[] greeting = new string[0];
 
     // Once the player has talked to the greeter all the way through their greeting. ChapterOneDirector waits on it.
@@ -110,6 +115,8 @@ public class CrewMember : MonoBehaviour
     private Health playerHealth;
     private bool talking;
     private float lastCallOut = float.NegativeInfinity;
+    private float speakingUntil;
+    private SpriteRenderer marker;
     private int seed;
     private Vector2 spawn;
     private readonly List<Vector2> path = new List<Vector2>();
@@ -144,6 +151,7 @@ public class CrewMember : MonoBehaviour
     {
         everyone.Remove(this);
         InteractPrompt.Hide(this);
+        if (marker != null) marker.enabled = false;
         ForgetDealtIfEmpty();
         if (everyone.Count == 0) SonnyOnline = false;     // the scene's ending; the next one starts before the install
     }
@@ -166,6 +174,7 @@ public class CrewMember : MonoBehaviour
         nextGlance = Time.time + Random.Range(glanceSeconds.x, glanceSeconds.y);
 
         if (role == Role.Wander && area != null) StartCoroutine(Wander());
+        if (role == Role.Greet && markUntilGreeted) marker = MakeMarker();
     }
 
     void ApplyTrim()
@@ -184,6 +193,7 @@ public class CrewMember : MonoBehaviour
         else if (role == Role.Greet) Greet();
         UpdateTalk();
         UpdateAnimator();
+        UpdateMarker();
     }
 
     // Turns them to look this way, snapped to the eight directions the art is drawn in.
@@ -199,6 +209,17 @@ public class CrewMember : MonoBehaviour
     {
         if (speech == null) speech = CrewSpeech.Create(transform);
         speech.Show(line, seconds);
+        speakingUntil = Time.time + seconds;
+    }
+
+    // The greeter calls the player over now, whatever the cooldown (ChapterOneDirector: as they step aboard, and when
+    // they try a door before checking in).
+    public void CallOut()
+    {
+        if (HasGreeted || talking || DialogueBox.IsOpen) return;
+        lastCallOut = Time.time;
+        if (player != null) FaceTowards(player.position);
+        Say(callOut, 2.5f);
     }
 
     bool PlayerWithin(float range) => player != null && range > 0f && ((Vector2)player.position - Position).sqrMagnitude <= range * range;
@@ -222,7 +243,7 @@ public class CrewMember : MonoBehaviour
 
     void Greet()
     {
-        if (!PlayerWithin(greetRange))
+        if (!PlayerWithin(HasGreeted ? greetRange : Mathf.Max(greetRange, callOutRange)))
         {
             Face(facing);
             return;
@@ -234,6 +255,61 @@ public class CrewMember : MonoBehaviour
             lastCallOut = Time.time;
             Say(callOut, 2.5f);
         }
+    }
+
+    // --- The "!" over the greeter ---
+
+    const float MarkerPixelsPerUnit = 32f;
+    const float MarkerBobSeconds = 0.9f;
+    const int MarkerBobPixels = 3;
+
+    // Bobbing over their head until they've greeted the player; out of the way while the TALK tag or a line's up there.
+    // It's not one of theirs (their sprites sort as a group, DepthSort), so nothing in front of them ever covers it.
+    void UpdateMarker()
+    {
+        if (marker == null) return;
+        bool show = !HasGreeted && !talking && Time.time >= speakingUntil && !PlayerWithin(talkRange);
+        marker.enabled = show;
+        if (!show) return;
+        float bob = Mathf.Round((0.5f + 0.5f * Mathf.Sin(Time.time * Mathf.PI * 2f / MarkerBobSeconds)) * MarkerBobPixels);
+        marker.transform.position = new Vector3(Position.x, spriteRenderer.bounds.max.y + 0.2f + bob / MarkerPixelsPerUnit, 0f);
+    }
+
+    static SpriteRenderer MakeMarker()
+    {
+        var palette = new Dictionary<char, Color32>
+        {
+            { '#', new Color32(24, 20, 18, 255) },
+            { 'y', new Color32(255, 214, 64, 255) },
+            { 'w', new Color32(255, 246, 196, 255) },
+        };
+        string[] rows =
+        {
+            " ###### ",
+            "#wwyyyy#",
+            "#wyyyyy#",
+            "#yyyyyy#",
+            "#yyyyyy#",
+            " #yyyy# ",
+            " #yyyy# ",
+            " #yyyy# ",
+            " #yyyy# ",
+            " #yyyy# ",
+            "  #yy#  ",
+            "  #yy#  ",
+            "   ##   ",
+            "        ",
+            "  ####  ",
+            " #wyyy# ",
+            " #yyyy# ",
+            "  ####  ",
+        };
+        var marker = new GameObject("Talk To Me").AddComponent<SpriteRenderer>();
+        marker.sprite = PixelArt.FromText(rows, palette, MarkerPixelsPerUnit, new Vector2(0.5f, 0f));
+        marker.sortingLayerName = "Top";
+        marker.sortingOrder = 20;
+        if (CombatSprites.EffectMaterial != null) marker.sharedMaterial = CombatSprites.EffectMaterial;
+        return marker;
     }
 
     // --- Talking ---
@@ -667,5 +743,6 @@ public class CrewMember : MonoBehaviour
     {
         InteractPrompt.Hide(this);
         if (speech != null) Destroy(speech.gameObject);
+        if (marker != null) Destroy(marker.gameObject);
     }
 }

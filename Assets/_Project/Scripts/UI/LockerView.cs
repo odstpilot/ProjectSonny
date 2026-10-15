@@ -38,9 +38,26 @@ public class LockerView : MonoBehaviour
     static readonly Color SlatShadow = new Color32(10, 11, 13, 255);
     static readonly Color Rivet = new Color32(58, 65, 74, 255);
 
+    // Being pulled out (PullOut): a robot's head blocks the vent, the door shakes, then it's torn away and the robot
+    // lunges in, claws out. Seconds for each part, and how hard the screen shakes.
+    const float LoomSeconds = 0.75f;
+    const float YankSeconds = 0.14f;
+    const float LungeSeconds = 0.45f;
+    public const float PullOutSeconds = LoomSeconds + YankSeconds + LungeSeconds;
+    const float LoomShakePixels = 7f;
+    const float LungeShakePixels = 34f;
+    static readonly Color32 Shadow = new Color32(7, 8, 10, 255);
+    static readonly Color32 ShadowEdge = new Color32(22, 25, 30, 255);
+    static readonly Color32 EyeRed = new Color32(255, 46, 34, 255);
+    static readonly Color32 EyeHot = new Color32(255, 196, 170, 255);
+
     static LockerView instance;
 
     private Locker openLocker;
+    private bool beingPulled;
+    private RawImage looming;       // behind the door, seen through the slats
+    private RawImage lunging;       // in front of everything once the door's gone
+    private Image flash;
     private GameObject inside;
     private RectTransform door;
     private RectTransform outsideRect;
@@ -89,6 +106,14 @@ public class LockerView : MonoBehaviour
     {
         if (openLocker == null) return;
         openLocker = null;
+
+        // Cut off mid-pull (the locker switched off, say): everything back as it was.
+        beingPulled = false;
+        looming.gameObject.SetActive(false);
+        lunging.gameObject.SetActive(false);
+        flash.enabled = false;
+        door.gameObject.SetActive(true);
+        door.localRotation = Quaternion.identity;
         outside.Hide();
         inside.SetActive(false);
     }
@@ -107,7 +132,63 @@ public class LockerView : MonoBehaviour
 
     void LateUpdate()
     {
-        if (openLocker != null) UpdateInside();
+        if (openLocker != null && !beingPulled) UpdateInside();
+    }
+
+    // The jumpscare, from inside the locker, while a robot pulls the player out. The Locker puts them outside after.
+    // Unscaled time, so a hit stop elsewhere can't stall it.
+    public IEnumerator PullOut()
+    {
+        beingPulled = true;
+        Vector2 doorRest = door.anchoredPosition;
+        Sfx.Play("Robot Alert", 1f, 0.8f);
+
+        // Something steps in front of the door: the light through the slats goes, a red eye glows in the gaps, and the
+        // door starts to shake as it gets a grip.
+        looming.gameObject.SetActive(true);
+        for (float t = 0f; t < LoomSeconds; t += Time.unscaledDeltaTime)
+        {
+            float k = t / LoomSeconds;
+            looming.color = new Color(1f, 1f, 1f, Mathf.SmoothStep(0f, 1f, k * 1.6f));
+            looming.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.8f, 1.05f, k);
+            float shake = LoomShakePixels * k * k;
+            door.anchoredPosition = doorRest + Random.insideUnitCircle * shake;
+            yield return null;
+        }
+
+        // Torn open: the door's gone in a blink, and there it is.
+        Sfx.Play("Wall Breach", 1f, 1.15f);
+        Sfx.Play("Grab Squeeze", 1f, 0.9f);
+        for (float t = 0f; t < YankSeconds; t += Time.unscaledDeltaTime)
+        {
+            float k = t / YankSeconds;
+            door.anchoredPosition = doorRest + new Vector2(-2600f * k * k, 120f * k);
+            door.localRotation = Quaternion.Euler(0f, 0f, 14f * k);
+            yield return null;
+        }
+        door.gameObject.SetActive(false);
+        looming.gameObject.SetActive(false);
+
+        // It lunges in, filling the screen, claws first, with a red flash and the whole view shaking.
+        lunging.gameObject.SetActive(true);
+        flash.enabled = true;
+        RectTransform lungeRect = lunging.rectTransform;
+        for (float t = 0f; t < LungeSeconds; t += Time.unscaledDeltaTime)
+        {
+            float k = t / LungeSeconds;
+            lungeRect.localScale = Vector3.one * Mathf.Lerp(1.05f, 1.45f, 1f - (1f - k) * (1f - k));
+            lungeRect.anchoredPosition = Random.insideUnitCircle * LungeShakePixels * (1f - k * 0.5f);
+            flash.color = new Color(0.9f, 0.08f, 0.05f, 0.55f * (1f - k));
+            yield return null;
+        }
+
+        // Put back for next time.
+        lunging.gameObject.SetActive(false);
+        flash.enabled = false;
+        door.gameObject.SetActive(true);
+        door.anchoredPosition = doorRest;
+        door.localRotation = Quaternion.identity;
+        beingPulled = false;
     }
 
     void UpdateInside()
@@ -152,6 +233,14 @@ public class LockerView : MonoBehaviour
         outsideRect.offsetMin = new Vector2(-LookMargin, -LookMargin);
         outsideRect.offsetMax = new Vector2(LookMargin, LookMargin);
         outside = outsideRect.gameObject.AddComponent<FirstPersonView>();
+
+        // A robot's head right up against the door, behind the slats: only there while it pulls the player out.
+        looming = PixelArt("Looming", insideRect, LoomingTexture());
+        RectTransform loomRect = looming.rectTransform;
+        loomRect.anchorMin = new Vector2(Vent.xMin - 0.08f, Vent.yMin - 0.22f);
+        loomRect.anchorMax = new Vector2(Vent.xMax + 0.08f, Vent.yMax + 0.2f);
+        loomRect.offsetMin = loomRect.offsetMax = Vector2.zero;
+        looming.gameObject.SetActive(false);
 
         // Everything on the door moves together when peeking and breathing.
         door = Fill(NewRect("Door", insideRect));
@@ -204,12 +293,125 @@ public class LockerView : MonoBehaviour
         hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0.1f);
         hint.rectTransform.sizeDelta = new Vector2(600f, 50f);
 
+        // The robot lunging in once the door's torn away, over all of it, and the red flash with it.
+        lunging = PixelArt("Lunging", insideRect, LungingTexture());
+        Fill(lunging.rectTransform);
+        lunging.rectTransform.offsetMin = new Vector2(-DoorOverhang, -DoorOverhang);
+        lunging.rectTransform.offsetMax = new Vector2(DoorOverhang, DoorOverhang);
+        lunging.gameObject.SetActive(false);
+        flash = Fill(NewRect("Flash", insideRect)).gameObject.AddComponent<Image>();
+        flash.raycastTarget = false;
+        flash.enabled = false;
+
         // --- Fade, on top of everything ---
         fade = Fill(NewRect("Fade", transform)).gameObject.AddComponent<Image>();
         fade.raycastTarget = false;
         SetFade(0f);
 
         inside.SetActive(false);
+    }
+
+    // --- The robot, drawn as chunky pixel art so it matches the game ---
+
+    static RawImage PixelArt(string name, Transform parent, Texture2D texture)
+    {
+        var image = NewRect(name, parent).gameObject.AddComponent<RawImage>();
+        image.texture = texture;
+        image.raycastTarget = false;
+        return image;
+    }
+
+    static Texture2D NewCanvas(int width, int height)
+    {
+        var texture = new Texture2D(width, height, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        texture.SetPixels32(new Color32[width * height]);
+        return texture;
+    }
+
+    // A box with its corners cut off by `corner` pixels. Rows count up from the bottom.
+    static void Box(Texture2D texture, int x0, int y0, int x1, int y1, int corner, Color32 color)
+    {
+        for (int y = y0; y <= y1; y++)
+        {
+            for (int x = x0; x <= x1; x++)
+            {
+                int inX = Mathf.Min(x - x0, x1 - x), inY = Mathf.Min(y - y0, y1 - y);
+                if (inX + inY < corner) continue;
+                if (x >= 0 && y >= 0 && x < texture.width && y < texture.height) texture.SetPixel(x, y, color);
+            }
+        }
+    }
+
+    // A thick line, for arms and claws.
+    static void Limb(Texture2D texture, Vector2 from, Vector2 to, float thickness, Color32 color)
+    {
+        int steps = Mathf.CeilToInt(Vector2.Distance(from, to) * 2f);
+        for (int i = 0; i <= steps; i++)
+        {
+            Vector2 p = Vector2.Lerp(from, to, i / (float)steps);
+            int r = Mathf.CeilToInt(thickness * 0.5f);
+            Box(texture, Mathf.RoundToInt(p.x) - r, Mathf.RoundToInt(p.y) - r, Mathf.RoundToInt(p.x) + r, Mathf.RoundToInt(p.y) + r, 1, color);
+        }
+    }
+
+    // The visor: a red slot with a hot white middle, like the bots' own.
+    static void Visor(Texture2D texture, int x0, int y0, int x1, int y1)
+    {
+        Box(texture, x0, y0, x1, y1, 1, EyeRed);
+        int midX = (x0 + x1) / 2, midY = (y0 + y1) / 2, half = Mathf.Max(1, (x1 - x0) / 6);
+        Box(texture, midX - half, midY - 1, midX + half, midY + 1, 0, EyeHot);
+    }
+
+    // Up against the door: a bot's head filling the vent, its visor at slat height so the red shows through the gaps.
+    static Texture2D LoomingTexture()
+    {
+        Texture2D t = NewCanvas(64, 44);
+        Box(t, 2, 0, 61, 41, 6, ShadowEdge);
+        Box(t, 3, 0, 60, 40, 6, Shadow);
+        Box(t, 29, 40, 34, 43, 0, Shadow);          // antenna
+        Visor(t, 12, 22, 51, 28);
+        t.Apply();
+        return t;
+    }
+
+    // Lunging in: the head over the top of the view, visor blazing, both arms reaching out at the viewer from under it,
+    // thickening as they come closer, claws spread wide at the bottom corners.
+    static Texture2D LungingTexture()
+    {
+        Texture2D t = NewCanvas(96, 54);
+        foreach (int side in new[] { -1, 1 })
+        {
+            // Shoulder to hand in steps, each a little thicker: nearer the eye, bigger.
+            Vector2 shoulder = new Vector2(48 + side * 20, 30);
+            Vector2 hand = new Vector2(48 + side * 36, 9);
+            const int Segments = 6;
+            for (int i = 0; i < Segments; i++)
+            {
+                Vector2 a = Vector2.Lerp(shoulder, hand, i / (float)Segments);
+                Vector2 b = Vector2.Lerp(shoulder, hand, (i + 1) / (float)Segments);
+                float thickness = Mathf.Lerp(5f, 11f, i / (float)(Segments - 1));
+                Limb(t, a, b, thickness + 2f, ShadowEdge);
+                Limb(t, a, b, thickness, Shadow);
+            }
+            // The hand, and four long hooked claws splayed toward the middle and down past the edge.
+            Box(t, Mathf.RoundToInt(hand.x) - 7, Mathf.RoundToInt(hand.y) - 6, Mathf.RoundToInt(hand.x) + 7, Mathf.RoundToInt(hand.y) + 6, 3, Shadow);
+            for (int c = 0; c < 4; c++)
+            {
+                float spread = Mathf.Lerp(-0.35f, 1.1f, c / 3f);       // radians from straight in toward the middle
+                Vector2 toward = new Vector2(-side * Mathf.Cos(spread), -Mathf.Sin(spread));
+                Vector2 knuckle = hand + toward * 6f;
+                Vector2 tip = knuckle + toward * 9f + new Vector2(0f, -3f);
+                Limb(t, hand, knuckle, 4f, Shadow);
+                Limb(t, knuckle, tip, 2f, Shadow);
+                t.SetPixel(Mathf.RoundToInt(tip.x), Mathf.RoundToInt(tip.y), ShadowEdge);
+            }
+        }
+        // The head over the shoulders, a lit rim along its top so it stands off the dark.
+        Box(t, 22, 27, 73, 58, 7, ShadowEdge);
+        Box(t, 23, 28, 72, 56, 7, Shadow);
+        Visor(t, 29, 38, 66, 45);
+        t.Apply();
+        return t;
     }
 
     static RectTransform NewRect(string name, Transform parent)

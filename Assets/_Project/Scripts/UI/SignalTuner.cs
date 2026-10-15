@@ -12,7 +12,7 @@ using UnityEngine.UI;
 // The player's wave is buried in static that clears as the two line up. Hold all three matched and the signal locks:
 // the player's wave settles onto the broadcast, the transmission types out line by line, and any credential it carries
 // is recovered.
-// Controls: A/D, 1-3, or clicking picks a knob; W/S, the scroll wheel, or dragging up and down turns it, with Shift for
+// Controls: A/D, 1-3, or clicking picks a knob; W/S, the scroll wheel, or dragging round it turns it, with Shift for
 // fine tuning; Esc or E leaves. The world keeps running while tuning, and getting hurt knocks the player off.
 // Built from code the first time a terminal needs it; every terminal shares it.
 public class SignalTuner : MonoBehaviour
@@ -71,8 +71,7 @@ public class SignalTuner : MonoBehaviour
     private float lockHeld;
     private float match;            // 0 to 1, how well the waves line up
     private int dragging = -1;
-    private float dragStartY;
-    private float dragStartValue;
+    private float dragAngle;        // where the mouse was round the knob being dragged, last frame, in degrees
     private float lastTick;
     private int openedFrame;
     private int lineIndex;
@@ -253,17 +252,23 @@ public class SignalTuner : MonoBehaviour
         for (int i = 0; i < 3; i++)
             if (RectTransformUtility.RectangleContainsScreenPoint(knobAreas[i], mouse, null)) hovered = i;
 
-        // Dragging up and down turns the knob: a drag of 40% of the screen's height is the whole range.
+        // Dragging round the knob turns it with the mouse, like taking hold of it: clockwise turns it up. The whole
+        // range is the dial's sweep (once round, for phase), slower with Shift.
         if (Input.GetMouseButtonDown(0) && hovered >= 0)
         {
             Select(hovered);
             dragging = hovered;
-            dragStartY = mouse.y;
-            dragStartValue = values[hovered];
+            dragAngle = AngleRound(hovered, mouse);
         }
         if (!Input.GetMouseButton(0)) dragging = -1;
         if (dragging >= 0)
-            SetKnob(dragging, dragStartValue + (mouse.y - dragStartY) / (Screen.height * 0.4f) * speed);
+        {
+            float angle = AngleRound(dragging, mouse);
+            float turned = Mathf.DeltaAngle(dragAngle, angle);
+            dragAngle = angle;
+            float range = dragging == 2 ? 360f : KnobSweep * 2f;
+            SetKnob(dragging, values[dragging] - turned / range * speed);
+        }
 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0f)
@@ -277,6 +282,14 @@ public class SignalTuner : MonoBehaviour
                    - (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
         if (keys != 0f)
             SetKnob(selected, values[selected] + keys * speed * Time.unscaledDeltaTime / KeyTurnTime);
+    }
+
+    // The mouse's angle round a knob's middle, in degrees, counterclockwise from the right.
+    float AngleRound(int knob, Vector2 mouse)
+    {
+        Vector2 middle = RectTransformUtility.WorldToScreenPoint(null, dials[knob].position);
+        Vector2 offset = mouse - middle;
+        return Mathf.Atan2(offset.y, offset.x) * Mathf.Rad2Deg;
     }
 
     void Select(int knob)

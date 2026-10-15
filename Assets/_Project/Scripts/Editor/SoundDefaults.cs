@@ -115,6 +115,10 @@ public static class SoundDefaults
         new Entry("Shelf Rattle", SoundCategory.SoundEffect, 0.7f, "The storage room rack rocking as the technician reaches under it." + MadeInCode),
         new Entry("Knockout Hit", SoundCategory.SoundEffect, 1f, "The crate off the top of the rack landing on the technician's head.",
             Magnetic + "/Magnetic hit 01.wav", Magnetic + "/Magnetic hit 02.wav"),
+        new Entry("Geiger Crackle", SoundCategory.SoundEffect, 0.5f, "One tick of a Geiger counter, near radiation leaking in the reactor core: quicker and louder the nearer." + MadeInSfx),
+        new Entry("Surge Klaxon", SoundCategory.SoundEffect, 0.8f, "The reactor core about to surge: a klaxon, two tones, over and over, for its warning." + MadeInSfx),
+        new Entry("Core Surge", SoundCategory.SoundEffect, 1f, "The reactor core surging: a deep boom and a roar of heat rolling out across the room." + MadeInSfx),
+        new Entry("Radiation Burst", SoundCategory.SoundEffect, 0.8f, "A vent in the reactor core's floor bursting: a hiss and a roar of hot air." + MadeInSfx),
     };
 
     // The air ducts (VentNetwork), in Chapter 2. The ones without clips are made in code (VentSounds).
@@ -169,6 +173,8 @@ public static class SoundDefaults
             Magnetic + "/Magnetic hit 01.wav", Magnetic + "/Magnetic hit 02.wav"),
         new Entry("Robot Explode", SoundCategory.SoundEffect, 0.9f, "A robot destroyed: a bang, a deep boom, and bits rattling down." + MadeInSfx),
         new Entry("Robot Alert", SoundCategory.SoundEffect, 0.6f, "A robot spotting the player and giving chase: a sharp two-tone beep." + MadeInSfx),
+        new Entry("Arc Charge", SoundCategory.SoundEffect, 0.6f, "An arc bot winding up its coil while its target rings fill in: a rising electric buzz." + MadeInSfx),
+        new Entry("Arc Strike", SoundCategory.SoundEffect, 0.9f, "An arc bot's lightning coming down on its rings: a sharp crack." + MadeInSfx),
         new Entry("Robot Attack Windup", SoundCategory.SoundEffect, 0.6f, "A robot winding up to lunge at the player: a servo whining up." + MadeInSfx),
         new Entry("Robot Attack Lunge", SoundCategory.SoundEffect, 0.7f, "A robot lunging: a whoosh and a snap." + MadeInSfx),
         new Entry("Robot Beep", SoundCategory.SoundEffect, 0.35f, "A robot beeping to itself on its rounds, every so often, and when it goes to look at something. Pitch varies." + MadeInSfx),

@@ -10,6 +10,9 @@ using UnityEngine.Rendering.Universal;
 //   A badge door (credential set) only opens for someone with access: the player, once they hold that credential
 //   (AccessCredentials, like the temp badge's), or anyone standing close to a crew member with a badge, who lets them
 //   through. Without either, it says so (badgeText), or that their badge is dead if they carry one (inactiveBadgeText).
+// Every door can be held shut for a while, whatever kind it is (HoldAll): Chapter 1 does it until the technician's
+// checked in with the greeter (ChapterOneDirector). A held door's lamp is red and it says heldText; trying it has the
+// technician say why they can't yet, and tells whoever's listening (HeldDoorTried).
 // Levels can draw the doorway in code: a door in the wall with a lamp (green if it opens, red if not), or darkness
 // deepening toward the wall, so a hallway seems to carry on out of sight. wallDirection says which side the wall is on.
 // FloorOneBuilder places these in pairs, each one's target just inside the other.
@@ -54,6 +57,8 @@ public class Teleporter : MonoBehaviour
     public string badgeText = "BADGE REQUIRED";
     [Tooltip("Said instead when the player carries a badge that won't open it: the temp badge, once Sonny's killed it.")]
     public string inactiveBadgeText = "BADGE INACTIVE";
+    [Tooltip("Shown instead while every door's held shut (HoldAll).")]
+    public string heldText = "CHECK IN FIRST";
 
     [Header("Going Through")]
     [Tooltip("Seconds for each half of the fade through black.")]
@@ -71,6 +76,24 @@ public class Teleporter : MonoBehaviour
 
     static readonly List<Teleporter> all = new List<Teleporter>();
 
+    // While every door's held shut: what the technician says on trying one. Null when they aren't.
+    public static string HeldLine { get; private set; }
+    public static bool Held => HeldLine != null;
+    // Whenever the player tries a door while they're held.
+    public static event System.Action HeldDoorTried;
+    public static void HoldAll(string line) => HeldLine = line ?? "";
+    public static void ReleaseAll() => HeldLine = null;
+    const float HeldTryCooldown = 1.5f;
+    static float lastHeldTry = float.NegativeInfinity;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetHold()
+    {
+        HeldLine = null;
+        HeldDoorTried = null;
+        lastHeldTry = float.NegativeInfinity;
+    }
+
     private Collider2D doorway;
     private Transform player;
     private Collider2D playerCollider;
@@ -81,7 +104,7 @@ public class Teleporter : MonoBehaviour
     private bool travelling;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
 
-    bool CanOpen => !locked && teleportTarget != null && HasAccess;
+    bool CanOpen => !Held && !locked && teleportTarget != null && HasAccess;
     // No credential needed, or the player has it, or someone with a badge is right there with them.
     public bool HasAccess => string.IsNullOrEmpty(credential) || AccessCredentials.Has(credential) || Escorted();
     public bool NeedsBadge => !locked && teleportTarget != null && !HasAccess;
@@ -154,15 +177,31 @@ public class Teleporter : MonoBehaviour
             return;
         }
 
-        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : NeedsBadge ? (AccessCredentials.HasBadge ? inactiveBadgeText : badgeText) : lockedText);
-        if (CanOpen && InteractPrompt.Pressed(this, Locker.InteractKey))
-            StartCoroutine(Travel(player));
+        bool held = Held && !locked && teleportTarget != null;
+        InteractPrompt.Show(this, PromptPoint, CanOpen ? promptText : held ? heldText
+            : NeedsBadge ? (AccessCredentials.HasBadge ? inactiveBadgeText : badgeText) : lockedText);
+        if (!InteractPrompt.Pressed(this, Locker.InteractKey)) return;
+        if (CanOpen) StartCoroutine(Travel(player));
+        else if (held) TriedWhileHeld();
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
         if (mode != Mode.WalkThrough || IsTravelling || DialogueBox.IsOpen || teleportTarget == null || !other.CompareTag("Player")) return;
+        if (Held)
+        {
+            TriedWhileHeld();
+            return;
+        }
         StartCoroutine(Travel(other.attachedRigidbody != null ? other.attachedRigidbody.transform : other.transform));
+    }
+
+    static void TriedWhileHeld()
+    {
+        if (Time.time - lastHeldTry < HeldTryCooldown) return;
+        lastHeldTry = Time.time;
+        TechnicianVoice.Say(HeldLine);
+        HeldDoorTried?.Invoke();
     }
 
     IEnumerator Travel(Transform traveller)

@@ -14,6 +14,15 @@ public class WeaponVisual : MonoBehaviour
     const float FollowThroughHold = 0.06f;
     const float ReturnDuration = 0.1f;
     const float ChargedOverswing = 20f;
+    // The swing's punch: how much bigger the weapon gets at the peak, the screen shake and kick (toward the swing),
+    // and the thin trail behind it.
+    const float SwingPunch = 1.3f;
+    const float HeavySwingPunch = 1.55f;
+    const float SwingShake = 0.25f;
+    const float HeavySwingShake = 0.45f;
+    const float SwingKick = 0.08f;
+    const float HeavySwingKick = 0.18f;
+    const float SwingTrailWidth = 0.07f;
     const float RecoilDuration = 0.1f;
     const float RecoilTilt = 10f;
     const float MuzzleFlashDuration = 0.05f;
@@ -87,11 +96,12 @@ public class WeaponVisual : MonoBehaviour
 
         visual.trail = CreateChild<TrailRenderer>("SwingTrail", pivot);
         visual.trail.emitting = false;
-        visual.trail.time = 0.1f;
+        // A short, thin streak: the swing should read from the weapon snapping through, not a long ribbon behind it.
+        visual.trail.time = 0.045f;
         visual.trail.minVertexDistance = 0.02f;
-        visual.trail.widthMultiplier = 0.12f;
+        visual.trail.widthMultiplier = SwingTrailWidth;
         visual.trail.widthCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
-        visual.trail.startColor = new Color(1f, 1f, 1f, 0.7f);
+        visual.trail.startColor = new Color(1f, 1f, 1f, 0.55f);
         visual.trail.endColor = new Color(1f, 1f, 1f, 0f);
 
         visual.muzzleFlash = CreateChild<SpriteRenderer>("MuzzleFlash", pivot);
@@ -408,17 +418,28 @@ public class WeaponVisual : MonoBehaviour
 
         swinging = true;
         WeaponRenderer.color = baseColor;
-        scaleMultiplier = heavy ? 1.2f : 1f;
-        trail.widthMultiplier = heavy ? 0.2f : 0.12f;
+        trail.widthMultiplier = heavy ? SwingTrailWidth * 1.6f : SwingTrailWidth;
         poseAngle = from;
         ApplyTransforms(); // snap to the start first so the trail doesn't streak from the resting pose
         trail.Clear();
         trail.emitting = true;
+        CameraShake.ShakeAtLeast(heavy ? HeavySwingShake : SwingShake);
+        CameraShake.Kick(facing, heavy ? HeavySwingKick : SwingKick);
 
-        yield return Tween(duration, t => poseAngle = Mathf.Lerp(from, to, EaseOutCubic(t)));
+        // Snaps through hard (most of the turn in the first third), the weapon swelling as it passes the middle and
+        // flashing white at the peak, so the hit lands with weight instead of drifting round.
+        float peakScale = heavy ? HeavySwingPunch : SwingPunch;
+        yield return Tween(duration, t =>
+        {
+            poseAngle = Mathf.Lerp(from, to, EaseOutQuint(t));
+            float swell = Mathf.Sin(Mathf.Clamp01(t * 1.6f) * Mathf.PI);
+            scaleMultiplier = Mathf.Lerp(heavy ? 1.15f : 1f, peakScale, swell);
+            WeaponRenderer.color = Color.Lerp(baseColor, Color.white, swell * 0.8f);
+        });
 
         trail.emitting = false;
-        yield return new WaitForSeconds(FollowThroughHold);
+        WeaponRenderer.color = baseColor;
+        yield return new WaitForSeconds(heavy ? FollowThroughHold * 2f : FollowThroughHold);
 
         float endScale = scaleMultiplier;
         yield return Tween(ReturnDuration, t =>
@@ -489,6 +510,12 @@ public class WeaponVisual : MonoBehaviour
             yield return null;
         }
         apply(1f);
+    }
+
+    static float EaseOutQuint(float t)
+    {
+        float u = 1f - Mathf.Clamp01(t);
+        return 1f - u * u * u * u * u;
     }
 
     static float EaseOutCubic(float t)

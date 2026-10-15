@@ -153,6 +153,30 @@ public static class Sfx
                 seconds = 0.25f;
                 wave = t => (Noise() * 0.6f * Mathf.Exp(-t * 25f) + Square(140f, t) * 0.25f * Mathf.Exp(-t * 15f)) * Attack(t, 0.002f);
                 break;
+            case "Arc Charge":      // a buzz climbing as the coil winds up
+                seconds = 1f;
+                wave = t => (Square(90f + 160f * t, t) * 0.18f + Noise() * 0.12f) * Attack(t, 0.05f) * (0.4f + 0.6f * t);
+                break;
+            case "Arc Strike":      // a crack of thunder, close
+                seconds = 0.5f;
+                wave = t => (Noise() * Mathf.Exp(-t * 18f) * 1.1f + Sine(60f, t) * Mathf.Exp(-t * 8f) * 0.5f) * Attack(t, 0.001f);
+                break;
+            case "Surge Klaxon":    // two tones, back and forth, for the length of the warning
+                seconds = 3.2f;
+                wave = t => Square(t % 0.6f < 0.3f ? 440f : 330f, t) * 0.18f * (t % 0.3f < 0.26f ? 1f : 0f);
+                break;
+            case "Core Surge":      // a deep boom and a roar dying away
+                seconds = 2.2f;
+                wave = t => (Sine(45f - 15f * t, t) * Mathf.Exp(-t * 2f) * 0.9f + Lowpass(0.12f) * 1.6f * Mathf.Exp(-t * 1.6f)) * Attack(t, 0.01f);
+                break;
+            case "Geiger Crackle":  // a dry click or two
+                seconds = 0.05f;
+                wave = t => Noise() * (Mathf.Exp(-t * 900f) + (t > 0.018f ? Mathf.Exp(-(t - 0.018f) * 900f) * 0.6f : 0f));
+                break;
+            case "Radiation Burst": // a hiss swelling into a roar, then dying away
+                seconds = 1.6f;
+                wave = t => (Lowpass(0.6f) * 0.6f + Lowpass(0.08f) * 1.4f) * Attack(t, 0.15f) * Mathf.Exp(-Mathf.Max(0f, t - 0.4f) * 2.2f);
+                break;
             case "Robot Alert":     // it's seen them: a sharp two-tone beep, rising
                 seconds = 0.32f;
                 wave = t => Square(t < 0.14f ? 740f : 1100f, t) * 0.22f * (t % 0.16f < 0.12f ? 1f : 0f);

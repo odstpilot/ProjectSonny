@@ -4,7 +4,9 @@ using UnityEngine;
 // Runs Chapter 1's arrival. A title card on black, then the pod crossing to the station and docking (ArrivalCutscene),
 // then the fade up on the ship entrance as the technician steps aboard, unarmed, into a common grounds full of crew going
 // about their day. The crew member waiting by the entrance (the
-// greeter) calls them over; talking to them (E) gets the hello, and they switch on Pip, the helper in the technician's
+// greeter) calls them over, with a "!" over their head; every door aboard stays shut until the technician's talked to
+// them (Teleporter.HoldAll), and trying one has the technician say so and the greeter call again. Talking to them (E)
+// gets the hello, and they switch on Pip, the helper in the technician's
 // suit (SuitHelper). Pip boots up in the top right corner, says hello, and pins the control room on the suit's map;
 // getting there is the objective. (requireMapLook brings back the stop to open the map and look.)
 // Walking into the control room plays the install (ControlRoomCutscene); if that happens before Pip's finished showing
@@ -33,7 +35,9 @@ public class ChapterOneDirector : MonoBehaviour
     public bool skipTitleInEditor = false;
 
     [Header("Objectives")]
-    public string objectiveBeforeGreeting = "Check in with the crew by the entrance";
+    public string objectiveBeforeGreeting = "Talk to the quartermaster by the entrance";
+    [Tooltip("The technician, trying a door before they've talked to the greeter: every door's shut till then.")]
+    public string heldDoorLine = "Uhh I should probably check in with the quartermaster first... the guy waving at me over there";
     public string objectiveOpenMap = "Open your map";
     public string objectiveAfterGreeting = "Report to the control room";
 
@@ -63,14 +67,39 @@ public class ChapterOneDirector : MonoBehaviour
     private Coroutine meetPip;
 
     void OnEnable() => ControlRoomCutscene.Started += StandDown;
-    void OnDisable() => ControlRoomCutscene.Started -= StandDown;
+
+    void OnDisable()
+    {
+        ControlRoomCutscene.Started -= StandDown;
+        ReleaseDoors();
+    }
 
     void StandDown()
     {
         if (meetPip != null) StopCoroutine(meetPip);
         meetPip = null;
         if (greeter != null) greeter.Greeted -= OnGreeted;
+        ReleaseDoors();
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
+    }
+
+    // Every door shut until the technician's checked in with the greeter, who calls them over again if they try one.
+    void HoldDoors()
+    {
+        Teleporter.HoldAll(heldDoorLine);
+        Teleporter.HeldDoorTried -= CallOverAgain;
+        Teleporter.HeldDoorTried += CallOverAgain;
+    }
+
+    void ReleaseDoors()
+    {
+        Teleporter.HeldDoorTried -= CallOverAgain;
+        Teleporter.ReleaseAll();
+    }
+
+    void CallOverAgain()
+    {
+        if (greeter != null) greeter.CallOut();
     }
 
     IEnumerator Start()
@@ -84,6 +113,7 @@ public class ChapterOneDirector : MonoBehaviour
             yield break;
         }
 
+        if (greeter != null && !greeter.HasGreeted) HoldDoors();
         if (!(skipTitleInEditor && Application.isEditor))
         {
             yield return hud.TitleCard(titleCard, titleHoldSeconds);
@@ -101,6 +131,7 @@ public class ChapterOneDirector : MonoBehaviour
         {
             hud.SetObjective(objectiveBeforeGreeting);
             greeter.Greeted += OnGreeted;
+            greeter.CallOut();
         }
     }
 
@@ -199,6 +230,7 @@ public class ChapterOneDirector : MonoBehaviour
     void OnGreeted()
     {
         if (greeter != null) greeter.Greeted -= OnGreeted;
+        ReleaseDoors();
         meetPip = StartCoroutine(MeetPip());
     }
 

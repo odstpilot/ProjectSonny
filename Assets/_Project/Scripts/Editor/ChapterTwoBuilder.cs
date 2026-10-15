@@ -23,8 +23,9 @@ public static class ChapterTwoBuilder
     // Emergency power: the ambient light at this much of what it is in Chapter 1, in this color.
     const float EmergencyLight = 0.4f;
     // The rooms past the lounge, with the power out altogether (DarkRooms): the common grounds hallway, the bedrooms, the
-    // maintenance deck, the hallway to the control room and the control room, and all of floor 2.
-    const string DarkRoomMarkers = "hbmcodgr";
+    // maintenance deck, the hallway to the control room and the control room, and floor 2 but the reactor core, which
+    // glows hot (ReactorAmbience).
+    const string DarkRoomMarkers = "hbmcodg";
     static readonly Color EmergencyColor = new Color(1f, 0.5f, 0.42f);
     static readonly Color SonnyLens = new Color(1f, 0.16f, 0.1f);
 
@@ -66,6 +67,7 @@ public static class ChapterTwoBuilder
         if (sonny != null)
         {
             sonny.startPowered = true;
+            sonny.look = SonnyBox.Look.Rogue;
             sonny.lensColor = SonnyLens;
             if (sonny.glow != null) sonny.glow.color = SonnyLens;
             TutorialLevelBuilder.Record(sonny);

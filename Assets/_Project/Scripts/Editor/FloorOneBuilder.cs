@@ -208,17 +208,8 @@ public static class FloorOneBuilder
                 (Railing(5), 24, 30),
             }
         },
-        {
-            // Consoles under the windows, pods, and a row of desks. The pods are only on the right: the left ones stood
-            // in the way from the door to the install point, where the technician walks in the cutscene.
-            'o', new[]
-            {
-                (LongConsoleBank, 1, 0), (Chair, 2, 0), (Chair, 5, 0), (Chair, 6, 0), (Chair, 9, 0),
-                (LongConsoleBank, 16, 0), (Chair, 17, 0), (Chair, 20, 0), (Chair, 21, 0), (Chair, 24, 0),
-                (Pod, 16, 5), (Pod, 20, 5),
-                (Bench, 4, 12), (Chair, 5, 13), (Bench, 10, 12), (Chair, 11, 13), (Bench, 14, 12), (Chair, 15, 13), (Bench, 20, 12), (Chair, 21, 13),
-            }
-        },
+        // The control room ('o') has no furniture of its own: it's Sonny's, and Sonny brings its rig of pylons, consoles,
+        // monitor banks, and server racks (SonnyBox).
     };
 
     // How each room's floor is laid, after Map (DEMO): the tile for a cell, counted from the top-left corner of the room's
@@ -322,13 +313,11 @@ public static class FloorOneBuilder
             }
         },
         {
-            // The reactor cells in a row along the north wall, the core's hazard floor fenced off below them, and the
+            // Pipes down the north wall behind the core (the core itself is ReactorCore, PlaceReactorCore), and the
             // workshop band along the south with pipes down its wall.
             'r', new[]
             {
                 (WallPipe, 50, 0), (WallPipe, 55, 0), (WallPipe, 69, 0), (WallPipe, 74, 0),
-                (Pod, 51, 4), (Pod, 55, 4), (Pod, 65, 4), (Pod, 69, 4),
-                (HazardFloor(16, 10), 53, 11), (Railing(10), 56, 22),
                 (WallPipe, 6, 19), (WallPipe, 16, 19), (WallPipe, 24, 19),
                 (HazardFloor(12, 6), 8, 24), (Bench, 10, 25), (FloorGrid, 30, 25),
             }
@@ -339,6 +328,16 @@ public static class FloorOneBuilder
     {
         { 'g', Bridge }, { 'd', ReactorFloor }, { 'r', ReactorFloor },
     };
+
+    // The reactor core (ReactorCore): the room it's in, and about where the middle of its foot goes, in cells from the
+    // top-left of that room's floor as it's drawn. It's built where it fits nearest that.
+    const char ReactorRoom = 'r';
+    static readonly Vector2Int ReactorSpot = new Vector2Int(61, 23);
+    // How much of the room it takes, in cells from the middle of its foot: the pad round it (all on open floor, clear of
+    // doorways and stairs), the body standing up off it (not hanging over a wall), and its solid foot (an ellipse).
+    static readonly RectInt ReactorPad = new RectInt(-17, -7, 34, 14);
+    static readonly RectInt ReactorBody = new RectInt(-14, -20, 28, 16);
+    static readonly Vector2 ReactorFoot = new Vector2(10.6f, 4.4f);
 
     // Plates round the edge and grating over the rest.
     static int ReactorFloor(Room room, int x, int y)
@@ -1111,6 +1110,9 @@ public static class FloorOneBuilder
                 }
             }
 
+            if (spec == FloorTwo && room.marker == ReactorRoom)
+                PlaceReactorCore(map, room, stretch, inRoom, used[Layer.Furniture], props);
+
             if (!spec.furnishings.TryGetValue(room.marker, out (Stamp stamp, int x, int y)[] pieces)) continue;
             foreach ((Stamp stamp, int x, int y) in pieces)
             {
@@ -1144,6 +1146,56 @@ public static class FloorOneBuilder
         furniture.UnionWith(nooks);
         seats = new HashSet<Vector2Int>(used[Layer.Front]);
         return placed;
+    }
+
+    // The reactor core, as near ReactorSpot as it fits: its pad all on open floor in the room, clear of doorways and
+    // stairs, its body standing over the room's floor, not hanging off past a wall. Its middle goes on a corner of the
+    // grid, so the pad's art lines up with the tiles. Its solid foot, and the machinery behind it, count as furniture,
+    // so nothing's put on them.
+    static void PlaceReactorCore(Map map, Room room, RoomStretch stretch, HashSet<Vector2Int> inRoom, HashSet<Vector2Int> furniture,
+        Transform parent)
+    {
+        var target = new Vector2Int(room.minX + stretch.X(ReactorSpot.x), room.minRow + stretch.Y(ReactorSpot.y));
+        bool Fits(Vector2Int at)
+        {
+            for (int dx = ReactorPad.xMin; dx < ReactorPad.xMax; dx++)
+                for (int dy = ReactorPad.yMin; dy < ReactorPad.yMax; dy++)
+                {
+                    Vector2Int cell = at + new Vector2Int(dx, dy);
+                    if (!inRoom.Contains(cell) || !IsOpenFloor(map.At(cell.x, cell.y))) return false;
+                    foreach (Vector2Int step in Steps)
+                        if (IsKeptClear(map.At(cell.x + step.x, cell.y + step.y))) return false;
+                }
+            for (int dx = ReactorBody.xMin; dx < ReactorBody.xMax; dx++)
+                for (int dy = ReactorBody.yMin; dy < ReactorBody.yMax; dy++)
+                    if (!inRoom.Contains(at + new Vector2Int(dx, dy))) return false;
+            return true;
+        }
+        Vector2Int? spot = room.cells.OrderBy(c => (c - target).sqrMagnitude).Select(c => (Vector2Int?)c).FirstOrDefault(c => Fits(c.Value));
+        if (spot == null)
+        {
+            Debug.LogWarning($"{spec.name} builder: the reactor core doesn't fit anywhere in the {room.name}, so it's left out.");
+            return;
+        }
+
+        Vector2Int middle = spot.Value;
+        var core = new GameObject("Reactor Core");
+        core.transform.SetParent(parent);
+        core.transform.position = new Vector3(map.Origin.x + middle.x, map.Origin.y + map.Height - middle.y, CharacterZ);
+        core.AddComponent<ReactorCore>();
+        for (int dx = ReactorPad.xMin; dx < ReactorPad.xMax; dx++)
+            for (int dy = ReactorPad.yMin; dy < ReactorPad.yMax; dy++)
+            {
+                float fx = (dx + 0.5f) / ReactorFoot.x, fy = (dy + 0.5f) / ReactorFoot.y;
+                if (fx * fx + fy * fy <= 1f) furniture.Add(middle + new Vector2Int(dx, dy));
+            }
+        // And the machinery behind it, solid too.
+        int halfWidth = Mathf.CeilToInt(ReactorCore.RearHalfWidth), depth = Mathf.CeilToInt(ReactorCore.RearDepth);
+        for (int dx = -halfWidth; dx < halfWidth; dx++)
+            for (int dy = -depth; dy < 0; dy++)
+                if (inRoom.Contains(middle + new Vector2Int(dx, dy))) furniture.Add(middle + new Vector2Int(dx, dy));
+        if (middle != target)
+            Debug.Log($"{spec.name} builder: the reactor core is {middle.x - target.x}, {middle.y - target.y} cells off where it's meant to go, the nearest it fits.");
     }
 
     // The empty cells inside a piece on the floor: the knee space under a console or counter, where the chairs go. Nobody

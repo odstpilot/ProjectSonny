@@ -171,7 +171,7 @@ public class PlayerInventory : MonoBehaviour
         InventorySlot b = slots[to];
         WeaponItemData held = SelectedItem;
 
-        if (a.item is MaterialItemData material && b.item == a.item)
+        if (a.item is MaterialItemData material && b.item == a.item && CanHold(to, a.item))
         {
             int moved = Mathf.Min(a.count, material.maxStack - b.count);
             if (moved <= 0) return false;

@@ -18,6 +18,7 @@ public class BackpackUI : MonoBehaviour
     public List<TMP_Text> countTexts = new List<TMP_Text>();
 
     private bool isOpen;
+    public bool IsOpen => isOpen;
     private float timeScaleBeforeOpen = 1f;
 
     private void Start()

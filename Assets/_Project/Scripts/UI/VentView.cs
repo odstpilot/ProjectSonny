@@ -1014,10 +1014,13 @@ public class VentView : MonoBehaviour
         keyTimeLeft = Block("Time Left", timeTrack.transform, 0f, 0f, 1f, 1f, KeyColor);
         keyBox.gameObject.SetActive(false);
 
-        hint = Label("Hint", insideRect, "", 30f, font);
-        hint.color = new Color(0.8f, 0.84f, 0.9f, 0.6f);
+        // Big, and bright enough to read against the dark: everything said in the ducts comes up here.
+        hint = Label("Hint", insideRect, "", 46f, font);
+        hint.color = new Color(0.93f, 0.95f, 0.98f, 0.95f);
+        hint.textWrappingMode = TextWrappingModes.Normal;
+        hint.fontSharedMaterial = GameUI.Shadow(hint.font);
         hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0.14f);
-        hint.rectTransform.sizeDelta = new Vector2(1000f, 50f);
+        hint.rectTransform.sizeDelta = new Vector2(1500f, 130f);
         hint.enabled = false;
 
         // Fade, on top of everything.

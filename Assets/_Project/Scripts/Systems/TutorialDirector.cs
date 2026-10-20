@@ -14,8 +14,7 @@ using UnityEngine.SceneManagement;
 //   at their back; one bursts out right on top of them and grabs them (mash E to break free); the ceiling comes down on
 //   the rest -> a robot powers up: the wrench -> across a collapsed floor with the ceiling coming down all around -> an
 //   ambush: the walls of the next room blow in, one after the other, and the robots that come through have to be dealt
-//   with; then the door on is jammed, and something on the other side punches a hole through the wall beside it, which
-//   is the way on -> an arena: the scrap gun; then a cracked, glowing panel in the wall has to be shot open, and a third
+//   with, and the way on opens -> an arena: the scrap gun; then a cracked, glowing panel in the wall has to be shot open, and a third
 //   robot comes through it: switching between the two -> the last hallway, alarms going, Sonny on every screen -> the
 //   control room, where Sonny is waiting, and the game cuts back to the start.
 // The player can't die here: hits still land and knock them about, but no health is lost, and the health readout is
@@ -75,7 +74,8 @@ public class TutorialDirector : MonoBehaviour
     public int breakFreePresses = 7;
 
     [Header("The Way Round")]
-    [Tooltip("The hole a robot punches in the ambush room's wall once the ambush is over, and the robot that does it. With both, the entrance jams, and walking into the hole takes the player through to the far side of it.")]
+    [Tooltip("The hole a robot punches in the ambush room's wall once the ambush is over, and the robot that does it. With both, and wayRound on, the entrance jams, and walking into the hole takes the player through to the far side of it.")]
+    public bool wayRound = false;
     public Teleporter arenaPassage;
     public RobotEncounter passageRobot;
     public List<WallBreach> passageBreaches = new List<WallBreach>();
@@ -129,9 +129,12 @@ public class TutorialDirector : MonoBehaviour
 
     [Header("Camera")]
     [Tooltip("How far the camera pulls back for the arena fight, as a multiple of its normal view, so the wall coming in and every robot are on screen.")]
-    public float arenaView = 1.18f;
+    public float arenaView = 1.1f;
     [Tooltip("How far it pushes in down the last hallway, closing in on the player as they near the control room.")]
-    public float finalHallwayView = 0.88f;
+    public float finalHallwayView = 0.95f;
+    [Tooltip("How far it pulls back on Sonny at the end, so all of it is in shot, and where it looks from, from Sonny's feet.")]
+    public float revealView = 1.7f;
+    public Vector2 revealFrom = new Vector2(-1.5f, 3f);
 
     [Header("The End")]
     [Tooltip("Seconds to hold on Sonny after its last line, before the cut to black.")]
@@ -384,13 +387,13 @@ public class TutorialDirector : MonoBehaviour
         // On the doorway, close and canted, as they come through it.
         for (float t = 0f; t < 0.9f && !chaseCollapsed; t += Time.unscaledDeltaTime)
         {
-            Frame(Pack() + new Vector2(0.6f + t * 0.8f, 0.3f), 0.6f - t * 0.05f, 6f - t * 2f);
+            Frame(Pack() + new Vector2(0.6f + t * 0.5f, 0.3f), 0.82f - t * 0.02f, 1.5f - t * 0.5f);
             yield return null;
         }
-        CameraShake.Shake(0.25f);
+        CameraShake.Shake(0.12f);
 
         // Swing over to the player.
-        yield return Move(() => (Vector2)player.position + lead, 0.85f, -2f, 0.6f, TitleUI.EaseInOut);
+        yield return Move(() => (Vector2)player.position + lead, 0.94f, -0.5f, 0.9f, TitleUI.EaseInOut);
 
         // Running with them, a little ahead, swaying; punching in on each wall as it comes in.
         float sway = 0f;
@@ -399,16 +402,16 @@ public class TutorialDirector : MonoBehaviour
             float dt = Time.unscaledDeltaTime;
             sway += dt;
             Vector2 want = (Vector2)player.position + lead;
-            float size = 0.85f + Mathf.Sin(sway * 0.9f) * 0.01f;
-            float tilt = -2f + Mathf.Sin(sway * 1.2f) * 0.5f;
+            float size = 0.94f + Mathf.Sin(sway * 0.9f) * 0.005f;
+            float tilt = -0.5f + Mathf.Sin(sway * 1.2f) * 0.15f;
             if (chaseBreach is Vector2 breach)
             {
                 chaseBreach = null;
-                HitStop.Hold(0.35f, 0.3f);
-                CameraShake.Kick(Vector2.down, 0.3f);
-                Vector2 toward = Vector2.Lerp(want, breach, 0.35f);
-                yield return Move(() => toward, 0.72f, 2f, 0.3f, TitleUI.EaseOut);
-                yield return Move(() => (Vector2)player.position + lead, 0.85f, -2f, 0.6f, TitleUI.EaseInOut);
+                HitStop.Hold(0.6f, 0.2f);
+                CameraShake.Kick(Vector2.down, 0.15f);
+                Vector2 toward = Vector2.Lerp(want, breach, 0.2f);
+                yield return Move(() => toward, 0.88f, 0.5f, 0.45f, TitleUI.EaseOut);
+                yield return Move(() => (Vector2)player.position + lead, 0.94f, -0.5f, 0.8f, TitleUI.EaseInOut);
                 continue;
             }
             Vector2 at = Vector2.Lerp(cam.transform.position, want, 1f - Mathf.Exp(-5f * dt));
@@ -417,12 +420,12 @@ public class TutorialDirector : MonoBehaviour
         }
 
         // The ceiling coming down on them: swing back and watch, slowed right down.
-        HitStop.Hold(0.3f, 1.1f);
+        HitStop.Hold(0.5f, 0.8f);
         Vector2 onTheRubble = new Vector2(collapseX - 1f, player.position.y + 0.3f);
-        yield return Move(() => onTheRubble, 0.7f, 3f, 0.7f, TitleUI.EaseInOut);
+        yield return Move(() => onTheRubble, 0.88f, 0.8f, 0.9f, TitleUI.EaseInOut);
         for (float t = 0f; t < 0.9f; t += Time.unscaledDeltaTime)
         {
-            Frame(onTheRubble + new Vector2(-t * 0.3f, 0f), 0.7f - t * 0.03f, 3f - t);
+            Frame(onTheRubble + new Vector2(-t * 0.15f, 0f), 0.88f - t * 0.01f, 0.8f - t * 0.5f);
             yield return null;
         }
 
@@ -736,7 +739,7 @@ public class TutorialDirector : MonoBehaviour
 
         yield return WaitForCleared(ambushRobots);
         fighting = false;
-        if (arenaPassage == null || passageBreaches.Count == 0)
+        if (!wayRound || arenaPassage == null || passageBreaches.Count == 0)
         {
             Open(arenaEntrance);
             yield break;
@@ -924,7 +927,9 @@ public class TutorialDirector : MonoBehaviour
         if (hallwayVoice != null) yield return hallwayVoice;
 
         StartCoroutine(hud.Letterbox(true, 0.8f));
-        yield return PanCameraTo(sonny != null ? (Vector2)sonny.transform.position + new Vector2(-2.5f, 1f) : (Vector2)player.position, 2.5f);
+        StartCoroutine(hud.Vignette(0.85f, 2.5f));
+        FrameView(revealView, 2.5f);
+        yield return PanCameraTo(sonny != null ? (Vector2)sonny.transform.position + revealFrom : (Vector2)player.position, 2.5f);
 
         if (sonny != null) sonny.Awaken();
         // The sunlight sinks as Sonny wakes, so its red is what fills the room, and every screen is Sonny's.

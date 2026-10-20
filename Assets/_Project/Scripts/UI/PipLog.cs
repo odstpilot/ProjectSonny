@@ -238,9 +238,9 @@ public class PipLog : MonoBehaviour
         TextMeshProUGUI title = GameUI.Label("Title", panel, "PIP  //  LOG", 34f, SuitHelper.PipColor, TextAlignmentOptions.TopLeft, GameUI.Heading);
         GameUI.Anchor(title.rectTransform, 0f, 1f, 1f, 1f, 48f, -70f, 48f, 30f);
         title.characterSpacing = 6f;
-        TextMeshProUGUI close = GameUI.Label("Close", panel, $"{LogKey} / ESC  CLOSE", 24f, GameUI.Dim, TextAlignmentOptions.TopRight);
+        TextMeshProUGUI close = GameUI.Label("Close", panel, $"{LogKey} / ESC  CLOSE", 30f, GameUI.Text, TextAlignmentOptions.TopRight);
         GameUI.Anchor(close.rectTransform, 0f, 1f, 1f, 1f, 48f, -66f, 48f, 36f);
-        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "SCROLL / W S  TO READ BACK", 22f, GameUI.Dim, TextAlignmentOptions.BottomRight);
+        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "SCROLL / W S  TO READ BACK", 30f, GameUI.Text, TextAlignmentOptions.BottomRight);
         GameUI.Anchor(hint.rectTransform, 0f, 0f, 1f, 0f, 48f, 24f, 48f, -56f);
 
         viewport = GameUI.Anchor(GameUI.NewRect("Viewport", panel), 0f, 0f, 1f, 1f, 48f, 76f, 48f, 100f);

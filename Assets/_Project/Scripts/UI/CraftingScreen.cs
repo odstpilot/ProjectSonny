@@ -280,7 +280,7 @@ public class CraftingScreen : MonoBehaviour
             Icon(panel, material, new Vector2(1f, 1f), new Vector2(-right - 64f, -40f), 54f);
         }
 
-        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "WASD / MOUSE  PICK      E / CLICK  MAKE      ESC  LEAVE", 22f, GameUI.Dim, TextAlignmentOptions.Bottom);
+        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "WASD / MOUSE  PICK      E / CLICK  MAKE      ESC  LEAVE", 30f, GameUI.Text, TextAlignmentOptions.Bottom);
         GameUI.Anchor(hint.rectTransform, 0f, 0f, 1f, 0f, 60f, 28f, 60f, -64f);
 
         for (int i = 0; i < recipes.Length; i++)

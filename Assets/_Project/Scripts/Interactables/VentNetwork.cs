@@ -23,7 +23,8 @@ public enum VentCell : byte { Solid, Duct, Dent, Squeeze, Grate, Hatch }
 //   letter but the ones the game already uses everywhere, like M for the map) and has to be pressed before its time
 //   runs out. There's a good while to find it. The right key inches the player through; the wrong one, or being too
 //   slow, scrapes loudly and slips them back.
-//   There's no room to turn inside a squeeze.
+//   There's no room to turn inside a squeeze. Before one, the technician says what it is (squeezeIntro the first time,
+//   squeezeAgain after), and they're held still until it's been read (or Space skips it).
 //
 // The drone:
 //   When the noise fills up, eyes stare out of the dark for a moment, and then a drone drops out of the nearest hatch
@@ -95,7 +96,7 @@ public class VentNetwork : MonoBehaviour
     [Tooltip("Seconds to back up one cell.")]
     public float backUpTime = 0.9f;
     [Tooltip("Seconds to turn a quarter of the way round.")]
-    public float turnTime = 0.15f;
+    public float turnTime = 0.4f;
 
     [Header("Noise (1 fills the meter)")]
     [Tooltip("Each cell crawled at a normal pace. Crawling carefully makes none.")]
@@ -111,31 +112,40 @@ public class VentNetwork : MonoBehaviour
     [Tooltip("Each wrong key, or too slow a key, in a squeeze.")]
     public float squeezeMistakeNoise = 0.5f;
     [Tooltip("Seconds of quiet before the noise starts to fade.")]
-    public float noiseFadeDelay = 2f;
+    public float noiseFadeDelay = 3f;
     [Tooltip("How much the noise fades each second after that.")]
-    public float noiseFade = 0.08f;
+    public float noiseFade = 0.05f;
 
     [Header("Tight Squeezes")]
     [Tooltip("Keys to press to get through one squeeze cell.")]
     [Range(1, 20)] public int squeezeKeys = 6;
     [Tooltip("Seconds to press each one.")]
     public float squeezeKeyTime = 2.4f;
+    [Tooltip("The technician, at the first squeeze: what it is, and how to get through.")]
+    [TextArea] public string[] squeezeIntro =
+    {
+        "Ugh, it gets real tight up ahead... I'm gonna have to squeeze through",
+        "Hit each letter as it pops up, before its bar runs out",
+        "Wrong key or too slow and I scrape the duct... and that's loud",
+    };
+    [Tooltip("The technician, at every squeeze after the first.")]
+    public string squeezeAgain = "Another tight one... letters, quick, and quiet";
 
     [Header("Drone")]
     [Tooltip("Seconds the eyes stare out of the dark before the drone is let out.")]
-    public float stareTime = 1.4f;
+    public float stareTime = 0.9f;
     [Tooltip("It senses the player this many cells away, whichever way it's looking.")]
-    public int droneHearing = 1;
+    public int droneHearing = 2;
     [Tooltip("Its light finds the player this many cells straight down the duct it's looking along, with nothing in the way.")]
-    public int droneSight = 5;
+    public int droneSight = 7;
     [Tooltip("Noises louder than this turn it to look the way they came from. Bumps and careful creaks are quieter.")]
-    public float droneAlertNoise = 0.1f;
+    public float droneAlertNoise = 0.06f;
     [Tooltip("Seconds it looks around before rising back into its hatch.")]
-    public float droneSearchTime = 9f;
+    public float droneSearchTime = 14f;
     [Tooltip("Seconds it looks down each duct before turning to another.")]
-    public float droneLookEvery = 1.7f;
+    public float droneLookEvery = 1.2f;
     [Tooltip("Seconds of being seen before it's on them. Out of its sight before then, and it goes back to looking.")]
-    public float droneLockTime = 0.9f;
+    public float droneLockTime = 0.5f;
     [Tooltip("It comes out of the nearest hatch at least this many cells from the player along the ducts.")]
     public int droneMinReleaseDistance = 3;
 
@@ -187,6 +197,16 @@ public class VentNetwork : MonoBehaviour
 
     // True from climbing in at a grate until standing outside again. Locker.IsPlayerHidden counts this too.
     public static bool IsPlayerInside { get; private set; }
+    static VentNetwork occupied;        // the ducts they're in, while they are
+
+    // A line said in the ducts, where the technician's over their head can't be seen: big across the bottom of the view
+    // (TechnicianVoice sends it here). False if they're not in the ducts.
+    public static bool SayInside(string line, float seconds)
+    {
+        if (!IsPlayerInside || occupied == null || occupied.view == null) return false;
+        occupied.view.FlashHint(line, seconds);
+        return true;
+    }
 
     public bool InUse => state != State.Outside;
     public VentCell[,] Cells => cells;
@@ -360,6 +380,7 @@ public class VentNetwork : MonoBehaviour
     {
         state = State.Climbing;
         IsPlayerInside = true;
+        occupied = this;
         entrance = grate;
         HidePlayer(grate.transform.position);
         grate.Rattle();
@@ -511,7 +532,7 @@ public class VentNetwork : MonoBehaviour
 
         if (next == VentCell.Squeeze)
         {
-            StartSqueeze(to);
+            StartCoroutine(IntroduceSqueeze(to));
             return;
         }
 
@@ -624,6 +645,32 @@ public class VentNetwork : MonoBehaviour
     }
 
     // --- Tight squeezes ---
+
+    private bool toldSqueeze;
+
+    // What's ahead, said before they wedge themselves in: held still while it's up, Space to move it on.
+    IEnumerator IntroduceSqueeze(Vector2Int to)
+    {
+        state = State.Moving;
+        string[] lines = toldSqueeze || squeezeIntro.Length == 0 ? new[] { squeezeAgain } : squeezeIntro;
+        toldSqueeze = true;
+        foreach (string line in lines)
+        {
+            if (string.IsNullOrEmpty(line)) continue;
+            float hold = TechnicianVoice.HoldFor(line) + 0.6f;
+            view.FlashHint(line, hold + 1f);
+            yield return null;      // the press that got here doesn't count
+            for (float t = 0f; t < hold; t += Time.deltaTime)
+            {
+                if (state != State.Moving) yield break;     // caught while it was up
+                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) break;
+                yield return null;
+            }
+        }
+        view.FlashHint(null, 0f);
+        if (state != State.Moving) yield break;
+        StartSqueeze(to);
+    }
 
     void StartSqueeze(Vector2Int to)
     {

@@ -397,6 +397,10 @@ public class WeaponVisual : MonoBehaviour
             rangedChargeShown = charging;
         }
 
+        // Put away while crouching, to keep low: shown again for a swing or a charge, so an attack still reads.
+        if (controller != null && controller.IsCrouching && !swinging && !IsCharging && !IsRangedCharging)
+            WeaponRenderer.enabled = false;
+
         // A crouching or sprinting player's hand moves with their squash or stretch; follow it so the weapon stays in it.
         if (controller != null) offset = Vector2.Scale(offset, controller.BodySquash);
 

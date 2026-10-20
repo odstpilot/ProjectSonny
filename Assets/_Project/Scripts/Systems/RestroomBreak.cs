@@ -383,6 +383,7 @@ public class RestroomBreak : MonoBehaviour
 
     IEnumerator WalkIntoStorage()
     {
+        // The way there's pointed out in the level while it's pinned on the map (ObjectiveHighlight follows the pin).
         while (player == null || !InRoom(player.transform.position, toolsRoom)) yield return null;
         MapScreen.ClearTarget();
         if (crate == null || crate.IsOpen || shelf == null || shelf.Taken) yield break;

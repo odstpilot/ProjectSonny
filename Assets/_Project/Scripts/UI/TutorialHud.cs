@@ -26,7 +26,7 @@ public class TutorialHud : MonoBehaviour
     const float PromptSlide = 14f;          // how far it slides in and out
     const float DoneHoldTime = 0.8f;
     const float Margin = 56f;
-    const float KeyHeight = 34f;
+    const float KeyHeight = 54f;
 
     static readonly Color AccentColor = GameUI.Amber;
     static readonly Color KeyColor = Color.white;
@@ -34,7 +34,7 @@ public class TutorialHud : MonoBehaviour
     static readonly Color DimTextColor = GameUI.Dim;
     static readonly Color DoneColor = GameUI.Green;
     static readonly Color SpeakerColor = GameUI.Red;
-    static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.6f);
+    static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.75f);
 
     static TutorialHud instance;
 
@@ -59,6 +59,12 @@ public class TutorialHud : MonoBehaviour
     private RectTransform objective;
     private CanvasGroup objectiveGroup;
     private TextMeshProUGUI objectiveText;
+    private TextMeshProUGUI objectiveStep;
+    private LayoutElement objectiveTextSize, objectiveStepSize;
+    private Image objectivePanel, objectiveAccent;
+    private RawImage objectiveScanlines;
+    private float objectiveSlide;           // canvas units it's still to slide in from the left
+    private float objectiveFlash;           // 1 just after it changes, settling to 0
     private Coroutine objectiveRoutine;
     private string currentObjective = "";
 
@@ -70,6 +76,7 @@ public class TutorialHud : MonoBehaviour
     private RectTransform letterboxBottom;
     private readonly List<RawImage> barEdges = new List<RawImage>();
     private Image fade;
+    private RawImage vignette;
     private TextMeshProUGUI titleText;
 
     // True while the screen is mostly faded to black, for anything that shouldn't show over a fade or a title card.
@@ -199,7 +206,7 @@ public class TutorialHud : MonoBehaviour
     {
         Image cap = GameUI.Sliced("Key " + key, promptKeys, GameUI.SoftKeyCapSprite, Color.white);
         cap.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
-        TextMeshProUGUI label = GameUI.Label("Key", cap.transform, key, key.Length > 1 ? 16f : 22f, GameUI.KeyText, TextAlignmentOptions.Center);
+        TextMeshProUGUI label = GameUI.Label("Key", cap.transform, key, key.Length > 1 ? 24f : 34f, GameUI.KeyText, TextAlignmentOptions.Center);
         GameUI.Anchor(label.rectTransform, 0f, 0f, 1f, 1f, 4f, 4f, 4f, 0f);
         var capSize = cap.gameObject.AddComponent<LayoutElement>();
         capSize.minHeight = capSize.preferredHeight = KeyHeight;
@@ -214,7 +221,18 @@ public class TutorialHud : MonoBehaviour
     void LateUpdate()
     {
         float top = HealthHud.CellsShowing ? HealthHud.Bottom + 22f : Margin * 0.8f;
-        objective.anchoredPosition = new Vector2(Margin, -top);
+        float dt = Time.unscaledDeltaTime;
+        objectiveSlide = Mathf.MoveTowards(objectiveSlide, 0f, dt * 160f);
+        objective.anchoredPosition = new Vector2(Margin - objectiveSlide, -top);
+
+        // A new objective lights the panel up amber for a moment, then it settles back to dark glass.
+        objectiveFlash = Mathf.MoveTowards(objectiveFlash, 0f, dt * 1.4f);
+        float flash = objectiveFlash * objectiveFlash;
+        objectivePanel.color = Color.Lerp(Color.white, new Color(1f, 0.82f, 0.55f), flash);
+        objectiveAccent.color = Color.Lerp(AccentColor, Color.white, flash * 0.6f);
+        objectiveAccent.rectTransform.sizeDelta = new Vector2(GameUI.PixelSize * (1f + flash * 1.5f) * 2f, -GameUI.PixelSize * 6f);
+        Rect area = objective.rect;
+        objectiveScanlines.uvRect = new Rect(0f, Time.unscaledTime * 0.15f, 1f, area.height / 6f);
     }
 
     // What's showing now, empty for nothing.
@@ -234,8 +252,30 @@ public class TutorialHud : MonoBehaviour
     {
         if (objectiveGroup.alpha > 0f) yield return FadeGroup(objectiveGroup, 0f, 0.2f);
         objectiveText.text = text;
-        if (!string.IsNullOrEmpty(text)) yield return FadeGroup(objectiveGroup, 1f, 0.4f);
+        ShowStep(ObjectiveGuide.StepFor(text));
+        if (!string.IsNullOrEmpty(text))
+        {
+            objectiveSlide = 26f;
+            objectiveFlash = 1f;
+            yield return FadeGroup(objectiveGroup, 1f, 0.4f);
+        }
         objectiveRoutine = null;
+    }
+
+    // The line under the objective saying how to go about it, [X] picking out a key. Empty hides it. ObjectiveGuide
+    // gives one for every objective it knows; this is for a level that wants to say something else for a while.
+    public void SetStep(string text) => ShowStep(text);
+
+    void ShowStep(string text)
+    {
+        bool any = !string.IsNullOrEmpty(text);
+        objectiveStep.gameObject.SetActive(any);
+        objectiveStep.text = any ? "<color=#5FD7F0>></color>  " + ObjectiveGuide.Keys(text) : "";
+        // As wide as the longer of the two needs, up to a limit, so a short objective gets a small panel.
+        const float MaxWidth = 640f, MinWidth = 300f;
+        float width = Mathf.Max(objectiveText.GetPreferredValues(objectiveText.text).x, any ? objectiveStep.GetPreferredValues(objectiveStep.text).x : 0f);
+        width = Mathf.Clamp(width + 4f, MinWidth, MaxWidth);
+        objectiveTextSize.preferredWidth = objectiveStepSize.preferredWidth = width;
     }
 
     // --- Captions ---
@@ -290,6 +330,33 @@ public class TutorialHud : MonoBehaviour
         SetLetterbox(end);
     }
 
+    // Darkens the edges of the picture to this much (0 none, 1 black at the corners), over seconds.
+    public IEnumerator Vignette(float amount, float seconds)
+    {
+        float start = vignette.color.a;
+        for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
+        {
+            vignette.color = new Color(0f, 0f, 0f, Mathf.Lerp(start, amount, Mathf.SmoothStep(0f, 1f, t / seconds)));
+            yield return null;
+        }
+        vignette.color = new Color(0f, 0f, 0f, amount);
+    }
+
+    // Clear in the middle, black at the edges, wider than tall like the screen.
+    static Texture2D VignetteTexture()
+    {
+        const int W = 96, H = 54;
+        var texture = PixelArt.MakeTexture(W, H, (x, y) =>
+        {
+            float dx = (x - (W - 1) * 0.5f) / (W * 0.5f), dy = (y - (H - 1) * 0.5f) / (H * 0.5f);
+            float d = Mathf.Sqrt(dx * dx + dy * dy);
+            float a = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 1.25f, d));
+            return new Color32(0, 0, 0, (byte)(255 * a));
+        });
+        texture.filterMode = FilterMode.Bilinear;
+        return texture;
+    }
+
     // Lines of text on black, one after another, each fading in and out. Fades to black first if it isn't already.
     public IEnumerator TitleCard(string[] lines, float holdSeconds = 2f)
     {
@@ -341,9 +408,17 @@ public class TutorialHud : MonoBehaviour
         BuildObjective();
         BuildPrompt();
         BuildCaption();
+        gameObject.AddComponent<ObjectiveGuide>();     // the how-to under the objective, and Pip's nudges when stuck
 
         letterboxTop = Bar("Letterbox Top", 1f);
         letterboxBottom = Bar("Letterbox Bottom", 0f);
+
+        // The edges of the picture sinking into shadow, for a moment that wants it (Vignette). Under the letterbox.
+        vignette = Stretch(NewRect("Vignette", transform), 0f, 0f, 1f, 1f).gameObject.AddComponent<RawImage>();
+        vignette.texture = VignetteTexture();
+        vignette.raycastTarget = false;
+        vignette.color = new Color(0f, 0f, 0f, 0f);
+        vignette.transform.SetSiblingIndex(0);
 
         // Fade and title cards, over everything else.
         fade = Stretch(NewRect("Fade", transform), 0f, 0f, 1f, 1f).gameObject.AddComponent<Image>();
@@ -358,31 +433,117 @@ public class TutorialHud : MonoBehaviour
 
     // Top left, the corner the health readout would use; the tutorial hides that, since the player can't die in it.
     // A short amber rule, a small heading, and the objective itself, shadowed so it reads over a bright room.
+    // A pane of dark glass in the suit's style, its top right corner cut off, with an amber edge down the left and faint
+    // scanlines rolling over it: OBJECTIVE, what to do, and under that how (ObjectiveGuide), the pane sized to fit.
     void BuildObjective()
     {
         objective = NewRect("Objective", transform);
         objective.anchorMin = objective.anchorMax = objective.pivot = new Vector2(0f, 1f);
         objective.anchoredPosition = new Vector2(Margin, -Margin * 0.8f);
-        objective.sizeDelta = new Vector2(900f, 84f);
         objectiveGroup = objective.gameObject.AddComponent<CanvasGroup>();
         objectiveGroup.alpha = 0f;
 
-        RectTransform rule = NewRect("Rule", objective);
-        rule.anchorMin = rule.anchorMax = rule.pivot = new Vector2(0f, 1f);
-        rule.anchoredPosition = Vector2.zero;
-        rule.sizeDelta = new Vector2(GameUI.PixelSize * 2f, 78f);
-        Image ruleImage = rule.gameObject.AddComponent<Image>();
-        ruleImage.color = AccentColor;
-        ruleImage.raycastTarget = false;
+        objectivePanel = objective.gameObject.AddComponent<Image>();
+        objectivePanel.sprite = ObjectivePanelSprite;
+        objectivePanel.type = Image.Type.Sliced;
+        objectivePanel.pixelsPerUnitMultiplier = 1f / GameUI.PixelSize;
+        objectivePanel.raycastTarget = false;
+        var column = objective.gameObject.AddComponent<VerticalLayoutGroup>();
+        column.padding = new RectOffset(30, 34, 14, 16);
+        column.spacing = 4f;
+        column.childAlignment = TextAnchor.UpperLeft;
+        column.childControlWidth = column.childControlHeight = true;
+        column.childForceExpandWidth = column.childForceExpandHeight = false;
+        var fit = objective.gameObject.AddComponent<ContentSizeFitter>();
+        fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        TextMeshProUGUI label = Label("Label", objective, "OBJECTIVE", 24f, AccentColor, TextAlignmentOptions.TopLeft, GameUI.Heading);
+        // Faint scanlines over the glass, drifting slowly down.
+        objectiveScanlines = Stretch(NewRect("Scanlines", objective), 0f, 0f, 1f, 1f).gameObject.AddComponent<RawImage>();
+        Texture2D lines = PixelArt.MakeTexture(1, 6, (x, y) => y == 0 ? new Color32(140, 200, 255, 14) : default);
+        lines.wrapMode = TextureWrapMode.Repeat;
+        objectiveScanlines.texture = lines;
+        objectiveScanlines.raycastTarget = false;
+        objectiveScanlines.rectTransform.offsetMin = new Vector2(GameUI.PixelSize * 2f, GameUI.PixelSize * 2f);
+        objectiveScanlines.rectTransform.offsetMax = new Vector2(-GameUI.PixelSize * 2f, -GameUI.PixelSize * 2f);
+        objectiveScanlines.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+        // The amber edge down the left, just inside the frame.
+        RectTransform accent = NewRect("Accent", objective);
+        accent.anchorMin = new Vector2(0f, 0f);
+        accent.anchorMax = new Vector2(0f, 1f);
+        accent.pivot = new Vector2(0f, 0.5f);
+        accent.anchoredPosition = new Vector2(GameUI.PixelSize * 2f, 0f);
+        accent.offsetMin = new Vector2(accent.offsetMin.x, GameUI.PixelSize * 3f);
+        accent.offsetMax = new Vector2(accent.offsetMax.x, -GameUI.PixelSize * 3f);
+        accent.sizeDelta = new Vector2(GameUI.PixelSize * 3f, accent.sizeDelta.y);
+        objectiveAccent = accent.gameObject.AddComponent<Image>();
+        objectiveAccent.color = AccentColor;
+        objectiveAccent.raycastTarget = false;
+        accent.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+        // OBJECTIVE, with a small diamond before it and a rule trailing off after it.
+        RectTransform header = NewRect("Header", objective);
+        HorizontalLayoutGroup headerRow = Row(header.gameObject, new RectOffset(0, 0, 0, 2), 10f);
+        headerRow.childAlignment = TextAnchor.MiddleLeft;
+        Image diamond = NewRect("Diamond", header).gameObject.AddComponent<Image>();
+        diamond.color = AccentColor;
+        diamond.raycastTarget = false;
+        diamond.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        var diamondSize = diamond.gameObject.AddComponent<LayoutElement>();
+        diamondSize.minWidth = diamondSize.preferredWidth = diamondSize.minHeight = diamondSize.preferredHeight = 10f;
+        TextMeshProUGUI label = Label("Label", header, "OBJECTIVE", 22f, AccentColor, TextAlignmentOptions.MidlineLeft, GameUI.Heading);
         label.characterSpacing = 12f;
         label.fontSharedMaterial = GameUI.Shadow(label.font);
-        Stretch(label.rectTransform, 0f, 0.6f, 1f, 1f).offsetMin = new Vector2(22f, 0f);
-        objectiveText = Label("Text", objective, "", 32f, TextColor, TextAlignmentOptions.TopLeft);
+        RawImage rule = NewRect("Rule", header).gameObject.AddComponent<RawImage>();
+        rule.texture = PixelArt.MakeTexture(32, 1, (x, y) => new Color32(255, 174, 82, (byte)(150 * (1f - x / 31f))));
+        rule.raycastTarget = false;
+        var ruleSize = rule.gameObject.AddComponent<LayoutElement>();
+        ruleSize.minWidth = ruleSize.preferredWidth = 140f;
+        ruleSize.minHeight = ruleSize.preferredHeight = GameUI.PixelSize;
+
+        objectiveText = Label("Text", objective, "", 34f, TextColor, TextAlignmentOptions.TopLeft);
         objectiveText.characterSpacing = 1f;
+        objectiveText.textWrappingMode = TextWrappingModes.Normal;
         objectiveText.fontSharedMaterial = GameUI.Shadow(objectiveText.font);
-        Stretch(objectiveText.rectTransform, 0f, 0f, 1f, 0.62f).offsetMin = new Vector2(22f, 0f);
+        objectiveTextSize = objectiveText.gameObject.AddComponent<LayoutElement>();
+
+        objectiveStep = Label("Step", objective, "", 26f, new Color(0.78f, 0.88f, 0.94f), TextAlignmentOptions.TopLeft);
+        objectiveStep.textWrappingMode = TextWrappingModes.Normal;
+        objectiveStep.fontSharedMaterial = GameUI.Shadow(objectiveStep.font);
+        objectiveStepSize = objectiveStep.gameObject.AddComponent<LayoutElement>();
+        objectiveStep.gameObject.SetActive(false);
+    }
+
+    // Dark glass, a pixel-art pane: a dark rim, a lighter bevel along the top, and the top right corner cut off and
+    // edged in amber. Sliced, so it stretches to any size.
+    static Sprite objectivePanelSprite;
+    static Sprite ObjectivePanelSprite
+    {
+        get
+        {
+            if (objectivePanelSprite != null) return objectivePanelSprite;
+            const int Size = 20, Cut = 6;
+            var rim = new Color32(6, 9, 14, 235);
+            var bevel = new Color32(70, 96, 122, 235);
+            var edge = new Color32(36, 50, 66, 235);
+            var glass = new Color32(10, 16, 26, 200);
+            var glassTop = new Color32(16, 24, 38, 210);
+            var amber = new Color32(255, 174, 82, 255);
+            Texture2D texture = PixelArt.MakeTexture(Size, Size, (x, y) =>
+            {
+                int fromRight = Size - 1 - x, fromTop = Size - 1 - y;
+                int corner = fromRight + fromTop;           // how far in from the cut corner
+                if (corner < Cut) return default;
+                if (corner == Cut) return amber;
+                if (corner == Cut + 1) return rim;
+                if (x == 0 || y == 0 || fromRight == 0 || fromTop == 0) return rim;
+                if (fromTop == 1) return bevel;
+                if (x == 1 || y == 1 || fromRight == 1) return edge;
+                return fromTop < 6 ? glassTop : glass;
+            });
+            return objectivePanelSprite = Sprite.Create(texture, new Rect(0f, 0f, Size, Size), new Vector2(0.5f, 0.5f), 100f, 0,
+                SpriteMeshType.FullRect, new Vector4(8f, 8f, 8f, 8f));
+        }
     }
 
     // Bottom middle, sized to fit whatever is in it: [accent] [keys] [ACTION / hint].
@@ -397,7 +558,7 @@ public class TutorialHud : MonoBehaviour
         back.type = Image.Type.Sliced;
         back.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
         back.raycastTarget = false;
-        HorizontalLayoutGroup row = Row(prompt.gameObject, new RectOffset(12, 22, 9, 9), 12f);
+        HorizontalLayoutGroup row = Row(prompt.gameObject, new RectOffset(16, 28, 12, 12), 16f);
         row.childAlignment = TextAnchor.MiddleLeft;
         row.childForceExpandHeight = true;      // so the accent runs the full height, with or without a hint
         var fit = prompt.gameObject.AddComponent<ContentSizeFitter>();
@@ -412,10 +573,10 @@ public class TutorialHud : MonoBehaviour
         promptAccent.raycastTarget = false;
         var accentSize = accent.gameObject.AddComponent<LayoutElement>();
         accentSize.minWidth = accentSize.preferredWidth = GameUI.SoftPixelSize * 1.5f;
-        accentSize.minHeight = 36f;
+        accentSize.minHeight = 56f;
 
         promptKeys = NewRect("Keys", prompt);
-        Row(promptKeys.gameObject, new RectOffset(0, 0, 2, 2), 6f).childAlignment = TextAnchor.MiddleCenter;
+        Row(promptKeys.gameObject, new RectOffset(0, 0, 2, 2), 8f).childAlignment = TextAnchor.MiddleCenter;
 
         RectTransform words = NewRect("Words", prompt);
         var column = words.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -425,10 +586,10 @@ public class TutorialHud : MonoBehaviour
         column.childControlWidth = column.childControlHeight = true;
         column.childForceExpandWidth = column.childForceExpandHeight = false;
 
-        promptAction = Label("Action", words, "", 28f, TextColor, TextAlignmentOptions.Left);
+        promptAction = Label("Action", words, "", 40f, TextColor, TextAlignmentOptions.Left);
         promptAction.characterSpacing = 1f;
         promptAction.fontSharedMaterial = GameUI.Shadow(promptAction.font);
-        promptHint = Label("Hint", words, "", 16f, DimTextColor, TextAlignmentOptions.Left);
+        promptHint = Label("Hint", words, "", 24f, DimTextColor, TextAlignmentOptions.Left);
         promptHint.characterSpacing = 1f;
         promptHint.fontSharedMaterial = GameUI.Shadow(promptHint.font);
     }
@@ -440,7 +601,7 @@ public class TutorialHud : MonoBehaviour
         caption.anchorMin = caption.anchorMax = new Vector2(0.5f, 0f);
         caption.pivot = new Vector2(0.5f, 0f);
         caption.anchoredPosition = new Vector2(0f, 200f);
-        caption.sizeDelta = new Vector2(1300f, 130f);
+        caption.sizeDelta = new Vector2(1500f, 180f);
         captionGroup = caption.gameObject.AddComponent<CanvasGroup>();
         captionGroup.alpha = 0f;
 
@@ -449,11 +610,11 @@ public class TutorialHud : MonoBehaviour
         backdrop.color = BackdropColor;
         backdrop.raycastTarget = false;
 
-        captionSpeaker = Label("Speaker", caption, "", 22f, SpeakerColor, TextAlignmentOptions.Bottom, GameUI.Heading);
+        captionSpeaker = Label("Speaker", caption, "", 30f, SpeakerColor, TextAlignmentOptions.Bottom, GameUI.Heading);
         captionSpeaker.characterSpacing = 16f;
         captionSpeaker.fontSharedMaterial = GameUI.Shadow(captionSpeaker.font);
         Stretch(captionSpeaker.rectTransform, 0f, 0.66f, 1f, 1f);
-        captionLine = Label("Line", caption, "", 32f, TextColor, TextAlignmentOptions.Top);
+        captionLine = Label("Line", caption, "", 46f, TextColor, TextAlignmentOptions.Top);
         captionLine.fontSharedMaterial = GameUI.Shadow(captionLine.font);
         captionLine.textWrappingMode = TextWrappingModes.Normal;
         Stretch(captionLine.rectTransform, 0f, 0f, 1f, 0.6f);

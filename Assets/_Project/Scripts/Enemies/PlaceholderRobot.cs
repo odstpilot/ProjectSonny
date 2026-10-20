@@ -520,6 +520,9 @@ public class PlaceholderRobot : MonoBehaviour
         // coming up behind it. Once it's hunting them it keeps them in view either way.
         // In the dark (DarkRooms) it sees less far.
         float sight = sightRange * DarkRooms.SightScale;
+        // An arc bot already after them keeps them in view out to its lightning's reach, dark or not: in a blackout its
+        // sight is shorter than the distance it backs off to before casting, so it'd lose them before it ever fired.
+        if (tracking && caster != null) sight = Mathf.Max(sight, caster.range);
         float range = sight;
         float allAround = closeRange;
         if (!tracking && PlayerCrouching)

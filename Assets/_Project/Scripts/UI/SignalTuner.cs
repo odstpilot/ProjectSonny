@@ -37,6 +37,7 @@ public class SignalTuner : MonoBehaviour
     const float MinFreq = 1f;
     const float MaxFreq = 6f;
     static readonly string[] KnobNames = { "AMP", "FREQ", "PHASE" };
+    static readonly string[] KnobHelp = { "HOW TALL THE WAVE IS", "HOW MANY PEAKS IT HAS", "SLIDES IT SIDEWAYS" };
     // How close each knob has to be to lock, as a fraction of its range, before the terminal's precision.
     static readonly float[] Tolerance = { 0.07f, 0.03f, 0.055f };
 
@@ -59,6 +60,7 @@ public class SignalTuner : MonoBehaviour
     // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
     public static bool AnyOpen => openCount > 0;
     static int openCount;
+    private float timeScaleWas = 1f;     // the game's paused while it's open; this is what to put back
     public bool IsLocked { get; private set; }
     public bool ShowingTransmission { get; private set; }
     public HackingTerminal Terminal { get; private set; }
@@ -92,6 +94,8 @@ public class SignalTuner : MonoBehaviour
     private readonly RectTransform[] dials = new RectTransform[3];
     private readonly Image[] rings = new Image[3];
     private readonly TextMeshProUGUI[] readouts = new TextMeshProUGUI[3];
+    private readonly TextMeshProUGUI[] knobLabels = new TextMeshProUGUI[3];
+    private TextMeshProUGUI goal;
     private GameObject tuningView;
     private GameObject transmissionView;
     private TextMeshProUGUI transmissionTitle;
@@ -121,7 +125,11 @@ public class SignalTuner : MonoBehaviour
 
     void OnDestroy()
     {
-        if (IsOpen) openCount--;
+        if (IsOpen)
+        {
+            openCount--;
+            ResumeTime();     // leaving the level with it open mustn't leave the next one frozen
+        }
         if (instance == this) instance = null;
     }
 
@@ -133,6 +141,8 @@ public class SignalTuner : MonoBehaviour
         IsOpen = true;
         openCount++;
         openedFrame = Time.frameCount;
+        timeScaleWas = Time.timeScale;
+        Time.timeScale = 0f;
         frozenControls = PlayerControls.Freeze(player);
         playerHealth = player.GetComponent<Health>();
         if (playerHealth != null) playerHealth.Damaged += OnPlayerHurt;
@@ -171,6 +181,7 @@ public class SignalTuner : MonoBehaviour
         sfx.Stop();
         if (playerHealth != null) playerHealth.Damaged -= OnPlayerHurt;
         PlayerControls.Release(frozenControls);
+        ResumeTime();
         device.alpha = 0f;
         Terminal = null;
     }
@@ -194,9 +205,14 @@ public class SignalTuner : MonoBehaviour
         else NextLine();
     }
 
+    void ResumeTime()
+    {
+        if (Time.timeScale == 0f) Time.timeScale = timeScaleWas > 0f ? timeScaleWas : 1f;
+    }
+
     void Update()
     {
-        if (!IsOpen || Time.timeScale == 0f) return;
+        if (!IsOpen) return;     // runs on unscaled time: the game's paused under it
 
         if (ShowingTransmission)
         {
@@ -338,7 +354,15 @@ public class SignalTuner : MonoBehaviour
             float angle = i == 2 ? -values[i] * 360f : Mathf.Lerp(KnobSweep, -KnobSweep, values[i]);
             dials[i].localEulerAngles = new Vector3(0f, 0f, angle);
             rings[i].color = i == selected ? new Color(Amber.r, Amber.g, Amber.b, 0.9f) : new Color(AmberDim.r, AmberDim.g, AmberDim.b, 0.25f);
+            // Green once it's where it should be, so it's plain which still need work.
+            bool right = IsLocked || KnobDistance(i, values[i], targets[i]) <= Tolerance[i] * Terminal.precision;
+            knobLabels[i].text = right ? KnobNames[i] + "  OK" : KnobNames[i];
+            knobLabels[i].color = right ? LockedColor : Amber;
+            if (right) rings[i].color = new Color(LockedColor.r, LockedColor.g, LockedColor.b, i == selected ? 0.9f : 0.45f);
         }
+        if (IsLocked) goal.text = "";
+        else if (lockHeld > 0f) goal.text = "THAT'S IT, HOLD IT THERE...";
+        else goal.text = $"MATCH YOUR WAVE TO THE RED DASHED ONE   /   {KnobNames[selected]}: {KnobHelp[selected]}";
         readouts[0].text = $"{Mathf.Lerp(MinAmp, MaxAmp, values[0]):0.00}";
         readouts[1].text = $"{Mathf.Lerp(MinFreq, MaxFreq, values[1]):0.0} HZ";
         readouts[2].text = $"{values[2] * 360f:000} DEG";
@@ -641,13 +665,18 @@ public class SignalTuner : MonoBehaviour
             dials[i] = dial.rectTransform;
 
             TextMeshProUGUI knobName = Label("Name", view, KnobNames[i], 28f, Amber, TextAlignmentOptions.Center);
+            knobLabels[i] = knobName;
             At(knobName.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), center + new Vector2(0f, -100f), new Vector2(220f, 34f));
             readouts[i] = Label("Readout", view, "", 22f, AmberDim, TextAlignmentOptions.Center);
             At(readouts[i].rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), center + new Vector2(0f, -128f), new Vector2(220f, 30f));
         }
 
-        TextMeshProUGUI hints = Label("Hints", view, "A D  CHOOSE      W S  SCROLL  DRAG  TURN      SHIFT  FINE", 22f, AmberDim, TextAlignmentOptions.Center);
-        At(hints.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(1100f, 30f));
+        // What to do, along the top of the scope, over the waves.
+        goal = Label("Goal", view, "", 28f, Amber, TextAlignmentOptions.Center);
+        At(goal.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -90f), new Vector2(1040f, 36f));
+
+        TextMeshProUGUI hints = Label("Hints", view, "A D  CHOOSE      W S  SCROLL  DRAG  TURN      SHIFT  FINE", 30f, Amber, TextAlignmentOptions.Center);
+        At(hints.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(1300f, 40f));
     }
 
     void BuildTransmission(RectTransform body)
@@ -666,8 +695,8 @@ public class SignalTuner : MonoBehaviour
         credentialLine = Label("Credential", view, "", 28f, LockedColor, TextAlignmentOptions.Left);
         At(credentialLine.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(50f, 20f), new Vector2(800f, 36f));
 
-        transmissionHint = Label("Hint", view, "", 26f, AmberDim, TextAlignmentOptions.Right);
-        At(transmissionHint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-50f, 20f), new Vector2(300f, 36f));
+        transmissionHint = Label("Hint", view, "", 32f, Amber, TextAlignmentOptions.Right);
+        At(transmissionHint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-50f, 18f), new Vector2(400f, 42f));
 
         transmissionView.SetActive(false);
     }

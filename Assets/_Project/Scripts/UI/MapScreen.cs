@@ -96,6 +96,7 @@ public class MapScreen : MonoBehaviour
     {
         targetMarker = marker;
         targetLabel = label ?? "";
+        ObjectiveHighlight.Follow(marker);      // and the way there pointed out in the level
         if (instance != null && instance.open) instance.Redraw();
     }
 
@@ -636,7 +637,7 @@ public class MapScreen : MonoBehaviour
 
         RectTransform keys = GameUI.NewRect("Keys", transform);
         keys.anchorMin = keys.anchorMax = keys.pivot = new Vector2(1f, 0f);
-        keys.anchoredPosition = new Vector2(-60f, 28f);
+        keys.anchoredPosition = new Vector2(-60f, 24f);
         var row = keys.gameObject.AddComponent<HorizontalLayoutGroup>();
         row.spacing = 8f;
         row.childAlignment = TextAnchor.MiddleRight;
@@ -653,15 +654,15 @@ public class MapScreen : MonoBehaviour
 
     void Hint(Transform row, string action, params string[] keysFor)
     {
-        const float height = 36f;
+        const float height = 54f;
         foreach (string key in keysFor)
         {
-            Image cap = GameUI.KeyCap(row, key, 20f, out TextMeshProUGUI _);
+            Image cap = GameUI.KeyCap(row, key, 30f, out TextMeshProUGUI _);
             var size = cap.gameObject.AddComponent<LayoutElement>();
             size.minHeight = size.preferredHeight = height;
             size.minWidth = size.preferredWidth = GameUI.KeyCapWidth(key, height);
         }
-        TextMeshProUGUI label = GameUI.Label(action, row, action, 22f, GameUI.Dim, TextAlignmentOptions.Left);
+        TextMeshProUGUI label = GameUI.Label(action, row, action, 32f, GameUI.Text, TextAlignmentOptions.Left);
         label.characterSpacing = 4f;
         var spacing = label.gameObject.AddComponent<LayoutElement>();
         spacing.minWidth = label.preferredWidth + 28f;

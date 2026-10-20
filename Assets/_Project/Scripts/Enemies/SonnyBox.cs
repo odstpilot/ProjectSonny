@@ -10,7 +10,8 @@ using UnityEngine.Rendering.Universal;
 // blocks floating over a column of hologram diamonds, over a chip, ringed by gate pylons and control consoles cabled to
 // it (the rig). Layers, so the cube bobs and the beam powers up and pulses, with the lens in the beam. Lit parts are drawn
 // unlit, so it shines in the dark. Three looks: Installed (blue, Chapter 1), Rogue (red, from Chapter 2 on, after it's
-// taken the station: coming apart, and twitching), and Shadow (the tutorial: only a dark shape, no rig). Auto picks one
+// taken the station: coming apart, and twitching), and Shadow (the tutorial: only a dark shape, no rig, traced round
+// with a faint red rim so its outline reads in the dark, standing in a pool of shadow). Auto picks one
 // from the scene. Before it's installed (unpowered), Installed is dead: the cube slumped broken on a grey chip, the rig's
 // lights out; switching on, it flickers between broken and whole, then the cube rises into place.
 // Without that art, or with boxSprite set, it's the old single-sprite box.
@@ -92,6 +93,15 @@ public class SonnyBox : MonoBehaviour
     private Sprite baseSprite, deadBaseSprite, deadCubeSprite;
     private Look resolvedLook;
     private bool shines;            // the art's lit parts glow: everything but the shadow
+    // The shadow's rim: copies of the cube and the base drawn solid red, a pixel or two out each way and behind them.
+    private readonly System.Collections.Generic.List<(SpriteRenderer rim, SpriteRenderer of)> rims =
+        new System.Collections.Generic.List<(SpriteRenderer, SpriteRenderer)>();
+    static readonly Color RimColor = new Color(1f, 0.16f, 0.1f, 0.55f);
+    static readonly Vector2[] RimSteps =
+    {
+        Vector2.left, Vector2.right, Vector2.up, Vector2.down,
+        new Vector2(-1f, -1f), new Vector2(1f, -1f), new Vector2(-1f, 1f), new Vector2(1f, 1f),
+    };
     private float bobTime;
 
     // One piece of the rig: its body, its lights (racks blink between two sets), what it looks like dead, and the light
@@ -252,6 +262,13 @@ public class SonnyBox : MonoBehaviour
         var chip = gameObject.AddComponent<PolygonCollider2D>();
         chip.points = ChipFootprint;
 
+        if (resolvedLook == Look.Shadow)
+        {
+            AddRim(artCube);
+            AddRim(artBase);
+            AddShadowPool();
+        }
+
         if (shines)
         {
             AddRigPiece("Floor", name, FloorSpot, Vector2.zero, false, "Floor");
@@ -261,6 +278,49 @@ public class SonnyBox : MonoBehaviour
             foreach (Vector2 spot in RackSpots) AddRigPiece("Rack", name, spot, RackFootprint, false);
         }
         return true;
+    }
+
+    // A thin red rim round a layer: copies of it, solid red and unlit, a couple of pixels out each way, behind it.
+    void AddRim(SpriteRenderer of)
+    {
+        Material solid = CombatSprites.FlashMaterial != null ? CombatSprites.FlashMaterial : CombatSprites.EffectMaterial;
+        foreach (Vector2 step in RimSteps)
+        {
+            var rim = new GameObject("Rim").AddComponent<SpriteRenderer>();
+            rim.transform.SetParent(of.transform, false);
+            rim.transform.localPosition = step * (2f / ArtPixelsPerUnit);
+            rim.sortingLayerID = of.sortingLayerID;
+            rim.sortingOrder = of.sortingOrder - 1;
+            rim.spriteSortPoint = SpriteSortPoint.Pivot;
+            if (solid != null) rim.sharedMaterial = solid;
+            rims.Add((rim, of));
+        }
+    }
+
+    // A wide pool of shadow on the floor round it, darkest under it, fading out across the room.
+    void AddShadowPool()
+    {
+        var pool = new GameObject("Shadow Pool").AddComponent<SpriteRenderer>();
+        pool.transform.SetParent(transform, false);
+        pool.transform.localPosition = new Vector3(0f, 2f, 0f);
+        pool.transform.localScale = new Vector3(18f, 11f, 1f);
+        pool.sprite = CombatSprites.Glow;
+        pool.color = new Color(0f, 0f, 0f, 0.85f);
+        pool.sortingLayerName = "Floor";
+        pool.sortingOrder = 20;
+    }
+
+    // The rims keep to whatever frame their layer is showing.
+    void LateUpdate()
+    {
+        foreach ((SpriteRenderer rim, SpriteRenderer of) in rims)
+        {
+            if (rim == null || of == null) continue;
+            rim.sprite = of.sprite;
+            rim.enabled = of.enabled && of.sprite != null;
+            // Breathing with the lens, a little stronger once it's awake.
+            rim.color = new Color(RimColor.r, RimColor.g, RimColor.b, RimColor.a * Mathf.Lerp(0.55f, 1f, awake) * (0.8f + 0.2f * Mathf.Sin(phase)));
+        }
     }
 
     SpriteRenderer ArtLayer(string childName, Sprite sprite, int order, bool glows, Transform parent = null)

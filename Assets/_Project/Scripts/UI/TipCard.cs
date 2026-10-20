@@ -44,6 +44,10 @@ public class TipCard : MonoBehaviour
 
     public static bool IsOpen { get; private set; }
 
+    // Kept in Pip's log only, to read there, with nothing popping up over the game. The game teaches as it goes now
+    // (ControlHints, ObjectiveGuide), so this is what the levels use.
+    public static void Log(string title, params Row[] rows) => Keep(title, rows);
+
     public static IEnumerator Show(string title, params Row[] rows)
     {
         Keep(title, rows);

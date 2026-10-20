@@ -48,7 +48,7 @@ public class PatrolReveal : MonoBehaviour
             "Bots look where they're facing. Walls, shelves, and furniture block their view; out of the corner of their eye they're slower to notice you."),
         new TipCard.Row(TipCard.Picture.Ring, "Detection",
             "A ring fills around you as something notices you. Half full, it comes to look. Full and red, it's coming for you. Break line of sight to lose it."),
-        new TipCard.Row("Crouch", "Hold to move slowly and quietly. Harder to spot from a distance, and they won't hear you, but up close they'll still see you.", "C"),
+        new TipCard.Row("Crouch", "Tap to move slowly and quietly, and again to stand. Harder to spot from a distance, and they won't hear you, but up close they'll still see you.", "C"),
         new TipCard.Row("Sprint", "Fast, but loud: bots hear running footsteps behind them, and see you from further away.", "SHIFT"),
         new TipCard.Row(TipCard.Picture.Locker, "Hide in lockers",
             "Press E at a locker to climb in. A bot walks right past, unless it saw you get in."),
@@ -116,7 +116,7 @@ public class PatrolReveal : MonoBehaviour
         yield return Wait(0.3f);
         yield return TechnicianVoice.Think(technicianSees);
         if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipCrewFound);
-        yield return TipCard.Show(tipsTitle, StealthTips);
+        TipCard.Log(tipsTitle, StealthTips);
 
         player.ClearScriptedInput();
         TutorialHud.Get().SetObjective(objective);
@@ -125,8 +125,33 @@ public class PatrolReveal : MonoBehaviour
         if (SuitHelper.Exists) SuitHelper.Get().Tell(pipBots);
         Playing = false;
         revealed = true;
+        StartCoroutine(TeachSneaking());
         yield return Wait(grace);
         SetBlind(false);
+    }
+
+    // At the moment it's needed: crouching, with the bots right there; and the first time one comes after them, how to
+    // shake it.
+    IEnumerator TeachSneaking()
+    {
+        TutorialHud hud = TutorialHud.Get();
+        yield return ControlHints.WhenFree(hud);
+        hud.ShowPromptWithHint("Crouch to sneak", "Slower and quieter. Harder to spot from a distance", GameSettings.ToggleCrouch ? "C" : "HOLD C");
+        while (player != null && !player.IsCrouching) yield return null;
+        hud.CompletePrompt();
+
+        while (!AnyHunting()) yield return null;
+        yield return ControlHints.WhenFree(hud);
+        hud.ShowPromptWithHint("Get out of sight", "Put a wall between you, or hide in a locker", "E");
+        while (AnyHunting()) yield return null;
+        hud.CompletePrompt();
+    }
+
+    bool AnyHunting()
+    {
+        foreach (PlaceholderRobot robot in robots)
+            if (robot != null && robot.isActiveAndEnabled && robot.IsHunting) return true;
+        return false;
     }
 
     // Picking up from a save after it's happened (ChapterTwoDirector). setObjective: nothing later has moved it on.

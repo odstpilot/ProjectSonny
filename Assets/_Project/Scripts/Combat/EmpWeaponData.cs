@@ -26,6 +26,9 @@ public class EmpWeaponData : RangedWeaponData
     public Color empCoreColor = new Color(0.85f, 0.97f, 1f);
     [Tooltip("How bright the cone of light is.")]
     public float lightIntensity = 2.2f;
+    [Tooltip("How far the light reaches, in world units, and how wide it spreads, in degrees. Only the light: what the pulse stuns is still stunRadius and coneAngle.")]
+    public float lightRadius = 13f;
+    [Range(10f, 360f)] public float lightAngle = 170f;
     [Tooltip("Seconds the light crackles at full strength.")]
     public float lightDuration = 0.2f;
     [Tooltip("Seconds the light takes to sputter out after that.")]

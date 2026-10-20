@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class CraftingGuide : MonoBehaviour
 {
     const int SortingOrder = 85;            // over the health readout (80), under the tutorial's text (90)
-    const float Width = 460f;
+    const float Width = 520f;
     const float FadeSeconds = 0.35f;
 
     static readonly (string key, string text)[] Rows =
@@ -103,23 +103,23 @@ public class CraftingGuide : MonoBehaviour
             // A key cap where there's a key to press, a small cyan mark where there isn't.
             if (!string.IsNullOrEmpty(key))
             {
-                Image cap = GameUI.KeyCap(row, key, 22f, out _);
+                Image cap = GameUI.KeyCap(row, key, 30f, out _);
                 var capSize = cap.gameObject.AddComponent<LayoutElement>();
-                capSize.minWidth = capSize.preferredWidth = GameUI.KeyCapWidth(key, 32f);
-                capSize.minHeight = capSize.preferredHeight = 32f;
+                capSize.minWidth = capSize.preferredWidth = GameUI.KeyCapWidth(key, 44f);
+                capSize.minHeight = capSize.preferredHeight = 44f;
             }
             else
             {
                 TextMeshProUGUI mark = GameUI.Label("Mark", row, ">", 24f, GameUI.Cyan, TextAlignmentOptions.Center);
                 var markSize = mark.gameObject.AddComponent<LayoutElement>();
-                markSize.minWidth = markSize.preferredWidth = GameUI.KeyCapWidth("E", 32f);
+                markSize.minWidth = markSize.preferredWidth = GameUI.KeyCapWidth("E", 44f);
             }
 
             TextMeshProUGUI words = GameUI.Label("Text", row, text, 22f, GameUI.Text, TextAlignmentOptions.TopLeft);
             words.textWrappingMode = TextWrappingModes.Normal;
             var wordsSize = words.gameObject.AddComponent<LayoutElement>();
             wordsSize.flexibleWidth = 1f;
-            wordsSize.preferredWidth = Width - 48f - GameUI.KeyCapWidth("E", 32f) - 12f;
+            wordsSize.preferredWidth = Width - 48f - GameUI.KeyCapWidth("E", 44f) - 12f;
         }
     }
 }

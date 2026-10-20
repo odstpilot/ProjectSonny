@@ -12,8 +12,8 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
 {
     const float Glide = 14f;                // how quickly it slides to where the layout puts it
     const float Height = 0.72f;             // from the speaker's middle to the bottom of the backing, in world units
-    const float FontSize = 3f;
-    const float MaxWidth = 4.6f;
+    const float FontSize = 4f;
+    const float MaxWidth = 6f;
     const float FadeTime = 0.2f;
     const float ReadBase = 1.2f;            // the least a line stays up: this, and a little more per letter
     const float ReadPerLetter = 0.055f;

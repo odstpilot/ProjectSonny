@@ -7,7 +7,8 @@ using UnityEngine.Rendering.Universal;
 // The answers are all out there in intercepted broadcasts, for players who've been listening. On screen they're
 // scrambled, and decrypting them, hesitating, and answering wrong all draw Sonny's attention (see DoctrineScreen).
 // Pass and it hands over its credential. Get traced and it raises the alarm and locks the player out for a while.
-// It can be set to wait for comms nodes (waitingFor): until they're all tuned in it shows NO SIGNAL and won't open.
+// It can be set to wait for comms nodes (waitingFor): until enough of them are tuned in (needed) it shows NO SIGNAL and
+// won't open. Its questions go one per node, in the same order, and it only asks about the broadcasts that were tuned in.
 // Setup: a solid Collider2D on this object for its footprint, and a DoctrineData. The relay's art is made in code
 // unless a sprite is set.
 public class DoctrineTerminal : Terminal
@@ -25,20 +26,22 @@ public class DoctrineTerminal : Terminal
     public DoctrineData doctrine;
     [Tooltip("Comms nodes that have to be tuned in before it'll talk (its questions are about their broadcasts). Empty for none.")]
     public HackingTerminal[] waitingFor = new HackingTerminal[0];
+    [Tooltip("How many of them have to be tuned in, any of them. 0 for all.")]
+    public int needed = 2;
     [Tooltip("Off, its lens is dark and it can't be used (the power's out: CommsRing).")]
     public bool powered = true;
 
     [Header("Tracing")]
     [Tooltip("Trace gained each second the player spends on a question. The whole meter is 1.")]
-    public float hesitationTrace = 0.03f;
+    public float hesitationTrace = 0.012f;
     [Tooltip("Trace gained each second spent decrypting an answer.")]
-    public float decryptTrace = 0.2f;
+    public float decryptTrace = 0.1f;
     [Tooltip("Trace gained for a wrong answer.")]
-    public float wrongAnswerTrace = 0.4f;
+    public float wrongAnswerTrace = 0.2f;
     [Tooltip("Seconds to decrypt an answer all the way.")]
     public float decryptTime = 1.4f;
     [Tooltip("Seconds the player is locked out after being traced.")]
-    public float lockoutTime = 20f;
+    public float lockoutTime = 8f;
     public AudioClip alarmClip;
 
     [Header("Look")]
@@ -57,12 +60,19 @@ public class DoctrineTerminal : Terminal
     public override bool InUse => DoctrineScreen.Current != null && DoctrineScreen.Current.Terminal == this;
     protected override string PromptText => !powered ? "NO POWER" :
         LockoutRemaining > 0f ? $"LOCKED  {Mathf.CeilToInt(LockoutRemaining)}" : IsVerified ? "CONNECT"
-        : Listening ? "ANSWER" : $"NO SIGNAL  {Tuned}/{waitingFor.Length}";
+        : Listening ? "ANSWER" : $"NO SIGNAL  {Tuned}/{Needed}";
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
     protected override bool Available => powered && LockoutRemaining <= 0f && Listening;
 
-    // Every node it's waiting for tuned in.
-    public bool Listening => Tuned >= waitingFor.Length;
+    // Enough of the nodes it's waiting for tuned in.
+    public bool Listening => Tuned >= Needed;
+
+    public int Needed => needed <= 0 ? waitingFor.Length : Mathf.Min(needed, waitingFor.Length);
+
+    // Whether it asks the doctrine's question at this index: one per node in waitingFor, in order, and only for the nodes
+    // tuned in. A question past the nodes is always asked.
+    public bool Asks(int question) =>
+        question >= waitingFor.Length || waitingFor[question] == null || waitingFor[question].IsHacked;
 
     int Tuned
     {

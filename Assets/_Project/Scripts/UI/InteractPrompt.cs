@@ -117,8 +117,8 @@ public class PromptBadge : OverheadLayout.IItem
     const float Glide = 16f;
     const float FadeIn = 0.16f, FadeOut = 0.12f;
     const float Rise = 8f;                  // canvas units it comes up by as it appears
-    const float KeyHeight = 30f;
-    const float TextSize = 24f;
+    const float KeyHeight = 42f;
+    const float TextSize = 30f;
 
     readonly RectTransform root;
     readonly CanvasGroup group;
@@ -161,8 +161,8 @@ public class PromptBadge : OverheadLayout.IItem
         panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = new Vector2(0.5f, 0f);
         panelRect.anchoredPosition = Vector2.zero;
         var row = panel.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.padding = new RectOffset(8, 14, 6, 6);
-        row.spacing = 9f;
+        row.padding = new RectOffset(10, 18, 8, 8);
+        row.spacing = 12f;
         row.childAlignment = TextAnchor.MiddleLeft;
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = false;
@@ -173,7 +173,7 @@ public class PromptBadge : OverheadLayout.IItem
         keyCap.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
         keySize = keyCap.gameObject.AddComponent<LayoutElement>();
         keySize.minHeight = keySize.preferredHeight = KeyHeight;
-        keyLabel = GameUI.Label("Key", keyCap.transform, "E", 16f, GameUI.KeyText, TextAlignmentOptions.Center);
+        keyLabel = GameUI.Label("Key", keyCap.transform, "E", 30f, GameUI.KeyText, TextAlignmentOptions.Center);
         GameUI.Anchor(keyLabel.rectTransform, 0f, 0f, 1f, 1f, 1f, 4f, 1f, 0f);
 
         label = GameUI.Label("Text", panel.transform, "", TextSize, textColor, TextAlignmentOptions.Left);
@@ -195,8 +195,8 @@ public class PromptBadge : OverheadLayout.IItem
         string action = split > 0 && split <= 6 ? text.Substring(split).Trim() : text.Trim();
         keyCap.gameObject.SetActive(key.Length > 0);
         keyLabel.text = key;
-        keyLabel.fontSize = key.Length > 1 ? 16f : 22f;
-        keySize.minWidth = keySize.preferredWidth = key.Length > 1 ? 16f + key.Length * 11f : KeyHeight;
+        keyLabel.fontSize = key.Length > 1 ? 22f : 30f;
+        keySize.minWidth = keySize.preferredWidth = key.Length > 1 ? 22f + key.Length * 15f : KeyHeight;
         label.text = GameUI.Sentence(action);
     }
 

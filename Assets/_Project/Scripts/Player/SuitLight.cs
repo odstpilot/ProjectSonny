@@ -18,8 +18,8 @@ public class SuitLight : MonoBehaviour
 
     [Header("Blacked out")]
     [Tooltip("What's left of the glow in a blacked-out room.")]
-    public float blackoutRadius = 1.5f;
-    public float blackoutIntensity = 0.22f;
+    public float blackoutRadius = 2.6f;
+    public float blackoutIntensity = 0.3f;
     public Color blackoutColor = new Color(0.6f, 0.8f, 1f);
     [Tooltip("The rim of light round the technician's outline there.")]
     public Color outlineColor = new Color(0.55f, 0.85f, 1f, 0.4f);

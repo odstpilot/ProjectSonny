@@ -18,9 +18,9 @@ using UnityEngine;
 // deck's top wall.
 // The way to do it is Sonny's relay
 // (DoctrineTerminal), where Sonny checks that whoever's at it is one of its units, and switches the badge of anyone
-// who answers as one would back on, with a unit's access. What it asks is in its broadcasts, so first: three comms nodes (HackingTerminal) to tune in,
-// one transmission each, counted as they're done ("Intercept Sonny's broadcasts (1/3)"). The relay won't talk until
-// all three are in. Answer it right and Sonny takes the technician for one of its own: the control room's credential is
+// who answers as one would back on, with a unit's access. What it asks is in its broadcasts, so first: comms nodes
+// (HackingTerminal) to tune in, one transmission each, counted as they're done ("Intercept Sonny's broadcasts (1/2)").
+// There are three, but the relay talks once any two are in (DoctrineTerminal.needed), and only asks about those. Answer it right and Sonny takes the technician for one of its own: the control room's credential is
 // granted (the relay's DoctrineData), and the objective is the control room again, pinned on the map.
 // Bots are already roaming the ring (ChapterOneBuilder's patrols), and while the player's in it more come through the
 // walls (breaches): one every so often, at random, one each time a broadcast is intercepted (Sonny notices), and one if
@@ -145,7 +145,10 @@ public class CommsRing : MonoBehaviour
         }
     }
 
-    public bool AllIntercepted => Intercepted >= nodes.Length;
+    // Enough of them in for the relay to talk (DoctrineTerminal.Needed): not necessarily every node.
+    public bool AllIntercepted => Intercepted >= Needed;
+
+    int Needed => relay != null ? relay.Needed : nodes.Length;
 
     private bool arrived;
     private bool angelInDeck;
@@ -276,7 +279,10 @@ public class CommsRing : MonoBehaviour
         yield return new WaitForSeconds(angelDelay);
         if (powered) yield break;
         LetAngelLoose(true);
-        yield return TipCard.Show("Something in the dark", AngelTips);
+        TipCard.Log("Something in the dark", AngelTips);
+        // Pip's gone, so the prompt says it: what's out there, and the one thing that stops it. The next pulse ticks it off.
+        TutorialHud.Get().ShowPromptWithHint("Something's hunting you", "An EMP shuts it down for a while. It can't be killed", "LEFT CLICK");
+        teachingEmp = true;
     }
 
     // What it is and how to live through it, as it's let loose.
@@ -414,13 +420,23 @@ public class CommsRing : MonoBehaviour
     // A broadcast's in: the objective counts it, Pip remarks on it, and Sonny sends something to look.
     void CatchUpIntercepts()
     {
+        bool hadEnough = answeredIntercepts >= Needed;
         answeredIntercepts = Intercepted;
+        if (hadEnough) return;      // a spare node, tuned in after the relay was already listening
         TutorialHud.Get().SetObjective(Next());
         if (AllIntercepted)
         {
             if (SuitHelper.Exists) SuitHelper.Get().Tell(pipAllIntercepted);
         }
-        else if (toldIntercepted < pipIntercepted.Length && SuitHelper.Exists) SuitHelper.Get().Tell(pipIntercepted[toldIntercepted++]);
+        else if (toldIntercepted < pipIntercepted.Length && SuitHelper.Exists)
+        {
+            // With one to go, whatever Pip had left to say about them, so the last of it ("one more...") isn't lost.
+            int from = toldIntercepted;
+            toldIntercepted = Needed - Intercepted <= 1 ? pipIntercepted.Length : toldIntercepted + 1;
+            var lines = new string[toldIntercepted - from];
+            System.Array.Copy(pipIntercepted, from, lines, 0, lines.Length);
+            SuitHelper.Get().Tell(lines);
+        }
         Breach();
     }
 
@@ -441,7 +457,7 @@ public class CommsRing : MonoBehaviour
         return InterceptText(Intercepted);
     }
 
-    public string InterceptText(int count) => $"{interceptObjective} ({count}/{nodes.Length})";
+    public string InterceptText(int count) => $"{interceptObjective} ({Mathf.Min(count, Needed)}/{Needed})";
 
     void Done()
     {
@@ -583,7 +599,7 @@ public class CommsRing : MonoBehaviour
     public void Resume(string objective, bool past = false)
     {
         StopAllCoroutines();
-        int done = past || objective == answerObjective || objective == afterObjective ? nodes.Length
+        int done = past || objective == answerObjective || objective == afterObjective ? Needed
             : objective.StartsWith(interceptObjective) ? Count(objective) : 0;
         for (int i = 0; i < done && i < nodes.Length; i++)
             if (nodes[i] != null) nodes[i].MarkHacked();
@@ -632,7 +648,7 @@ public class CommsRing : MonoBehaviour
         }
     }
 
-    // The n in "... (n/3)".
+    // The n in "... (n/2)".
     static int Count(string objective)
     {
         int open = objective.LastIndexOf('('), slash = objective.LastIndexOf('/');

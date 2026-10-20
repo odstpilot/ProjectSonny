@@ -291,6 +291,9 @@ public class GeneratorScreen : MonoBehaviour
 
         status = Label("Status", panel, "", 34f, GameUI.Amber, TextAlignmentOptions.Center);
         At(status.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -130f), new Vector2(1000f, 50f));
+        TextMeshProUGUI goal = Label("Goal", panel, "BRING EVERY COIL UP. A MISS BACKFIRES, AND THE BOTS HEAR IT", 26f, GameUI.Dim,
+            TextAlignmentOptions.Center);
+        At(goal.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(1000f, 36f));
 
         // The rotor gauge: tick marks, the sync window, and the needle.
         Image gauge = Block("Gauge", panel, GaugeColor);
@@ -315,9 +318,9 @@ public class GeneratorScreen : MonoBehaviour
         coilRow = GameUI.NewRect("Coils", panel);
         At(coilRow, new Vector2(0.5f, 0f), new Vector2(0f, 150f), new Vector2(900f, 60f));
 
-        TextMeshProUGUI hint = Label("Hint", panel, "SPACE / E / CLICK  ENGAGE WHEN THE NEEDLE'S IN THE GREEN", 24f, GameUI.Dim,
+        TextMeshProUGUI hint = Label("Hint", panel, "SPACE / E / CLICK  ENGAGE WHEN THE NEEDLE'S IN THE GREEN", 32f, GameUI.Text,
             TextAlignmentOptions.Center);
-        At(hint.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(1000f, 40f));
+        At(hint.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 56f), new Vector2(1200f, 48f));
 
         hum = gameObject.AddComponent<AudioSource>();
         hum.playOnAwake = false;

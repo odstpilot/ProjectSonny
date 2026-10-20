@@ -42,6 +42,7 @@ public class ArcCaster : MonoBehaviour
     private readonly List<(GameObject root, SpriteRenderer ring, SpriteRenderer fill, Vector2 at)> marks =
         new List<(GameObject, SpriteRenderer, SpriteRenderer, Vector2)>();
     private Coroutine casting;
+    private readonly List<SpriteRenderer> bolts = new List<SpriteRenderer>();     // on screen now, so a cut-short cast can clear them
     private float nextReady;
     private Light2D coilLight;
     private SpriteRenderer body;
@@ -100,8 +101,22 @@ public class ArcCaster : MonoBehaviour
         if (casting != null) StopCoroutine(casting);
         casting = null;
         ClearMarks();
+        ClearBolts();
         if (coilLight != null) coilLight.intensity = 0f;
         nextReady = Mathf.Max(nextReady, Time.time + cooldown * 0.6f);
+    }
+
+    // The bolts gone. A strike that's cut short (the bot shut down, switched off, or the player killed by it and the
+    // level reset) would otherwise leave them lying there for good.
+    void ClearBolts()
+    {
+        foreach (SpriteRenderer bolt in bolts)
+        {
+            if (bolt == null) continue;
+            Destroy(bolt.sprite.texture);
+            Destroy(bolt.gameObject);
+        }
+        bolts.Clear();
     }
 
     IEnumerator Run(List<Vector2> points)
@@ -135,10 +150,14 @@ public class ArcCaster : MonoBehaviour
         // Down it comes, on every ring at once.
         Vector2 tip = (Vector2)transform.position + CoilTip;
         Sfx.At(strikeSound, transform.position, 1f);
-        var bolts = new List<SpriteRenderer>();
+        ClearBolts();
         foreach (var mark in marks)
         {
-            bolts.Add(Bolt(tip, mark.at));
+            SpriteRenderer bolt = Bolt(tip, mark.at);
+            // Gone in a moment whatever happens to this cast, even if nothing's left to clear it up.
+            Destroy(bolt.sprite.texture, 1f);
+            Destroy(bolt.gameObject, 1f);
+            bolts.Add(bolt);
             HitEffects.Sparks(mark.at, Vector2.up, 10, 4f, 360f, Color.white, ChargeColor);
             HitEffects.Ring(mark.at, ChargeColor, strikeRadius * 1.6f);
             LightFlash.Spawn(mark.at, ChargeColor, 2.5f, 1.4f, 0.2f);
@@ -149,15 +168,10 @@ public class ArcCaster : MonoBehaviour
         // The bolts flicker, jumping about, then they're gone.
         for (int flick = 0; flick < 3; flick++)
         {
-            yield return new WaitForSeconds(0.06f);
+            yield return new WaitForSecondsRealtime(0.06f);
             foreach (SpriteRenderer bolt in bolts) if (bolt != null) bolt.enabled = flick % 2 == 1;
         }
-        foreach (SpriteRenderer bolt in bolts)
-        {
-            if (bolt == null) continue;
-            Destroy(bolt.sprite.texture);
-            Destroy(bolt.gameObject);
-        }
+        ClearBolts();
         coilLight.intensity = 0f;
         nextReady = Time.time + cooldown;
         casting = null;

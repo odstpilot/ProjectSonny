@@ -48,7 +48,7 @@ public static class CheckpointJump
         new Stage("Chapter2", "hallway-caved", "Hallway caved in: upstairs to the maintenance deck"),
         new Stage("Chapter2", "wall-grab", "Just short of the stairs: the bot in the wall (mash E)"),
         new Stage("Chapter2", "upper-deck", "Upper maintenance deck: scavenge for the EMP"),
-        new Stage("Chapter2", "bench-stocked", "At the workbench with parts for everything (EMP, crowbar, scrap gun)"),
+        new Stage("Chapter2", "bench-stocked", "At the workbench with parts for everything (EMP, scrap gun)"),
         new Stage("Chapter2", "emp-built", "EMP built: off to the comms ring to reactivate the badge"),
         new Stage("Chapter2", "comms-ring", "Comms ring: arriving (the lights die, Pip goes offline)"),
         new Stage("Chapter2", "comms-generator", "Comms ring, pitch dark: at the generator (its minigame)"),

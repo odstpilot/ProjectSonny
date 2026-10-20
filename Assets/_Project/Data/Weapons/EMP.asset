@@ -20,7 +20,7 @@ MonoBehaviour:
   placeholderColor: {r: 0.55, g: 0.6, b: 0.62, a: 1}
   damage: 0
   knockback: 0
-  cooldown: 2.6
+  cooldown: 7
   lockDuration: 0.25
   aimSnap: 0
   holdDistance: 0.3

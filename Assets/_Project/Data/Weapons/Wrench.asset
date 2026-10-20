@@ -24,25 +24,25 @@ MonoBehaviour:
   lockDuration: 0.25
   gripInset: 0.1
   facingUp:
-    rest: 70
+    rest: -70
     raised: 175
     end: -5
     arcWidth: 1
     arcHeight: 0.55
   facingDown:
-    rest: 120
+    rest: -110
     raised: 5
     end: -185
     arcWidth: 1
     arcHeight: 0.55
   facingLeft:
-    rest: 120
+    rest: 235
     raised: 65
     end: 265
     arcWidth: 1
     arcHeight: 1
   facingRight:
-    rest: 60
+    rest: -55
     raised: 115
     end: -85
     arcWidth: 1

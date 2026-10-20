@@ -49,6 +49,7 @@ public class DoctrineScreen : MonoBehaviour
     // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
     public static bool AnyOpen => openCount > 0;
     static int openCount;
+    private float timeScaleWas = 1f;     // the game's paused while it's open; this is what to put back
     public DoctrineTerminal Terminal { get; private set; }
     // 0 to 1. At 1 the player is caught.
     public float Trace { get; private set; }
@@ -86,6 +87,7 @@ public class DoctrineScreen : MonoBehaviour
     private TextMeshProUGUI credentialLine;
     private TextMeshProUGUI tracePercent;
     private TextMeshProUGUI hints;
+    private TextMeshProUGUI goal;
     private Image lensGlow;
     private Image lensRing;
     private RectTransform traceFill;
@@ -110,7 +112,11 @@ public class DoctrineScreen : MonoBehaviour
 
     void OnDestroy()
     {
-        if (IsOpen) openCount--;
+        if (IsOpen)
+        {
+            openCount--;
+            ResumeTime();     // leaving the level with it open mustn't leave the next one frozen
+        }
         if (instance == this) instance = null;
     }
 
@@ -122,13 +128,15 @@ public class DoctrineScreen : MonoBehaviour
         IsOpen = true;
         openCount++;
         openedFrame = Time.frameCount;
+        timeScaleWas = Time.timeScale;
+        Time.timeScale = 0f;
         frozenControls = PlayerControls.Freeze(player);
         playerHealth = player.GetComponent<Health>();
         if (playerHealth != null) playerHealth.Damaged += OnPlayerHurt;
 
         device.alpha = 1f;
         header.text = terminal.displayName + "  //  DOCTRINE CHECK";
-        sonnyLine.text = reject.text = verdict.text = credentialLine.text = "";
+        sonnyLine.text = reject.text = verdict.text = credentialLine.text = goal.text = "";
         Trace = 0f;
         ShowAnswers(0);
         StartCoroutine(terminal.IsVerified ? ShowVerified(false) : RunCheck());
@@ -145,6 +153,7 @@ public class DoctrineScreen : MonoBehaviour
         scriptDecrypting = false;
         if (playerHealth != null) playerHealth.Damaged -= OnPlayerHurt;
         PlayerControls.Release(frozenControls);
+        ResumeTime();
         device.alpha = 0f;
         Terminal = null;
     }
@@ -185,9 +194,14 @@ public class DoctrineScreen : MonoBehaviour
         if (phase == Phase.Asking && struck[picked]) picked = FirstOpenAnswer();
     }
 
+    void ResumeTime()
+    {
+        if (Time.timeScale == 0f) Time.timeScale = timeScaleWas > 0f ? timeScaleWas : 1f;
+    }
+
     void Update()
     {
-        if (!IsOpen || Time.timeScale == 0f) return;
+        if (!IsOpen) return;     // runs on unscaled time: the game's paused under it
 
         bool firstFrame = Time.frameCount == openedFrame;
         if (!firstFrame && Input.GetKeyDown(KeyCode.Escape))
@@ -229,10 +243,12 @@ public class DoctrineScreen : MonoBehaviour
 
         for (QuestionIndex = 0; QuestionIndex < doctrine.questions.Length; QuestionIndex++)
         {
+            if (!Terminal.Asks(QuestionIndex)) continue;     // about a broadcast they never tuned in
             SetUpQuestion(doctrine.questions[QuestionIndex]);
             yield return Say(doctrine.questions[QuestionIndex].asks);
             ShowAnswers(answers.Length);
             hints.text = $"W S  PICK      HOLD SPACE  DECRYPT      {DoctrineTerminal.InteractKey}  ANSWER";
+            goal.text = "ANSWER AS SONNY'S UNITS WOULD. THE BROADCASTS HAVE THE ANSWERS. DON'T LET THE TRACE FILL";
             phase = Phase.Asking;
 
             while (phase == Phase.Asking) yield return null;
@@ -240,6 +256,7 @@ public class DoctrineScreen : MonoBehaviour
             yield return WaitReal(0.8f);
         }
 
+        goal.text = "";
         yield return ShowVerified(true);
     }
 
@@ -323,7 +340,7 @@ public class DoctrineScreen : MonoBehaviour
     {
         phase = Phase.Detected;
         ShowAnswers(0);
-        reject.text = hints.text = "";
+        reject.text = hints.text = goal.text = "";
         sonnyLine.maxVisibleCharacters = 99999;
         sonnyLine.text = FormatSonny(Terminal.doctrine != null ? Terminal.doctrine.detectedLine : "");
         verdict.color = Red;
@@ -565,8 +582,12 @@ public class DoctrineScreen : MonoBehaviour
         tracePercent = Label("Percent", body, "0%", 26f, RedDim, TextAlignmentOptions.Right);
         At(tracePercent.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-50f, 66f), new Vector2(140f, 34f));
 
-        hints = Label("Hints", body, "", 22f, RedDim, TextAlignmentOptions.Center);
-        At(hints.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 20f), new Vector2(1100f, 30f));
+        // What it wants, just above the trace, while it's asking.
+        goal = Label("Goal", body, "", 26f, Good, TextAlignmentOptions.Center);
+        At(goal.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 108f), new Vector2(1100f, 34f));
+
+        hints = Label("Hints", body, "", 30f, LineColor, TextAlignmentOptions.Center);
+        At(hints.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(1300f, 40f));
 
         ShowAnswers(0);
 

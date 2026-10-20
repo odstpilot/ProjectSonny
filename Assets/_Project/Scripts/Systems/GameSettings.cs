@@ -27,8 +27,11 @@ public static class GameSettings
     // Scanlines and film grain on screens and menus.
     public static bool ScreenEffects { get; private set; } = true;
     public static bool ShowFps { get; private set; }
-    // Tap to crouch and tap again to stand (PlayerController), instead of holding the key down.
-    public static bool ToggleCrouch { get; private set; }
+    // Tap to crouch and tap again to stand (PlayerController), instead of holding the key down. On to start with.
+    public static bool ToggleCrouch { get; private set; } = true;
+
+    // A new key since toggling became the default, so a hold-to-crouch left over from before doesn't stick.
+    const string ToggleCrouchKey = "CrouchToggles";
 
     static bool focused = true;
 
@@ -45,7 +48,7 @@ public static class GameSettings
         FreezeOnHit = PlayerPrefs.GetInt(Prefix + "HitStop", 1) == 1;
         ScreenEffects = PlayerPrefs.GetInt(Prefix + "ScreenEffects", 1) == 1;
         ShowFps = PlayerPrefs.GetInt(Prefix + "ShowFps", 0) == 1;
-        ToggleCrouch = PlayerPrefs.GetInt(Prefix + "ToggleCrouch", 0) == 1;
+        ToggleCrouch = PlayerPrefs.GetInt(Prefix + ToggleCrouchKey, 1) == 1;
         ApplyVolume();
         ApplyFrameRate();
         SettingsRunner.Ensure();
@@ -64,7 +67,7 @@ public static class GameSettings
         SetFreezeOnHit(true);
         SetScreenEffects(true);
         SetShowFps(false);
-        SetToggleCrouch(false);
+        SetToggleCrouch(true);
     }
 
     public static void Save() => PlayerPrefs.Save();
@@ -136,7 +139,7 @@ public static class GameSettings
     public static void SetToggleCrouch(bool on)
     {
         ToggleCrouch = on;
-        PlayerPrefs.SetInt(Prefix + "ToggleCrouch", on ? 1 : 0);
+        PlayerPrefs.SetInt(Prefix + ToggleCrouchKey, on ? 1 : 0);
     }
 
     // SettingsRunner calls this when the game's window gains or loses focus.

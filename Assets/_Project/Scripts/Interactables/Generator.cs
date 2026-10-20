@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-// A backup generator, dead, in a room with the power out (the comms ring, CommsRing). Even dead it glows, a slow amber
-// pulse from its coil lamps, so there's something to head for in the pitch dark; an EMP's flash shows it up brighter:
+// A backup generator, dead, in a room with the power out (the comms ring, CommsRing). Dead, it barely glows, the
+// faintest amber pulse from its coil lamps, easy to miss in the pitch dark; an EMP's flash shows it up brighter:
 // caught in a pulse's cone (EmpPulse.Swept), it crackles and its coil lamps blink for a few seconds. Running, it glows
 // green. Walk up and press E to start it
 // (GeneratorScreen): bring its coils up one at a time by engaging each as the rotor comes round into sync. A miss
@@ -149,19 +149,19 @@ public class Generator : Terminal
             Color color;
             if (IsRunning) color = Running;
             else if (i < CoilsLit) color = Pinged;
-            else if (pinged) color = blinkOn ? Pinged * 0.8f : Pinged * 0.3f;
-            else color = Pinged * (0.3f + 0.4f * pulse);
+            else if (pinged) color = blinkOn ? Pinged * 0.7f : Pinged * 0.25f;
+            else color = Pinged * (0.1f + 0.12f * pulse);
             color.a = 1f;
             lamps[i].color = color;
         }
         if (glow == null) return;
         glow.enabled = true;
         glow.color = IsRunning ? Running : Pinged;
-        glow.pointLightOuterRadius = IsRunning ? 3.6f : 3f;
+        glow.pointLightOuterRadius = IsRunning ? 3.6f : pinged ? 2.4f : 1.3f;
         glow.intensity = IsRunning ? 1.1f + 0.08f * Mathf.Sin(Time.time * 20f)
-            : pinged ? (blinkOn ? 0.9f : 0.4f)
-            : CoilsLit > 0 ? 0.6f
-            : 0.3f + 0.35f * pulse;
+            : pinged ? (blinkOn ? 0.55f : 0.2f)
+            : CoilsLit > 0 ? 0.3f
+            : 0.06f + 0.06f * pulse;
     }
 
     void BuildArt()

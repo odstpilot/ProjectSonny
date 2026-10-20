@@ -19,6 +19,7 @@ public static class TechnicianVoice
     public static void Say(string line, float seconds = -1f)
     {
         if (string.IsNullOrEmpty(line)) return;
+        if (VentNetwork.SayInside(line, seconds > 0f ? seconds : HoldFor(line))) return;
         GameObject player = GameObject.FindWithTag("Player");
         if (player == null) return;
         if (speech == null) speech = CrewSpeech.Create(player.transform);

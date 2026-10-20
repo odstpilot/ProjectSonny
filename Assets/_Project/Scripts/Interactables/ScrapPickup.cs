@@ -33,6 +33,7 @@ public class ScrapPickup : Terminal
     {
         base.Awake();
         phase = Random.value * 10f;
+        Inventory.Changed += CheckTaken;
         art = new GameObject("Scrap").AddComponent<SpriteRenderer>();
         art.transform.SetParent(transform, false);
         art.sprite = Make(material);
@@ -47,17 +48,8 @@ public class ScrapPickup : Terminal
         glow.falloffIntensity = 0.6f;
     }
 
-    protected override void OnEnable()
-    {
-        base.OnEnable();
-        Inventory.Changed += CheckTaken;
-    }
-
-    protected override void OnDisable()
-    {
-        base.OnDisable();
-        Inventory.Changed -= CheckTaken;
-    }
+    // Listening the whole time it exists, hidden or not, so a load that puts it back on the floor brings it back.
+    void OnDestroy() => Inventory.Changed -= CheckTaken;
 
     protected override void Start()
     {
@@ -65,10 +57,10 @@ public class ScrapPickup : Terminal
         CheckTaken();
     }
 
-    // Already in the technician's pockets (a save picking up after it was taken): not on the floor.
+    // Off the floor while it's in the technician's pockets, and back if a save from before it was taken is loaded.
     void CheckTaken()
     {
-        if (Inventory.Took(id)) gameObject.SetActive(false);
+        if (this != null) gameObject.SetActive(!Inventory.Took(id));
     }
 
     protected override void Update()

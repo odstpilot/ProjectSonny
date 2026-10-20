@@ -111,10 +111,11 @@ public class EmpPulse : MonoBehaviour
     {
         var cone = gameObject.AddComponent<Light2D>();
         cone.lightType = Light2D.LightType.Point;
-        cone.pointLightInnerAngle = data.coneAngle * 0.65f;
-        cone.pointLightOuterAngle = data.coneAngle;
+        // Wider and further than what it stuns (stunRadius, coneAngle), so it lights the way, not just the target.
+        cone.pointLightInnerAngle = data.lightAngle * 0.6f;
+        cone.pointLightOuterAngle = data.lightAngle;
         cone.pointLightInnerRadius = 0f;
-        cone.pointLightOuterRadius = data.stunRadius * 1.3f;
+        cone.pointLightOuterRadius = Mathf.Max(data.lightRadius, data.stunRadius * 1.3f);
         cone.falloffIntensity = 0.5f;
         cone.color = data.empColor;
 

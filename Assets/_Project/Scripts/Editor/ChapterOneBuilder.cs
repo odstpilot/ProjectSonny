@@ -1559,6 +1559,7 @@ public static class ChapterOneBuilder
         }
         Transform root = TutorialLevelBuilder.Group("Comms Ring", upstairs.level);
         var away = ring.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
+        List<Vector2Int> doorways = new List<Vector2Int>(away);
         // The ring's cameras (PlaceCameras, already up): nothing to do at a terminal goes on right under one.
         List<Vector2Int> cameras = upstairs.level.GetComponentsInChildren<StationCamera>()
             .Where(c => c.room == CommsRingRoom).Select(c => CellAt(map, (Vector2)c.transform.position - map.Origin)).ToList();
@@ -1593,9 +1594,9 @@ public static class ChapterOneBuilder
             node.displayName = $"COMMS NODE {i + 1}";
             node.transmission = Broadcast(i);
             node.interactRange = 0.8f;
-            // Each a little harder than the one before, and the last one drifting.
-            node.precision = 1.2f - 0.2f * i;
-            node.phaseDrift = i == CommsNodes - 1 ? 0.03f : 0f;
+            // Forgiving, and holding still: the tuning's a breather, not the hard part.
+            node.precision = 1.8f;
+            node.phaseDrift = 0f;
             TutorialLevelBuilder.Record(node);
             nodes.Add(node);
         }
@@ -1604,11 +1605,13 @@ public static class ChapterOneBuilder
         relay.waitingFor = nodes.ToArray();
         TutorialLevelBuilder.Record(relay);
 
-        // The generator, as far from everything else as there's room.
+        // The generator, deep in the ring: as far from the ways in as there's room, and clear of everything else, so it
+        // has to be hunted for in the dark.
         Generator generator = null;
         if (spots.Count > 0)
         {
-            Vector2Int cell = spots.OrderByDescending(c => away.Min(a => Chebyshev(a, c))).ThenBy(c => c.x).First();
+            Vector2Int cell = spots.OrderByDescending(c => (doorways.Count > 0 ? doorways.Min(d => Chebyshev(d, c)) * 2 : 0) + away.Min(a => Chebyshev(a, c)))
+                .ThenBy(c => c.x).First();
             Claim(cell);
             generator = PlaceTerminal(map, cell, "Backup Generator", root).AddComponent<Generator>();
             generator.GetComponent<BoxCollider2D>().size = new Vector2(1.9f, 0.6f);

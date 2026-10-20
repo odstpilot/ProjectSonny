@@ -216,6 +216,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   stunDuration: 5
+  jumpscareFace: {fileID: 21300000, guid: 42c46e5ffd984121a0f082fbc8b2f374, type: 3}
   footstepClips:
   - {fileID: 8300000, guid: 42f7a1a162f7889479d326156626742a, type: 3}
   - {fileID: 8300000, guid: ca0b3743204604c4594a23a4cc9c925c, type: 3}
@@ -270,7 +271,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 63383cd28ae0f004dbe8255c9ae83dea, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9068bd0584c34b0084b1fd33dee8aca5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

@@ -13,15 +13,387 @@ MonoBehaviour:
   m_Name: PlayerHand
   m_EditorClassIdentifier:
   facingUp:
-    position: {x: 0.26, y: -0.12}
+    position: {x: 0.2512, y: -0.3349}
     layer: 2
   facingDown:
-    position: {x: -0.26, y: -0.18}
+    position: {x: -0.2512, y: -0.3349}
     layer: 2
   facingLeft:
-    position: {x: -0.08, y: -0.2}
+    position: {x: 0.0419, y: -0.3349}
     layer: 0
   facingRight:
-    position: {x: 0.08, y: -0.2}
+    position: {x: -0.0419, y: -0.3349}
     layer: 0
-  frames: []
+  frames:
+  - frame: {fileID: 21300000, guid: adccd9d72669d2946959c6c1693efeb9, type: 3}
+    position: {x: -0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: d92aec2486df2c749a110d39ea92ee09, type: 3}
+    position: {x: -0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: c244119456ac4424284969db92ddbbdc, type: 3}
+    position: {x: -0.2512, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 2e66e714d12176145b343ed7ca9f1472, type: 3}
+    position: {x: -0.2512, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 7d76f26222429f04d94d23747eb3959f, type: 3}
+    position: {x: 0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: d43072aa9fda1554a9c576101529d9e4, type: 3}
+    position: {x: 0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 6687e7cd37670834b8c5a2b6a19155a0, type: 3}
+    position: {x: 0.0733, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 512d685b13c843a47ae28cae26c5a439, type: 3}
+    position: {x: 0.0733, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 64dd8cc64b8e1c949914553a261db1eb, type: 3}
+    position: {x: -0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 6c3afee1f8037ff4b80711f22eae93e3, type: 3}
+    position: {x: -0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 5fac60af77b969e4d9d7a696ae16a70d, type: 3}
+    position: {x: -0.0733, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: c7be0469867846047ba29cc175131431, type: 3}
+    position: {x: -0.0733, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 1a8afe86684ff3c48acd49b1f5348216, type: 3}
+    position: {x: 0.0419, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 664324dcd9b2b064fbf6dce0d77912dc, type: 3}
+    position: {x: 0.0419, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 7cf0ce5531911c74f8021e365d206ee0, type: 3}
+    position: {x: 0.0419, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 932f24d0df923bb46956fbb98e1d3c22, type: 3}
+    position: {x: 0.0419, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 455499f87c872294ea53607106d6c8dc, type: 3}
+    position: {x: -0.0419, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 85da7c5d6c9bcac4abcec808b1c2f183, type: 3}
+    position: {x: -0.0419, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8cbf9c43f474b4545aafa55f35799bfc, type: 3}
+    position: {x: -0.0419, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3008d44de2e6e96439cdd488655c0a0e, type: 3}
+    position: {x: -0.0419, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: fbfe2d0fdf283844bb6ff6a91c1eb236, type: 3}
+    position: {x: 0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 16a6b200a4168ea409beb43fb958a012, type: 3}
+    position: {x: 0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8d7649eaaca72de409532ee04930e540, type: 3}
+    position: {x: 0.2512, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3dd0d09b40932ae4c8e8a1e790acb3e1, type: 3}
+    position: {x: 0.2512, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: bb57e73d808798b45bb167b59711fbd0, type: 3}
+    position: {x: -0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 54a3ef1755e53ff4f8ede42e6b6fa1d7, type: 3}
+    position: {x: -0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: cbb96430d3d646f42bd282d1db5fa657, type: 3}
+    position: {x: -0.1256, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3f5f0b7ba8ad1d34fae9dd52d5bed3f5, type: 3}
+    position: {x: -0.1256, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: d8eee7ea2868108419406eb9580a4bac, type: 3}
+    position: {x: 0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 20f86e30d3388554bb47f8e4b206e387, type: 3}
+    position: {x: 0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 0b50aee38facc734e824a22544bfe2a2, type: 3}
+    position: {x: 0.1256, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 6f1c78e162d4e304faf9314b0087ec3c, type: 3}
+    position: {x: 0.1256, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: da435f23fddb2664a936ff677a24e9fd, type: 3}
+    position: {x: -0.3648, y: -0.1884}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 308e3a8754e2e844280f1313358a68b5, type: 3}
+    position: {x: -0.3748, y: -0.1370}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 68e5e4dec6384814399a028e271b053b, type: 3}
+    position: {x: -0.2051, y: -0.2826}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3a4094eee87b8f743b283fe27e15f02d, type: 3}
+    position: {x: -0.2051, y: -0.2826}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3567a4465bece4f48b432b83e824a7b3, type: 3}
+    position: {x: -0.3748, y: -0.1370}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 00ce98e6c6ae1ca48a350cfdd80a148e, type: 3}
+    position: {x: -0.3648, y: -0.1884}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: c1c178f49c26df34fb17f8a32d059d94, type: 3}
+    position: {x: 0.3648, y: -0.1884}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: aa34e8596bcabd1448994973641a8ece, type: 3}
+    position: {x: 0.3022, y: -0.1818}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: c72830cd37060cf469e45cd97f6be117, type: 3}
+    position: {x: 0.2051, y: -0.2826}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 73e1f680ffb62294ea575ad4c5e87958, type: 3}
+    position: {x: 0.2051, y: -0.2826}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: a975d675d56a28b4cb9f777cc778990f, type: 3}
+    position: {x: 0.3022, y: -0.1818}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: ac3182a9fd4646844a9dfb37d9244d1a, type: 3}
+    position: {x: 0.3648, y: -0.1884}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8751836dca501674286bcfd6ca658d75, type: 3}
+    position: {x: -0.2031, y: -0.3164}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3a4a23ebfb47dd5488820b6861c32e4e, type: 3}
+    position: {x: -0.2031, y: -0.3164}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8b901b36d211fcb46b73ce04621e5a90, type: 3}
+    position: {x: -0.2624, y: -0.3059}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 4265d858dc747d947985c2d3220ec835, type: 3}
+    position: {x: -0.2624, y: -0.3059}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 5b32bcbb3343c754ebdad963698e426c, type: 3}
+    position: {x: -0.2372, y: -0.2372}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8a8764bf6615a5c44a482dc678cc17cb, type: 3}
+    position: {x: -0.2372, y: -0.2372}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 735f7449a165d0e4cac8f735886e47d1, type: 3}
+    position: {x: -0.2407, y: -0.2616}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: de50be7380f971149bc4380b3d4547a7, type: 3}
+    position: {x: -0.2407, y: -0.2616}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: e45b70c31a52aa642b605c18b6b02eae, type: 3}
+    position: {x: -0.2504, y: -0.2721}
+    angle: -10.00
+  - frame: {fileID: 21300000, guid: 449819ed28136fd478f287a46f82f870, type: 3}
+    position: {x: -0.2504, y: -0.2721}
+    angle: -10.00
+  - frame: {fileID: 21300000, guid: ad8b77285b9e9db40b8ccb876e280d83, type: 3}
+    position: {x: 0.0105, y: -0.4016}
+    angle: -1.52
+  - frame: {fileID: 21300000, guid: d3efa02eecd57164abf48f4c17ccfd90, type: 3}
+    position: {x: 0.0105, y: -0.4016}
+    angle: -1.52
+  - frame: {fileID: 21300000, guid: 697ca5d275b76a8458bdd3cf86a8a67f, type: 3}
+    position: {x: 0.3349, y: -0.2302}
+    angle: 10.00
+  - frame: {fileID: 21300000, guid: c1c37c311e0d1434c8b81180a8893dd0, type: 3}
+    position: {x: 0.3349, y: -0.2302}
+    angle: 10.00
+  - frame: {fileID: 21300000, guid: d6d08d356c2773749b487f955c242030, type: 3}
+    position: {x: 0.0105, y: -0.4016}
+    angle: -1.52
+  - frame: {fileID: 21300000, guid: 5cd979c9aa12cea43b43d0d40a8d481c, type: 3}
+    position: {x: 0.0105, y: -0.4016}
+    angle: -1.52
+  - frame: {fileID: 21300000, guid: 117126dc0e3d74042870440e07e9b42f, type: 3}
+    position: {x: 0.2504, y: -0.2721}
+    angle: 10.00
+  - frame: {fileID: 21300000, guid: 593b3920052053a48a6a47573bd9ff46, type: 3}
+    position: {x: 0.2504, y: -0.2721}
+    angle: 10.00
+  - frame: {fileID: 21300000, guid: c300f62f685f7454f965f91a2f5e867a, type: 3}
+    position: {x: -0.0105, y: -0.4016}
+    angle: 1.52
+  - frame: {fileID: 21300000, guid: 1b2a00a87f62bb6449261c4862a3b32b, type: 3}
+    position: {x: -0.0105, y: -0.4016}
+    angle: 1.52
+  - frame: {fileID: 21300000, guid: 8c5095dc1e1b52e4ba6ad13b24d1969f, type: 3}
+    position: {x: -0.3349, y: -0.2302}
+    angle: -10.00
+  - frame: {fileID: 21300000, guid: 6bce6861f06d73c4d92efe42d559afe4, type: 3}
+    position: {x: -0.3349, y: -0.2302}
+    angle: -10.00
+  - frame: {fileID: 21300000, guid: 694ae113843e7314bbe5bf5087ec08ef, type: 3}
+    position: {x: -0.0105, y: -0.4016}
+    angle: 1.52
+  - frame: {fileID: 21300000, guid: adbbf3a4086230e4fa4f2e176b76aed9, type: 3}
+    position: {x: -0.0105, y: -0.4016}
+    angle: 1.52
+  - frame: {fileID: 21300000, guid: d9dfea3514de13e418fdf43ffdd7e7b9, type: 3}
+    position: {x: 0.2407, y: -0.2302}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 07d86e2e136815f46adbe4aa88a096e6, type: 3}
+    position: {x: 0.2407, y: -0.2302}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 192943bd3a8a2b941aa844b712b51bf0, type: 3}
+    position: {x: 0.2512, y: -0.2512}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: a358b47652a7f2d47ac12103ddda96c5, type: 3}
+    position: {x: 0.2512, y: -0.2512}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 59ff3f3a585d2b34a940f6e63d7b9c25, type: 3}
+    position: {x: 0.2226, y: -0.2911}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 0545e40455aa7c74a96e6e9f30b1b5bf, type: 3}
+    position: {x: 0.2226, y: -0.2911}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 22d5f5cc2f8ab604ea397551ca135dac, type: 3}
+    position: {x: 0.2436, y: -0.3330}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 2bed6896bb1248948bd522d3dabf0877, type: 3}
+    position: {x: 0.2436, y: -0.3330}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: ce7e184701718b346bad8d1018f1f4de, type: 3}
+    position: {x: -0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 784c795bfa951a5479ab8ea7a0ab00f2, type: 3}
+    position: {x: -0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: fa910e3fc44acf84999297f1223c6486, type: 3}
+    position: {x: -0.2241, y: -0.3583}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 8d8933108ec504a4db21e49940aaa690, type: 3}
+    position: {x: -0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: e5bbc1c79f89b6e4698bef3c6d0b48c1, type: 3}
+    position: {x: -0.2533, y: -0.3098}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: db5e62a35a8304d4194488ed8893380d, type: 3}
+    position: {x: -0.2512, y: -0.2860}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 95b8922b58468e34ab57dd35e0b014f9, type: 3}
+    position: {x: 0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: b00fda55099a8704a9274ce152e5cd69, type: 3}
+    position: {x: 0.1151, y: -0.2721}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: c682ec0cc1691754a8b80cddcc42b2d9, type: 3}
+    position: {x: 0.1570, y: -0.2930}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 235bb11e12621e7468620e684c8c151b, type: 3}
+    position: {x: 0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 768df85a85dc9fe44acba4ff48c23038, type: 3}
+    position: {x: 0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 7cdf38c07476996439a1dfce6f01e50d, type: 3}
+    position: {x: -0.0161, y: -0.3059}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 42ad4071c684ad3478bc73b0deee5c7d, type: 3}
+    position: {x: -0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 67211aaa8e7100049a39fc68cf2d5651, type: 3}
+    position: {x: -0.1151, y: -0.2721}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: d45102e1333ab854fa8ba25467d5001d, type: 3}
+    position: {x: -0.1570, y: -0.2930}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: d2c3f0fa7f962ff4d8b816b60ae2514a, type: 3}
+    position: {x: -0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 27c2368273563534c8d3e369921cf625, type: 3}
+    position: {x: -0.0733, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: bb16ac3c31d6cf74c91db2d33a426c84, type: 3}
+    position: {x: 0.0161, y: -0.3059}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 3a062ae856932ec44ae4e1d1f7f0da5a, type: 3}
+    position: {x: 0.0419, y: -0.3244}
+    angle: 1.13
+  - frame: {fileID: 21300000, guid: a141bd375c2e8dd40a846e0bbb90e409, type: 3}
+    position: {x: 0.0837, y: -0.3140}
+    angle: 5.13
+  - frame: {fileID: 21300000, guid: 2a10d8084d5a39c4ca9bb092acf7297c, type: 3}
+    position: {x: 0.1280, y: -0.2898}
+    angle: 9.36
+  - frame: {fileID: 21300000, guid: 90604e35d60afba44bf1fa3b9bb834cf, type: 3}
+    position: {x: 0.0419, y: -0.3244}
+    angle: 1.13
+  - frame: {fileID: 21300000, guid: 779821d8661008e478e853f01d5ed36c, type: 3}
+    position: {x: 0.0419, y: -0.3244}
+    angle: 1.13
+  - frame: {fileID: 21300000, guid: 334c56db4e12da14f8d25066b85e45e2, type: 3}
+    position: {x: -0.1570, y: -0.3663}
+    angle: -10.00
+  - frame: {fileID: 21300000, guid: 0398ec3df950eb04d812680858e37373, type: 3}
+    position: {x: -0.0419, y: -0.3244}
+    angle: -1.13
+  - frame: {fileID: 21300000, guid: 9c03641595578d04ea203ecca45876d4, type: 3}
+    position: {x: -0.0837, y: -0.3140}
+    angle: -5.13
+  - frame: {fileID: 21300000, guid: 4c338e95d1c5c364ab46137ea5955280, type: 3}
+    position: {x: -0.1280, y: -0.2898}
+    angle: -9.36
+  - frame: {fileID: 21300000, guid: b515a8e781390a8418c8a181b450aaab, type: 3}
+    position: {x: -0.0419, y: -0.3244}
+    angle: -1.13
+  - frame: {fileID: 21300000, guid: 3adf6962d1c7ee84193a5f0f4b90f103, type: 3}
+    position: {x: -0.0419, y: -0.3244}
+    angle: -1.13
+  - frame: {fileID: 21300000, guid: ac4f4da27d3fb7c40bb6039024581a5e, type: 3}
+    position: {x: 0.1570, y: -0.3663}
+    angle: 10.00
+  - frame: {fileID: 21300000, guid: 10042fb0c2c013246a7602c250fcff1c, type: 3}
+    position: {x: 0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: b5c80fcd35f35e645b3e15ffa0d468db, type: 3}
+    position: {x: 0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: ea4a35f1dce40f54aacd60fc7e784ace, type: 3}
+    position: {x: 0.2395, y: -0.2674}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 90ff4a4b882821b4e94fc06c95c48416, type: 3}
+    position: {x: 0.2512, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: b65c576867c2a394eb337b274dfa11af, type: 3}
+    position: {x: 0.2436, y: -0.3121}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: b8596f70684d73d4d8c56a9a8cc11186, type: 3}
+    position: {x: 0.2407, y: -0.3087}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 333a62e2b9b253149be9388201cd46a1, type: 3}
+    position: {x: -0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 5e4a4cc7c212ba140bc94d3c0e6411d7, type: 3}
+    position: {x: -0.1674, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 36f6424a2ebaaa949a8aad2b536f443c, type: 3}
+    position: {x: -0.1407, y: -0.3674}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 03aab08ebcd941d4da283fbfdfe95452, type: 3}
+    position: {x: -0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: a74c5be475b78b145a512f0f863e15c6, type: 3}
+    position: {x: -0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: b57eaf46ced343d4ab6e998556730d0d, type: 3}
+    position: {x: -0.2359, y: -0.3268}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 45868ca4547ee994c89c12232190ddb1, type: 3}
+    position: {x: 0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 9e09bf5766cdfed4d8fe1e308be23366, type: 3}
+    position: {x: 0.1674, y: -0.3454}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: 91ee4b26a195bd542b054f72b39e91d8, type: 3}
+    position: {x: 0.1407, y: -0.3674}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: fa1267d98def32846a94aad51e95a6eb, type: 3}
+    position: {x: 0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: be8685b607fac3b4b9f66eb051ebbd29, type: 3}
+    position: {x: 0.1256, y: -0.3244}
+    angle: 0.00
+  - frame: {fileID: 21300000, guid: f0188d08c9915964494c89256ba9e7ce, type: 3}
+    position: {x: 0.2359, y: -0.3268}
+    angle: 0.00

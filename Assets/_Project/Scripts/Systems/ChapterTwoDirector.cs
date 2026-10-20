@@ -205,7 +205,7 @@ public class ChapterTwoDirector : MonoBehaviour
                 {
                     Inventory.Reset();
                     int part = 0;
-                    foreach (Inventory.Stack[] cost in new[] { bench.empCost, bench.crowbarCost, bench.scrapGunCost })
+                    foreach (Inventory.Stack[] cost in bench.crowbarOnBench ? new[] { bench.empCost, bench.crowbarCost, bench.scrapGunCost } : new[] { bench.empCost, bench.scrapGunCost })
                         foreach (Inventory.Stack need in cost)
                             Inventory.Add($"tester-{part++}", need.material, need.count);
                     checkpoint.inventory = Inventory.Save();

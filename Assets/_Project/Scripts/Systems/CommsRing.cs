@@ -72,7 +72,7 @@ public class CommsRing : MonoBehaviour
     [TextArea] public string[] pipBlackout =
     {
         "~Tech, something's draining the suit and I'm gonna lose you",
-        "~Use the EMP, its flash lights up whatever's in front of you",
+        "~!Use the EMP, its flash lights up whatever's in front of you",
         "~Find the generator and get the power back on, then I can come b-",
     };
     [Tooltip("The technician, alone in the dark.")]
@@ -96,13 +96,13 @@ public class CommsRing : MonoBehaviour
     [TextArea] public string[] pipIntercepted =
     {
         "~Uh oh, it heard that... something's moving in the walls",
-        "~One more, and remember what they said, 'cause that's what it'll ask",
+        "~!One more, and remember what they said, 'cause that's what it'll ask",
     };
     [Tooltip("Pip, once every broadcast's in.")]
     [TextArea] public string[] pipAllIntercepted =
     {
         "~That's all of them, the relay's listening now",
-        "~Answer like a bot would, not like you would, and don't hesitate 'cause it notices",
+        "~!Answer like a bot would, not like you would, and don't hesitate 'cause it notices",
     };
     [Tooltip("Pip, once the relay's passed.")]
     [TextArea] public string[] technicianVerified = { "It... thinks I'm one of them." };
@@ -275,6 +275,8 @@ public class CommsRing : MonoBehaviour
             yield return pip.GoOffline();
         }
         yield return TechnicianVoice.Think(technicianAlone);
+        // Found and started in the dark while all that was being said: PowerBack's already moved the objective on.
+        if (powered) yield break;
         LookForGenerator();
         yield return new WaitForSeconds(angelDelay);
         if (powered) yield break;
@@ -342,9 +344,13 @@ public class CommsRing : MonoBehaviour
             teachingEmp = false;
             TutorialHud.Get().CompletePrompt();
         }
+        // The objective moves on now, not once everyone's done talking: that's a good half minute of lines.
+        RelayObjective();
         // Sonny felt that: the first through the walls before long.
         nextBreach = Time.time + Random.Range(firstBreach.x, firstBreach.y) * 0.5f;
         yield return TechnicianVoice.Think(technicianPowerOn);
+        // Pip comes back, but not all of it: whatever drained the suit left it Damaged (SuitHelper.Condition).
+        SuitHelper.Worsen(SuitHelper.Condition.Damaged);
         SuitHelper pip = SuitHelper.Get();
         if (!pip.Online) pip.ComeOnline();
         yield return pip.Say(pipBack);
@@ -353,7 +359,12 @@ public class CommsRing : MonoBehaviour
 
     IEnumerator TellAboutRelay()
     {
+        RelayObjective();
         if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipArrive);
+    }
+
+    void RelayObjective()
+    {
         answeredIntercepts = Intercepted;
         TutorialHud.Get().SetObjective(Next());
         MapScreen.SetTarget(room, "Comms Ring");
@@ -614,6 +625,7 @@ public class CommsRing : MonoBehaviour
         bool dark = !past && (objective == arriveObjective || objective == generatorObjective);
         if (!dark)
         {
+            SuitHelper.Worsen(SuitHelper.Condition.Damaged);
             if (generator != null) generator.MarkStarted(true);
             SetPower(true, true);
             if (!past) LetAngelLoose(false);

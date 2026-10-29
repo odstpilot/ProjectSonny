@@ -4,6 +4,8 @@ using UnityEngine;
 // Stand-in for the inventory. Number keys 1-9 equip a slot, pressing the key of the weapon already in hand
 // puts it away, and the scroll wheel cycles through empty hands and every slot.
 // The real inventory can replace this by calling PlayerCombat.Equip and PlayerCombat.Unequip itself.
+// It's shown along the bottom left of the screen (InventoryHud), and the pack screen (InventoryScreen, Tab) can
+// reorder it (Move).
 [RequireComponent(typeof(PlayerCombat))]
 public class WeaponHotbar : MonoBehaviour
 {
@@ -14,6 +16,15 @@ public class WeaponHotbar : MonoBehaviour
     void Awake()
     {
         combat = GetComponent<PlayerCombat>();
+    }
+
+    void Start() => InventoryHud.Get().Track(this);
+
+    // Puts the weapon in slot "from" into slot "to", swapping with whatever's there.
+    public void Move(int from, int to)
+    {
+        if (from == to || from < 0 || to < 0 || from >= slots.Count || to >= slots.Count) return;
+        (slots[from], slots[to]) = (slots[to], slots[from]);
     }
 
     void Update()

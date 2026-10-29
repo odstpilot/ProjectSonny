@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 // The look every in-game screen shares, so the HUD, prompts, speech, and dialogue read as one station interface:
 //  - two fonts, loaded from Art/Fonts/Resources: m6x11 (Daniel Linssen), a pixel face, for everything people read, and
-//    SdAsteroid, all capitals, for names and headings. SdAsteroid has no punctuation, so it falls back to m6x11 for
-//    anything it's missing. m6x11 is drawn on a 16 pixel em, so it's sharpest at 16, 32 and 48 points.
+//    Chakra Petch SemiBold (Cadson Demak, SIL Open Font License, Art/Fonts/ChakraPetch-OFL.txt), angular and easy to
+//    read small, for names and headings; it falls back to m6x11 for anything it's missing. m6x11 is drawn on a 16 pixel em, so it's sharpest at 16, 32 and 48 points.
 //  - one palette: warm white text, amber for what the player can do, cyan for the station, red for danger.
 //  - pixel-art pieces drawn in code and nine-sliced, so they stretch to any size and keep crisp pixel edges: a dark
 //    glass panel in a steel frame, a light key cap, a name tab and an arrow to tint; and, for the small things that
@@ -31,7 +31,7 @@ public static class GameUI
     public static readonly Color Ink = new Color(0.07f, 0.08f, 0.1f);    // dark text on a light tab
 
     const string BodyFontName = "m6x11";
-    const string HeadingFontName = "SdAsteroidB612-wo3e2";
+    const string HeadingFontName = "ChakraPetch-SemiBold";
 
     // Every printable ASCII character.
     static readonly string Printable = MakePrintable();
@@ -147,6 +147,8 @@ public static class GameUI
         label.alignment = alignment;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.raycastTarget = false;
+        // Headings are all capitals, whatever they're given (names, statuses).
+        if (font != null && font == heading) label.fontStyle |= FontStyles.UpperCase;
         return label;
     }
 

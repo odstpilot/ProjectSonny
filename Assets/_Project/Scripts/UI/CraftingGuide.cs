@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 // A panel down the left of the screen on how crafting works, up from arriving on the upper maintenance deck until the
 // workbench is first used (Workshop), when the bench's own card takes over (TipCard). It doesn't stop anything: it's
-// just there to read while scavenging. Built from code the first time it's shown.
+// just there to read while scavenging. It sits a little above the middle, or lower when the objective panel above it
+// runs long, so the two never overlap. Built from code the first time it's shown.
 public class CraftingGuide : MonoBehaviour
 {
     const int SortingOrder = 85;            // over the health readout (80), under the tutorial's text (90)
@@ -23,6 +24,7 @@ public class CraftingGuide : MonoBehaviour
     static CraftingGuide instance;
 
     private CanvasGroup group;
+    private RectTransform panelRect;
     private Coroutine fading;
 
     public static void Show() => Get().FadeTo(1f);
@@ -60,6 +62,14 @@ public class CraftingGuide : MonoBehaviour
         fading = null;
     }
 
+    // Clear of the objective panel (TutorialHud), however tall it's grown.
+    void LateUpdate()
+    {
+        float middle = ((RectTransform)transform).rect.height * 0.5f;
+        float top = Mathf.Max(middle - 40f - panelRect.rect.height * 0.5f, TutorialHud.ObjectiveBottom + 24f);
+        panelRect.anchoredPosition = new Vector2(56f, -top);
+    }
+
     void Build()
     {
         var canvas = gameObject.AddComponent<Canvas>();
@@ -72,9 +82,9 @@ public class CraftingGuide : MonoBehaviour
 
         // The panel, sized to fit what's in it.
         Image panel = GameUI.Sliced("Panel", transform, GameUI.PanelSprite, new Color(1f, 1f, 1f, 0.92f));
-        RectTransform rect = panel.rectTransform;
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0.5f);
-        rect.anchoredPosition = new Vector2(56f, 40f);
+        RectTransform rect = panelRect = panel.rectTransform;
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(56f, -360f);
         var column = panel.gameObject.AddComponent<VerticalLayoutGroup>();
         column.padding = new RectOffset(24, 24, 18, 20);
         column.spacing = 10f;

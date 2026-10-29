@@ -18,6 +18,8 @@ using UnityEngine;
 public class ChapterOneDirector : MonoBehaviour
 {
     public PlayerController player;
+    [Tooltip("The rooms with a TV on the wall (StationTV), by their markers in the layout.")]
+    public string tvRooms = "ohkm";
     [Tooltip("Where the player walks to on their way in, before they're given control.")]
     public Transform walkInTarget;
     public CrewMember greeter;
@@ -46,7 +48,7 @@ public class ChapterOneDirector : MonoBehaviour
     [TextArea] public string[] pipHello =
     {
         "^Bzzt! Pip online! I'm your suit's Personal Integrated Pal",
-        "Control room's pinned on your map, so hit [M] if you get lost!",
+        "!Control room's pinned on your map, so hit [M] if you get lost!",
     };
     [Tooltip("Has the technician open the map and look before the control room's the objective. Off to keep Chapter 1 short.")]
     public bool requireMapLook = false;
@@ -104,6 +106,8 @@ public class ChapterOneDirector : MonoBehaviour
 
     IEnumerator Start()
     {
+        // The station's TVs, showing its feed: where Sonny will show itself, once it's on (SonnyBroadcast).
+        SonnyBroadcast.PlaceTVs(tvRooms, false);
         TutorialHud hud = TutorialHud.Get();
         hud.SetFade(1f);
         if (player != null) player.SetScriptedInput(Vector2.zero, false);

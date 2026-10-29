@@ -180,10 +180,37 @@ public static class SoundDefaults
         new Entry("Robot Beep", SoundCategory.SoundEffect, 0.35f, "A robot beeping to itself on its rounds, every so often, and when it goes to look at something. Pitch varies." + MadeInSfx),
         new Entry("Robot Shorted", SoundCategory.SoundEffect, 0.6f, "A robot shorted out by the EMP: fizzing and sputtering." + MadeInSfx),
         new Entry("Wall Breach", SoundCategory.SoundEffect, 1f, "A robot bursting out through a wall: a slam and rubble pouring down." + MadeInSfx),
+        new Entry("Angel Footsteps", SoundCategory.SoundEffect, 0.9f, "The weeping angel's heavy metal feet, the only warning it's near. "
+            + "Panned to its side and louder the closer it is. Without a clip, the player's footsteps slowed down under a clank made in code."),
         new Entry("Wall Grab", SoundCategory.SoundEffect, 0.9f, "The robot out of the wall clamping onto the player.", Magnetic + "/Magnetic hit 07.wav"),
         new Entry("Grab Struggle", SoundCategory.SoundEffect, 0.6f, "Each press of E fighting the wall grab: metal grinding.", Magnetic + "/Magnetic hit 04.wav"),
         new Entry("Grab Squeeze", SoundCategory.SoundEffect, 0.7f, "The wall grab squeezing when the player stops fighting it: servos crushing down." + MadeInSfx),
         new Entry("Break Free", SoundCategory.SoundEffect, 0.9f, "Tearing free of the wall grab: a heavy clang.", Magnetic + "/Magnetic hit 05.wav"),
+    };
+
+    // Chapter 2's station, now Sonny's: the camera spiders (CameraSpider), its TVs (StationTV), the dead crew on the PA
+    // (CrewEchoes), being dragged back (DraggedBack), and the sounds with nothing there to make them (Unexplained).
+    public static readonly Entry[] Haunting =
+    {
+        new Entry("Spider Step", SoundCategory.SoundEffect, 0.35f, "A camera spider's metal foot set down on the deck: a small clank. Panned to its side and louder the closer it is.",
+            Magnetic + "/Magnetic hit 06.wav"),
+        new Entry("Spider Crawl", SoundCategory.SoundEffect, 0.6f, "A camera spider's legs going all at once: a clatter with each burst when it skitters, and quietly now and then as it creeps.",
+            Sfx + "/metalcrawl1.mp3", Sfx + "/metalcrawl2.mp3"),
+        new Entry("Spider Twitch", SoundCategory.SoundEffect, 0.7f, "A camera spider's eyes all snapping round at once: camera servos.", Sfx + "/camrea.wav"),
+        new Entry("Spider Shriek", SoundCategory.SoundEffect, 0.9f, "A camera spider sure of the player and coming: metal grinding and squealing." + MadeInCode),
+        new Entry("TV Static", SoundCategory.SoundEffect, 0.4f, "A station TV catching a signal or losing it: a burst of hiss.", Sfx + "/30334__erh__radio-noise-1.wav"),
+        new Entry("Sonny Word", SoundCategory.SoundEffect, 0.6f, "Each word Sonny puts up on the TVs: a flat, clipped machine tone." + MadeInCode),
+        new Entry("Dragged Scrape", SoundCategory.SoundEffect, 0.7f, "The technician dragged a little way along the deck in the dark, after being caught.", Sfx + "/ventscrape.mp3"),
+        new Entry("Dragged Clank", SoundCategory.SoundEffect, 0.7f, "Dumped on the deck at the end of being dragged back.", Magnetic + "/Magnetic hit 01.wav"),
+        new Entry("Unexplained Drag", SoundCategory.SoundEffect, 0.5f, "Something heavy dragged across the deck a few rooms off. Muffled.", Sfx + "/ventscrape.mp3"),
+        new Entry("Unexplained Knock", SoundCategory.SoundEffect, 0.6f, "One knock inside the wall right beside the player; played three times." + MadeInCode),
+        new Entry("Unexplained Skitter", SoundCategory.SoundEffect, 0.5f, "Lots of metal feet running past behind a bulkhead. Muffled.", Sfx + "/metalcrawl2.mp3"),
+        new Entry("Hull Creak", SoundCategory.SoundEffect, 0.5f, "The hull groaning as the sun heats it. Muffled.", Sfx + "/ventcreak.mp3"),
+        new Entry("Distant Thud", SoundCategory.SoundEffect, 0.6f, "Something heavy coming down somewhere far off. Muffled.", Magnetic + "/Magnetic bass once 01.wav"),
+        new Entry("Overhead Steps", SoundCategory.SoundEffect, 0.45f, "Heavy steps crossing the deck overhead, five of them." + MadeInCode),
+        new Entry("PA Chime", SoundCategory.SoundEffect, 0.6f, "The station speakers coming on for a dead crew member's voice." + MadeInCode),
+        new Entry("PA Hum", SoundCategory.SoundEffect, 0.4f, "The speakers left open, listening.", Sfx + "/700008__newlocknew__scimisc_low-steady-hum-2_em.wav"),
+        new Entry("PA Click", SoundCategory.SoundEffect, 0.6f, "The speakers closing." + MadeInCode),
     };
 
     // The sets offered by the inspector's Add Defaults menu.
@@ -191,7 +218,7 @@ public static class SoundDefaults
     {
         ("Tutorial", new[] { Player, Tutorial, Sonny, Combat }),
         ("Chapter 1", new[] { Player, Floor, Sonny, ChapterOne, Combat }),
-        ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents, Combat }),
+        ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents, Combat, Haunting }),
         ("Combat", new[] { Combat }),
         ("Vents", new[] { Vents }),
         ("Floor (1 or 2)", new[] { Player, Floor }),

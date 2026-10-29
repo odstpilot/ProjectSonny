@@ -5,8 +5,9 @@ using UnityEngine.Rendering.Universal;
 // A way to go, pointed out in the level: a faint arrow bobbing just in front of a doorway, pointing into it, and a soft
 // pulse of light on the floor there, a nudge rather than a sign. Shown over any number of doorways at once (Show),
 // until Hide.
-// Between those, it follows the room pinned on the map (MapScreen.SetTarget calls Follow): the next door on the way
-// there from whichever room the player's in, or the stairs if the room's on the other floor, until they're in it.
+// Between those, it follows the room pinned on the map (MapScreen.SetTarget calls Follow): only the next step on the way
+// there from whichever room the player's in, a door or the stairs, worked out across every floor (Route) so it never
+// points off the way, until they're in it. The map picks out the same stairs (StairsOnTheWay).
 // Made in code, so there's nothing to set up; one shared by whatever needs it.
 public class ObjectiveHighlight : MonoBehaviour
 {
@@ -79,72 +80,128 @@ public class ObjectiveHighlight : MonoBehaviour
         Add(middle - toward * StandOff, toward);
     }
 
-    // Following the pin: the next door to take from the room the player's in, on the shortest way through the doors to
-    // the pinned room (or, with that room on the other floor, to the stairs off this one, and then the stairs
-    // themselves). Nothing once they're in it, inside the ducts, or with nothing pinned.
+    // A room somewhere in the station: its floor and its marker. A null floor is somewhere off in another scene.
+    public struct Place : System.IEquatable<Place>
+    {
+        public StationMap floor;
+        public char room;
+        public Place(StationMap floor, char room) { this.floor = floor; this.room = room; }
+        public bool Equals(Place other) => floor == other.floor && room == other.room;
+        public override bool Equals(object other) => other is Place place && Equals(place);
+        public override int GetHashCode() => (floor != null ? floor.GetHashCode() : 0) * 31 + room;
+    }
+
+    // One step on the way: through a door, or up or down stairs, from one room to another.
+    public struct Way
+    {
+        public Place from, to;
+        public Teleporter door;
+        public Stairway stair;
+    }
+
+    static bool PlaceOf(Vector2 at, out Place place)
+    {
+        bool found = StationMap.Find(at, out StationMap floor, out StationMap.Room room);
+        place = found ? new Place(floor, room.marker) : default;
+        return found;
+    }
+
+    // The way from where the player is to the pinned room, wherever it is in the station, a door or stairs at a time,
+    // so nothing gets pointed out that doesn't lead there. Empty once they're in it, inside the ducts, with nothing
+    // pinned, or with no way there at all. Doors the badge won't open and stairs locked for now are only taken when
+    // there's no other way, since they're still the way to go (the reactor's stairs, down to the control room).
+    public static List<Way> Route()
+    {
+        var none = new List<Way>();
+        GameObject found = GameObject.FindWithTag("Player");
+        if (following == '\0' || found == null || VentNetwork.IsPlayerInside) return none;
+        if (!PlaceOf(found.transform.position, out Place here) || here.room == following) return none;
+
+        // Where it ends: the pinned room, or, with it on no floor in this scene, stairs off to another.
+        bool inScene = false;
+        foreach (StationMap floor in StationMap.All)
+            if (floor.RoomByMarker(following) != null) inScene = true;
+        bool Goal(Place place) => inScene ? place.floor != null && place.room == following : place.floor == null;
+
+        var open = new List<Way>();
+        var all = new List<Way>();
+        foreach (Teleporter door in FindObjectsByType<Teleporter>())
+        {
+            if (door.locked || door.teleportTarget == null) continue;
+            if (!PlaceOf(door.transform.position, out Place from) || !PlaceOf(door.teleportTarget.position, out Place to) || from.Equals(to)) continue;
+            var way = new Way { from = from, to = to, door = door };
+            all.Add(way);
+            if (door.HasAccess) open.Add(way);
+        }
+        foreach (Stairway stair in FindObjectsByType<Stairway>())
+        {
+            if (!PlaceOf(stair.transform.position, out Place from)) continue;
+            Place to = default;
+            if (stair.destination != null)
+            {
+                Transform end = stair.destination.arrival != null ? stair.destination.arrival : stair.destination.transform;
+                if (!PlaceOf(end.position, out to)) continue;
+            }
+            else if (string.IsNullOrEmpty(stair.targetScene)) continue;
+            var way = new Way { from = from, to = to, stair = stair };
+            all.Add(way);
+            if (!stair.locked) open.Add(way);
+        }
+
+        List<Way> route = Search(here, open, Goal);
+        return route.Count > 0 ? route : Search(here, all, Goal);
+    }
+
+    // Breadth first from where they are, remembering how each room was first reached; then back along that.
+    static List<Way> Search(Place here, List<Way> ways, System.Func<Place, bool> goal)
+    {
+        var cameBy = new Dictionary<Place, Way>();
+        var seen = new HashSet<Place> { here };
+        var queue = new Queue<Place>();
+        queue.Enqueue(here);
+        while (queue.Count > 0)
+        {
+            Place room = queue.Dequeue();
+            foreach (Way way in ways)
+            {
+                if (!way.from.Equals(room) || !seen.Add(way.to)) continue;
+                cameBy[way.to] = way;
+                if (goal(way.to))
+                {
+                    var route = new List<Way>();
+                    for (Place at = way.to; !at.Equals(here); at = cameBy[at].from) route.Insert(0, cameBy[at]);
+                    return route;
+                }
+                if (way.to.floor != null) queue.Enqueue(way.to);
+            }
+        }
+        return new List<Way>();
+    }
+
+    // The stairs to take off this floor on the way to the pinned room, and whether they go up, for the map. Null if
+    // the way there doesn't leave this floor.
+    public static Stairway StairsOnTheWay(StationMap floor, out bool up)
+    {
+        up = false;
+        foreach (Way way in Route())
+        {
+            if (way.stair == null || way.from.floor != floor) continue;
+            up = way.to.floor != null ? way.to.floor.Number > floor.Number : way.stair.name.Contains("Up");
+            return way.stair;
+        }
+        return null;
+    }
+
+    // Following the pin: the next door to take, or the stairs, if that's the next step.
     void PointTheWay()
     {
         var doors = new List<Teleporter>();
         var stairs = new List<Stairway>();
-        StationMap map = StationMap.Current;
-        GameObject found = GameObject.FindWithTag("Player");
-        char RoomOf(Vector2 at) => map.Locate(at, out _, out StationMap.Room room) ? room.marker : '\0';
-        char here = map != null && found != null ? RoomOf(found.transform.position) : '\0';
-        if (following != '\0' && here != '\0' && here != following && !VentNetwork.IsPlayerInside)
+        List<Way> route = Route();
+        if (route.Count > 0)
         {
-            // The rooms on this floor and the doors between them.
-            var ways = new List<(char from, char to, Teleporter door)>();
-            foreach (Teleporter door in FindObjectsByType<Teleporter>())
-            {
-                if (door.locked || door.teleportTarget == null) continue;
-                char from = RoomOf(door.transform.position), to = RoomOf(door.teleportTarget.position);
-                if (from != '\0' && to != '\0' && from != to) ways.Add((from, to, door));
-            }
-            // Where it ends: the pinned room, or the rooms with stairs off this floor if the room's on the other one.
-            var goals = new HashSet<char>();
-            var stairsIn = new Dictionary<char, List<Stairway>>();
-            if (map.RoomByMarker(following) != null) goals.Add(following);
-            else
-            {
-                foreach (Stairway stair in FindObjectsByType<Stairway>())
-                {
-                    if (stair.locked || stair.destination == null) continue;
-                    char room = RoomOf(stair.transform.position);
-                    if (room == '\0') continue;
-                    goals.Add(room);
-                    if (!stairsIn.TryGetValue(room, out List<Stairway> list)) stairsIn[room] = list = new List<Stairway>();
-                    list.Add(stair);
-                }
-            }
-
-            if (goals.Contains(here)) { if (stairsIn.TryGetValue(here, out List<Stairway> inHere)) stairs.AddRange(inHere); }
-            else
-            {
-                // Breadth first from where they are, remembering which room each was first reached from.
-                var cameFrom = new Dictionary<char, char> { [here] = here };
-                var queue = new Queue<char>();
-                queue.Enqueue(here);
-                char reached = '\0';
-                while (queue.Count > 0 && reached == '\0')
-                {
-                    char room = queue.Dequeue();
-                    foreach ((char from, char to, Teleporter _) in ways)
-                    {
-                        if (from != room || cameFrom.ContainsKey(to)) continue;
-                        cameFrom[to] = room;
-                        if (goals.Contains(to)) { reached = to; break; }
-                        queue.Enqueue(to);
-                    }
-                }
-                if (reached != '\0')
-                {
-                    // Back along the way to the first room past this one; the doors from here into it.
-                    char next = reached;
-                    while (cameFrom[next] != here) next = cameFrom[next];
-                    foreach ((char from, char to, Teleporter door) in ways)
-                        if (from == here && to == next) doors.Add(door);
-                }
-            }
+            if (route[0].door != null) doors.Add(route[0].door);
+            else stairs.Add(route[0].stair);
         }
 
         var key = new System.Text.StringBuilder();

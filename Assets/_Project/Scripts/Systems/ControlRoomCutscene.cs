@@ -348,7 +348,8 @@ public class ControlRoomCutscene : MonoBehaviour
             if (sonnySays)
             {
                 if (chief != null) chief.FaceTowards(sonny.transform.position);
-                yield return hud.Say(sonnySpeaker, line, slip ? 2.2f : 1.4f);
+                // On the screens, a word at a time (SonnyBroadcast); a slip is the rogue one showing through.
+                yield return SonnyBroadcast.Say(line, slip ? 2.2f : 1.4f, slip);
                 if (slip) yield return Wait(1f);        // an uncomfortable pause
                 continue;
             }

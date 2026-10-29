@@ -33,7 +33,7 @@ public class StorageEscape : MonoBehaviour
     [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily; [W] shows a key.")]
     [TextArea] public string[] pipDoorJammed = { "~It's jammed, take the vent on the floor" };
     [Tooltip("Pip, on how to get about in the ducts, said once the vent's been pointed out.")]
-    [TextArea] public string[] pipVentHowTo = { "[W] crawls and [A] and [D] turn, hold [C] to go slow and quiet" };
+    [TextArea] public string[] pipVentHowTo = { "![W] crawls and [A] and [D] turn, hold [C] to go slow and quiet" };
     public string objectiveVent = "Crawl through the vent";
 
     [Header("Out the other side")]

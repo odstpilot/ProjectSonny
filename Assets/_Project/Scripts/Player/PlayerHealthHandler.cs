@@ -10,8 +10,9 @@ using UnityEngine.Rendering.Universal;
 //   be paused from here too (PauseMenu).
 //   Dying: a flatline. Time slows to a crawl, the camera closes in, the colour drains out, and the body falls. Then the
 //   screen cuts to Sonny's monitor (DeathScreen), where the player's life signs flatline under a line from Sonny, and the
-//   rest of the game goes silent. Any key restores the signal: static, and the player is back at RespawnPoint (the last
-//   checkpoint) with full health and a moment of invincibility.
+//   rest of the game goes silent. Any key restores the signal: static, then the dark, and the bots drag what's left of
+//   the technician back to RespawnPoint (the last checkpoint; DraggedBack), where they come to on the floor with full
+//   health, one of them rolling away, and get up.
 [RequireComponent(typeof(Health))]
 public class PlayerHealthHandler : MonoBehaviour
 {
@@ -60,6 +61,9 @@ public class PlayerHealthHandler : MonoBehaviour
     public float autoContinueAfter = 15f;
     [Tooltip("Seconds of invincibility after coming back.")]
     public float respawnInvincibility = 1.5f;
+    [Tooltip("Coming back, they're dragged there in the dark and wake on the floor with a bot rolling away (DraggedBack). " +
+             "Off, they're just standing there when the static clears.")]
+    public bool draggedBack = true;
 
     // Where the player comes back after dying: where they started the scene, until a checkpoint moves it.
     public Vector3 RespawnPoint
@@ -229,7 +233,10 @@ public class PlayerHealthHandler : MonoBehaviour
         AudioListener.pause = false;
         AudioClip staticClip = SoundManager.Clip(staticSound);
         if (staticClip != null) StartCoroutine(PlayFor(staticClip, 0.6f));
+        // The monitor goes, and it's dark under it: dragged back, in the dark, and coming to on the floor.
+        if (draggedBack) DraggedBack.Blackout();
         yield return screen.Hide();
+        if (draggedBack) yield return DraggedBack.Run(this, spawnPosition, held: true);
 
         SetFrozen(false);
         IsDying = false;
@@ -278,6 +285,9 @@ public class PlayerHealthHandler : MonoBehaviour
         deathEffects.weight = 0f;
         deathEffects.sharedProfile = profile;
     }
+
+    // The player held still for something done to them that isn't dying, like being dragged back (DraggedBack).
+    public void Hold(bool hold) => SetFrozen(hold);
 
     // Turns off movement, combat, and animation, remembering what was on so exactly that comes back.
     void SetFrozen(bool freeze)

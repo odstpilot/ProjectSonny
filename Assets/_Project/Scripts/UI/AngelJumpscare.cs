@@ -25,6 +25,9 @@ public class AngelJumpscare : MonoBehaviour
 
     public static bool Playing => instance != null && instance.playing != null;
 
+    // Real seconds from the catch until the face is gone and it's black, for anything to be done out of sight then.
+    public const float ToBlack = LungeSeconds + HoldSeconds;
+
     public static void Play(Sprite faceSprite)
     {
         if (instance == null)

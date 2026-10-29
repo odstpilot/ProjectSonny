@@ -89,6 +89,16 @@ public class StationLight : MonoBehaviour
     public bool IsBroken { get; private set; }
     public Vector2 FixturePoint => (Vector2)transform.position + fixtureOffset;
 
+    // For the view from inside a locker (FirstPersonView): how bright one of its lights is while it's on, leaving out
+    // any flicker; 0 while it's off or broken.
+    public float SteadyIntensity(Light2D light)
+    {
+        if (!IsOn || IsBroken) return 0f;
+        if (light == lamp) return baseIntensity;
+        int extra = System.Array.IndexOf(extras, light);
+        return extra >= 0 ? extraIntensities[extra] : light.intensity;
+    }
+
     static float lastRumbleBreak = -10f;
     static Sprite frameSprite;
     static Sprite glassSprite;

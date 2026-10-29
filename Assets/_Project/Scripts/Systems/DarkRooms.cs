@@ -17,6 +17,8 @@ public class DarkRooms : MonoBehaviour
     public string rooms = "hbvmcodgr";
     [Tooltip("How much of the light is left in them.")]
     [Range(0f, 1f)] public float darkness = 0.1f;
+    [Tooltip("How much of the station's light there is anywhere, dark rooms or not (StationGloom turns it down).")]
+    [Range(0f, 1f)] public float lit = 1f;
     [Tooltip("Seconds the light takes to go, or come back.")]
     public float fadeSeconds = 0.7f;
     [Tooltip("What the bots can see in the dark, as a fraction of their sight range.")]
@@ -91,7 +93,7 @@ public class DarkRooms : MonoBehaviour
         float target = inBlackout ? 0f : inDark ? darkness : 1f;
         level = Mathf.MoveTowards(level, target, Time.deltaTime / Mathf.Max(0.01f, fadeSeconds) * (1f - darkness));
         foreach ((Light2D light, float intensity) in station)
-            if (light != null) light.intensity = intensity * level;
+            if (light != null) light.intensity = intensity * level * lit;
         // The suit's glow, coming up as the light goes, and out altogether in a blackout.
         if (suit != null)
         {

@@ -70,6 +70,11 @@ public class EmpPulse : MonoBehaviour
             robot.Emp(data.robotShortSeconds);
             HitEffects.Sparks(robot.transform.position, Vector2.up, 10, 4f, 360f, data.empCoreColor, data.empColor);
         }
+        foreach (CameraSpider spider in CameraSpider.All)
+        {
+            if (!InCone(spider.transform.position)) continue;
+            spider.Emp(data.robotShortSeconds);
+        }
         foreach (StationCamera watcher in StationCamera.All)
         {
             // Its eye on the floor, or the housing up on the wall: either in the cone counts.

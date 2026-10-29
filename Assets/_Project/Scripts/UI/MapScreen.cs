@@ -8,10 +8,13 @@ using UnityEngine.UI;
 // it. It's the floor's plan (StationMap) drawn as a blueprint on a dark blue screen: each room's floor with a bright edge,
 // the doorways between rooms, the ship entrance in red and the stairs striped, the room they're in lit up, and a
 // blinking dot where they are. The room they're headed for, if there is one (SetTarget), is picked out in amber with a
-// pin over it.
+// pin over it; with it on another floor, the stairs to take off this one are, the pin saying up or down.
 //
 // WASD or the arrow keys (or dragging with the mouse) look around, the scroll wheel (or Q and E) zooms in on the
 // pointer, and Space goes back to where they are. The game's paused while it's open. Everything runs on unscaled time.
+// It's on the suit's wrist unit, not the game's: opening it, the technician raises their forearm into view, the unit
+// tilting up from the bottom left corner with the station dimmed behind it, and only then does its screen switch on.
+// It runs on the suit's power (SuitDisplay), so in a blacked-out room it won't come on at all.
 // Built from code the first time it opens, so there's no canvas to set up. One per scene: MapScreen.Get(), made by the
 // scene's StationMap.
 public class MapScreen : MonoBehaviour
@@ -22,12 +25,20 @@ public class MapScreen : MonoBehaviour
     const float DefaultZoom = 1.6f;
     const float MaxZoom = 3.5f;
     const float PanSpeed = 1100f;               // canvas units a second, with the keys
-    const float OpenTime = 0.2f;
-    const float CloseTime = 0.14f;
+    const float OpenTime = 0.38f;               // the arm coming up, then the screen switching on
+    const float CloseTime = 0.2f;
+    const float ScreenOnFrom = 0.55f;           // how far through opening the screen starts switching on
+    static readonly Vector2 Lowered = new Vector2(-260f, -760f);    // where the unit is, down by their side
+    const float LoweredTilt = -14f;
+    const float NoPowerLineGap = 4f;            // seconds between the technician remarking the map's dead
     const float GridMargin = 60f;               // cells of grid past the plan on every side
     const KeyCode MapKey = KeyCode.M;
 
-    static readonly Color Backdrop = new Color(0.01f, 0.02f, 0.05f, 1f);
+    static readonly Color Backdrop = new Color(0.01f, 0.02f, 0.05f, 0.82f);     // the station, dimmed, behind the arm
+    static readonly Color Casing = new Color(0.14f, 0.16f, 0.19f);              // the wrist unit
+    static readonly Color SuitWhite = new Color(0.84f, 0.86f, 0.88f);           // the sleeve it's strapped to
+    static readonly Color SuitShade = new Color(0.62f, 0.65f, 0.7f);
+    static readonly Color SuitRed = new Color(0.78f, 0.2f, 0.18f);
     static readonly Color ScreenColor = new Color(0.02f, 0.05f, 0.11f, 1f);
     static readonly Color GridColor = new Color(0.25f, 0.5f, 0.9f, 0.09f);
     static readonly Color32 FloorColor = new Color32(16, 36, 72, 255);
@@ -47,6 +58,9 @@ public class MapScreen : MonoBehaviour
     static char targetMarker;
     static string targetLabel = "";
 
+    [Tooltip("What the technician says trying to open the map with the suit's power gone.")]
+    public string noPowerLine = "Map's dead... no power to it";
+
     public static bool IsOpen => instance != null && instance.open;
     public static event System.Action Opened;
     public static event System.Action Closed;
@@ -59,6 +73,10 @@ public class MapScreen : MonoBehaviour
     private bool heldPlayer;
 
     private CanvasGroup group;
+    private RectTransform device;               // the wrist unit, sleeve and all
+    private Vector2 devicePlace;                // where it sits, raised
+    private Image deviceLight;
+    private float noPowerSaidAt = -10f;
     private RectTransform viewport;
     private RectTransform content;
     private RawImage plan;
@@ -70,6 +88,7 @@ public class MapScreen : MonoBehaviour
     private Image targetFill;
     private RectTransform targetPin;
     private TextMeshProUGUI targetText;
+    private float pinTop;                       // where the pin sits, over the top of the room or stairs picked out
     private RectTransform you;
     private RawImage youRing;
     private Image youDot;
@@ -130,7 +149,18 @@ public class MapScreen : MonoBehaviour
 
     public void Open()
     {
-        if (open || !CanOpen()) return;
+        if (open) return;
+        // No power, no map: the screen stays dead, and the technician says so (not every press).
+        if (!SuitDisplay.Powered && SuitFeatures.Has(SuitFeatures.Feature.Map))
+        {
+            if (Time.unscaledTime - noPowerSaidAt > NoPowerLineGap)
+            {
+                noPowerSaidAt = Time.unscaledTime;
+                TechnicianVoice.Say(noPowerLine, 1.8f);
+            }
+            return;
+        }
+        if (!CanOpen()) return;
         Build();
         Canvas.ForceUpdateCanvases();
         open = true;
@@ -178,13 +208,24 @@ public class MapScreen : MonoBehaviour
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
         {
             float p = Mathf.SmoothStep(0f, 1f, t / seconds);
-            group.alpha = Mathf.Lerp(from, to, p);
-            // Switches on like a screen: squashed to a line, then out to full height.
-            viewport.localScale = new Vector3(1f, opening ? Mathf.Lerp(0.02f, 1f, p) : Mathf.Lerp(1f, 0.02f, p), 1f);
+            group.alpha = opening ? Mathf.Lerp(from, to, Mathf.Clamp01(p * 3f)) : Mathf.Lerp(from, to, Mathf.Clamp01((p - 0.4f) / 0.6f));
+            // The arm comes up into view and the unit tilts level; putting it away, it drops back down.
+            Raise(opening ? TitleUI.EaseOut(Mathf.Clamp01(t / (seconds * ScreenOnFrom))) : 1f - p);
+            // Then the screen switches on like a screen: squashed to a line, then out to full height. Off, the other way.
+            float screen = opening ? Mathf.InverseLerp(ScreenOnFrom, 1f, p) : 1f - Mathf.Clamp01(p * 2.5f);
+            viewport.localScale = new Vector3(1f, Mathf.Lerp(0.02f, 1f, screen), 1f);
             yield return null;
         }
         group.alpha = to;
+        Raise(opening ? 1f : 0f);
         viewport.localScale = Vector3.one;
+    }
+
+    // How far the wrist unit's raised: 0 down by their side, 1 up in front of them.
+    void Raise(float up)
+    {
+        device.anchoredPosition = devicePlace + Vector2.Lerp(Lowered, Vector2.zero, up);
+        device.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(LoweredTilt, 0f, up));
     }
 
     // --- Every frame ---
@@ -211,6 +252,8 @@ public class MapScreen : MonoBehaviour
 
         float dt = Time.unscaledDeltaTime;
         float perCell = zoom * CellSize;
+        // The unit's status light, blinking away while it's on.
+        deviceLight.color = TitleUI.Fade(GameUI.Green, Mathf.Repeat(Time.unscaledTime, 1.2f) < 0.8f ? 1f : 0.25f);
 
         var keys = new Vector2(
             (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f),
@@ -331,7 +374,7 @@ public class MapScreen : MonoBehaviour
         {
             float pulse = 0.5f + 0.5f * Mathf.Sin(time * 4f);
             targetFill.color = TitleUI.Fade(TargetColor, Mathf.Lerp(0.06f, 0.2f, pulse));
-            targetPin.anchoredPosition = new Vector2(targetPin.anchoredPosition.x, TargetPinY() + Mathf.Round(pulse * 2f) * 3f * (1f / zoom));
+            targetPin.anchoredPosition = new Vector2(targetPin.anchoredPosition.x, pinTop + Mathf.Round(pulse * 2f) * 3f * (1f / zoom));
         }
     }
 
@@ -351,6 +394,14 @@ public class MapScreen : MonoBehaviour
             here = inRoom;
         }
         StationMap.Room goal = targetMarker != '\0' ? map.RoomByMarker(targetMarker) : null;
+        // The room's on another floor: the stairs off this one on the way there, picked out the same way.
+        RectInt? stairs = null;
+        bool up = false;
+        if (goal == null && targetMarker != '\0')
+        {
+            Stairway stair = ObjectiveHighlight.StairsOnTheWay(map, out up);
+            if (stair != null && map.Locate(stair.transform.position, out Vector2 stairAt, out _)) stairs = StairsAround(map, stairAt);
+        }
 
         if (drawnFrom != map) BuildRooms(map);
         PaintPlan(map, here, goal);
@@ -360,24 +411,55 @@ public class MapScreen : MonoBehaviour
         foreach ((TextMeshProUGUI label, StationMap.Room room) in roomLabels)
             label.color = room == here ? GameUI.Text : room == goal ? TargetColor : LabelColor;
 
-        target.gameObject.SetActive(goal != null);
-        targetPin.gameObject.SetActive(goal != null);
-        if (goal != null)
+        RectInt? picked = goal != null ? goal.drawn : stairs;
+        target.gameObject.SetActive(picked.HasValue);
+        targetPin.gameObject.SetActive(picked.HasValue);
+        if (picked.HasValue)
         {
-            target.anchoredPosition = new Vector2(goal.drawn.x * CellSize, -goal.drawn.y * CellSize);
-            target.sizeDelta = new Vector2(goal.drawn.width * CellSize, goal.drawn.height * CellSize);
-            targetPin.anchoredPosition = new Vector2(goal.DrawnCenter.x * CellSize, TargetPinY());
-            targetText.text = targetLabel.ToUpperInvariant();
+            RectInt area = picked.Value;
+            target.anchoredPosition = new Vector2(area.x * CellSize, -area.y * CellSize);
+            target.sizeDelta = new Vector2(area.width * CellSize, area.height * CellSize);
+            pinTop = -area.y * CellSize + 6f;
+            targetPin.anchoredPosition = new Vector2((area.x + area.width * 0.5f) * CellSize, pinTop);
+            targetText.text = (goal != null ? targetLabel : $"STAIRS {(up ? "UP" : "DOWN")} TO {targetLabel}").ToUpperInvariant();
         }
 
         floorLabel.text = "//  " + map.floorName.ToUpperInvariant();
         hereLabel.text = here != null ? "YOU ARE IN  <color=#ffffff>" + here.name.ToUpperInvariant() + "</color>" : "";
     }
 
-    float TargetPinY()
+    // The stairs marked on the plan nearest a point on it, as the cells they cover, with a cell to spare round them so
+    // the highlight shows past the stripes. Null if the floor has none marked.
+    static RectInt? StairsAround(StationMap map, Vector2 onPlan)
     {
-        StationMap.Room goal = StationMap.Current != null ? StationMap.Current.RoomByMarker(targetMarker) : null;
-        return goal == null ? 0f : -goal.drawn.y * CellSize + 6f;
+        Vector2Int nearest = default;
+        float best = float.MaxValue;
+        for (int row = 0; row < map.height; row++)
+            for (int x = 0; x < map.width; x++)
+            {
+                if (map.MarkAt(x, row) != StationMap.Mark.Stairs) continue;
+                float distance = (new Vector2(x + 0.5f, row + 0.5f) - onPlan).sqrMagnitude;
+                if (distance < best) { best = distance; nearest = new Vector2Int(x, row); }
+            }
+        if (best == float.MaxValue) return null;
+
+        // Every stairs cell touching that one.
+        var seen = new HashSet<Vector2Int> { nearest };
+        var queue = new Queue<Vector2Int>();
+        queue.Enqueue(nearest);
+        int xMin = nearest.x, xMax = nearest.x, yMin = nearest.y, yMax = nearest.y;
+        while (queue.Count > 0)
+        {
+            Vector2Int cell = queue.Dequeue();
+            xMin = Mathf.Min(xMin, cell.x); xMax = Mathf.Max(xMax, cell.x);
+            yMin = Mathf.Min(yMin, cell.y); yMax = Mathf.Max(yMax, cell.y);
+            foreach (Vector2Int step in new[] { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down })
+            {
+                Vector2Int next = cell + step;
+                if (map.MarkAt(next.x, next.y) == StationMap.Mark.Stairs && seen.Add(next)) queue.Enqueue(next);
+            }
+        }
+        return new RectInt(xMin - 1, yMin - 1, xMax - xMin + 3, yMax - yMin + 3);
     }
 
     // The room names, and the plan's size, for this floor.
@@ -491,21 +573,80 @@ public class MapScreen : MonoBehaviour
         back.color = Backdrop;
         back.raycastTarget = false;
 
+        BuildDevice();
         BuildHeader();
         BuildViewport();
         BuildFooter();
+        devicePlace = device.anchoredPosition;
+        Raise(0f);
+    }
+
+    // The wrist unit: a dark casing with a chunky bezel, screws in its corners and a status light, strapped to the
+    // suit's white sleeve, which runs off the bottom of the screen. It tilts up from its bottom left corner, the wrist.
+    void BuildDevice()
+    {
+        // The sleeve, under the unit and on down out of view: white, a shade down one side, a red stripe like the suit's.
+        device = GameUI.Anchor(GameUI.NewRect("Wrist Unit", transform), 0f, 0f, 1f, 1f, 110f, 120f, 90f, 40f);
+        device.pivot = Vector2.zero;
+        // From just behind the unit's bottom edge to well past the bottom of the screen.
+        RectTransform sleeve = GameUI.Anchor(GameUI.NewRect("Sleeve", device), 0.2f, 0f, 0.8f, 0f, 0f, -520f, 0f, -30f);
+        Image cloth = sleeve.gameObject.AddComponent<Image>();
+        cloth.color = SuitWhite;
+        cloth.raycastTarget = false;
+        Image shade = GameUI.Anchor(GameUI.NewRect("Shade", sleeve), 0.8f, 0f, 1f, 1f).gameObject.AddComponent<Image>();
+        shade.color = SuitShade;
+        shade.raycastTarget = false;
+        Image stripe = GameUI.Anchor(GameUI.NewRect("Stripe", sleeve), 0.12f, 0f, 0.17f, 1f).gameObject.AddComponent<Image>();
+        stripe.color = SuitRed;
+        stripe.raycastTarget = false;
+        // Two straps holding the unit on.
+        foreach (float x in new[] { 0.28f, 0.66f })
+        {
+            Image strap = GameUI.Anchor(GameUI.NewRect("Strap", sleeve), x, 0f, x + 0.07f, 1f).gameObject.AddComponent<Image>();
+            strap.color = Casing;
+            strap.raycastTarget = false;
+        }
+
+        Image casing = GameUI.Sliced("Casing", device, GameUI.PanelSprite, Casing);
+        GameUI.Fill(casing.rectTransform, -24f);
+        casing.raycastTarget = false;
+        // A screw in each corner of the bezel, out past the screen.
+        foreach (Vector2 corner in new[] { Vector2.zero, Vector2.right, Vector2.up, Vector2.one })
+        {
+            RectTransform screw = GameUI.NewRect("Screw", device);
+            screw.anchorMin = screw.anchorMax = corner;
+            screw.pivot = new Vector2(0.5f, 0.5f);
+            screw.anchoredPosition = new Vector2(corner.x > 0f ? 12f : -12f, corner.y > 0f ? 12f : -12f);
+            screw.sizeDelta = Vector2.one * GameUI.PixelSize * 3f;
+            Image head = screw.gameObject.AddComponent<Image>();
+            head.color = new Color(0.32f, 0.35f, 0.4f);
+            head.raycastTarget = false;
+        }
+        // Its status light, up in the top right of the bezel, with what it's called.
+        RectTransform light = GameUI.NewRect("Status", device);
+        light.anchorMin = light.anchorMax = light.pivot = Vector2.one;
+        light.anchoredPosition = new Vector2(-34f, -14f);
+        light.sizeDelta = Vector2.one * GameUI.PixelSize * 3f;
+        deviceLight = light.gameObject.AddComponent<Image>();
+        deviceLight.color = GameUI.Green;
+        deviceLight.raycastTarget = false;
+        TextMeshProUGUI badge = GameUI.Label("Badge", device, "SUIT NAV  //  PIP", 16f, GameUI.Dim, TextAlignmentOptions.Right, GameUI.Heading);
+        badge.characterSpacing = 10f;
+        GameUI.Anchor(badge.rectTransform, 1f, 1f, 1f, 1f).pivot = new Vector2(1f, 1f);
+        badge.rectTransform.anchoredPosition = new Vector2(-52f, -4f);
+        badge.rectTransform.sizeDelta = new Vector2(400f, 28f);
     }
 
     void BuildHeader()
     {
-        TextMeshProUGUI title = GameUI.Label("Title", transform, "STATION MAP", 40f, GameUI.Cyan, TextAlignmentOptions.BottomLeft, GameUI.Heading);
+        TextMeshProUGUI title = GameUI.Label("Title", device, "STATION MAP", 40f, GameUI.Cyan, TextAlignmentOptions.BottomLeft, GameUI.Heading);
         title.characterSpacing = 14f;
         title.fontSharedMaterial = TitleUI.GlowMaterial(title.font, TitleUI.Fade(GameUI.Cyan, 0.35f), 0.6f, 0.25f);
         GameUI.Anchor(title.rectTransform, 0f, 1f, 0f, 1f).pivot = new Vector2(0f, 0f);
         title.rectTransform.anchoredPosition = new Vector2(70f, -96f);
         title.rectTransform.sizeDelta = new Vector2(520f, 60f);
 
-        floorLabel = GameUI.Label("Floor", transform, "", 24f, GameUI.Dim, TextAlignmentOptions.BottomLeft, GameUI.Heading);
+        floorLabel = GameUI.Label("Floor", device, "", 24f, GameUI.Dim, TextAlignmentOptions.BottomLeft, GameUI.Heading);
         floorLabel.characterSpacing = 10f;
         GameUI.Anchor(floorLabel.rectTransform, 0f, 1f, 0f, 1f).pivot = new Vector2(0f, 0f);
         floorLabel.rectTransform.anchoredPosition = new Vector2(510f, -93f);
@@ -514,7 +655,7 @@ public class MapScreen : MonoBehaviour
 
     void BuildViewport()
     {
-        viewport = GameUI.Anchor(GameUI.NewRect("Screen", transform), 0f, 0f, 1f, 1f, 60f, 96f, 60f, 110f);
+        viewport = GameUI.Anchor(GameUI.NewRect("Screen", device), 0f, 0f, 1f, 1f, 60f, 96f, 60f, 110f);
         Image screen = viewport.gameObject.AddComponent<Image>();
         screen.color = ScreenColor;
         screen.raycastTarget = false;
@@ -629,13 +770,13 @@ public class MapScreen : MonoBehaviour
     // Along the bottom: where they are on the left, and the keys on the right.
     void BuildFooter()
     {
-        hereLabel = GameUI.Label("Here", transform, "", 26f, LabelColor, TextAlignmentOptions.Left, GameUI.Heading);
+        hereLabel = GameUI.Label("Here", device, "", 26f, LabelColor, TextAlignmentOptions.Left, GameUI.Heading);
         hereLabel.characterSpacing = 8f;
         GameUI.Anchor(hereLabel.rectTransform, 0f, 0f, 0.5f, 0f).pivot = new Vector2(0f, 0.5f);
         hereLabel.rectTransform.anchoredPosition = new Vector2(64f, 48f);
         hereLabel.rectTransform.sizeDelta = new Vector2(0f, 40f);
 
-        RectTransform keys = GameUI.NewRect("Keys", transform);
+        RectTransform keys = GameUI.NewRect("Keys", device);
         keys.anchorMin = keys.anchorMax = keys.pivot = new Vector2(1f, 0f);
         keys.anchoredPosition = new Vector2(-60f, 24f);
         var row = keys.gameObject.AddComponent<HorizontalLayoutGroup>();

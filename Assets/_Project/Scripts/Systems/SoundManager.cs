@@ -235,6 +235,7 @@ public class SoundManager : MonoBehaviour
             playing.fadeSpeed = 0f;
             if (playing.fadeTarget <= 0f) Stop(playing);
         }
+        ducked = Mathf.MoveTowards(ducked, DuckTo, DuckSpeed * Time.unscaledDeltaTime);
         UpdateVolumes();
     }
 
@@ -390,7 +391,21 @@ public class SoundManager : MonoBehaviour
 
     static float CategoryVolume(SoundCategory category)
     {
-        return category == SoundCategory.Music || category == SoundCategory.Ambience ? GameSettings.MusicVolume : GameSettings.EffectsVolume;
+        float volume = category == SoundCategory.Music || category == SoundCategory.Ambience ? GameSettings.MusicVolume : GameSettings.EffectsVolume;
+        return category == SoundCategory.Voice || category == SoundCategory.UI ? volume : volume * ducked;
+    }
+
+    // Everything but voices and UI turned down to this while someone's talking (Pip, SuitHelper sets it), eased into
+    // and out of, so what's said stands out over the music and the fighting. 1 for no change.
+    public static float DuckTo { get; set; } = 1f;
+    const float DuckSpeed = 1.5f;                 // volume a second
+    static float ducked = 1f;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetDuck()
+    {
+        DuckTo = 1f;
+        ducked = 1f;
     }
 
     static float RandomVolume(Sound sound)

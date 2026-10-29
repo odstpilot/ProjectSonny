@@ -26,6 +26,34 @@ public class SonnyScreen : MonoBehaviour
     private float switchedAt = -10f;
     private float seed;
 
+    public static IReadOnlyList<SonnyScreen> All => screens;
+
+    private TMPro.TextMeshPro word;
+
+    // A word across the screen while Sonny's saying something through it (SonnyBroadcast), or none.
+    public void ShowWord(string text)
+    {
+        if (word == null)
+        {
+            word = new GameObject("Word").AddComponent<TMPro.TextMeshPro>();
+            word.transform.SetParent(transform, false);
+            word.transform.localPosition = screenCenter;
+            word.rectTransform.sizeDelta = screenSize * 0.9f;
+            word.font = GameUI.Heading;
+            word.enableAutoSizing = true;
+            word.fontSizeMin = 0.5f;
+            word.fontSizeMax = 4f;
+            word.alignment = TMPro.TextAlignmentOptions.Center;
+            word.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            word.characterSpacing = 6f;
+            word.color = new Color(1f, 0.85f, 0.8f);
+            word.sortingLayerID = SortingLayer.NameToID(DepthSort.Layer);
+            word.sortingOrder = 11;
+        }
+        word.text = text ?? "";
+        word.gameObject.SetActive(!string.IsNullOrEmpty(text));
+    }
+
     // Every screen in the scene over to Sonny, or back.
     public static void SetAll(bool on)
     {

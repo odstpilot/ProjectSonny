@@ -15,8 +15,19 @@ using UnityEngine.UI;
 // letter, held long enough to read, then the next. Tell(lines) queues lines and carries on; yield return Say(lines)
 // waits until they've been said. A line starting with ^ is said happily (eyes squeezed shut, big smile), one starting
 // with ~ opens with a burst of static over Pip's face (something interfering), and a key in square brackets, like [M],
-// is picked out in amber. Both can go together: "~^".
+// is picked out in amber. One starting with ! is one they mustn't miss: it comes in with a chime and an amber edge
+// round the bubble, and stays up a good while longer than the rest, the clock only running while nothing's covering it
+// (a paused game, a screen over it), so it's there to read when they look. Nobody has to press anything to move Pip
+// on. They can go together, in that order: "~!^".
+// While Pip's talking, the music and sound effects are turned down a little (SoundManager.DuckTo), so it's heard.
 // Glitch() does the static on its own, if Pip's showing.
+//
+// Pip doesn't come through Chapter 2 in one piece (Condition, which lasts from scene to scene like SuitFeatures). Back
+// from the comms ring's blackout it's Damaged: lines open on static now and then, it stalls partway through them, and
+// its face flickers. In the reactor's radiation it's Failing as well: it can't smile any more, its voice sags, and a
+// line they don't have to hear (not a ! one) may be cut off partway or lost to static altogether. Die() is the end of
+// it: one last line that doesn't get finished, and it's Gone, never to come online again, so the technician faces
+// what's left alone.
 //
 // Built from code the first time something asks for it, like the tutorial HUD. It draws over the map (MapScreen), so it
 // can talk the technician through it, and stays out of the way of fades and title cards. Everything runs on unscaled
@@ -35,6 +46,14 @@ public class SuitHelper : MonoBehaviour
     const float LastLineLinger = 2f;            // how long Pip stays after the last line in the queue, before switching off
     const float SwitchTime = 0.18f;             // switching on or off, like an old screen
     const float ChirpFrequency = 880f;
+    const float KeyLineHold = 2f;               // how many times longer a key line stays up than any other
+    const float KeyLineMinimum = 5f;            // and never less than this many seconds, uncovered
+    const float DuckVolume = 0.7f;              // music and effects, while Pip's talking
+    const float DamagedStatic = 0.3f;           // chance a line opens on static, Damaged, without a ~
+    const float DamagedStall = 0.012f;          // chance, each letter typed, of stalling on static: Damaged
+    const float FailingStall = 0.03f;           // and Failing
+    const float FailingLost = 0.2f;             // chance a line they don't have to hear is lost to static, Failing
+    const float FailingCut = 0.3f;              // or cut off partway
 
     public static readonly Color PipColor = new Color(0.45f, 1f, 0.78f);
     static readonly Color ScreenTop = new Color(0.06f, 0.24f, 0.2f);
@@ -43,6 +62,22 @@ public class SuitHelper : MonoBehaviour
 
     enum Eyes { Open, Blink, Happy }
     enum Mouth { Closed, Open, Smile }
+
+    // How much of Pip is left. It only gets worse (Worsen), except starting over or picking up from a save.
+    public enum Condition { Fine, Damaged, Failing, Gone }
+    public static Condition Wear { get; set; }
+
+    public static void Worsen(Condition to)
+    {
+        if (to > Wear) Wear = to;
+    }
+
+    // Entering Play mode without reloading scripts keeps statics.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    public static void ResetWear() => Wear = Condition.Fine;
+
+    // Starts a line cut off partway, whatever the Wear: Pip's last words (Die).
+    const char CutMarker = '\u0003';
 
     static SuitHelper instance;
 
@@ -63,6 +98,7 @@ public class SuitHelper : MonoBehaviour
     private CanvasGroup bubbleGroup;
     private RectTransform bubble;
     private TextMeshProUGUI lineLabel;
+    private Outline keyEdge;                    // amber round the bubble, for a line they mustn't miss
     private AudioSource voice;
     private AudioClip chirp;
     private AudioClip chime;
@@ -72,6 +108,7 @@ public class SuitHelper : MonoBehaviour
     private int queuedCount;
     private int saidCount;
     private bool running;
+    private bool hushed;                        // let a key line go without holding it up
     private bool happy;
     private bool mouthOpen;
     private float blinkTimer = 2f;
@@ -100,7 +137,11 @@ public class SuitHelper : MonoBehaviour
 
     void OnDestroy()
     {
-        if (instance == this) instance = null;
+        if (instance == this)
+        {
+            instance = null;
+            SoundManager.DuckTo = 1f;
+        }
         if (noiseTexture != null) Destroy(noiseTexture);
     }
 
@@ -109,6 +150,7 @@ public class SuitHelper : MonoBehaviour
     // Queues the lines and carries on.
     public void Tell(params string[] lines)
     {
+        if (Wear == Condition.Gone) return;
         if (!Online) ComeOnline();
         foreach (string line in lines)
         {
@@ -161,9 +203,11 @@ public class SuitHelper : MonoBehaviour
         Said?.Invoke(shown);
     }
 
-    // Drops whatever hasn't been said yet; the line being said finishes.
+    // Drops whatever hasn't been said yet; the line being said finishes (a key line without waiting to be read: it's
+    // in the log).
     public void Hush()
     {
+        hushed = true;
         saidCount += queue.Count;
         queue.Clear();
     }
@@ -222,6 +266,7 @@ public class SuitHelper : MonoBehaviour
         StopAllCoroutines();
         running = false;
         hideRoutine = null;
+        keyEdge.enabled = false;
         if (!instant && present)
         {
             ShowBubble(false);
@@ -244,10 +289,24 @@ public class SuitHelper : MonoBehaviour
         root.gameObject.SetActive(false);
     }
 
+    // The last of Pip: what's left unsaid is dropped, then lastLine, cut off partway, and it goes offline for good
+    // (Gone). Nothing brings it back, and Exists is false from then on, so nothing else has it talk.
+    public IEnumerator Die(string lastLine)
+    {
+        if (Wear == Condition.Gone) yield break;
+        Hush();
+        while (running) yield return null;
+        Wear = Condition.Failing;
+        if (!string.IsNullOrWhiteSpace(lastLine)) yield return Say(CutMarker + lastLine.TrimStart(CutMarker));
+        Wear = Condition.Gone;
+        yield return GoOffline();
+    }
+
     // On without the start-up, for a scene that picks up after Pip's already been switched on. It stays out of sight
-    // until it's told something.
+    // until it's told something. Not once it's Gone.
     public void ComeOnline()
     {
+        if (Wear == Condition.Gone) return;
         Online = true;
         root.gameObject.SetActive(true);
         noise.enabled = false;
@@ -262,23 +321,74 @@ public class SuitHelper : MonoBehaviour
         while (queue.Count > 0)
         {
             string line = queue.Dequeue();
+            bool cut = line[0] == CutMarker;
+            if (cut) line = line.Substring(1);
             if (line.StartsWith("~"))
             {
                 line = line.Substring(1);
                 yield return GlitchRoutine(0.28f);
             }
+            else if (Wear >= Condition.Damaged && Random.value < DamagedStatic) yield return GlitchRoutine(Random.Range(0.2f, 0.45f));
+            bool key = line.StartsWith("!");
+            if (key) line = line.Substring(1);
             happy = line.StartsWith("^");
             if (happy) line = line.Substring(1).TrimStart();
+            // Failing, it can't manage a smile, and what they don't have to hear may not come through.
+            if (Wear >= Condition.Failing)
+            {
+                happy = false;
+                float roll = key || cut ? 1f : Random.value;
+                if (roll < FailingLost)
+                {
+                    ShowBubble(false);
+                    yield return GlitchRoutine(Random.Range(0.6f, 1f));
+                    saidCount++;
+                    continue;
+                }
+                cut |= roll < FailingLost + FailingCut;
+            }
+            if (cut) line = CutOff(line);
             Remember(line);
+            hushed = false;
+            keyEdge.enabled = key;
+            if (key && voice != null) SoundManager.PlayOneShot(voice, "Pip Chime", fallback: chime);
             ShowBubble(true);
             yield return TypeLine(Styled(line), true);
+            if (cut) yield return GlitchRoutine(0.5f);
             float hold = HoldBase + lineLabel.textInfo.characterCount * HoldPerLetter;
-            for (float t = 0f; t < hold; t += Time.unscaledDeltaTime) yield return null;
+            if (key) yield return HoldKeyLine(Mathf.Max(hold * KeyLineHold, KeyLineMinimum));
+            else
+                for (float t = 0f; t < hold; t += Time.unscaledDeltaTime) yield return null;
+            keyEdge.enabled = false;
             saidCount++;
         }
         happy = false;
         running = false;
         hideRoutine = StartCoroutine(HideWhenQuiet());
+    }
+
+    // A key line stays up longer, and only counts down while it can be seen: not while the game's paused or a screen's
+    // over it. Hushed, it goes at once.
+    IEnumerator HoldKeyLine(float seconds)
+    {
+        for (float t = 0f; t < seconds && !hushed;)
+        {
+            bool covered = Time.timeScale <= 0f || DialogueBox.Busy || GeneratorScreen.AnyOpen || SignalTuner.AnyOpen
+                           || DoctrineScreen.AnyOpen || CraftingScreen.IsOpen || PipLog.IsOpen || TipCard.IsOpen;
+            if (!covered) t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+    }
+
+    // A line broken off somewhere past a third of the way through, mid-word if it falls there, like "come b-". Never
+    // inside a [key].
+    static string CutOff(string line)
+    {
+        int at = Mathf.RoundToInt(line.Length * Random.Range(0.35f, 0.7f));
+        int open = line.LastIndexOf('[', Mathf.Max(0, at - 1));
+        if (open >= 0 && line.IndexOf(']', open) >= at) at = open;
+        string kept = line.Substring(0, Mathf.Max(1, at)).TrimEnd(' ', ',', '.', '!', '?');
+        return kept + "-";
     }
 
     // Static over Pip's face for a moment, with a crackle, as if something else were on the line.
@@ -287,10 +397,11 @@ public class SuitHelper : MonoBehaviour
         if (present) StartCoroutine(GlitchRoutine(seconds));
     }
 
-    IEnumerator GlitchRoutine(float seconds)
+    // quiet: the static without the crackle, for a flicker.
+    IEnumerator GlitchRoutine(float seconds, bool quiet = false)
     {
         if (crackle == null) crackle = TitleUI.Crackle("Pip Static", 0.4f, 0.5f);
-        if (voice != null) SoundManager.PlayOneShot(voice, "Pip Static", fallback: crackle);
+        if (voice != null && !quiet) SoundManager.PlayOneShot(voice, "Pip Static", fallback: crackle);
         noise.enabled = true;
         faceImage.enabled = false;
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
@@ -351,15 +462,32 @@ public class SuitHelper : MonoBehaviour
         int total = lineLabel.textInfo.characterCount;
         int shownLetters = 0;
         float mouthTimer = 0f;
+        float stall = !chatter ? 0f : Wear >= Condition.Failing ? FailingStall : Wear >= Condition.Damaged ? DamagedStall : 0f;
         for (float typed = 0f; shownLetters < total; typed += LettersPerSecond * Time.unscaledDeltaTime)
         {
             int now = Mathf.Min(total, Mathf.FloorToInt(typed));
+            bool stalled = false;
             for (int i = shownLetters; i < now; i++)
             {
                 char c = lineLabel.textInfo.characterInfo[i].character;
                 if (chatter && i % 2 == 0 && char.IsLetterOrDigit(c)) Chirp();
+                // Damaged, it catches on a letter now and then, static over its face, before getting the rest out.
+                if (Random.value < stall)
+                {
+                    now = i + 1;
+                    stalled = true;
+                    break;
+                }
             }
             shownLetters = now;
+            if (stalled)
+            {
+                lineLabel.maxVisibleCharacters = shownLetters;
+                mouthOpen = false;
+                yield return GlitchRoutine(Random.Range(0.12f, 0.35f), Random.value < 0.5f);
+                typed = shownLetters;
+                continue;
+            }
             lineLabel.maxVisibleCharacters = shownLetters;
             mouthTimer += Time.unscaledDeltaTime;
             if (chatter && mouthTimer > 0.09f)
@@ -376,7 +504,10 @@ public class SuitHelper : MonoBehaviour
     void Chirp()
     {
         if (voice == null) return;
-        SoundManager.PlayOneShot(voice, "Pip Chirp", pitchScale: Random.Range(0.9f, 1.35f), fallback: chirp);
+        // Lower and less steady the worse it gets.
+        float low = Wear >= Condition.Failing ? 0.6f : Wear >= Condition.Damaged ? 0.8f : 0.9f;
+        float high = Wear >= Condition.Failing ? 1.15f : 1.35f;
+        SoundManager.PlayOneShot(voice, "Pip Chirp", pitchScale: Random.Range(low, high), fallback: chirp);
     }
 
     // [M] picked out in amber.
@@ -430,6 +561,7 @@ public class SuitHelper : MonoBehaviour
 
     void Update()
     {
+        SoundManager.DuckTo = Online && running && present ? DuckVolume : 1f;
         if (!Online) return;
 
         // Only there while it's got something to say, and faded out over title cards and fades to black.
@@ -451,8 +583,16 @@ public class SuitHelper : MonoBehaviour
 
         Eyes eyes = happy ? Eyes.Happy : blinkLeft > 0f ? Eyes.Blink : Eyes.Open;
         Mouth mouth = mouthOpen ? Mouth.Open : happy ? Mouth.Smile : Mouth.Closed;
-        bool bulb = Mathf.Repeat(time, 1.6f) < 0.9f || running;
+        // Its antenna bulb stutters once it's Damaged, and Failing it's mostly out.
+        bool bulb = Wear >= Condition.Failing ? Random.value < 0.08f
+            : Wear >= Condition.Damaged ? (Mathf.Repeat(time, 1.6f) < 0.9f || running) && Random.value > 0.15f
+            : Mathf.Repeat(time, 1.6f) < 0.9f || running;
         faceImage.sprite = Face(eyes, mouth, bulb);
+
+        // Damaged, its face flickers out for a moment every so often, without a sound.
+        float flicker = Wear >= Condition.Failing ? 0.5f : Wear >= Condition.Damaged ? 0.2f : 0f;
+        if (present && !noise.enabled && Random.value < flicker * Time.unscaledDeltaTime)
+            StartCoroutine(GlitchRoutine(Random.Range(0.05f, 0.14f), true));
 
         if (noise.enabled) Static();
     }
@@ -660,6 +800,10 @@ public class SuitHelper : MonoBehaviour
         back.type = Image.Type.Sliced;
         back.pixelsPerUnitMultiplier = 1f / GameUI.PixelSize;
         back.raycastTarget = false;
+        keyEdge = bubble.gameObject.AddComponent<Outline>();
+        keyEdge.effectColor = GameUI.Amber;
+        keyEdge.effectDistance = new Vector2(GameUI.PixelSize, -GameUI.PixelSize);
+        keyEdge.enabled = false;
         var column = bubble.gameObject.AddComponent<VerticalLayoutGroup>();
         column.padding = new RectOffset(26, 26, 18, 22);
         column.spacing = 4f;

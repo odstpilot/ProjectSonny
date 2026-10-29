@@ -196,6 +196,8 @@ public class PlaceholderRobot : MonoBehaviour
     // 0 to 1: how sure it is of what it's looking at. At 1 it gives chase. Drawn as the ring around the player.
     private float detection;
 
+    // The way it's facing, for the view from inside a locker (FirstPersonView): its sprite only faces left or right.
+    public Vector2 Facing => facing;
     // After the player: chasing, going for them in a locker, or attacking.
     public bool IsHunting => state == State.Chase || state == State.Catch || state == State.Windup
         || state == State.Lunge || state == State.Recover;

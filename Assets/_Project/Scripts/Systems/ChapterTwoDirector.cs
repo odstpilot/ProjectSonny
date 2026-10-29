@@ -16,6 +16,8 @@ using UnityEngine;
 public class ChapterTwoDirector : MonoBehaviour
 {
     public PlayerController player;
+    [Tooltip("The rooms with a TV on the wall (StationTV), by their markers in the layout: Sonny's eyes, and its voice.")]
+    public string tvRooms = "hkbmcdgro";
 
     [Header("Waking up")]
     [Tooltip("Which way they're lying when the scene opens: 90 on one side, -90 the other.")]
@@ -44,6 +46,16 @@ public class ChapterTwoDirector : MonoBehaviour
     IEnumerator Start()
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();
+        // Darker than it was built (StationGloom).
+        if (!TryGetComponent(out StationGloom _)) gameObject.AddComponent<StationGloom>();
+        // The station's TVs, Sonny's now: dead, or static, or its eye looking out of them (SonnyBroadcast).
+        SonnyBroadcast.PlaceTVs(tvRooms, true);
+        // Fewer bots about, and the camera spider in the common grounds instead.
+        if (!TryGetComponent(out StationOccupants _)) gameObject.AddComponent<StationOccupants>();
+        // Sounds with nothing there to make them, and lamps going out behind them.
+        if (!TryGetComponent(out Unexplained _)) gameObject.AddComponent<Unexplained>();
+        // Sonny, playing the crew's voices back over the speakers once they've been found.
+        if (!TryGetComponent(out CrewEchoes _)) gameObject.AddComponent<CrewEchoes>();
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
         BreakBadge();
         TutorialHud hud = TutorialHud.Get();
@@ -118,10 +130,26 @@ public class ChapterTwoDirector : MonoBehaviour
         if (commsStage) comms.Resume(next);
         else if (pastComms) comms.Resume(next, true);
         if (passed != null) passed.ResumePassed();
+        // Pip as it was by then (SuitHelper.Condition): Damaged past the comms ring (CommsRing.Resume sees to it inside),
+        // and Gone once they've got down to Sonny, since it died at the end of the reactor's lockdown.
+        if (pastComms) SuitHelper.Worsen(SuitHelper.Condition.Damaged);
+        if (passed != null && passed.arriveInRoom != '\0' && IsSonnysRoom(passed.arriveInRoom))
+        {
+            SuitHelper.Wear = SuitHelper.Condition.Gone;
+            StartCoroutine(SuitHelper.Get().GoOffline(true));
+        }
         SaveGame.DoneResuming();
 
         player.ClearScriptedInput();
         yield return hud.FadeTo(0f, 1.2f);
+    }
+
+    // Whether this room on the map is the one Sonny's in: the control room.
+    static bool IsSonnysRoom(char marker)
+    {
+        var sonny = FindAnyObjectByType<SonnyBox>();
+        StationMap map = StationMap.Current;
+        return sonny != null && map != null && map.Locate(sonny.transform.position, out _, out StationMap.Room room) && room.marker == marker;
     }
 
     // A tester's jump (CheckpointJump): the stage as the objectives either side of it, as if it had been saved there, and

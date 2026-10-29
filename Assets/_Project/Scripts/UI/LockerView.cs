@@ -4,8 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // The screen while hiding in a Locker: the inside of the locker door fills the screen, dark metal with a vent of
-// horizontal slats at eye level. Through the gaps is a first-person view of the hallway outside (FirstPersonView),
-// built from the level itself, with any robots walking past. Moving the mouse peeks around a little.
+// horizontal slats at eye level. Through the gaps is a first-person view of the room outside (FirstPersonView),
+// built from the level itself and lit by its own lights, with whatever's moving about in it: robots, crew, the camera
+// spiders. Moving the mouse peeks around a little.
 // Also draws the fade through black. (The "[E] Hide" tag over a locker is the shared one, InteractPrompt.)
 // Built from code the first time a locker needs it, so there is no canvas to set up. Every locker shares it.
 public class LockerView : MonoBehaviour

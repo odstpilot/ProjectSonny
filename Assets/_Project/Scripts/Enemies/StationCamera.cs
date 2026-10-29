@@ -12,7 +12,7 @@ using UnityEngine.Rendering.Universal;
 // In Chapter 2 it's Sonny's eyes (hostile on). Catching sight of the player, it stops and turns to them while its ring
 // fills (StealthMeter), amber going red; crouching makes it slower to be sure, but only staying out of the cone, or in
 // a locker, beats it. Sure, it sounds the alarm: the robots in the room (PlaceholderRobot.Alarm), and any Wardens near
-// enough, come to where it saw them, and it keeps following and calling them for as long as the player's in view.
+// enough, and the camera spiders (CameraSpider.Hear), come to where it saw them, and it keeps following and calling them for as long as the player's in view.
 // Losing them, it holds on the spot a moment, then goes back to its sweep. An EMP (Shutdown) puts it out for a while.
 // The art is made in code until it has its own. Its position is the eye: the foot of the wall below it, where its view
 // of the floor starts; the housing hangs mountHeight above, on the wall. Built by ChapterOneBuilder, for both chapters.
@@ -263,6 +263,10 @@ public class StationCamera : MonoBehaviour
             warden.ActivitedByCam();
             warden.NewTarget(lastSeen);
         }
+        // The camera spiders hear it too: one in the room, or near enough, comes to look, through a door if it has to.
+        foreach (CameraSpider spider in CameraSpider.All)
+            if (spider.room == room || Vector2.Distance(spider.transform.position, transform.position) <= alertRange)
+                spider.Hear(lastSeen);
     }
 
     // --- Chapter 1 ---

@@ -68,10 +68,11 @@ public class ObjectiveGuide : MonoBehaviour
             "~If it's getting loud in there, hold [C] and crawl carefully",
         }),
         new Entry("Find the crew", "Step out of the restroom", new[] { "~The door's right there, tech" }),
-        new Entry("Get to the control room", "Sneak past the bots: crouch [C], hide in lockers [E]", new[]
+        new Entry("Get to the control room", "Stay unseen and unheard: crouch [C], hide in lockers [E]", new[]
         {
-            "~Stay low with [C] and keep walls between you and the bots",
-            "~If one spots you, break its line of sight or get in a locker",
+            "~Stay low with [C] and keep walls between you and anything that moves",
+            "~That thing with the eyes only sees down its beams, but it hears footsteps, so crouch past it",
+            "~If something spots you, break its line of sight or get in a locker",
             "~The control room's pinned on your map, [M]",
         }),
         new Entry("Go upstairs to the maintenance deck", "The stairs are at the far end of the maintenance deck", new[]

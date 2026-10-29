@@ -5,10 +5,12 @@ using UnityEngine.AI;
 // only an EMP shuts it down (Stun), and a hit from a weapon staggers it for a moment. It can't be destroyed - the EMP
 // and running are the only answers.
 //
-// Catching the player, it jumpscares them (AngelJumpscare), its face filling the screen, and sends them back.
+// Catching the player, it jumpscares them (AngelJumpscare), its face filling the screen, and sends them back: dragged
+// there in the dark, coming to on the floor as it rolls away (DraggedBack), held still itself till that's over.
 //
-// It gives off no light of its own, so in a dark corridor its footsteps are the only warning the player gets. They
-// quicken as it works up to speed, and stop dead the instant it's shut down.
+// It gives off no light of its own, so in a dark corridor its footsteps are the only warning the player gets: heavy
+// metal feet, a thud and a clank, louder the closer it is and from the side it's on. They quicken as it works up to
+// speed, and stop dead the instant it's shut down.
 //
 // It chases over a NavMesh, or, given a walkArea (a room's floor as a grid, CrewWalkArea), over that instead, with its
 // Nav Mesh Agent switched off: for the station's rooms, which have no NavMesh. It keeps to that floor; with the player
@@ -107,6 +109,9 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     public Sprite jumpscareFace;
     [Tooltip("The scene's sound for the jumpscare, on top of catchClip. Empty for none.")]
     [SoundName] public string jumpscareSound = "Wall Grab";
+    [Tooltip("Sent back, they're dragged there in the dark and wake on the floor as it rolls away (DraggedBack). Off, " +
+             "they're just put there.")]
+    public bool dragBack = true;
 
     [Header("Look")]
     [Tooltip("Its sparks, and the flash when something hits it. It casts no light of its own.")]
@@ -115,12 +120,15 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     public Color stunnedColor = new Color(0.35f, 0.9f, 1f);
 
     [Header("Sound")]
-    [Tooltip("Its footsteps, the only warning the player gets. Played in 3D, so they can hear which side it's on.")]
+    [Tooltip("The scene's sound for its footsteps, the only warning the player gets. Without one, the player's own " +
+             "footsteps, slowed right down, under a clank made in code.")]
+    [SoundName] public string footstepSound = "Angel Footsteps";
+    [Tooltip("Clips to use instead of the scene's sound. Optional.")]
     public AudioClip[] footstepClips = new AudioClip[0];
     [Range(0f, 1f)] public float footstepVolume = 0.85f;
     [Tooltip("Seconds between steps at top speed. It steps slower when it's moving slower.")]
     public float footstepInterval = 0.38f;
-    [Tooltip("How far its footsteps carry, in world units.")]
+    [Tooltip("How far its footsteps carry, in world units. Louder the closer it is, and panned to the side it's on.")]
     public float footstepRange = 20f;
     [Tooltip("Drive the looping sound on this robot from how fast it's moving: louder and higher as it speeds up.")]
     public bool driveLoopingSound = true;
@@ -642,7 +650,7 @@ public class WeepingAngel : MonoBehaviour, IDamageable
 
     void TryCatch(Collider2D other)
     {
-        if (state == State.Stunned || Time.time < nextCatchTime) return;
+        if (state == State.Stunned || Time.time < nextCatchTime || DraggedBack.Running) return;
         if (other == null || !other.CompareTag("Player")) return;
 
         nextCatchTime = Time.time + catchCooldown;
@@ -734,9 +742,16 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         else
         {
             // No reset point set: put them back at their last checkpoint instead.
-            var handler = playerCollider.GetComponentInParent<PlayerHealthHandler>();
-            if (handler == null) return;
-            destination = handler.RespawnPoint;
+            if (dying == null) return;
+            destination = dying.RespawnPoint;
+        }
+
+        if (dragBack && dying != null)
+        {
+            // It hauls them there itself, out of sight, and stays put till they're up again.
+            Stagger(AngelJumpscare.ToBlack + DraggedBack.Seconds);
+            DraggedBack.AfterJumpscare(dying, destination, body != null ? new[] { body.sprite } : null);
+            return;
         }
 
         Rigidbody2D rb = playerCollider.attachedRigidbody;
@@ -784,38 +799,74 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         loop.pitch = Mathf.MoveTowards(loop.pitch, baseLoopPitch * pitch, Time.deltaTime * 2f);
     }
 
-    // Its own 3D source for footsteps, so they carry across the room and the looping hum's volume can't drag them down.
+    // Its own source for footsteps, so the looping hum's volume can't drag them down. Flat (2D), with the distance and
+    // the side worked out from the player each step, since the camera's too far above the floor for 3D sound to judge it.
     void CreateFootstepSource()
     {
-        if (footstepClips.Length == 0) return;
-
         steps = gameObject.AddComponent<AudioSource>();
         steps.playOnAwake = false;
         steps.loop = false;
-        steps.spatialBlend = 1f;
-        steps.dopplerLevel = 0f;
-        steps.rolloffMode = AudioRolloffMode.Linear;
-        steps.minDistance = 1.5f;
-        steps.maxDistance = footstepRange;
+        steps.spatialBlend = 0f;
     }
 
     // Steps land in time with how fast it's moving, and stop dead the moment an EMP puts it down.
     void UpdateFootsteps()
     {
-        if (steps == null || state != State.Hunting) return;
+        if (steps == null || state != State.Hunting || player == null) return;
 
         float speedFraction = baseSpeed > 0f ? Mathf.Clamp01(Velocity.magnitude / baseSpeed) : 0f;
         if (speedFraction < 0.05f) return;
 
         stepTimer -= Time.deltaTime;
         if (stepTimer > 0f) return;
-
         stepTimer = footstepInterval / Mathf.Max(0.35f, speedFraction);
-        AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];
-        if (clip == null) return;
 
-        steps.pitch = Random.Range(0.92f, 1.08f);
-        steps.PlayOneShot(clip, footstepVolume);
+        Vector2 offset = transform.position - player.position;
+        float near = 1f - Mathf.Clamp01(offset.magnitude / footstepRange);
+        if (near <= 0f) return;
+        float loudness = footstepVolume * near * near * (0.6f + 0.4f * speedFraction);
+        steps.panStereo = Mathf.Clamp(offset.x / 8f, -0.8f, 0.8f);
+
+        AudioClip own = footstepClips.Length > 0 ? footstepClips[Random.Range(0, footstepClips.Length)] : null;
+        if (own != null)
+        {
+            steps.pitch = Random.Range(0.92f, 1.08f);
+            steps.PlayOneShot(own, loudness * GameSettings.EffectsVolume);
+        }
+        else if (SoundManager.Get(footstepSound)?.HasClip == true)
+            SoundManager.PlayOneShot(steps, footstepSound, loudness);
+        else
+        {
+            // Nothing of its own yet: a person's footstep slowed into a heavy thud, and a clank of metal over it.
+            SoundManager.PlayOneShot(steps, "Footsteps", loudness * 1.4f, Random.Range(0.5f, 0.6f));
+            steps.pitch = Random.Range(0.9f, 1.1f);
+            steps.PlayOneShot(Clank, loudness * 0.7f * GameSettings.EffectsVolume);
+        }
+    }
+
+    // A heavy metal foot coming down: a low thump and a short, dull ring.
+    static AudioClip clank;
+    static AudioClip Clank
+    {
+        get
+        {
+            if (clank != null) return clank;
+            const int rate = 44100;
+            const float seconds = 0.32f;
+            var data = new float[Mathf.CeilToInt(seconds * rate)];
+            var noise = new System.Random(7);
+            for (int i = 0; i < data.Length; i++)
+            {
+                float t = i / (float)rate;
+                float thump = Mathf.Sin(2f * Mathf.PI * (70f - 40f * t) * t) * Mathf.Exp(-t * 22f);
+                float ring = (Mathf.Sin(2f * Mathf.PI * 410f * t) + 0.6f * Mathf.Sin(2f * Mathf.PI * 1130f * t)) * Mathf.Exp(-t * 30f) * 0.35f;
+                float grit = ((float)noise.NextDouble() * 2f - 1f) * Mathf.Exp(-t * 90f) * 0.4f;
+                data[i] = (thump * 0.8f + ring + grit) * Mathf.Clamp01(t / 0.002f);
+            }
+            clank = AudioClip.Create("Angel Clank", data.Length, 1, rate, false);
+            clank.SetData(data, 0);
+            return clank;
+        }
     }
 
     void PlayOneShot(AudioClip clip)

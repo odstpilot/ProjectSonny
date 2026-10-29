@@ -120396,7 +120396,7 @@ MonoBehaviour:
   - No, no, no... the lights...
   pipBlackout:
   - ~Tech, something's draining the suit and I'm gonna lose you
-  - ~Use the EMP, its flash lights up whatever's in front of you
+  - '~!Use the EMP, its flash lights up whatever''s in front of you'
   - ~Find the generator and get the power back on, then I can come b-
   technicianAlone:
   - Pip? ...Pip
@@ -120414,10 +120414,10 @@ MonoBehaviour:
   - ~But it'll quiz you first... the comms nodes are carrying its broadcasts, so tune them in and listen to how the bots talk
   pipIntercepted:
   - ~Uh oh, it heard that... something's moving in the walls
-  - ~One more, and remember what they said, 'cause that's what it'll ask
+  - '~!One more, and remember what they said, ''cause that''s what it''ll ask'
   pipAllIntercepted:
   - ~That's all of them, the relay's listening now
-  - ~Answer like a bot would, not like you would, and don't hesitate 'cause it notices
+  - '~!Answer like a bot would, not like you would, and don''t hesitate ''cause it notices'
   technicianVerified:
   - It... thinks I'm one of them.
   pipVerified:
@@ -218852,7 +218852,7 @@ MonoBehaviour:
   promptText: E  OPEN
   locked: 0
   lockedText: LOCKED
-  credential: reactor_core
+  credential: 
   escortRange: 4.5
   badgeText: BADGE REQUIRED
   inactiveBadgeText: BADGE INACTIVE
@@ -233047,7 +233047,7 @@ MonoBehaviour:
   promptText: E  OPEN
   locked: 0
   lockedText: LOCKED
-  credential: 
+  credential: reactor_core
   escortRange: 4.5
   badgeText: BADGE REQUIRED
   inactiveBadgeText: BADGE INACTIVE
@@ -234450,7 +234450,7 @@ MonoBehaviour:
   - ~It's locking you in back here, and the containment gates are opening... here they come!
   pipNextWave:
   - ~More coming out!
-  - ~Another lot, watch the coil ones, they call down lightning
+  - '~!Another lot, watch the coil ones, they call down lightning'
   - ~Last of them, I think, hang in there
   technicianCleared:
   - That's all of them... the gates are up, stairs, go
@@ -245720,7 +245720,7 @@ MonoBehaviour:
   - WE ARE ITS HANDS
   - IT MADE US
   pipFirstWarning:
-  - ~The core's surging! Get behind one of those lead walls, now!
+  - '~!The core''s surging! Get behind one of those lead walls, now!'
   pipAfterFirst:
   - ~And the bots just... bowed to it... okay that's creepy, but it's a breather, use it
   technicianFirstHit: Ahh... damn, I gotta get behind those lead walls
@@ -319771,7 +319771,7 @@ MonoBehaviour:
   pipDoorJammed:
   - ~It's jammed, take the vent on the floor
   pipVentHowTo:
-  - '[W] crawls and [A] and [D] turn, hold [C] to go slow and quiet'
+  - '![W] crawls and [A] and [D] turn, hold [C] to go slow and quiet'
   objectiveVent: Crawl through the vent
   technicianOut:
   - The restroom... of course it's the restroom
@@ -324035,38 +324035,42 @@ MonoBehaviour:
   - material: 2
     count: 1
   - material: 1
-    count: 1
+    count: 2
   - material: 3
-    count: 1
+    count: 2
   crowbarCost:
   - material: 0
-    count: 3
+    count: 4
   scrapGunCost:
   - material: 0
-    count: 2
+    count: 4
   - material: 1
-    count: 1
+    count: 2
   - material: 2
+    count: 2
+  - material: 3
     count: 1
   blasterCost:
   - material: 1
-    count: 2
+    count: 3
   - material: 2
-    count: 1
+    count: 2
   - material: 3
+    count: 2
+  - material: 0
     count: 1
   servoCost:
   - material: 3
-    count: 1
+    count: 2
   - material: 2
-    count: 1
-  - material: 0
-    count: 1
-  platingCost:
+    count: 2
   - material: 0
     count: 2
+  platingCost:
+  - material: 0
+    count: 4
   - material: 1
-    count: 1
+    count: 2
   unlockCredential: reactor_core
   lockedText: LOCKED  COMMS RING
   pipUnlocked:
@@ -324081,16 +324085,16 @@ MonoBehaviour:
   pipEnoughScrap:
   - ^That's everything for the EMP, get it to the workbench!
   pipEmpMade:
-  - ^It works! One pulse shorts out any bot or camera in front of you for a few seconds
+  - '!^It works! One pulse shorts out any bot or camera in front of you for a few seconds'
   - ~It needs a sec to recharge between pulses though, so make them count
   - ~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too
   - ~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that
   pipCrowbarMade:
-  - ~A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding
+  - '~!A crowbar! If a bot gets too close, swing first, and the number keys switch what you''re holding'
   pipScrapGunMade:
   - ^A scrap gun! Point and click, and now we can hit back from a distance
   pipBlasterMade:
-  - ^The blaster! Hold to charge it and let go when it's full
+  - '!^The blaster! Hold to charge it and let go when it''s full'
   pipServoMade:
   - ^Servo braces, you'll move way faster now
   pipPlatingMade:

@@ -22,7 +22,7 @@ using UnityEngine.SceneManagement;
 // mode afterwards, and the result lists every warning and error logged while it played. Ending it with
 // "player <x> <y>" puts the player there a second before the capture, to see them somewhere in particular, and
 // "player <x> <y> walk <dx> <dy>" has them walk that way from there until the capture, and "... for <t>" puts them there
-// t seconds before it.
+// t seconds before it. "jump <stage>" in a play request starts the scene at that stage, as the Checkpoint Tester would.
 //
 // It won't build over unsaved scene changes, or while playing or compiling, and it puts back the scene that was open.
 [InitializeOnLoad]
@@ -278,6 +278,13 @@ static class BuildRequests
 
     static void StartPlayCapture(string[] words, string previous)
     {
+        // "jump <stage>" anywhere in it starts the scene at that stage, as the Checkpoint Tester would (CheckpointJump).
+        int jumpAt = Array.FindIndex(words, w => w.Equals("jump", StringComparison.OrdinalIgnoreCase));
+        if (jumpAt >= 1 && jumpAt + 1 < words.Length)
+        {
+            SessionState.SetString(CheckpointJump.EditorRequestKey, $"{words[1]}|{words[jumpAt + 1]}");
+            words = words.Where((w, i) => i != jumpAt && i != jumpAt + 1).ToArray();
+        }
         if (words.Length < 3 || !float.TryParse(words[2], out _))
         {
             Finish(false, "Play needs a scene and how long to play it: Play Chapter1 10 [x y [size]]\n");

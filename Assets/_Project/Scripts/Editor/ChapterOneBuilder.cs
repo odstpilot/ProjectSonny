@@ -2160,10 +2160,14 @@ public static class ChapterOneBuilder
         var reactorDoors = new List<Teleporter>();
         if (reactor != null)
         {
-            Rect inReactor = upstairs.map.WorldRect(reactor.minX, reactor.maxX, reactor.minRow, reactor.maxRow);
+            // By the room's own cells, not its bounding box: the box overlaps the rooms next door, which put the badge on
+            // the comms ring's way back to the deck instead of the deck's way into the reactor.
+            var reactorCells = new HashSet<Vector2Int>(reactor.cells);
+            Map upstairsMap = upstairs.map;
+            bool InReactor(Vector3 world) => reactorCells.Contains(CellAt(upstairsMap, (Vector2)world - upstairsMap.Origin));
             foreach (Teleporter way in upstairs.level.GetComponentsInChildren<Teleporter>())
             {
-                if (way.teleportTarget == null || !inReactor.Contains(way.teleportTarget.position) || inReactor.Contains(way.transform.position)) continue;
+                if (way.teleportTarget == null || !InReactor(way.teleportTarget.position) || InReactor(way.transform.position)) continue;
                 way.credential = ReactorCredential;
                 TutorialLevelBuilder.Record(way);
                 reactorDoors.Add(way);

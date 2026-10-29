@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Chapter 2, the upper maintenance deck: scavenging scrap and making something to fight back with. Arriving up the
 // stairs (BlockedWay), Pip spots the workbench and the objective becomes the parts for an EMP, counted as they're found
-// ("Find parts for an EMP (1/3)"): a battery, a circuit board, and some wire. Scrap's all over the station
+// ("Find parts for an EMP (1/5)"): a battery, two circuit boards, and two lengths of wire. Scrap's all over the station
 // (ScrapPickup), so some of it may be in hand already, and there's more than the EMP takes: metal sheets for the armor,
 // and plenty of everything for the scrap gun, the dearest thing on the bench. At the workbench (CraftingBench) the
 // crafting screen opens (CraftingScreen), each thing with the parts it takes.
@@ -40,10 +40,10 @@ public class Workshop : MonoBehaviour
     public Inventory.Stack[] empCost =
     {
         new Inventory.Stack(Inventory.Material.Battery, 1),
-        new Inventory.Stack(Inventory.Material.Circuit, 1),
-        new Inventory.Stack(Inventory.Material.Wire, 1),
+        new Inventory.Stack(Inventory.Material.Circuit, 2),
+        new Inventory.Stack(Inventory.Material.Wire, 2),
     };
-    public Inventory.Stack[] crowbarCost = { new Inventory.Stack(Inventory.Material.MetalSheet, 3) };
+    public Inventory.Stack[] crowbarCost = { new Inventory.Stack(Inventory.Material.MetalSheet, 4) };
     [Tooltip("Whether the crowbar's made at the bench. Off, it's found instead, lying at crowbarAt.")]
     public bool crowbarOnBench = false;
     [Tooltip("Where the crowbar lies, in the world. Zero puts it just outside the caved-in hallway (the BlockedWay with stage crowbarNear), on the way to the control room.")]
@@ -53,27 +53,29 @@ public class Workshop : MonoBehaviour
     public string crowbarFound = "A crowbar... yeah, I'm taking that";
     public Inventory.Stack[] scrapGunCost =
     {
-        new Inventory.Stack(Inventory.Material.MetalSheet, 2),
-        new Inventory.Stack(Inventory.Material.Circuit, 1),
-        new Inventory.Stack(Inventory.Material.Battery, 1),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 4),
+        new Inventory.Stack(Inventory.Material.Circuit, 2),
+        new Inventory.Stack(Inventory.Material.Battery, 2),
+        new Inventory.Stack(Inventory.Material.Wire, 1),
     };
 
     public Inventory.Stack[] blasterCost =
     {
-        new Inventory.Stack(Inventory.Material.Circuit, 2),
-        new Inventory.Stack(Inventory.Material.Battery, 1),
-        new Inventory.Stack(Inventory.Material.Wire, 1),
+        new Inventory.Stack(Inventory.Material.Circuit, 3),
+        new Inventory.Stack(Inventory.Material.Battery, 2),
+        new Inventory.Stack(Inventory.Material.Wire, 2),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 1),
     };
     public Inventory.Stack[] servoCost =
     {
-        new Inventory.Stack(Inventory.Material.Wire, 1),
-        new Inventory.Stack(Inventory.Material.Battery, 1),
-        new Inventory.Stack(Inventory.Material.MetalSheet, 1),
+        new Inventory.Stack(Inventory.Material.Wire, 2),
+        new Inventory.Stack(Inventory.Material.Battery, 2),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 2),
     };
     public Inventory.Stack[] platingCost =
     {
-        new Inventory.Stack(Inventory.Material.MetalSheet, 2),
-        new Inventory.Stack(Inventory.Material.Circuit, 1),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 4),
+        new Inventory.Stack(Inventory.Material.Circuit, 2),
     };
 
     [Tooltip("Everything on the bench but the EMP stays locked until the player has this credential (the comms ring's relay hands it over, CommsRing). Empty for nothing locked.")]
@@ -104,16 +106,16 @@ public class Workshop : MonoBehaviour
     [Tooltip("Pip, once the EMP's made.")]
     [TextArea] public string[] pipEmpMade =
     {
-        "^It works! One pulse shorts out any bot or camera in front of you for a few seconds",
+        "!^It works! One pulse shorts out any bot or camera in front of you for a few seconds",
         "~It needs a sec to recharge between pulses though, so make them count",
         "~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too",
         "~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that",
     };
     [Tooltip("Pip, once the crowbar's made, or found.")]
-    [TextArea] public string[] pipCrowbarMade = { "~A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding" };
+    [TextArea] public string[] pipCrowbarMade = { "~!A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding" };
     [Tooltip("Pip, once the scrap gun's made.")]
     [TextArea] public string[] pipScrapGunMade = { "^A scrap gun! Point and click, and now we can hit back from a distance" };
-    [TextArea] public string[] pipBlasterMade = { "^The blaster! Hold to charge it and let go when it's full" };
+    [TextArea] public string[] pipBlasterMade = { "!^The blaster! Hold to charge it and let go when it's full" };
     [TextArea] public string[] pipServoMade = { "^Servo braces, you'll move way faster now" };
     [TextArea] public string[] pipPlatingMade = { "^Armor plating, so you can take a few more hits" };
 

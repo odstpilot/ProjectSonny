@@ -141269,7 +141269,7 @@ MonoBehaviour:
   objectiveAfterGreeting: Report to the control room
   pipHello:
   - ^Bzzt! Pip online! I'm your suit's Personal Integrated Pal
-  - Control room's pinned on your map, so hit [M] if you get lost!
+  - '!Control room''s pinned on your map, so hit [M] if you get lost!'
   requireMapLook: 0
   pipOpenMap:
   - Press [M] to open your map!

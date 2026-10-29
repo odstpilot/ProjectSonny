@@ -79,6 +79,7 @@ public class ScrapPickup : Terminal
         if (!string.IsNullOrEmpty(technicianLine)) TechnicianVoice.Say(technicianLine);
         LightFlash.Spawn(transform.position, GlowColor, 1.2f, 0.8f, 0.2f);
         Inventory.Add(id, material, amount);     // takes it off the floor, through CheckTaken
+        InventoryHud.Collected(material, amount, transform.position);     // flies into the pouch on screen
     }
 
     // --- Art ---

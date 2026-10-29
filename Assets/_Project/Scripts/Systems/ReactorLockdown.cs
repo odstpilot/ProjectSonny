@@ -8,7 +8,8 @@ using UnityEngine.Rendering.Universal;
 // (ReactorGate, solid) slam shut behind the technician, so there's no running from it. Then the gates in the
 // containment fence round the reactor slide open and turned maintenance bots roll out of them, a wave at a time (sweepers,
 // haulers, arc bots), each coming straight for the technician. When the last of the last wave is down the lockdown
-// lifts: the blast gates open, and the stairs (Stairway.locked till then) will take them down.
+// lifts: the blast gates open, and the stairs (Stairway.locked till then) will take them down. It's the end of Pip,
+// too (SuitHelper.Die): its last words get cut off, and from here the technician's on their own.
 // Dying partway lifts it too, so the player isn't shut out; what they've beaten stays beaten, and it starts again from
 // the wave they were on when they come back round. Placed by ChapterOneBuilder (PlaceReactorGauntlet).
 public class ReactorLockdown : MonoBehaviour
@@ -36,7 +37,11 @@ public class ReactorLockdown : MonoBehaviour
     [TextArea] public string[] technicianOnLockdown = { "Uhh... why are the alarms going" };
     [Tooltip("Pip. ~ opens a line with static.")]
     [TextArea] public string[] pipOnLockdown = { "~It's locking you in back here, and the containment gates are opening... here they come!" };
-    [TextArea] public string[] pipNextWave = { "~More coming out!", "~Another lot, watch the coil ones, they call down lightning", "~Last of them, I think, hang in there" };
+    [TextArea] public string[] pipNextWave = { "~More coming out!", "~!Another lot, watch the coil ones, they call down lightning", "~Last of them, I think, hang in there" };
+    [Tooltip("Pip's last words, once the last bot's down: the fight was too much for the suit, and it's gone for good " +
+             "(SuitHelper.Die). Cut off partway, wherever it falls.")]
+    [TextArea] public string pipLast = "~Tech... that lightning got into the suit, I can't hold on, you'll have to do the rest without me";
+    [TextArea] public string[] technicianPipGone = { "Pip?... Pip, come on... damn it" };
     [TextArea] public string[] technicianCleared = { "That's all of them... the gates are up, stairs, go" };
     public string stairsLockedLine = "Stairs are locked down... not till this lockdown lifts";
     [SoundName] public string alarmSound = "Alarm";
@@ -138,6 +143,10 @@ public class ReactorLockdown : MonoBehaviour
         foreach (ReactorGate gate in blastGates) if (gate != null) gate.Open();
         if (stairs != null) stairs.locked = false;
         yield return new WaitForSeconds(0.6f);
+        // And Pip with them: the technician goes down to Sonny alone.
+        yield return SuitHelper.Get().Die(pipLast);
+        yield return new WaitForSeconds(0.8f);
+        yield return TechnicianVoice.Think(technicianPipGone);
         yield return TechnicianVoice.Think(technicianCleared);
     }
 
@@ -170,7 +179,7 @@ public class ReactorLockdown : MonoBehaviour
         if (player != null) bot.Alarm(player.transform.position);
     }
 
-    // A tester's jump past it (ChapterTwoDirector): every bot gone, the gates up, the stairs open.
+    // A tester's jump past it (ChapterTwoDirector): every bot gone, the gates up, the stairs open, and Pip gone.
     public void SkipToCleared()
     {
         if (lockdown != null) StopCoroutine(lockdown);
@@ -183,6 +192,8 @@ public class ReactorLockdown : MonoBehaviour
         foreach (ReactorGate gate in blastGates) if (gate != null) gate.Open();
         foreach (ReactorGate gate in spawnGates) if (gate != null) gate.Close();
         if (stairs != null) stairs.locked = false;
+        SuitHelper.Wear = SuitHelper.Condition.Gone;
+        if (SuitHelper.Exists) StartCoroutine(SuitHelper.Get().GoOffline(true));
     }
 
     // Dying in here lifts the lockdown, so they're not shut out of it coming back: the bots still standing go back in,

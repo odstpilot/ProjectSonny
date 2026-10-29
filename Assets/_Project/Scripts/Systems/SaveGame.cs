@@ -111,6 +111,7 @@ public static class SaveGame
         if (checkpoint == null) return null;
         Resuming = checkpoint;
         SuitFeatures.Reset();
+        SuitHelper.ResetWear();
         return checkpoint.scene;
     }
 
@@ -120,6 +121,7 @@ public static class SaveGame
     {
         Resuming = new Checkpoint { scene = scene, stage = stage };
         SuitFeatures.Reset();
+        SuitHelper.ResetWear();
     }
 
     // The scene's set itself up from the checkpoint; the game carries on from there, saving as it goes.
@@ -148,6 +150,7 @@ public static class SaveGame
         Last = null;
         Resuming = null;
         SuitFeatures.Reset();
+        SuitHelper.ResetWear();
         Inventory.Reset();
         try
         {

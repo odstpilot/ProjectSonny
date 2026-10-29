@@ -291,9 +291,6 @@ public class GeneratorScreen : MonoBehaviour
 
         status = Label("Status", panel, "", 34f, GameUI.Amber, TextAlignmentOptions.Center);
         At(status.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -130f), new Vector2(1000f, 50f));
-        TextMeshProUGUI goal = Label("Goal", panel, "BRING EVERY COIL UP. A MISS BACKFIRES, AND THE BOTS HEAR IT", 26f, GameUI.Dim,
-            TextAlignmentOptions.Center);
-        At(goal.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(1000f, 36f));
 
         // The rotor gauge: tick marks, the sync window, and the needle.
         Image gauge = Block("Gauge", panel, GaugeColor);

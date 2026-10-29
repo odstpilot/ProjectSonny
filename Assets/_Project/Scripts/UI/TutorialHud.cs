@@ -38,7 +38,7 @@ public class TutorialHud : MonoBehaviour
 
     static TutorialHud instance;
 
-    [Tooltip("Font for the text people read. Leave empty for the game's own (m6x11). Headings always use SdAsteroid.")]
+    [Tooltip("Font for the text people read. Leave empty for the game's own (m6x11). Headings always use the heading font (GameUI.Heading).")]
     public TMP_FontAsset font;
 
     public bool PromptShowing { get; private set; }
@@ -81,6 +81,20 @@ public class TutorialHud : MonoBehaviour
 
     // True while the screen is mostly faded to black, for anything that shouldn't show over a fade or a title card.
     public static bool ScreenCovered => instance != null && instance.fade != null && instance.fade.enabled && instance.fade.color.a > 0.5f;
+
+    // True while the cutscene bars are in, for anything in the corners that should get out of a cutscene's way.
+    public static bool Letterboxed => instance != null && instance.letterboxTop != null && instance.letterboxTop.sizeDelta.y > 1f;
+
+    // How far down the screen the objective panel reaches, in canvas units from the top; 0 while there's none showing.
+    // Whatever else sits down the left (CraftingGuide) keeps below it.
+    public static float ObjectiveBottom
+    {
+        get
+        {
+            if (instance == null || instance.objective == null || instance.objectiveGroup.alpha <= 0f) return 0f;
+            return -instance.objective.anchoredPosition.y + instance.objective.rect.height;
+        }
+    }
 
     public static TutorialHud Get()
     {
@@ -283,6 +297,12 @@ public class TutorialHud : MonoBehaviour
     // Types the line out under the speaker's name, holds it, then fades it out.
     public IEnumerator Say(string speaker, string line, float holdSeconds = 2.5f)
     {
+        // Sonny isn't captioned: it says things through the station's screens, a word at a time (SonnyBroadcast).
+        if (SonnyBroadcast.IsSonny(speaker))
+        {
+            yield return SonnyBroadcast.Say(line, holdSeconds);
+            yield break;
+        }
         captionSpeaker.text = speaker.ToUpperInvariant();
         captionLine.text = line;
         captionLine.maxVisibleCharacters = 0;
@@ -442,6 +462,8 @@ public class TutorialHud : MonoBehaviour
         objective.anchoredPosition = new Vector2(Margin, -Margin * 0.8f);
         objectiveGroup = objective.gameObject.AddComponent<CanvasGroup>();
         objectiveGroup.alpha = 0f;
+        // The suit's tracking it, so it goes when the suit's power does.
+        SuitDisplay.Wrap(objective);
 
         objectivePanel = objective.gameObject.AddComponent<Image>();
         objectivePanel.sprite = ObjectivePanelSprite;

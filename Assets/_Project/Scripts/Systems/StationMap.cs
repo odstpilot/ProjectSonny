@@ -71,6 +71,35 @@ public class StationMap : MonoBehaviour
         }
     }
 
+    // Every floor in the scene.
+    public static IReadOnlyList<StationMap> All => all;
+
+    // Which floor, and which room on it, a point in the level is in. False when it's in none of them.
+    public static bool Find(Vector2 world, out StationMap floor, out Room room)
+    {
+        foreach (StationMap map in all)
+            if (map.Locate(world, out _, out room))
+            {
+                floor = map;
+                return true;
+            }
+        floor = null;
+        room = null;
+        return false;
+    }
+
+    // The floor's number, from its name ("Floor 2" is 2), for telling up from down. 0 if it hasn't got one.
+    public int Number
+    {
+        get
+        {
+            string digits = "";
+            foreach (char c in floorName)
+                if (char.IsDigit(c)) digits += c;
+            return int.TryParse(digits, out int n) ? n : 0;
+        }
+    }
+
     void OnEnable() => all.Add(this);
 
     void OnDisable()

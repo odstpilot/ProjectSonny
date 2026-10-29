@@ -38,6 +38,13 @@ public class RangedCombat : MonoBehaviour
 
     private bool IsReady => !readyTimes.TryGetValue(Weapon, out float readyTime) || Time.time >= readyTime;
 
+    // How far this weapon's recharged, 0 just fired to 1 ready (the hotbar shows it, InventoryHud).
+    public float Readiness(RangedWeaponData weapon)
+    {
+        if (weapon == null || weapon.cooldown <= 0f || !readyTimes.TryGetValue(weapon, out float readyTime)) return 1f;
+        return Mathf.Clamp01(1f - (readyTime - Time.time) / weapon.cooldown);
+    }
+
     void Awake()
     {
         combat = GetComponent<PlayerCombat>();

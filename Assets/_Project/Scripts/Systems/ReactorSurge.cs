@@ -27,7 +27,7 @@ public class ReactorSurge : MonoBehaviour
     [Tooltip("What the bots chant, bowed to it, in capitals.")]
     public string[] chants = { "THE CORE KEEPS US", "GLORY TO THE CORE", "THE CORE PROVIDES", "WE ARE ITS HANDS", "IT MADE US" };
     [Tooltip("Pip, the first time it builds. ~ opens a line with static.")]
-    [TextArea] public string[] pipFirstWarning = { "~The core's surging! Get behind one of those lead walls, now!" };
+    [TextArea] public string[] pipFirstWarning = { "~!The core's surging! Get behind one of those lead walls, now!" };
     [TextArea] public string[] pipAfterFirst = { "~And the bots just... bowed to it... okay that's creepy, but it's a breather, use it" };
     public string technicianFirstHit = "Ahh... damn, I gotta get behind those lead walls";
 
@@ -148,6 +148,8 @@ public class ReactorSurge : MonoBehaviour
         if (!warnedOnce)
         {
             warnedOnce = true;
+            // Lead wall or not, the first one gets into the suit: Pip's failing from here on (SuitHelper.Condition).
+            SuitHelper.Worsen(SuitHelper.Condition.Failing);
             yield return new WaitForSeconds(0.8f);
             if (SuitHelper.Exists && pipAfterFirst.Length > 0) SuitHelper.Get().Tell(pipAfterFirst);
         }

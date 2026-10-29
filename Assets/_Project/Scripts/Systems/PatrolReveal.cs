@@ -54,12 +54,17 @@ public class PatrolReveal : MonoBehaviour
             "Press E at a locker to climb in. A bot walks right past, unless it saw you get in."),
         new TipCard.Row(TipCard.Picture.Camera, "Cameras",
             "They sweep the room. Red light: Sonny's watching. If one spots you, every bot in the room comes running."),
+        new TipCard.Row(TipCard.Picture.Eye, "The thing with the eyes",
+            "It only sees down its beams of light. It hears much more: footsteps, running, a fight. When it goes still, so should you."),
     };
 
     // While the technician's taking it in (CrewAftermath holds Pip's lines about the bodies until it's over).
     public static bool Playing { get; private set; }
 
     private bool revealed;
+
+    // Once they've stepped out and seen what happened to the crew (CrewEchoes waits for it).
+    public bool Revealed => revealed;
 
     void OnEnable()
     {
@@ -81,6 +86,8 @@ public class PatrolReveal : MonoBehaviour
         if (!revealed) return;
         foreach (PlaceholderRobot robot in robots)
             if (robot != null) robot.CalmDown();
+        foreach (CameraSpider spider in CameraSpider.All)
+            spider.CalmDown();
         foreach (StationCamera watcher in StationCamera.All)
             watcher.CalmDown();
         SetBlind(true);
@@ -151,6 +158,8 @@ public class PatrolReveal : MonoBehaviour
     {
         foreach (PlaceholderRobot robot in robots)
             if (robot != null && robot.isActiveAndEnabled && robot.IsHunting) return true;
+        foreach (CameraSpider spider in CameraSpider.All)
+            if (spider.IsHunting) return true;
         return false;
     }
 
@@ -190,6 +199,9 @@ public class PatrolReveal : MonoBehaviour
     {
         foreach (PlaceholderRobot robot in robots)
             if (robot != null) robot.blind = blind;
+        // Whatever else is out there (StationOccupants).
+        foreach (CameraSpider spider in CameraSpider.All)
+            spider.blind = blind;
         // The cameras too (StationCamera): the station's own, Sonny's now.
         foreach (StationCamera watcher in StationCamera.All)
             if (watcher.hostile) watcher.blind = blind;

@@ -11,6 +11,9 @@ using UnityEngine.UI;
 //    the bar and the frame pulse red, and the heartbeat races.
 //  - Stamina fills amber. While sprinting, stripes run along it; run it dry and it flashes red. Full and unused for a
 //    moment, it dims out of the way.
+//  - It's the suit's own readout (SuitDisplay): it dies with the suit's power in a blackout and boots back up after.
+//    And the suit only puts it up when there's something to see (Retreats): a hit, healing, little left. Between
+//    times the suit's glow says how they're doing (SuitLight).
 // Also draws the red hurt vignette across the screen.
 // Built from code the first time it's needed; PlayerHealthHandler hooks it up to the player's Health and stamina.
 public class HealthHud : MonoBehaviour
@@ -44,6 +47,11 @@ public class HealthHud : MonoBehaviour
     static readonly Color Backing = new Color(0f, 0.035f, 0.045f, 0.72f);
     static readonly Color StaminaColor = new Color(1f, 0.72f, 0.24f);
     const float LowHealth = 0.3f;           // at or below this share of health, everything pulses red
+    const float RetreatAfter = 4f;          // seconds the vitals stay up after something happens to them
+
+    // The vitals only come up when there's something to see (a hit, healing, little left), out of the way otherwise;
+    // stamina the same while it's full. Off, they're always up, as they were.
+    public static bool Retreats = true;
     const float LowStamina = 0.25f;
     const float TrailHold = 0.45f;          // how long the damage trail hangs before it drains
     const float SheenEvery = 3.2f;          // seconds between lights along the bar
@@ -55,6 +63,7 @@ public class HealthHud : MonoBehaviour
     private bool built;
 
     private RectTransform root, frameRoot;
+    private CanvasGroup frameGroup;
     private Image frame, frameGlow;
     private RectTransform bar, fill, trail, edge, sheen;
     private RawImage fillImage, trailImage;
@@ -203,6 +212,11 @@ public class HealthHud : MonoBehaviour
 
         hpPunch = Mathf.MoveTowards(hpPunch, 0f, dt * 4f);
         hpText.rectTransform.localScale = Vector3.one * (1f + 0.35f * TitleUI.EaseIn(hpPunch));
+
+        // The suit only puts its vitals up when there's something to see: a knock, healing, little left, or just
+        // switched on. The rest of the time they're out of the way.
+        bool wanted = !Retreats || low || now - hitAt < RetreatAfter || now - healAt < RetreatAfter || now - bootAt < RetreatAfter;
+        frameGroup.alpha = Mathf.MoveTowards(frameGroup.alpha, wanted ? 1f : 0f, dt * (wanted ? 6f : 0.8f));
     }
 
     static void SetFraction(RectTransform rect, float fraction)
@@ -267,8 +281,8 @@ public class HealthHud : MonoBehaviour
         staminaStripes.uvRect = uv;
         staminaStripes.color = TitleUI.Fade(Color.white, Mathf.MoveTowards(staminaStripes.color.a, sprinting ? 0.35f : 0.08f, dt * 3f));
 
-        // Full and left alone for a moment, it dims out of the way.
-        float wanted = now - lastUsedAt > 2f ? 0.6f : 1f;
+        // Full and left alone for a moment, it dims out of the way, or goes altogether with the vitals over it (Retreats).
+        float wanted = now - lastUsedAt > 2f ? (Retreats ? 0f : 0.6f) : 1f;
         staminaGroup.alpha = Mathf.MoveTowards(staminaGroup.alpha, wanted, dt * (wanted > staminaGroup.alpha ? 6f : 1.2f));
     }
 
@@ -290,7 +304,10 @@ public class HealthHud : MonoBehaviour
         BuildVignette();
 
         root = TopLeft(GameUI.NewRect("Vitals", transform), Corner, new Vector2(FrameWidth, -Bottom + Corner.y));
+        SuitDisplay.Attach(root);
         frameRoot = TopLeft(GameUI.NewRect("Frame", root), Vector2.zero, new Vector2(FrameWidth, FrameCrop.height * Scale));
+        frameGroup = frameRoot.gameObject.AddComponent<CanvasGroup>();
+        frameGroup.interactable = frameGroup.blocksRaycasts = false;
 
         // Dark glass behind the painted lines, which are all that's opaque in the art.
         float s = Scale;

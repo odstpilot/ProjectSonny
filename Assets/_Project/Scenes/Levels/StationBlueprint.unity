@@ -44403,7 +44403,7 @@ MonoBehaviour:
     repeatWait: {x: 5, y: 20}
   - name: Gun Shot
     category: 2
-    description: 'The scrap gun firing: a crack and a thump. Made in code (Sfx) until it has a clip.'
+    description: 'A gun firing: a crack and a thump. Made in code (Sfx) until it has a clip.'
     credit: 
     clips: []
     playFrom: {fileID: 0}
@@ -44515,7 +44515,7 @@ MonoBehaviour:
     repeatWait: {x: 5, y: 20}
   - name: Projectile Impact
     category: 2
-    description: 'A bit of scrap from the scrap gun hitting a wall: a small clank.'
+    description: 'A shot hitting a wall: a small clank.'
     credit: 
     clips:
     - {fileID: 8300000, guid: 747bd06fbc950f94fb5290f22bab1da4, type: 3}

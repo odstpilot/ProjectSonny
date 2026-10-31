@@ -2,37 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// One of the station's crew, before anything has gone wrong. They wear the technician's sprites and animations with the
-// red trim swapped for their own color (the Sonny/Crew Sprite shader), and get on with their day. What they do is their role:
-//   Wander  walk from one spot in their room to another (a CrewWalkArea), stopping a while at each
-//   Stand   stay put, looking about now and then, and glance at the player when they come close
-//   Chat    stand in a ring with others and talk in turns (CrewChat runs the conversation and turns them to face)
-//   Greet   wait by the entrance, call out to the player when they come near, and greet them when they come over;
-//           until they have, a "!" bobs over their head so it's plain who to talk to
-// Anyone not caught up in a group conversation can be talked to: walk up to them and press E, and they stop what they're
-// doing, turn to the player, and say their piece in the dialogue box (DialogueBox), one line at a time. The greeter says
-// their greeting; everyone else says their talkLines, or a bit of small talk picked for them: about the new technician
-// and the install while the technician's just arrived, and about Sonny once it's on (SonnyCameOnline).
-// They're solid at their feet, so the player walks round them (and behind them). Nobody walks into anyone else: whoever
-// is walking waits for the way to clear, and after a moment goes somewhere else instead.
+// one of the crew
 [RequireComponent(typeof(SpriteRenderer), typeof(Animator), typeof(Rigidbody2D))]
 public class CrewMember : MonoBehaviour
 {
     public enum Role { Wander, Stand, Chat, Greet }
 
     static readonly int TrimColorId = Shader.PropertyToID("_TrimColor");
-    // How close anyone can come to anyone else, middle to middle, side by side and one above the other on screen: wide
-    // enough apart up and down that one person's head never covers the next one's body, so nobody seems to stand in
-    // anyone.
     static readonly Vector2 PersonalSpace = new Vector2(1f, 1.4f);
 
-    // Everyone aboard, for keeping out of each other's way.
     static readonly List<CrewMember> everyone = new List<CrewMember>();
-    // Everyone aboard who's up and about (enabled), for the badge doors (Teleporter).
     public static IReadOnlyList<CrewMember> Everyone => everyone;
 
-    // Anything else walking about that the crew keep out of the way of, like the maintenance bots (MaintenanceBot),
-    // which add and remove themselves.
     static readonly List<Rigidbody2D> otherWalkers = new List<Rigidbody2D>();
     public static IReadOnlyList<Rigidbody2D> OtherWalkers => otherWalkers;
     public static void AddWalker(Rigidbody2D walker) { if (!otherWalkers.Contains(walker)) otherWalkers.Add(walker); }
@@ -78,11 +59,8 @@ public class CrewMember : MonoBehaviour
     public bool markUntilGreeted = true;
     [TextArea] public string[] greeting = new string[0];
 
-    // Once the player has talked to the greeter all the way through their greeting. ChapterOneDirector waits on it.
-    // The greeter hands over the technician's temp badge with it, which opens the control room (AccessCredentials).
     public event System.Action Greeted;
     public bool HasGreeted { get; private set; }
-    // Already greeted, for a scene picking up after it (SaveGame): the greeting isn't said again, or waited on.
     public void MarkGreeted()
     {
         HasGreeted = true;
@@ -94,12 +72,9 @@ public class CrewMember : MonoBehaviour
         AccessCredentials.Grant(AccessCredentials.TempBadge);
         AccessCredentials.Grant(AccessCredentials.TempBadgeAccess);
     }
-    // Whenever a talk with them closes: true if it was heard to the end. Cutscenes wait on it.
     public event System.Action<bool> TalkEnded;
-    // Whenever the player has talked to anyone aboard, to the end.
     public static event System.Action<CrewMember> Talked;
 
-    // Once Sonny's installed and running (ControlRoomCutscene), everyone's small talk is about that instead.
     public static bool SonnyOnline { get; private set; }
     public static void SonnyCameOnline() => SonnyOnline = true;
 
@@ -132,13 +107,11 @@ public class CrewMember : MonoBehaviour
         body.bodyType = RigidbodyType2D.Kinematic;
         ApplyTrim();
         look = PlayerController.SnapToEightWay(facing);
-        // From where they stand when the scene starts, so they're the same person every time it's played.
         Vector3 at = transform.position;
         spawn = at;
         seed = (Mathf.RoundToInt(at.x * 10f) * 73856093 ^ Mathf.RoundToInt(at.y * 10f) * 19349663) & 0x7fffffff;
     }
 
-    // Shows the recolor in the editor too. The property block isn't saved with the scene, so it's set again on load.
     void OnValidate()
     {
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
@@ -153,7 +126,7 @@ public class CrewMember : MonoBehaviour
         InteractPrompt.Hide(this);
         if (marker != null) marker.enabled = false;
         ForgetDealtIfEmpty();
-        if (everyone.Count == 0) SonnyOnline = false;     // the scene's ending; the next one starts before the install
+        if (everyone.Count == 0) SonnyOnline = false;
     }
 
     void Start()
@@ -167,7 +140,6 @@ public class CrewMember : MonoBehaviour
             playerHealth = found.GetComponent<Health>();
         }
 
-        // Everyone's idle breathing out of step with everyone else's.
         animator.speed = Random.Range(0.85f, 1.15f);
         AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
         animator.Play(state.fullPathHash, 0, Random.value);
@@ -196,7 +168,6 @@ public class CrewMember : MonoBehaviour
         UpdateMarker();
     }
 
-    // Turns them to look this way, snapped to the eight directions the art is drawn in.
     public void Face(Vector2 direction)
     {
         if (direction.sqrMagnitude > 0.0001f) look = PlayerController.SnapToEightWay(direction);
@@ -204,7 +175,6 @@ public class CrewMember : MonoBehaviour
 
     public void FaceTowards(Vector2 point) => Face(point - Position);
 
-    // A line of speech over their head for this many seconds.
     public void Say(string line, float seconds)
     {
         if (speech == null) speech = CrewSpeech.Create(transform);
@@ -212,8 +182,6 @@ public class CrewMember : MonoBehaviour
         speakingUntil = Time.time + seconds;
     }
 
-    // The greeter calls the player over now, whatever the cooldown (ChapterOneDirector: as they step aboard, and when
-    // they try a door before checking in).
     public void CallOut()
     {
         if (HasGreeted || talking || DialogueBox.IsOpen) return;
@@ -224,8 +192,6 @@ public class CrewMember : MonoBehaviour
 
     bool PlayerWithin(float range) => player != null && range > 0f && ((Vector2)player.position - Position).sqrMagnitude <= range * range;
 
-    // --- Roles ---
-
     void Stand()
     {
         if (PlayerWithin(noticeRange))
@@ -235,7 +201,6 @@ public class CrewMember : MonoBehaviour
         }
         if (Time.time < nextGlance) return;
 
-        // Mostly the way they were facing, or just to one side of it; now and then somewhere else entirely.
         nextGlance = Time.time + Random.Range(glanceSeconds.x, glanceSeconds.y);
         float turn = Random.value < 0.7f ? Random.Range(-1, 2) * 45f : Random.Range(0, 8) * 45f;
         Face(Quaternion.Euler(0f, 0f, turn) * PlayerController.SnapToEightWay(facing));
@@ -257,14 +222,10 @@ public class CrewMember : MonoBehaviour
         }
     }
 
-    // --- The "!" over the greeter ---
-
     const float MarkerPixelsPerUnit = 32f;
     const float MarkerBobSeconds = 0.9f;
     const int MarkerBobPixels = 3;
 
-    // Bobbing over their head until they've greeted the player; out of the way while the TALK tag or a line's up there.
-    // It's not one of theirs (their sprites sort as a group, DepthSort), so nothing in front of them ever covers it.
     void UpdateMarker()
     {
         if (marker == null) return;
@@ -312,9 +273,6 @@ public class CrewMember : MonoBehaviour
         return marker;
     }
 
-    // --- Talking ---
-
-    // Whoever's nearest the player, of those close enough to talk to, shows the prompt and answers to E.
     static CrewMember talkTarget;
     static int talkTargetFrame = -1;
 
@@ -366,7 +324,6 @@ public class CrewMember : MonoBehaviour
         && (playerController == null || (playerController.enabled && !playerController.IsScripted))
         && (playerHealth == null || !playerHealth.IsDead);
 
-    // Opens the dialogue box with them, wherever the player is. The player normally presses E; this is for scripts.
     public void Talk()
     {
         if (talking || DialogueBox.Busy) return;
@@ -405,7 +362,6 @@ public class CrewMember : MonoBehaviour
         });
     }
 
-    // The greeter's greeting the first time, then just where to go; everyone else's own lines or their own small talk.
     string[] LinesToSay()
     {
         if (role == Role.Greet && greeting.Length > 0)
@@ -415,9 +371,6 @@ public class CrewMember : MonoBehaviour
         return pool[Dealt() % pool.Length];
     }
 
-    // Small talk and surnames are dealt out, so nobody aboard says what anyone else says or shares anyone's name. Everyone
-    // who can be talked to is put in a fixed order (by where they stand when the scene starts, so the same person says the
-    // same thing every play) and takes the next set. Anyone turning up later is dealt the next one along.
     static readonly Dictionary<CrewMember, int> dealt = new Dictionary<CrewMember, int>();
     static bool warnedShort;
 
@@ -441,7 +394,6 @@ public class CrewMember : MonoBehaviour
         return dealt[this];
     }
 
-    // Everyone's gone (the scene's ending), so the next scene deals afresh.
     static void ForgetDealtIfEmpty()
     {
         if (everyone.Count > 0) return;
@@ -463,9 +415,6 @@ public class CrewMember : MonoBehaviour
         "Logistics", "Reactor Tech", "Comms", "Medic", "Engineer", "Navigation", "Supply", "Hydroponics", "Maintenance",
     };
 
-    // One set per person, written as DialogueBox scripts: "* reply = answer" lines let the technician pick what to say back.
-    // Every line here is said by one person only: keep it that way when adding more, and don't reuse anything the groups
-    // say (ChapterOneBuilder.Conversations) or the greeter's lines.
     static readonly string[][] SmallTalk =
     {
         new[] { "Morning... or whatever it is this close to the sun", "The clocks say morning, anyway" },
@@ -537,9 +486,6 @@ public class CrewMember : MonoBehaviour
                   "* Who listens to all that? = Nobody yet, but the new AI will, I suppose" },
     };
 
-    // The same, once Sonny's on: dealt out the same way, so each of them says the one in the same place in this list.
-    // Written as people who weren't in the control room, hearing about it: keep them different from what the control
-    // room crew say (ControlRoomCutscene.sonnyTalk) and what the groups say afterwards (ControlRoomCutscene.sonnyChats).
     static readonly string[][] AfterInstallTalk =
     {
         new[] { "Heard the install went fine, nice work, tech", "Nobody's said that about an install up here in years" },
@@ -586,7 +532,6 @@ public class CrewMember : MonoBehaviour
 
     IEnumerator Wander()
     {
-        // Setting off at different times, so the room doesn't all move at once.
         yield return new WaitForSeconds(Random.Range(0f, pauseSeconds.y));
         while (true)
         {
@@ -596,13 +541,11 @@ public class CrewMember : MonoBehaviour
                 yield return WalkPath();
 
             moving = false;
-            // Stop, and have a look about.
             if (Random.value < 0.5f) Face(Quaternion.Euler(0f, 0f, Random.Range(0, 8) * 45f) * Vector2.down);
             yield return new WaitForSeconds(Random.Range(pauseSeconds.x, pauseSeconds.y));
         }
     }
 
-    // Somewhere to go that nobody's standing on.
     bool TryPickFreeDestination(Vector2Int here, out Vector2Int destination)
     {
         for (int attempt = 0; attempt < 8; attempt++)
@@ -614,7 +557,6 @@ public class CrewMember : MonoBehaviour
         return false;
     }
 
-    // Anyone else within this much of their personal space of the point (1 is just touching).
     bool SomeoneNear(Vector2 point, float margin)
     {
         foreach (CrewMember other in everyone)
@@ -624,13 +566,9 @@ public class CrewMember : MonoBehaviour
         return false;
     }
 
-    // How far apart two people are, measured in personal spaces: under 1 is too close.
     public static float Crowding(Vector2 apart) =>
         new Vector2(apart.x / PersonalSpace.x, apart.y / PersonalSpace.y).magnitude;
 
-    // Along the path a step at a time. Waits while anyone's in the way, and gives up on the walk if they stay there
-    // (not all after the same wait, so two people meeting head on don't both turn back at once). Once stopped, they stay
-    // stopped a moment before trying again, so they don't flicker between walking and standing a step at a time.
     IEnumerator WalkPath()
     {
         const float Pause = 0.35f;
@@ -640,7 +578,6 @@ public class CrewMember : MonoBehaviour
         int next = 0;
         while (next < path.Count)
         {
-            // Stopped where they are while they talk, then on their way again.
             if (talking)
             {
                 moving = false;
@@ -684,8 +621,6 @@ public class CrewMember : MonoBehaviour
         moving = false;
     }
 
-    // Whether taking this step would bring them into anyone's personal space, from any side. Stepping away from
-    // someone already too close is always allowed, so nobody gets stuck.
     bool CrewInTheWay(Vector2 step)
     {
         foreach (CrewMember other in everyone)
@@ -694,7 +629,6 @@ public class CrewMember : MonoBehaviour
             float after = Crowding(other.Position - step);
             if (after < 1f && after < Crowding(other.Position - Position)) return true;
         }
-        // The bots keep out of people's way themselves (MaintenanceBot), so people only stop for one right in front of them.
         foreach (Rigidbody2D other in otherWalkers)
         {
             if (other == null) continue;
@@ -704,7 +638,6 @@ public class CrewMember : MonoBehaviour
         return false;
     }
 
-    // The same for the player, with a little more room, since they're solid and would be shoved.
     bool PlayerInTheWay(Vector2 step)
     {
         if (player == null) return false;
@@ -712,9 +645,6 @@ public class CrewMember : MonoBehaviour
         return after < 1.25f && after < Crowding((Vector2)player.position - Position);
     }
 
-    // --- Animation ---
-
-    // The player's own Animator parameters (PlayerAnimParams), so the crew can share the player's controller.
     void UpdateAnimator()
     {
         if (animator == null || animator.runtimeAnimatorController == null) return;

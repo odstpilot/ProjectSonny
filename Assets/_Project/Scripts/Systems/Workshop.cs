@@ -2,48 +2,29 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 2, the upper maintenance deck: scavenging scrap and making something to fight back with. Arriving up the
-// stairs (BlockedWay), Pip spots the workbench and the objective becomes the parts for an EMP, counted as they're found
-// ("Find parts for an EMP (1/5)"): a battery, two circuit boards, and two lengths of wire. Scrap's all over the station
-// (ScrapPickup), so some of it may be in hand already, and there's more than the EMP takes: metal sheets for the armor,
-// and plenty of everything for the scrap gun, the dearest thing on the bench. At the workbench (CraftingBench) the
-// crafting screen opens (CraftingScreen), each thing with the parts it takes.
-// Made, a thing goes in the technician's hand and on the hotbar. The EMP shorts out every patrol bot and camera in its
-// cone for a few seconds (EmpPulse) and recharges between pulses; Pip says so, and the prompt shows how to fire it
-// until they do. Further along the bench: the blaster (Data/Weapons/Blaster), which charges up before it fires, and two
-// upgrades to the suit, servo braces (faster on their feet) and armor plating (more health), for good once made. The
-// first time the bench is used, a card says how it all works (TipCard, kept in Pip's log to read again); until then,
-// from arriving on the deck, a panel at the side of the screen says the gist of it (CraftingGuide).
-// Then the objective is the comms ring, pinned on the map: the only way on to the control room is through the reactor
-// core, which is badge-only, and the technician's temp badge is dead; the ring's relay can switch it back on (CommsRing).
-// The crowbar isn't made here: it's lying on the way to the control room, by the caved-in hallway (crowbarAt, a
-// WeaponPickup), a swing (melee) for a bot that gets too close. The scrap gun fires bits of scrap at range. ChapterTwoDirector picks up from any of it on a save (Owns, Resume); the scrap and what's been made
-// come back with the Inventory.
-// Built by ChapterOneBuilder for ChapterTwoBuilder.
+// scrap and crafting on the upper deck
 public class Workshop : MonoBehaviour
 {
     public const string EmpId = "EMP";
     public const string CrowbarId = "Crowbar";
-    public const string ScrapGunId = "Scrap Gun";
     public const string BlasterId = "Blaster";
     public const string ServoId = "Servo Braces";
     public const string PlatingId = "Armor Plating";
 
     public PlayerController player;
     public CraftingBench bench;
-    [Tooltip("The EMP it makes (Data/Weapons/EMP), the crowbar (Data/Weapons/Crowbar), and the scrap gun (Data/Weapons/ScrapGun).")]
+    [Tooltip("The EMP it makes (Data/Weapons/EMP), and the crowbar (Data/Weapons/Crowbar).")]
     public EmpWeaponData emp;
     public WeaponData crowbar;
-    public WeaponData scrapGun;
     [Tooltip("The blaster it makes (Data/Weapons/Blaster): hold to charge, let go to fire.")]
     public WeaponData blaster;
     public Inventory.Stack[] empCost =
     {
         new Inventory.Stack(Inventory.Material.Battery, 1),
-        new Inventory.Stack(Inventory.Material.Circuit, 2),
-        new Inventory.Stack(Inventory.Material.Wire, 2),
+        new Inventory.Stack(Inventory.Material.Circuit, 1),
+        new Inventory.Stack(Inventory.Material.Wire, 1),
     };
-    public Inventory.Stack[] crowbarCost = { new Inventory.Stack(Inventory.Material.MetalSheet, 4) };
+    public Inventory.Stack[] crowbarCost = { new Inventory.Stack(Inventory.Material.MetalSheet, 2) };
     [Tooltip("Whether the crowbar's made at the bench. Off, it's found instead, lying at crowbarAt.")]
     public bool crowbarOnBench = false;
     [Tooltip("Where the crowbar lies, in the world. Zero puts it just outside the caved-in hallway (the BlockedWay with stage crowbarNear), on the way to the control room.")]
@@ -51,38 +32,27 @@ public class Workshop : MonoBehaviour
     public string crowbarNear = "hallway-caved";
     [Tooltip("The technician, picking the crowbar up.")]
     public string crowbarFound = "A crowbar... yeah, I'm taking that";
-    public Inventory.Stack[] scrapGunCost =
-    {
-        new Inventory.Stack(Inventory.Material.MetalSheet, 4),
-        new Inventory.Stack(Inventory.Material.Circuit, 2),
-        new Inventory.Stack(Inventory.Material.Battery, 2),
-        new Inventory.Stack(Inventory.Material.Wire, 1),
-    };
-
     public Inventory.Stack[] blasterCost =
     {
-        new Inventory.Stack(Inventory.Material.Circuit, 3),
-        new Inventory.Stack(Inventory.Material.Battery, 2),
-        new Inventory.Stack(Inventory.Material.Wire, 2),
-        new Inventory.Stack(Inventory.Material.MetalSheet, 1),
+        new Inventory.Stack(Inventory.Material.Circuit, 2),
+        new Inventory.Stack(Inventory.Material.Battery, 1),
+        new Inventory.Stack(Inventory.Material.Wire, 1),
     };
     public Inventory.Stack[] servoCost =
     {
-        new Inventory.Stack(Inventory.Material.Wire, 2),
-        new Inventory.Stack(Inventory.Material.Battery, 2),
-        new Inventory.Stack(Inventory.Material.MetalSheet, 2),
+        new Inventory.Stack(Inventory.Material.Wire, 1),
+        new Inventory.Stack(Inventory.Material.Battery, 1),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 1),
     };
     public Inventory.Stack[] platingCost =
     {
-        new Inventory.Stack(Inventory.Material.MetalSheet, 4),
-        new Inventory.Stack(Inventory.Material.Circuit, 2),
+        new Inventory.Stack(Inventory.Material.MetalSheet, 2),
+        new Inventory.Stack(Inventory.Material.Circuit, 1),
     };
 
     [Tooltip("Everything on the bench but the EMP stays locked until the player has this credential (the comms ring's relay hands it over, CommsRing). Empty for nothing locked.")]
     public string unlockCredential = "reactor_core";
     public string lockedText = "LOCKED  COMMS RING";
-    [Tooltip("Pip, once the rest of the bench opens up.")]
-    [TextArea] public string[] pipUnlocked = { "^Oh, and a unit's access opens the workbench's full plans too, so scrap gun, blaster, all of it" };
 
     [Header("Upgrades")]
     [Tooltip("Servo braces: how much faster the technician moves, walking and running.")]
@@ -101,23 +71,6 @@ public class Workshop : MonoBehaviour
     public string afterLabel = "Comms Ring";
 
     [Header("Lines")]
-    [Tooltip("Pip, once there's everything for the EMP. ~ opens a line with static; ^ says it happily; [E] shows a key.")]
-    [TextArea] public string[] pipEnoughScrap = { "^That's everything for the EMP, get it to the workbench!" };
-    [Tooltip("Pip, once the EMP's made.")]
-    [TextArea] public string[] pipEmpMade =
-    {
-        "!^It works! One pulse shorts out any bot or camera in front of you for a few seconds",
-        "~It needs a sec to recharge between pulses though, so make them count",
-        "~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too",
-        "~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that",
-    };
-    [Tooltip("Pip, once the crowbar's made, or found.")]
-    [TextArea] public string[] pipCrowbarMade = { "~!A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding" };
-    [Tooltip("Pip, once the scrap gun's made.")]
-    [TextArea] public string[] pipScrapGunMade = { "^A scrap gun! Point and click, and now we can hit back from a distance" };
-    [TextArea] public string[] pipBlasterMade = { "!^The blaster! Hold to charge it and let go when it's full" };
-    [TextArea] public string[] pipServoMade = { "^Servo braces, you'll move way faster now" };
-    [TextArea] public string[] pipPlatingMade = { "^Armor plating, so you can take a few more hits" };
 
     [Header("Respawn and testing")]
     [Tooltip("Where the player comes back after dying, while they're on the deck (the top of the stairs).")]
@@ -127,7 +80,6 @@ public class Workshop : MonoBehaviour
 
     private bool toldEnough, teaching, toldHowTo, toldUnlocked;
 
-    // Everything else on the bench is there to make: the comms ring's done.
     public bool Unlocked => string.IsNullOrEmpty(unlockCredential) || AccessCredentials.Has(unlockCredential);
     private readonly HashSet<string> upgraded = new HashSet<string>();
     private readonly List<CraftingScreen.Recipe> madeAtBench = new List<CraftingScreen.Recipe>();
@@ -152,14 +104,13 @@ public class Workshop : MonoBehaviour
         if (!crowbarOnBench && crowbar != null) PlaceCrowbar();
     }
 
-    // The crowbar on the floor where it's found (it hides itself if it's been taken already, on a save).
     void PlaceCrowbar()
     {
         Vector2 at = crowbarAt;
         if (at == Vector2.zero)
         {
             BlockedWay near = System.Array.Find(FindObjectsByType<BlockedWay>(), w => w.stage == crowbarNear);
-            if (near != null && near.setsRespawn) at = near.respawnAt;     // open floor just outside the deck's door
+            if (near != null && near.setsRespawn) at = near.respawnAt;
             else if (near != null && near.spots.Length > 0) at = near.spots[0];
             else
             {
@@ -168,26 +119,24 @@ public class Workshop : MonoBehaviour
                 return;
             }
         }
-        WeaponPickup.Place(at, CrowbarId, crowbar, CrowbarPicture, crowbarFound, pipCrowbarMade);
+        WeaponPickup.Place(at, CrowbarId, crowbar, CrowbarPicture, crowbarFound, PipManager.Lines.crowbarMade);
     }
 
-    // Keeps the objective in step with the scrap: counting up to the EMP, then making it.
     void Update()
     {
         if (bench != null) bench.promptText = "USE WORKBENCH";
         if (!toldUnlocked && Inventory.Made(EmpId) && Unlocked && !string.IsNullOrEmpty(unlockCredential))
         {
             toldUnlocked = true;
-            if (SuitHelper.Exists) SuitHelper.Get().Tell(pipUnlocked);
+            if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.benchUnlocked);
         }
         if (Inventory.Made(EmpId)) return;
         TutorialHud hud = TutorialHud.Get();
         if (!hud.Objective.StartsWith(scavengeObjective) && hud.Objective != craftObjective) return;
-        // On the deck and after the EMP: how crafting works, at the side, until the bench is used.
         bool enough = Inventory.Has(empCost);
         string want = enough ? craftObjective : ScavengeText(Inventory.Toward(empCost));
         if (hud.Objective == want) return;
-        if (enough && !toldEnough && SuitHelper.Exists) SuitHelper.Get().Tell(pipEnoughScrap);
+        if (enough && !toldEnough && SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.enoughScrap);
         toldEnough |= enough;
         hud.SetObjective(want);
     }
@@ -204,7 +153,6 @@ public class Workshop : MonoBehaviour
         }
     }
 
-    // What's on the bench, everything but the EMP locked until the comms ring's done.
     public CraftingScreen.Recipe[] Recipes
     {
         get
@@ -231,11 +179,6 @@ public class Workshop : MonoBehaviour
         },
         new CraftingScreen.Recipe
         {
-            id = ScrapGunId, name = "Scrap Gun", cost = scrapGunCost, picture = scrapGun != null && scrapGun.sprite != null ? scrapGun.sprite : CrowbarPicture,
-            description = "Fires bits of scrap, hard. Takes a lot of parts, but it hits a bot from across a room.",
-        },
-        new CraftingScreen.Recipe
-        {
             id = BlasterId, name = "Blaster", cost = blasterCost, picture = blaster != null && blaster.sprite != null ? blaster.sprite : EmpPicture,
             description = "Hold to charge a ball of energy, let go when it's full. It blows up on whatever it hits.",
         },
@@ -251,13 +194,12 @@ public class Workshop : MonoBehaviour
         },
     };
 
-    // How the bench works, the first time it's used.
     static readonly TipCard.Row[] BenchTips =
     {
         new TipCard.Row(TipCard.Picture.None, "Scrap",
             "The blue glows are scrap: walk over them. Every piece is a part, a metal sheet, a circuit board, a battery, or wire."),
         new TipCard.Row("Make things", "Pick something and make it. Each lists the parts it takes, green when you've got enough.", "A", "D", "E"),
-        new TipCard.Row("Weapons", "The EMP shorts out bots and cameras. The crowbar swings; the scrap gun and the blaster shoot. Switch with the number keys.",
+        new TipCard.Row("Weapons", "The EMP shorts out bots and cameras. The crowbar swings; the blaster shoots. Switch with the number keys.",
             "1", "2", "3"),
         new TipCard.Row(TipCard.Picture.None, "Upgrades",
             "Servo braces make you faster; armor plating lets you take more hits. Once made, they're yours for good."),
@@ -277,20 +219,18 @@ public class Workshop : MonoBehaviour
         }
         yield return CraftingScreen.Show(Recipes);
         if (bench != null) bench.Done();
-        // What was made, once the screen's away: in hand, and Pip on what it does.
         foreach (CraftingScreen.Recipe made in madeAtBench)
         {
             if (made.id == EmpId)
             {
-                if (SuitHelper.Exists) SuitHelper.Get().Tell(pipEmpMade);
+                if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.empMade);
                 Teach();
                 Next();
             }
-            else if (made.id == CrowbarId && SuitHelper.Exists) SuitHelper.Get().Tell(pipCrowbarMade);
-            else if (made.id == ScrapGunId && SuitHelper.Exists) SuitHelper.Get().Tell(pipScrapGunMade);
-            else if (made.id == BlasterId && SuitHelper.Exists) SuitHelper.Get().Tell(pipBlasterMade);
-            else if (made.id == ServoId && SuitHelper.Exists) SuitHelper.Get().Tell(pipServoMade);
-            else if (made.id == PlatingId && SuitHelper.Exists) SuitHelper.Get().Tell(pipPlatingMade);
+            else if (made.id == CrowbarId && SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.crowbarMade);
+            else if (made.id == BlasterId && SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.blasterMade);
+            else if (made.id == ServoId && SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.servoMade);
+            else if (made.id == PlatingId && SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.platingMade);
         }
         if (madeAtBench.Count > 0 && player != null) ControlHints.TeachSwitching(player.gameObject);
     }
@@ -303,16 +243,14 @@ public class Workshop : MonoBehaviour
         if (bench != null) bench.Burst();
     }
 
-    // On the hotbar, and in hand if asked.
     void Give(string id, bool equip)
     {
-        WeaponData weapon = id == EmpId ? emp : id == CrowbarId ? crowbar : id == ScrapGunId ? scrapGun : id == BlasterId ? blaster : null;
+        WeaponData weapon = id == EmpId ? emp : id == CrowbarId ? crowbar : id == BlasterId ? blaster : null;
         if (weapon == null || player == null) return;
         if (player.TryGetComponent(out WeaponHotbar hotbar) && !hotbar.slots.Contains(weapon)) hotbar.slots.Add(weapon);
         if (equip && player.TryGetComponent(out PlayerCombat combat)) combat.Equip(weapon);
     }
 
-    // An upgrade on the suit, once: faster, or tougher.
     void Upgrade(string id)
     {
         if (player == null || !upgraded.Add(id)) return;
@@ -324,16 +262,14 @@ public class Workshop : MonoBehaviour
         }
     }
 
-    // Everything made but the EMP back on the hotbar, and the upgrades back on the suit (the Inventory's been loaded).
     void GiveBackMade()
     {
-        foreach (string id in new[] { CrowbarId, ScrapGunId, BlasterId })
+        foreach (string id in new[] { CrowbarId, BlasterId })
             if (Inventory.Made(id)) Give(id, false);
         foreach (string id in new[] { ServoId, PlatingId })
             if (Inventory.Made(id)) Upgrade(id);
     }
 
-    // How to fire the EMP, until they do.
     void Teach()
     {
         teaching = true;
@@ -354,16 +290,12 @@ public class Workshop : MonoBehaviour
         MapScreen.SetTarget(afterRoom, afterLabel);
     }
 
-    // --- Picking up from a save (ChapterTwoDirector) ---
-
-    // One of this deck's objectives.
     public bool Owns(string objective) =>
         !string.IsNullOrEmpty(objective) && (objective.StartsWith(scavengeObjective) || objective == craftObjective || objective == afterObjective);
 
-    // What was made back on the hotbar (the Inventory's been loaded already), the EMP in hand, and the objective.
     public void Resume(string objective)
     {
-        if (objective == afterObjective && !Inventory.Made(EmpId)) Inventory.Grant(EmpId);     // a tester's jump past it
+        if (objective == afterObjective && !Inventory.Made(EmpId)) Inventory.Grant(EmpId);
         GiveBackMade();
         if (Inventory.Made(EmpId)) Give(EmpId, true);
         toldEnough = Inventory.Has(empCost);
@@ -373,9 +305,6 @@ public class Workshop : MonoBehaviour
         else TutorialHud.Get().SetObjective(objective);
     }
 
-    // Picking up from somewhere past the deck: whatever was made back on the hotbar, the EMP in hand (granted, for a
-    // tester's jump that skipped making it), and the respawn point at the top of the stairs until a later stage moves it.
-    // The later stage sets the objective.
     public void ResumePast()
     {
         if (!Inventory.Made(EmpId)) Inventory.Grant(EmpId);
@@ -386,7 +315,10 @@ public class Workshop : MonoBehaviour
             handler.RespawnPoint = new Vector3(respawnAt.x, respawnAt.y, player.transform.position.z);
     }
 
-    // --- Pictures, made in code ---
+    public void SkipUnlockedLine()
+    {
+        if (Unlocked) toldUnlocked = true;
+    }
 
     static Sprite empPicture, crowbarPicture, servoPicture, platingPicture;
 

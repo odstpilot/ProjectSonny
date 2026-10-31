@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// A mark on the floor from the station coming apart: a scorch where something burned, or a pool of leaked coolant.
-// Drawn by WreckageArt when the scene starts, picked and shaped by its position so the level looks the same every time.
-// Lies flat on the floor, under everything standing on it.
+// scorch or leak mark on the floor
 public class FloorStain : MonoBehaviour
 {
     public enum Kind { Any, Scorch, Coolant }
@@ -22,12 +20,11 @@ public class FloorStain : MonoBehaviour
         stain.sprite = sprite;
         stain.flipX = dice.NextDouble() < 0.5;
         stain.sortingLayerName = "FloorObject";
-        stain.sortingOrder = 2;     // under wreckage lying on the floor (6)
+        stain.sortingOrder = 2;
     }
 
     void OnDestroy() => PixelCanvas.Destroy(sprite);
 
-    // Only drawn in Play mode, so mark it in the Scene view.
     void OnDrawGizmos()
     {
         if (Application.isPlaying) return;

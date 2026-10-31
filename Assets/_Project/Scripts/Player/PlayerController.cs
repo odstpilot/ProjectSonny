@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Walking, running on stamina, crouching, facing, footsteps, and the animator. The player's health is the Health component beside
-// this one, and PlayerHealthHandler deals with getting hurt and dying. Enemies tagged Enemy kill on touch.
+// player movement
 [RequireComponent(typeof(Health))]
 public class PlayerController : MonoBehaviour
 {
@@ -46,7 +45,6 @@ public class PlayerController : MonoBehaviour
     [Header("Charging a Swing")]
     [Tooltip("How far the player trembles either way, in degrees, at full charge (MeleeCombat sets how charged).")]
     [Range(0f, 10f)] public float chargeShakeAngle = 4f;
-    // 0 to 1 while straining to charge a swing; MeleeCombat sets it every frame.
     [System.NonSerialized] public float chargeShake;
     const float TrembleInterval = 0.035f;
     private float nextTremble, trembleAngle, trembleSquash = 1f;
@@ -58,38 +56,27 @@ public class PlayerController : MonoBehaviour
     [Header("Footstep Settings")]
     [Tooltip("The scene's sound for a footstep.")]
     [SoundName] public string footstepSound = "Footsteps";
-    public float baseStepRate = 0.4f; // Normal walking step interval
+    public float baseStepRate = 0.4f;
     private float stepTimer;
     [SerializeField] private AudioSource audioSource;
     private Vector2 movement;
     private float currentSpeed;
     private Health health;
 
-    // Set each frame by the combat scripts: 0 stops the player mid-attack, in between slows them while charging.
     [System.NonSerialized] public float combatSpeedMultiplier = 1f;
-    // Sent to the Animator's WeaponType parameter every frame. Set by PlayerCombat.
     [System.NonSerialized] public WeaponType heldWeaponType = WeaponType.None;
 
-    // The way the player is looking: always straight up, down, left, or right. Aiming, hand positions, and attacks use this.
     public Vector2 Facing { get; private set; } = Vector2.down;
-    // The way the body is drawn: Facing, or a diagonal between two of its directions (SnapToEightWay).
     public Vector2 FacingEightWay { get; private set; } = Vector2.down;
-    // Robots see a crouching player from less far away and take longer to be sure of them (PlaceholderRobot).
     public bool IsCrouching { get; private set; }
-    // Robots see a sprinting player from further away, make them out faster, and hear them coming from behind.
     public bool IsSprinting { get; private set; }
-    // How squashed or stretched the sprite is right now: (1, 1) standing. WeaponVisual follows it so a held weapon
-    // stays in the posed hand.
     public Vector2 BodySquash => squash;
-    // How far the sprite is tipped by a sprint lean, in degrees. WeaponVisual takes it back out of a gun's aim.
     public float LeanAngle => lean;
-    // How far the body has been shifted to keep the feet planted, in world units. StealthMeter takes it back off so
-    // its arcs stay on the floor.
     public Vector2 PoseOffset => poseOffset;
 
-    private float crouchAmount;             // 0 standing, 1 fully crouched, easing between
-    private float sprintAmount;             // 0 standing, 1 fully leaned into a sprint, easing between
-    private float leanDirection;            // -1 leaning left, 1 leaning right
+    private float crouchAmount;
+    private float sprintAmount;
+    private float leanDirection;
     private Vector2 squash = Vector2.one;
     private float lean;
     private Vector2 poseOffset;
@@ -102,13 +89,11 @@ public class PlayerController : MonoBehaviour
     private readonly List<Vector3> carriedLightScales = new List<Vector3>();
     private bool hasFacingOverride;
     private Vector2 facingOverride;
-    // Set by MeleeCombat while charging: the player can still turn by walking, but only ever to the left or right.
     [System.NonSerialized] public bool sideFacingOnly;
     public Vector2 SideFacing => new Vector2(faceSide, 0f);
     private Vector2 pendingFacing;
     private float pendingFacingTime;
-    private float faceSide = 1f;            // -1 left, 1 right: the side last faced
-    // Right, then counterclockwise, so index * 45 degrees is the angle. Diagonals are normalized.
+    private float faceSide = 1f;
     private static readonly Vector2[] eightWay =
     {
         Vector2.right, new Vector2(1f, 1f).normalized, Vector2.up, new Vector2(-1f, 1f).normalized,
@@ -119,8 +104,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 scriptedMove;
     private bool scriptedSprint;
     private HashSet<int> animatorParameters;
-    private bool hasCrouchArt, hasSprintArt;   // drawn crawl/run animations, so no squash or lean is needed
-    // States in the old PlayerCont controller, indexed by its Direction parameter.
+    private bool hasCrouchArt, hasSprintArt;
     private static readonly int[] directionStates =
     {
         Animator.StringToHash("Idle"), Animator.StringToHash("Up"), Animator.StringToHash("Down"),
@@ -132,14 +116,11 @@ public class PlayerController : MonoBehaviour
         health = GetComponent<Health>();
         stepTimer = baseStepRate;
         CaptureStandingPose();
-        // Once the crawl and run art is in the controller (PlayerAnimatorBuilder), the art does the posing instead.
         hasCrouchArt = animator != null && animator.HasState(0, Animator.StringToHash("Crouch"));
         hasSprintArt = animator != null && animator.HasState(0, Animator.StringToHash("Sprint"));
         DepthSort.Group(gameObject);
     }
 
-    // For cutscenes: moves the player as if these keys were held, walking or sprinting, until ClearScriptedInput. The
-    // player's own keys are ignored meanwhile, and a scripted sprint doesn't use up stamina.
     public void SetScriptedInput(Vector2 move, bool sprint)
     {
         scripted = true;
@@ -152,7 +133,6 @@ public class PlayerController : MonoBehaviour
         scripted = false;
     }
 
-    // True while a cutscene (or a screen like the map) is moving them, or holding them still.
     public bool IsScripted => scripted;
 
     void Update()
@@ -194,28 +174,21 @@ public class PlayerController : MonoBehaviour
         }
 
         currentSpeed *= combatSpeedMultiplier;
-        // Wading through radiation in the reactor core (RadiationLeak).
         currentSpeed *= RadiationLeak.SpeedFactor;
 
-        // Face where combat says (aiming a gun, mid-swing); otherwise face where you're walking.
         UpdateFacing(isMoving);
         Facing = hasFacingOverride ? facingOverride : SnapToFourWay(FacingEightWay);
 
         UpdateAnimator(isMoving);
 
-        // Footstep sound handling
         HandleFootsteps(isMoving, isSprinting);
     }
 
-    // Moves by velocity rather than MovePosition: easing into a sprint or a crouch nudges the body every frame to keep the
-    // feet planted (ApplyPose), and each nudge would throw away a pending MovePosition, stalling the player for as long as
-    // the pose took to settle. A velocity carries on through those nudges.
     void FixedUpdate()
     {
         rb.linearVelocity = movement * currentSpeed;
     }
 
-    // Hold C or Ctrl to crouch, or tap to switch it on and off when crouchToggles or the setting is on.
     void UpdateCrouch()
     {
         if (crouchToggles || GameSettings.ToggleCrouch)
@@ -229,7 +202,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Controls taken away (a terminal, dying): stand back up, so nothing is left thinking the player is hidden.
     void OnDisable()
     {
         IsCrouching = false;
@@ -240,11 +212,9 @@ public class PlayerController : MonoBehaviour
         sprintAmount = 0f;
         leanDirection = 0f;
         ApplyPose(Vector2.one, 0f);
-        // Nothing is steering now, so don't let the last step carry the player on.
         if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 
-    // What standing looks like, so a crouch can be measured against it and undone exactly.
     void CaptureStandingPose()
     {
         baseScale = transform.localScale;
@@ -258,7 +228,6 @@ public class PlayerController : MonoBehaviour
             bodyBaseOffset = bodyCollider.offset;
         }
 
-        // Lights carried on the player (its lantern) keep their shape instead of squashing with the sprite.
         foreach (Transform child in transform)
         {
             if (!child.TryGetComponent(out Light2D _)) continue;
@@ -267,7 +236,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Eases between standing, crouching, and leaning into a sprint.
     void UpdatePose()
     {
         float crouchStep = crouchTransitionTime > 0f ? Time.deltaTime / crouchTransitionTime : 1f;
@@ -275,7 +243,6 @@ public class PlayerController : MonoBehaviour
         crouchAmount = Mathf.MoveTowards(crouchAmount, IsCrouching && !hasCrouchArt ? 1f : 0f, crouchStep);
         sprintAmount = Mathf.MoveTowards(sprintAmount, IsSprinting && !hasSprintArt ? 1f : 0f, sprintStep);
 
-        // Tips toward the way they're running: diagonals lean part way, and straight up or down doesn't tip at all.
         if (IsSprinting) leanDirection = Mathf.MoveTowards(leanDirection, movement.x, sprintStep * 2f);
 
         float crouch = Mathf.SmoothStep(0f, 1f, crouchAmount);
@@ -283,8 +250,6 @@ public class PlayerController : MonoBehaviour
         Vector2 crouchSquash = Vector2.Lerp(Vector2.one, new Vector2(crouchWidth, crouchHeight), crouch);
         Vector2 sprintStretch = Vector2.Lerp(Vector2.one, new Vector2(sprintWidth, sprintHeight), sprint);
 
-        // Straining with a charged swing (MeleeCombat): a quick tremble, tipping a few degrees either way and squeezing
-        // a touch, picked fresh every few hundredths of a second so it buzzes rather than sways.
         Vector2 strain = Vector2.one;
         if (chargeShake > 0f)
         {
@@ -301,14 +266,9 @@ public class PlayerController : MonoBehaviour
             trembleAngle = 0f;
         }
 
-        // Negative turns clockwise, tipping the top of the sprite toward the right.
         ApplyPose(Vector2.Scale(Vector2.Scale(crouchSquash, sprintStretch), strain), -leanDirection * sprintLeanAngle * sprint + trembleAngle);
     }
 
-    // Poses the sprite: squashed or stretched, and tipped by lean degrees, always around its planted feet. The sprite,
-    // animator, and collider all live on this object and the art is centre-pivoted, so the body is shifted to keep the
-    // feet where they stood, and the collider is sized and placed back over exactly the ground it covered standing:
-    // posing changes how the player looks, never where they fit or get hit. (The box does tip along with a lean.)
     void ApplyPose(Vector2 newSquash, float newLean)
     {
         if (newSquash == squash && Mathf.Approximately(newLean, lean)) return;
@@ -319,7 +279,6 @@ public class PlayerController : MonoBehaviour
         transform.localScale = new Vector3(baseScale.x * squash.x, baseScale.y * squash.y, baseScale.z);
         transform.localRotation = tip;
 
-        // Shift the body by however far the pose would move the feet from where they stood.
         Vector2 standingFeet = new Vector2(0f, -spriteHalfHeight * baseScale.y);
         Vector2 posedFeet = tip * new Vector2(0f, -spriteHalfHeight * baseScale.y * squash.y);
         Vector2 offset = standingFeet - posedFeet;
@@ -328,7 +287,6 @@ public class PlayerController : MonoBehaviour
 
         if (rb != null)
         {
-            // Set both from the body's own position, so it moves once whether or not transforms auto-sync.
             Vector2 moved = rb.position + change;
             rb.position = moved;
             transform.position = new Vector3(moved.x, moved.y, transform.position.z);
@@ -340,7 +298,6 @@ public class PlayerController : MonoBehaviour
 
         if (bodyCollider != null && baseScale.x != 0f && baseScale.y != 0f)
         {
-            // The same world size, and the same world centre measured back through the new rotation and scale.
             bodyCollider.size = new Vector2(bodyBaseSize.x / squash.x, bodyBaseSize.y / squash.y);
             Vector2 standingCentre = new Vector2(bodyBaseOffset.x * baseScale.x, bodyBaseOffset.y * baseScale.y);
             Vector2 local = Quaternion.Inverse(tip) * (standingCentre - offset);
@@ -355,7 +312,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Makes the player look a certain way no matter where they walk, until ClearFacingOverride is called.
     public void SetFacingOverride(Vector2 direction)
     {
         hasFacingOverride = true;
@@ -374,8 +330,6 @@ public class PlayerController : MonoBehaviour
         return direction.y > 0 ? Vector2.up : Vector2.down;
     }
 
-    // The nearest of the eight directions: straight up, down, left, right, or a normalized diagonal. These are exactly
-    // the points in the player's animation blend trees (PlayerAnimatorBuilder), so one clip always plays at full weight.
     public static Vector2 SnapToEightWay(Vector2 direction)
     {
         if (direction == Vector2.zero) return Vector2.down;
@@ -383,8 +337,6 @@ public class PlayerController : MonoBehaviour
         return eightWay[(octant + 8) % 8];
     }
 
-    // Turning off a diagonal onto one of its own two sides waits diagonalReleaseGrace, so stopping from a diagonal walk
-    // leaves the player facing that diagonal even when the two keys come up a frame or two apart.
     void UpdateFacing(bool isMoving)
     {
         Vector2 target;
@@ -416,8 +368,6 @@ public class PlayerController : MonoBehaviour
         if (FacingEightWay.x != 0f) faceSide = Mathf.Sign(FacingEightWay.x);
     }
 
-    // Animator parameters are optional: ones the controller doesn't have are skipped,
-    // so animations can be added a piece at a time. See PlayerAnimParams for the full list.
     public void SetAnimTrigger(int parameter)
     {
         if (CanSetAnimParameter(parameter)) animator.SetTrigger(parameter);
@@ -440,8 +390,6 @@ public class PlayerController : MonoBehaviour
 
         if (!CanSetAnimParameter(PlayerAnimParams.Direction)) return;
 
-        // Old PlayerCont controller: Direction 0 is the forward idle and 1-4 are walk cycles, with no idle for
-        // the other directions. Standing still facing up, left, or right holds that walk's first frame instead.
         int direction = Facing.y > 0.5f ? 1 : Facing.y < -0.5f ? 2 : Facing.x < 0f ? 3 : 4;
         bool holdWalkFrame = !isMoving && direction != 2;
         animator.SetInteger(PlayerAnimParams.Direction, isMoving || holdWalkFrame ? direction : 0);
@@ -483,7 +431,6 @@ public class PlayerController : MonoBehaviour
         CaughtBy(collision.gameObject);
     }
 
-    // The older enemies (the Warden, ghosts) don't attack: touching the player is enough.
     private void CaughtBy(GameObject other)
     {
         if (!other.CompareTag("Enemy")) return;
@@ -491,7 +438,6 @@ public class PlayerController : MonoBehaviour
         if (health != null) health.Kill(other);
         if (other.TryGetComponent<Warden>(out var warden))
         {
-            //warden.Reset();
         }
     }
 
@@ -501,7 +447,6 @@ public class PlayerController : MonoBehaviour
 
         stepTimer -= Time.deltaTime;
 
-        // Crouching: slower, softer steps.
         float stepRate = isSprinting ? baseStepRate * 0.6f : IsCrouching ? baseStepRate * 1.4f : baseStepRate;
 
         if (stepTimer <= 0f)
@@ -511,6 +456,4 @@ public class PlayerController : MonoBehaviour
             stepTimer = stepRate;
         }
     }
-
-
 }

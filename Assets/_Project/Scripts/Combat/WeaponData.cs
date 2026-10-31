@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// What kind of weapon is in hand. The numbers are what the Animator's WeaponType parameter receives.
 public enum WeaponType
 {
     None = 0,
@@ -8,7 +7,7 @@ public enum WeaponType
     Ranged = 2
 }
 
-// Settings shared by every weapon. Make new ones with Create > Sonny > Weapons.
+// base settings for any weapon
 public abstract class WeaponData : ScriptableObject
 {
     public string displayName = "Weapon";

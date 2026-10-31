@@ -3,90 +3,70 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The screen while crawling through a VentNetwork. A first-person view down the duct is ray cast every frame into a
-// low-resolution texture, Wolfenstein style like FirstPersonView, but the only light is the player's flashlight, and it
-// gives out a couple of cells ahead. Past that it's black, except where light from the rooms below comes up through a
-// grate, which shows from much further off. A rib at every cell boundary is the only way to count how far you've come.
-// Dented panels are crumpled floor plates, the way into a tight squeeze is a narrow collar with hazard stripes, and a
-// drone hatch is a square in the ceiling with a red rim.
-// Once the drone is out it hangs from its hatch: a body with claws folded under it and a cable up into the ceiling, its
-// red eye showing in the dark from far away, and a red searchlight thrown down whichever duct it's looking along. Its
-// eye burns when it's looking at you; locking on, it strobes, and the picture tears and runs red.
-// A rat, now and then, runs along the floor: a dark shape with two eyes that shine in the torchlight.
-// Over the view: the noise meter (the StealthMeter's colours, "?" and "!"), the walls closing in and the key to press
-// during a squeeze, a hint line, and the fade through black.
-// Built from code the first time a vent needs it, so there is no canvas to set up.
-[DefaultExecutionOrder(100)] // draws after VentNetwork has moved the camera for the frame
+// crawling view inside the vents
+[DefaultExecutionOrder(100)]
 public class VentView : MonoBehaviour
 {
-    const int SortingOrder = 100;           // over the HUD like LockerView, under the death screen (120)
+    const int SortingOrder = 100;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-    // The duct, in cells: each is one unit across and the duct is one unit tall. The player's eyes are in the middle.
     const float DuctHeight = 1f;
     const float EyeHeight = 0.5f;
     const float MaxDistance = 14f;
     const float NearClip = 0.05f;
-    const float TexelSize = 8f;             // canvas pixels per texel: chunky, like the rest of the art
-    const float FocalPerHeight = 0.75f;     // a wide view, about 100 degrees across a 16:9 screen
-    const float ShakeMargin = 40f;          // the view runs this far past the screen edges, more than it shakes
+    const float TexelSize = 8f;
+    const float FocalPerHeight = 0.75f;
+    const float ShakeMargin = 40f;
     const float ShakePixels = 26f;
 
-    // The flashlight.
-    const float FlashReach = 2.6f;          // cells: nothing further is lit by it at all
+    const float FlashReach = 2.6f;
     const float FlashStrength = 1.3f;
-    const float BeamInner = 0.3f;           // how far from the middle of the screen the beam is full strength, in focal lengths
-    const float BeamOuter = 1.1f;           // and where it has faded down to its spill
+    const float BeamInner = 0.3f;
+    const float BeamOuter = 1.1f;
     const float BeamSpill = 0.3f;
     const float Ambient = 0.012f;
 
-    // Light from the rooms below, coming up through a grate.
-    const float GrateHalf = 0.36f;          // half the grate's width, as a fraction of its cell
+    const float GrateHalf = 0.36f;
     const float GrateBars = 7f;
     const float GrateReach = 1.5f;
     const float GrateStrength = 0.8f;
-    const float GlowFog = 0.14f;            // light a grate gives off dims with distance, so far grates are faint but there
+    const float GlowFog = 0.14f;
 
-    // Surfaces.
-    const float SeamWidth = 0.03f;          // the joins between floor and ceiling plates
-    const float RibHalf = 0.06f;            // half the width of the rib at each cell boundary on the walls
+    const float SeamWidth = 0.03f;
+    const float RibHalf = 0.06f;
     const float DentRadius = 0.42f;
     const float HatchHalf = 0.3f;
 
-    // A squeeze's collar: the hole through it, across and up, as fractions of the duct.
     const float CollarGapMin = 0.3f;
     const float CollarGapMax = 0.7f;
     const float CollarBottom = 0.22f;
     const float CollarTop = 0.7f;
 
-    // The drone, in cells.
-    const float DroneHeight = 0.5f;         // hovers in the middle of the duct
+    const float DroneHeight = 0.5f;
     const float DroneBodyWidth = 0.34f;
     const float DroneBodyHeight = 0.14f;
     const float DroneRotorWidth = 0.46f;
-    const float DroneRotorRise = 0.1f;      // how far above the body's middle the rotors spin
+    const float DroneRotorRise = 0.1f;
     const float DroneLensSize = 0.07f;
     const float DroneLightReach = 1.2f;
     const float DroneLightStrength = 0.7f;
-    const float DroneBeamReach = 5.5f;      // its searchlight, down the duct it's looking along
+    const float DroneBeamReach = 5.5f;
     const float DroneBeamStrength = 0.9f;
-    const float DroneBeamInner = 0.93f;     // cosines: full strength inside this, nothing outside the outer
+    const float DroneBeamInner = 0.93f;
     const float DroneBeamOuter = 0.72f;
 
-    // The rat, in cells.
     const float RatLength = 0.24f;
     const float RatHeight = 0.07f;
 
-    // The overlay.
     const float VignetteAlpha = 0.85f;
     const float MeterWidth = 620f;
     const float MeterHeight = 8f;
-    const float MeterKickHeight = 14f;      // extra thickness for a moment after a noise
-    const float MeterY = 0.07f;             // as a fraction of screen height
-    const float SignPixels = 6f;            // canvas pixels per pixel of the "?" and "!" art
-    const float SignAt = 0.35f;             // how full the meter has to be before a "?" shows
+    const float MeterKickHeight = 14f;
+    const float MeterY = 0.07f;
+    const float SignPixels = 6f;
+    const float SignAt = 0.35f;
     const float SignPopTime = 0.18f;
-    const float SqueezeSide = 0.3f;         // how far in the walls close from each side during a squeeze, as a fraction of the screen
+    const float SqueezeSide = 0.3f;
     const float SqueezeTopBottom = 0.14f;
 
     static readonly Color32 Black = new Color32(0, 0, 0, 255);
@@ -99,12 +79,12 @@ public class VentView : MonoBehaviour
     static readonly Color DentColor = new Color32(52, 54, 58, 255);
     static readonly Color CreaseColor = new Color32(186, 190, 196, 255);
     static readonly Color CollarColor = new Color32(58, 56, 52, 255);
-    static readonly Color CollarStripeColor = new Color32(176, 124, 36, 255);    // hazard paint round a squeeze
+    static readonly Color CollarStripeColor = new Color32(176, 124, 36, 255);
     static readonly Color HatchColor = new Color32(22, 22, 24, 255);
     static readonly Color HatchRimColor = new Color32(150, 36, 30, 255);
     static readonly Color GrateBarColor = new Color32(24, 24, 26, 255);
-    static readonly Color GrateLightColor = new Color(0.95f, 0.66f, 0.38f);    // the station's amber lamps, from below
-    static readonly Color FlashTint = new Color(1f, 0.96f, 0.86f);            // a warm torch
+    static readonly Color GrateLightColor = new Color(0.95f, 0.66f, 0.38f);
+    static readonly Color FlashTint = new Color(1f, 0.96f, 0.86f);
     static readonly Color EyeColor = new Color32(235, 240, 205, 255);
     static readonly Color DroneBodyColor = new Color32(70, 74, 80, 255);
     static readonly Color DroneRotorColor = new Color32(120, 126, 134, 255);
@@ -114,21 +94,18 @@ public class VentView : MonoBehaviour
     static readonly Color RatColor = new Color32(70, 60, 54, 255);
     static readonly Color RatEyeColor = new Color32(255, 200, 150, 255);
 
-    // The StealthMeter's colours, so noise reads the same in here as being seen does out there.
     static readonly Color CalmColor = new Color(0.85f, 0.92f, 1f);
     static readonly Color WarningColor = new Color(1f, 0.75f, 0.25f);
     static readonly Color AlarmColor = new Color(1f, 0.25f, 0.15f);
     static readonly Color TrackColor = new Color(0f, 0f, 0f, 0.45f);
     static readonly Color KeyBoxColor = new Color(0.03f, 0.03f, 0.04f, 0.8f);
     static readonly Color MistakeColor = new Color(0.45f, 0.05f, 0.03f, 0.9f);
-    static readonly Color KeyColor = new Color(1f, 0.8f, 0.5f);                // InteractPrompt's amber
+    static readonly Color KeyColor = new Color(1f, 0.8f, 0.5f);
     static readonly Color SqueezeWallColor = new Color32(6, 7, 9, 255);
 
-    // The StealthMeter's signs. '#' is filled; a black outline is added around them.
     static readonly string[] AlertArt = { "###", "###", "###", "###", "###", "...", "###", "###" };
     static readonly string[] SearchArt = { ".###.", "##.##", "...##", "..##.", "..#..", "..#..", ".....", "..#.." };
 
-    // How worked up the drone is, for the meter's sign and its lens.
     public enum Alert { None, Searching, Chasing }
 
     static VentView instance;
@@ -138,12 +115,12 @@ public class VentView : MonoBehaviour
     private RawImage viewImage;
     private Texture2D texture;
     private Color32[] pixels;
-    private float[] beam;                   // how much of the flashlight's beam falls on each texel
-    private float[] columnDepth;            // how far away the wall is in each column, for hiding things behind it
+    private float[] beam;
+    private float[] columnDepth;
     private int width;
     private int height;
-    private float focal;                    // texels
-    private float horizon;                  // texel row at eye level
+    private float focal;
+    private float horizon;
 
     private VentCell[,] cells;
     private Vector2 eye;
@@ -160,11 +137,11 @@ public class VentView : MonoBehaviour
     private bool droneOut;
     private Vector2 dronePosition;
     private float droneHover;
-    private float droneGlow;                // how bright its lens is right now, 0 to 1
-    private float droneAngle;               // which way it's looking, degrees clockwise from up the map
+    private float droneGlow;
+    private float droneAngle;
     private Vector2 droneFacing;
-    private float droneLock;                // 0 to 1 through locking on
-    private float droneRise = 1f;           // 0 up in its hatch, 1 hanging in the duct
+    private float droneLock;
+    private float droneRise = 1f;
     private bool ratOut;
     private Vector2 ratPosition;
     private Alert alert;
@@ -178,7 +155,7 @@ public class VentView : MonoBehaviour
     private float noiseKick;
     private float signAge;
 
-    private Image[] squeezeWalls;           // left, right, top, bottom
+    private Image[] squeezeWalls;
     private bool tight;
     private float squeezeClose;
     private RectTransform keyBox;
@@ -214,7 +191,6 @@ public class VentView : MonoBehaviour
         DestroySign(alertSign);
     }
 
-    // Switches to the view from inside these ducts.
     public void Open(VentNetwork network)
     {
         cells = network.Cells;
@@ -232,20 +208,16 @@ public class VentView : MonoBehaviour
         noiseSign.sprite = null;
         keyBox.gameObject.SetActive(false);
 
-        // The texture is sized from the screen, so make sure the layout is current first.
         Canvas.ForceUpdateCanvases();
         Resize();
     }
 
-    // Back to the normal view.
     public void Close()
     {
         cells = null;
         inside.SetActive(false);
     }
 
-    // Where the player's eyes are on the map, in cells from its bottom left corner; which way they're looking, in
-    // degrees clockwise from up the map; and how far the crawl has dipped their head.
     public void SetCamera(Vector2 eyePosition, float angleDegrees, float headBob)
     {
         eye = eyePosition;
@@ -253,17 +225,14 @@ public class VentView : MonoBehaviour
         bob = headBob;
     }
 
-    // Something in the dark looking back, this many cells straight ahead. 0 for nothing.
     public void SetEyes(float depth) => eyesDepth = depth;
 
-    // The drone, if it's out, and where it is on the map.
     public void SetDrone(bool isOut, Vector2 position)
     {
         droneOut = isOut;
         dronePosition = position;
     }
 
-    // Which way the drone is looking, how far through locking on it is (0 to 1), and how far down from its hatch it hangs.
     public void SetDroneLook(float angleDegrees, float lockAmount, float rise)
     {
         droneAngle = angleDegrees;
@@ -273,7 +242,6 @@ public class VentView : MonoBehaviour
         droneRise = Mathf.Clamp01(rise);
     }
 
-    // The rat, if it's running, and where it is on the map.
     public void SetRat(bool isOut, Vector2 position)
     {
         ratOut = isOut;
@@ -282,7 +250,6 @@ public class VentView : MonoBehaviour
 
     public void SetAlert(Alert level) => alert = level;
 
-    // The flashlight stutters badly while something is coming.
     public void SetPanic(bool on)
     {
         panic = on;
@@ -291,16 +258,12 @@ public class VentView : MonoBehaviour
 
     public void Shake(float strength) => shake = Mathf.Clamp01(Mathf.Max(shake, strength));
 
-    // 0 to 1: how close the noise is to giving the player away.
     public void SetNoise(float amount) => noise = Mathf.Clamp01(amount);
 
-    // The meter thickens for a moment, so a bang is felt even when it only adds a little.
     public void NoiseSpike(float strength) => noiseKick = Mathf.Max(noiseKick, strength);
 
-    // The walls close in around the view while the player is wedged in a squeeze.
     public void SetTight(bool on) => tight = on;
 
-    // The key to press next during a squeeze, and how much of its time is left, 0 to 1.
     public void ShowKey(char key, float timeLeft01)
     {
         showingKey = true;
@@ -315,24 +278,20 @@ public class VentView : MonoBehaviour
 
     public void HideKey() => showingKey = false;
 
-    // The key box flashes red and jolts.
     public void KeyMistake()
     {
         mistakeFlash = 1f;
         Shake(1f);
     }
 
-    // A hint that stays while it's set, like how to climb out. Null for none.
     public void SetHint(string text) => steadyHint = text;
 
-    // A hint that shows over the steady one for a few seconds.
     public void FlashHint(string text, float seconds)
     {
         flashHint = text;
         flashHintTimer = seconds;
     }
 
-    // Unscaled time, so a pause or hit stop can't stall it.
     public IEnumerator FadeTo(float alpha, float duration)
     {
         float start = fade.color.a;
@@ -372,9 +331,6 @@ public class VentView : MonoBehaviour
         UpdateHint(deltaTime);
     }
 
-    // --- The duct ---
-
-    // Makes the texture match the screen, and works out where the flashlight's beam falls on it.
     void Resize()
     {
         Vector2 size = viewRect.rect.size;
@@ -397,7 +353,6 @@ public class VentView : MonoBehaviour
         focal = FocalPerHeight * height;
         horizon = height * 0.5f;
 
-        // A round beam from the middle of the screen, the same at every distance, since it comes from the player's eyes.
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -419,7 +374,6 @@ public class VentView : MonoBehaviour
 
         for (int x = 0; x < width; x++)
         {
-            // The ray moves one unit forward per unit along it, so distance along it is depth straight ahead: no fisheye.
             Vector2 ray = forward + right * ((x + 0.5f - width * 0.5f) / focal);
             float depth = Cast(ray, out Vector2 hit, out bool facesX, out float collarDepth, out Vector2 collarHit, out bool collarFacesX);
             columnDepth[x] = depth;
@@ -440,7 +394,6 @@ public class VentView : MonoBehaviour
                 float row = y + 0.5f;
                 float light = beam[index] * torch;
 
-                // The collar is nearer than anything behind it, except the hole through it.
                 if (collar)
                 {
                     float collarHeight = eyeHeight + (row - horizon) * collarDepth / focal;
@@ -475,8 +428,6 @@ public class VentView : MonoBehaviour
         }
     }
 
-    // Steps the ray from cell to cell until it enters a solid one. Returns the depth, or MaxDistance if nothing is that
-    // close. Also finds the first place it goes from open duct into a squeeze, where the collar stands.
     float Cast(Vector2 ray, out Vector2 hit, out bool facesX, out float collarDepth, out Vector2 collarHit, out bool collarFacesX)
     {
         int cx = Mathf.FloorToInt(eye.x);
@@ -540,7 +491,6 @@ public class VentView : MonoBehaviour
         return cells[x, y];
     }
 
-    // A floor or ceiling plate at this point on the map.
     Color32 PlatePixel(Vector2 point, float distance, float light, bool ceiling)
     {
         int cx = Mathf.FloorToInt(point.x);
@@ -551,7 +501,6 @@ public class VentView : MonoBehaviour
         float across = Mathf.Abs(u - 0.5f);
         float along = Mathf.Abs(v - 0.5f);
 
-        // A grate in the floor: bars, with the lamps of the room below between them. It glows torch or no torch.
         if (!ceiling && cell == VentCell.Grate && across < GrateHalf && along < GrateHalf)
         {
             bool frame = across > GrateHalf - 0.04f || along > GrateHalf - 0.04f;
@@ -573,7 +522,6 @@ public class VentView : MonoBehaviour
         return Shade(surface, point, ceiling ? DuctHeight : 0f, distance, light);
     }
 
-    // A crumpled plate: sunk and dark in the middle, with bright creases where the metal folded.
     static Color DentPixel(float u, float v)
     {
         float du = u - 0.5f;
@@ -591,13 +539,12 @@ public class VentView : MonoBehaviour
         float along = Mathf.Repeat(facesX ? hit.y : hit.x, 1f);
         Color surface = WallColor;
         if (wallHeight < 0.03f || wallHeight > DuctHeight - 0.03f)
-            surface = SeamColor;    // the corners where the wall meets the floor and ceiling
+            surface = SeamColor;
         else if (along < RibHalf || along > 1f - RibHalf)
             surface = Mathf.Abs(Mathf.Repeat(wallHeight, 0.25f) - 0.125f) < 0.02f ? RivetColor : RibColor;
         else if (Mathf.Abs(wallHeight - 0.5f) < 0.01f)
             surface = SeamColor;
 
-        // Walls facing along x are a little darker, so corners read.
         if (facesX) surface *= 0.85f;
         return Shade(surface, hit, wallHeight, distance, light);
     }
@@ -605,7 +552,6 @@ public class VentView : MonoBehaviour
     Color32 CollarPixel(Vector2 at, bool facesX, float collarHeight, float distance, float light)
     {
         float across = Mathf.Repeat(facesX ? at.y : at.x, 1f);
-        // How far outside the hole this is, so there's a dark lip right around it.
         float fromHole = Mathf.Max(Mathf.Max(CollarGapMin - across, across - CollarGapMax),
             Mathf.Max(CollarBottom - collarHeight, collarHeight - CollarTop));
         Color surface = fromHole < 0.035f ? SeamColor
@@ -614,7 +560,6 @@ public class VentView : MonoBehaviour
         return Shade(surface, at, collarHeight, distance, light);
     }
 
-    // Lit by the flashlight, if it's near enough, by any grate close by, and by the drone's lens.
     Color32 Shade(Color surface, Vector2 point, float surfaceHeight, float distance, float light)
     {
         float flash = 0f;
@@ -633,7 +578,6 @@ public class VentView : MonoBehaviour
         return color;
     }
 
-    // Light coming up through the grates around a point: strongest on the floor right over one.
     float GrateGlow(Vector2 point, float surfaceHeight)
     {
         int cx = Mathf.FloorToInt(point.x);
@@ -653,8 +597,6 @@ public class VentView : MonoBehaviour
         return glow * GrateStrength;
     }
 
-    // Red light from the drone: a glow round it, and its searchlight thrown down the duct it's looking along, so the
-    // beam sweeping past a corner shows before the drone does.
     float DroneLight(Vector2 point, float surfaceHeight)
     {
         if (!droneOut) return 0f;
@@ -676,10 +618,8 @@ public class VentView : MonoBehaviour
         return light;
     }
 
-    // How high it hangs: down from the ceiling as it comes out of its hatch.
     float DroneZ => Mathf.Lerp(DuctHeight + 0.15f, DroneHeight, droneRise) + droneHover;
 
-    // Something in the dark looking back: two eyes that shine without any light on them.
     void DrawEyes()
     {
         if (eyesDepth <= NearClip || eyesDepth > columnDepth[width / 2]) return;
@@ -694,7 +634,6 @@ public class VentView : MonoBehaviour
         Ellipse(middle + gap, eyeRow, radius, radius, glint, eyesDepth);
     }
 
-    // The lens pulses while the drone searches and strobes while it chases; it bobs as it hovers.
     void UpdateDroneLook()
     {
         float time = Time.unscaledTime;
@@ -704,9 +643,6 @@ public class VentView : MonoBehaviour
             : 0.6f + 0.4f * Mathf.PerlinNoise(time * 3f, 0.5f);
     }
 
-    // A maintenance drone hanging from its hatch on a cable: a flat body, a blur of rotors over it, two claws folded under
-    // it, and one red eye. The eye burns bright and big when it's looking your way, and is a dull red slit when it's
-    // looking away.
     void DrawDrone()
     {
         if (!droneOut) return;
@@ -736,12 +672,10 @@ public class VentView : MonoBehaviour
         Color claw = DroneClawColor * lit + DroneClawColor * Ambient;
         claw.a = 1f;
 
-        // How squarely it's looking at the player.
         Vector2 back = -toDrone.normalized;
         float facing = Mathf.Clamp01(Vector2.Dot(droneFacing, back));
         float stare = Mathf.Max(facing * facing, droneLock);
 
-        // The cable up into the hatch.
         for (float y = row; y < ceilingRow; y += 1f)
             Ellipse(middle, y, 0.012f * scale, 0.6f, claw, depth);
 
@@ -749,7 +683,6 @@ public class VentView : MonoBehaviour
         Ellipse(middle, row + DroneRotorRise * scale, DroneRotorWidth * 0.5f * scale * spin, 0.015f * scale, rotor, depth);
         Ellipse(middle, row, DroneBodyWidth * 0.5f * scale, DroneBodyHeight * 0.5f * scale, body, depth);
 
-        // Claws, folded down under it, twitching.
         float twitch = Mathf.Sin(Time.unscaledTime * 9f) * 0.015f * (1f + 3f * droneLock);
         for (int side = -1; side <= 1; side += 2)
         {
@@ -758,7 +691,6 @@ public class VentView : MonoBehaviour
                 Ellipse(x + side * i * 0.012f * scale, row - (DroneBodyHeight * 0.5f + i * 0.035f) * scale, 0.014f * scale, 0.02f * scale, claw, depth);
         }
 
-        // The eye: a dull slit looking away, a burning round eye looking at you, a strobing white-hot one locking on.
         Color lensColor = Color.Lerp(DroneLensColor * 0.3f, DroneLensColor, droneGlow) * Mathf.Max(fog, 0.6f * stare);
         lensColor.a = 1f;
         float lensWide = DroneLensSize * (0.7f + 0.8f * stare + 0.5f * droneLock) * 0.5f * scale;
@@ -773,7 +705,6 @@ public class VentView : MonoBehaviour
         }
     }
 
-    // The rat, low on the floor: a dark body and head, a tail behind, and two eyes that shine back in the torch.
     void DrawRat()
     {
         if (!ratOut) return;
@@ -797,7 +728,6 @@ public class VentView : MonoBehaviour
         Ellipse(middle + 0.035f * scale, row + run + RatHeight * 0.35f * scale, 0.012f * scale, 0.012f * scale, eyes, depth);
     }
 
-    // Locking on, the picture tears: rows slip sideways and the whole view runs red, worse the nearer the lock is done.
     void TearForLock()
     {
         if (droneLock <= 0f) return;
@@ -822,7 +752,6 @@ public class VentView : MonoBehaviour
         }
     }
 
-    // A filled ellipse at this depth, hidden in any column where a wall is nearer.
     void Ellipse(float centerX, float centerY, float radiusX, float radiusY, Color32 color, float depth)
     {
         radiusX = Mathf.Max(0.5f, radiusX);
@@ -843,7 +772,6 @@ public class VentView : MonoBehaviour
         }
     }
 
-    // The flashlight stutters now and then: a short dip, sometimes twice in a row. Much worse while something is coming.
     void UpdateTorch(float deltaTime)
     {
         flickerTimer -= deltaTime;
@@ -861,8 +789,6 @@ public class VentView : MonoBehaviour
         }
     }
 
-    // --- The overlay ---
-
     void UpdateShake(float deltaTime)
     {
         shake = Mathf.MoveTowards(shake, 0f, 3f * deltaTime);
@@ -875,7 +801,6 @@ public class VentView : MonoBehaviour
         shownNoise = Mathf.MoveTowards(shownNoise, noise, 3f * deltaTime);
         noiseKick = Mathf.MoveTowards(noiseKick, 0f, 3f * deltaTime);
 
-        // Pale while it's quiet, amber as it fills, red once it's full - and pulsing while it's full or the drone is chasing.
         bool alarmed = noise >= 1f || alert == Alert.Chasing;
         Color color = shownNoise < 0.5f
             ? Color.Lerp(CalmColor, WarningColor, shownNoise * 2f)
@@ -886,8 +811,6 @@ public class VentView : MonoBehaviour
         noiseBar.color = color;
         noiseBar.rectTransform.sizeDelta = new Vector2(MeterWidth * shownNoise, MeterHeight + MeterKickHeight * noiseKick);
 
-        // A "!" while it's full or the drone is chasing, a "?" while it searches or the noise is getting up there.
-        // Each pops in a little too big whenever it changes.
         Sprite wanted = alarmed ? alertSign
             : alert == Alert.Searching || shownNoise >= SignAt ? searchSign
             : null;
@@ -955,7 +878,6 @@ public class VentView : MonoBehaviour
         RectTransform insideRect = Fill(NewRect("Inside", transform));
         inside = insideRect.gameObject;
 
-        // Solid black under everything, so the level never shows around the edges whatever the screen size.
         Block("Backing", insideRect, 0f, 0f, 1f, 1f, Color.black);
 
         viewRect = Fill(NewRect("Duct", insideRect));
@@ -964,7 +886,6 @@ public class VentView : MonoBehaviour
         viewImage = viewRect.gameObject.AddComponent<RawImage>();
         viewImage.raycastTarget = false;
 
-        // The walls of a squeeze, closed right back to the screen edges until one is needed.
         squeezeWalls = new[]
         {
             Block("Squeeze Left", insideRect, 0f, 0f, 0f, 1f, SqueezeWallColor),
@@ -978,7 +899,6 @@ public class VentView : MonoBehaviour
         vignette.color = new Color(0f, 0f, 0f, VignetteAlpha);
         vignette.raycastTarget = false;
 
-        // The noise meter along the bottom: a bar that grows out from the middle, with its sign above.
         Image track = Block("Noise Track", insideRect, 0.5f, MeterY, 0.5f, MeterY, TrackColor);
         track.rectTransform.sizeDelta = new Vector2(MeterWidth, MeterHeight);
         noiseBar = Block("Noise", insideRect, 0.5f, MeterY, 0.5f, MeterY, CalmColor);
@@ -990,15 +910,12 @@ public class VentView : MonoBehaviour
         searchSign = MakeSign(SearchArt);
         alertSign = MakeSign(AlertArt);
 
-        // Letters and spaces only: the game's HUD font has no punctuation. The font leaves a wide gap after its N,
-        // which reads as a space at this size, so that pair is pulled together.
         TextMeshProUGUI meterLabel = Label("Noise Label", insideRect, "N<space=-0.04em>OISE", 24f, font);
         meterLabel.color = new Color(0.8f, 0.84f, 0.9f, 0.45f);
         meterLabel.rectTransform.anchorMin = meterLabel.rectTransform.anchorMax = new Vector2(0.5f, MeterY);
         meterLabel.rectTransform.sizeDelta = new Vector2(120f, 40f);
         meterLabel.rectTransform.anchoredPosition = new Vector2(-MeterWidth * 0.5f - 70f, 0f);
 
-        // The key to press during a squeeze, with how long is left to press it underneath.
         keyBox = NewRect("Squeeze Key", insideRect);
         keyBox.anchorMin = keyBox.anchorMax = new Vector2(0.5f, 0.3f);
         keyBox.sizeDelta = new Vector2(170f, 170f);
@@ -1014,7 +931,6 @@ public class VentView : MonoBehaviour
         keyTimeLeft = Block("Time Left", timeTrack.transform, 0f, 0f, 1f, 1f, KeyColor);
         keyBox.gameObject.SetActive(false);
 
-        // Big, and bright enough to read against the dark: everything said in the ducts comes up here.
         hint = Label("Hint", insideRect, "", 46f, font);
         hint.color = new Color(0.93f, 0.95f, 0.98f, 0.95f);
         hint.textWrappingMode = TextWrappingModes.Normal;
@@ -1023,7 +939,6 @@ public class VentView : MonoBehaviour
         hint.rectTransform.sizeDelta = new Vector2(1500f, 130f);
         hint.enabled = false;
 
-        // Fade, on top of everything.
         fade = Fill(NewRect("Fade", transform)).gameObject.AddComponent<Image>();
         fade.raycastTarget = false;
         SetFade(0f);
@@ -1046,7 +961,6 @@ public class VentView : MonoBehaviour
         return rect;
     }
 
-    // A solid block covering part of its parent, given as fractions of the parent.
     static Image Block(string name, Transform parent, float xMin, float yMin, float xMax, float yMax, Color color)
     {
         RectTransform rect = NewRect(name, parent);
@@ -1071,7 +985,6 @@ public class VentView : MonoBehaviour
         return label;
     }
 
-    // White where the art is filled, with a black outline so it reads on anything. The Image colour tints it.
     static Sprite MakeSign(string[] rows)
     {
         int artWidth = 0;
@@ -1100,7 +1013,7 @@ public class VentView : MonoBehaviour
                         for (int dx = -1; dx <= 1 && color.a == 0; dx++)
                             if (Filled(artX + dx, artY + dy)) color = new Color32(0, 0, 0, 255);
                 }
-                art[(signHeight - 1 - y) * signWidth + x] = color; // row 0 of the art is the top
+                art[(signHeight - 1 - y) * signWidth + x] = color;
             }
         }
 

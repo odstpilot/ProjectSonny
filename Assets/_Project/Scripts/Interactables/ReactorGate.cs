@@ -1,20 +1,13 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// The containment round the back of the reactor core, and the blast gates in it. Three kinds:
-//   Fence      a run of fence facing the camera: posts, mesh, a hazard-striped rail along the top
-//   SideFence  one cell of fence seen edge-on, running away up the screen: a post and its rail
-//   Gate       a gate in a frame, its shutter sliding up into the header to open, a lamp over it red while it's shut
-//              and green while it's open. A solid gate blocks the way while it's shut (the lockdown's, across the
-//              far side of the reactor); the fence's own are just how the bots come out (ReactorLockdown).
-// It stands on the floor and sorts like the furniture (DepthSort): this object sits at the middle of its foot. Drawn
-// in code at the tileset's 32 pixels to a cell. Placed by ChapterOneBuilder (PlaceReactorGauntlet).
+// fences and gates around the reactor
 public class ReactorGate : MonoBehaviour
 {
     public enum Kind { Fence, SideFence, Gate }
 
     const float PixelsPerUnit = 32f;
-    const int FenceHeight = 46;         // pixels up from its foot to the top rail
+    const int FenceHeight = 46;
     const int GateHeight = 70;
     const int Header = 10;
 
@@ -69,7 +62,6 @@ public class ReactorGate : MonoBehaviour
             default:
                 Piece("Frame", PixelArt.ToSprite(DrawFrame(width), PixelsPerUnit, new Vector2(0.5f, 0f)), 0).transform.localPosition = foot;
                 shutterHeight = GateHeight - Header;
-                // The shutter hangs from the header, so shrinking it from the bottom lifts it up into it.
                 shutter = Piece("Shutter", PixelArt.ToSprite(DrawShutter(width - 8, shutterHeight), PixelsPerUnit, new Vector2(0.5f, 1f)), 1);
                 shutter.transform.localPosition = foot + new Vector3(0f, shutterHeight / PixelsPerUnit, 0f);
                 lamp = Piece("Lamp", PixelArt.ToSprite(PixelArt.MakeTexture(4, 3, (x, y) => new Color32(255, 255, 255, 255)), PixelsPerUnit, new Vector2(0.5f, 0.5f)), 3);
@@ -126,7 +118,6 @@ public class ReactorGate : MonoBehaviour
         if (kind != Kind.Gate) return;
         float target = wantOpen ? 1f : 0f;
         if (progress == target) return;
-        // It never comes down on anyone: a solid gate waits till its doorway's clear.
         if (!wantOpen && solid && Occupied()) return;
         progress = Mathf.MoveTowards(progress, target, Time.deltaTime / Mathf.Max(0.01f, moveTime));
         Apply();
@@ -135,7 +126,6 @@ public class ReactorGate : MonoBehaviour
     void Apply()
     {
         if (kind != Kind.Gate) return;
-        // In whole pixels, so it stays crisp as it moves.
         int showing = Mathf.Max(2, Mathf.RoundToInt(shutterHeight * (1f - progress)));
         shutter.transform.localScale = new Vector3(1f, showing / (float)shutterHeight, 1f);
         Color color = progress >= 1f ? OpenLamp : ShutLamp;
@@ -152,11 +142,8 @@ public class ReactorGate : MonoBehaviour
         return false;
     }
 
-    // --- Drawing ---
-
     static bool Edge(int x, int y, int w, int h) => x == 0 || y == 0 || x == w - 1 || y == h - 1;
 
-    // Posts every cell, mesh between, a striped rail along the top, a kick plate along the bottom.
     static Texture2D DrawFence(int width)
     {
         int h = FenceHeight + 2;
@@ -166,13 +153,10 @@ public class ReactorGate : MonoBehaviour
             if (y >= h - 5) return Edge(x, y, width, h) || y == h - 5 ? Outline : (x / 4 + y) % 2 == 0 ? Hazard : HazardDark;
             if (post) return x % 32 == 0 || x == width - 1 ? Outline : x % 32 == 1 ? SteelLit : Steel;
             if (y <= 5) return y == 0 || y == 5 ? Outline : y == 4 ? SteelLit : Steel;
-            // Diamond mesh.
             return ((x + y) % 5 == 0 || (x - y + 100) % 5 == 0) ? Mesh : default;
         });
     }
 
-    // Seen edge-on, running away up the screen: a post at the near end, the mesh between as a thin strip, and the
-    // striped rail on top climbing toward the next post, run pixels further up.
     static Texture2D DrawSide(int run)
     {
         int w = 7, h = run + FenceHeight + 2;
@@ -189,7 +173,6 @@ public class ReactorGate : MonoBehaviour
         });
     }
 
-    // The gate's frame: posts either side, a header across the top with hazard stripes, a sill at the foot.
     static Texture2D DrawFrame(int width)
     {
         return PixelArt.MakeTexture(width, GateHeight, (x, y) =>
@@ -198,7 +181,7 @@ public class ReactorGate : MonoBehaviour
             if (y >= GateHeight - Header)
             {
                 if (Edge(x, y, width, GateHeight) || y == GateHeight - Header) return Outline;
-                if (Mathf.Abs(x - width / 2) <= 4 && y >= GateHeight - Header + 2 && y <= GateHeight - 3) return HazardDark;   // the lamp's housing
+                if (Mathf.Abs(x - width / 2) <= 4 && y >= GateHeight - Header + 2 && y <= GateHeight - 3) return HazardDark;
                 return (x / 4 + y) % 2 == 0 ? Hazard : HazardDark;
             }
             if (post) return x == 0 || x == width - 1 ? Outline : x == 1 || x == width - 4 ? SteelLit : Steel;
@@ -207,7 +190,6 @@ public class ReactorGate : MonoBehaviour
         });
     }
 
-    // The shutter: heavy slats, a striped edge along its foot.
     static Texture2D DrawShutter(int width, int height)
     {
         return PixelArt.MakeTexture(width, height, (x, y) =>

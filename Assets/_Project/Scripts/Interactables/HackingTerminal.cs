@@ -2,13 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-// A comms terminal wired into the station's broadcasts. Walk up and press E to tune in (see SignalTuner): match the
-// broadcast's wave with three knobs to intercept its transmission, recovering any credential it carries. Once it's
-// hacked, pressing E again replays the transmission.
-// The puzzle is made up the first time and then kept, knob positions included, so getting chased off the terminal
-// doesn't throw away the player's progress.
-// Setup: a solid Collider2D on this object for the terminal's footprint, and a TransmissionData. The console art is
-// made in code unless a sprite is set.
+// terminal to tune in a broadcast
 public class HackingTerminal : Terminal
 {
     const float PixelsPerUnit = 20f;
@@ -48,8 +42,8 @@ public class HackingTerminal : Terminal
     private SpriteRenderer screen;
     private Light2D glow;
     private float glowIntensity;
-    private float[] signal;     // the broadcast's AMP, FREQ, and PHASE, 0 to 1
-    private float[] knobs;      // where the player left the knobs
+    private float[] signal;
+    private float[] knobs;
 
     protected override void Awake()
     {
@@ -74,7 +68,6 @@ public class HackingTerminal : Terminal
         SignalTuner.Get(screenFont).Open(this, player);
     }
 
-    // The broadcast to match, and where the knobs start. Made up the first time and kept after.
     public void GetSignal(float[] targetsOut, float[] knobsOut)
     {
         if (signal == null)
@@ -84,7 +77,6 @@ public class HackingTerminal : Terminal
             for (int i = 0; i < 3; i++)
             {
                 signal[i] = i == 2 ? Random.value : Random.Range(0.1f, 0.9f);
-                // Start well away from the answer.
                 float start;
                 do start = Random.value;
                 while (SignalTuner.KnobDistance(i, start, signal[i]) < (i == 2 ? 0.2f : 0.3f));
@@ -100,7 +92,6 @@ public class HackingTerminal : Terminal
         if (knobs != null) values.CopyTo(knobs, 0);
     }
 
-    // The signal locked: recover the credential and let the level know.
     public void MarkHacked()
     {
         if (IsHacked) return;
@@ -152,7 +143,6 @@ public class HackingTerminal : Terminal
         glow.color = IdleScreen;
     }
 
-    // A standing console: dark frame, a screen, three knobs, and a vent at the bottom.
     static Sprite MakeConsole()
     {
         var frame = new Color32(26, 24, 22, 255);
@@ -175,7 +165,6 @@ public class HackingTerminal : Terminal
         return PixelArt.ToSprite(texture, PixelsPerUnit, new Vector2(0.5f, 0f));
     }
 
-    // White, tinted by the screen color: a faint glow with a wave across it.
     static Sprite MakeScreen()
     {
         const int width = 16;

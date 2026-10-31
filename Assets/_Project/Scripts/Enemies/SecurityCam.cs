@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -13,8 +12,6 @@ public class SecurityCam : MonoBehaviour
     public int numRays = 5;
     public float coneAngle = 45f;
 
-    // Include Player and obstacles, but exclude
-    // the camera's own collider.
     public LayerMask visionMask = ~0;
 
     [Header("Visuals")]
@@ -25,11 +22,8 @@ public class SecurityCam : MonoBehaviour
 
     [Header("Warden Alerts")]
 
-    // Minimum time between updated alerts.
     public float alertInterval = 0.5f;
 
-    // Minimum player movement before sending
-    // another location.
     public float alertMoveDistance = 1f;
 
     private bool playerInSight;
@@ -41,11 +35,6 @@ public class SecurityCam : MonoBehaviour
     private float lastAlertTime;
 
     private Warden lastReportedWarden;
-
-
-    // =====================================================
-    // START
-    // =====================================================
 
     void Start()
     {
@@ -84,11 +73,6 @@ public class SecurityCam : MonoBehaviour
         }
     }
 
-
-    // =====================================================
-    // UPDATE
-    // =====================================================
-
     void Update()
     {
         if (target == null)
@@ -98,8 +82,6 @@ public class SecurityCam : MonoBehaviour
 
         if (!playerInSight)
         {
-            // Allow a new alert when the player
-            // re-enters the camera's view.
             hasReported = false;
             return;
         }
@@ -111,16 +93,12 @@ public class SecurityCam : MonoBehaviour
         if (warden == null)
             return;
 
-        // Don't interrupt the Warden's own chase
-        // or attack.
         if (warden.CurrentState == Warden.WardenState.Chasing ||
             warden.CurrentState == Warden.WardenState.Attacking)
         {
-      
             return;
         }
 
-        // Don't repeatedly report the same location.
         if (hasReported && lastReportedWarden == warden)
         {
             if (Time.time - lastAlertTime < alertInterval)
@@ -135,12 +113,8 @@ public class SecurityCam : MonoBehaviour
             }
         }
 
-        // Activate an inactive Warden.
-        
             warden.ActivitedByCam();
-        
 
-        // Tell it where the camera saw the player.
         warden.NewTarget(target.position);
         Debug.Log("hhdudiduduididuh");
         lastReportedPosition = target.position;
@@ -149,11 +123,6 @@ public class SecurityCam : MonoBehaviour
         lastAlertTime = Time.time;
         hasReported = true;
     }
-
-
-    // =====================================================
-    // CLOSEST WARDEN
-    // =====================================================
 
     public Warden GetClosestWarden(Vector2 position)
     {
@@ -167,7 +136,6 @@ public class SecurityCam : MonoBehaviour
                 continue;
 
             Warden warden = obj.GetComponent<Warden>();
-       
 
             if (warden == null || !warden.enabled)
                 continue;
@@ -187,26 +155,15 @@ public class SecurityCam : MonoBehaviour
         return closest;
     }
 
-
-    // =====================================================
-    // PLAYER DETECTION
-    // =====================================================
-
     void CheckForPlayer()
     {
         playerInSight = false;
-    
+
         Vector2 origin = transform.position;
 
-        // The camera looks in its local RIGHT direction.
-        // Rotate the camera object to rotate its vision.
         Vector2 forward = transform.right;
 
         float halfAngle = coneAngle * 0.5f;
-
-        // ---------------------------------------------
-        // DRAW THE CAMERA'S VISION RAYS
-        // ---------------------------------------------
 
         for (int i = 0; i < rayLines.Count; i++)
         {
@@ -233,27 +190,21 @@ public class SecurityCam : MonoBehaviour
             rayLines[i].SetPosition(1, endPoint);
         }
 
-        // ---------------------------------------------
-        // DETECT THE PLAYER
-        // ---------------------------------------------
-
         Vector2 toPlayer =
             (Vector2)target.position - origin;
 
         float distance = toPlayer.magnitude;
 
-        // Outside detection distance.
         if (distance > detectionDistance)
             return;
 
         if (distance <= 0.001f)
         {
             playerInSight = true;
-         
+
             return;
         }
 
-        // Outside the camera's viewing angle.
         float angleToPlayer = Vector2.Angle(
             forward,
             toPlayer
@@ -262,7 +213,6 @@ public class SecurityCam : MonoBehaviour
         if (angleToPlayer > halfAngle)
             return;
 
-        // Check whether a wall blocks the player.
         RaycastHit2D playerHit = Physics2D.Raycast(
             origin,
             toPlayer.normalized,
@@ -275,13 +225,10 @@ public class SecurityCam : MonoBehaviour
             Debug.Log("not dected");
             return;
         }
-        
 
-        // Support Player colliders on child objects.
         if (playerHit.collider.transform == target ||
             playerHit.collider.transform.IsChildOf(target))
         {
-            
             playerInSight = true;
         }
     }

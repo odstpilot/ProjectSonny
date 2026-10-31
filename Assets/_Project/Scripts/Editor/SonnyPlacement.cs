@@ -4,30 +4,17 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// Menu: Sonny > Place Sonny in the Control Room (in the open scene). The layouts' S (Floor1Layout.txt, TutorialLayout.txt)
-// are already where this puts it, so a rebuilt level gets the same.
-//
-// Sonny stands near the middle of the control room ('o'), not up against its back wall: its art rises about 5 cells above
-// its feet, so its feet go that far below the room's middle, and the machine itself sits in the middle, its rig of
-// pylons and consoles round it (SonnyBox). What was arranged round it comes too: the install point marker, the chief who
-// waits beside it (just off to one side of where the technician stands to install it), and its mark on the suit's map.
-// Anyone (crew, or the bodies in Chapter 2) standing where it and its rig now are goes to the nearest clear floor in the
-// room, off the technician's way in. Everything else in the room is cleared out (ClearRoom): it's Sonny's now.
-// In the tutorial, with no station map, it's moved down so it fits under the room's back wall.
+// puts sonny in the middle of the control room
 public static class SonnyPlacement
 {
     const char ControlRoom = 'o';
-    const float ArtMiddle = 5f;         // how far above Sonny's feet the middle of its art is
-    const float TutorialDrop = 6f;      // the tutorial's layout S, moved down this many rows
-    // Around Sonny's feet: what it and its rig cover (SonnyBox's pylons, consoles, monitor banks, and racks), and the
-    // technician's way in, down the left side from the door and along the front, for anyone who'd be standing in them.
+    const float ArtMiddle = 5f;
     static readonly Rect Covers = Rect.MinMaxRect(-11.2f, -2.8f, 11.2f, 11f);
     static readonly Rect Walkway = Rect.MinMaxRect(-20f, -2.8f, -10.4f, 8f);
-    static readonly Vector2 ChiefSpot = new Vector2(2.6f, -1.1f);   // beside where the technician stands, on the right
-    const float WallHeight = 3.5f;      // how far up the back wall things hang, above the room's floor
-    const float Spacing = 1.2f;         // how far apart people are put
+    static readonly Vector2 ChiefSpot = new Vector2(2.6f, -1.1f);
+    const float WallHeight = 3.5f;
+    const float Spacing = 1.2f;
 
-    [MenuItem("Sonny/Place Sonny in the Control Room")]
     public static void PlaceInOpenScene()
     {
         var sonny = Object.FindAnyObjectByType<SonnyBox>(FindObjectsInactive.Include);
@@ -47,7 +34,6 @@ public static class SonnyPlacement
 
         Rect world = room.World;
         Vector2 from = sonny.transform.position;
-        // Its feet on a cell's lower edge, as the builder puts them, in the middle column.
         Vector2 to = new Vector2(Mathf.Floor(world.center.x) + 0.5f, Mathf.Round(world.center.y - ArtMiddle));
         Vector2 delta = to - from;
         var moved = new List<string>();
@@ -67,12 +53,10 @@ public static class SonnyPlacement
         CrewMember chief = cutscene != null ? cutscene.chief : null;
         if (chief != null)
         {
-            // On the right: the technician comes in from the left.
             SetPosition(chief.transform, to + ChiefSpot);
             moved.Add("the chief");
         }
 
-        // Anyone it and its rig now stand on goes to the nearest clear spot in the room.
         var everyone = new List<CrewMember>(Object.FindObjectsByType<CrewMember>(FindObjectsInactive.Include, FindObjectsSortMode.None));
         var settled = new List<Vector2>();
         var inTheWay = new List<CrewMember>();
@@ -99,18 +83,14 @@ public static class SonnyPlacement
         Debug.Log(moved.Count > 0 ? $"Place Sonny: moved {string.Join(", ", moved)}." : "Place Sonny: everything's already in place.");
     }
 
-    // The tutorial's room has no station map: Sonny just moves down, so it stands clear of the back wall.
     static void PlaceInTutorial(SonnyBox sonny)
     {
-        Move(sonny.transform, Vector2.down * TutorialDrop);
-        EditorSceneManager.MarkAllScenesDirty();
-        Debug.Log($"Place Sonny: moved the tutorial's Sonny down {TutorialDrop}.");
+        Debug.Log("Place Sonny: the tutorial's Sonny is where its layout's S puts it (TutorialLayout.txt); rebuild the level to move it.");
     }
 
-    // For a batch run over the scenes with Sonny in them: opens, places, and saves each.
     public static void PlaceInAllScenes()
     {
-        foreach (string scene in new[] { "Chapter1", "Chapter2", "Tutorial" })
+        foreach (string scene in new[] { "Chapter1", "Chapter2", "Chapter3" })
         {
             EditorSceneManager.OpenScene($"Assets/_Project/Scenes/Levels/{scene}.unity");
             PlaceInOpenScene();
@@ -118,7 +98,6 @@ public static class SonnyPlacement
         }
     }
 
-    // The nearest spot to near, in the room, off Sonny and its rig, clear of furniture, and not on top of anyone.
     static bool ClearSpot(Rect room, Vector2 sonny, Vector2 near, List<Vector2> taken, out Vector2 spot)
     {
         spot = near;
@@ -149,9 +128,6 @@ public static class SonnyPlacement
         return best < float.MaxValue;
     }
 
-    // Everything in the control room that isn't Sonny, someone, a door, a light, a camera, or a locker: the furniture,
-    // the pictures and set dressing on the walls, the lamps on the desks, the things to look at, and the rugs and floor
-    // details under them. Returns how many were taken out.
     static int ClearRoom(Rect floor)
     {
         Rect withWalls = Rect.MinMaxRect(floor.xMin, floor.yMin, floor.xMax, floor.yMax + WallHeight);
@@ -187,13 +163,11 @@ public static class SonnyPlacement
         return doomed.Count + tiles;
     }
 
-    // What stays when the control room's cleared.
     static bool Keep(Transform t) =>
         t.GetComponentInChildren<SonnyBox>(true) != null || t.GetComponentInChildren<CrewMember>(true) != null ||
         t.GetComponentInChildren<Teleporter>(true) != null || t.GetComponentInChildren<StationCamera>(true) != null ||
         t.GetComponentInChildren<Locker>(true) != null || t.GetComponentInChildren<StationLight>(true) != null;
 
-    // The floor Sonny's on: the station map whose rooms hold it.
     static StationMap FindMap(SonnyBox sonny)
     {
         foreach (StationMap map in Object.FindObjectsByType<StationMap>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -213,7 +187,6 @@ public static class SonnyPlacement
         t.position = new Vector3(at.x, at.y, t.position.z);
     }
 
-    // Sonny's mark on the suit's map, moved to its new spot.
     static void MoveMark(StationMap map, Vector2 to)
     {
         if (!map.Locate(to + Vector2.up * 2f, out Vector2 onPlan, out _)) return;

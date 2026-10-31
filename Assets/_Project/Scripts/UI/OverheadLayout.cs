@@ -1,28 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Keeps the little boxes over the level from covering each other: speech (CrewSpeech: the crew, their group chats, the
-// technician's thoughts, the bots) and the E and Q tags (PromptBadge). Each frame, after they've all worked out where
-// they want to be, they're laid out in order: the tags first, where they are, since they point at what the player can
-// use; then the speech, oldest first, each nudged straight up until it's clear of everything already placed. So two
-// people talking side by side stack their lines instead of printing over each other, and a line already up keeps its
-// place: whatever's said after makes room round it. The dialogue box, Pip, and the
-// HUD aren't part of it; they have their own places on screen.
-// Made the first time something joins it. Everything's measured in world units.
+// keeps overhead boxes from overlapping
 [DefaultExecutionOrder(1000)]
 public class OverheadLayout : MonoBehaviour
 {
     public interface IItem
     {
-        bool Alive { get; }         // false once it's gone for good, and it's dropped
-        bool Visible { get; }       // taking up room right now
-        int Priority { get; }       // lower is placed first, and never moves for anything placed after
-        float Since { get; }        // when it came up: of the same priority, the earlier is placed first
-        Rect Wanted { get; }        // where it would be with nothing else about, in the world
-        void Place(Vector2 offset); // where it's to be instead: this far from Wanted
+        bool Alive { get; }
+        bool Visible { get; }
+        int Priority { get; }
+        float Since { get; }
+        Rect Wanted { get; }
+        void Place(Vector2 offset);
     }
 
-    const float Gap = 0.06f;        // between one box and the next, in world units
+    const float Gap = 0.06f;
     const int MaxPushes = 32;
 
     static readonly List<IItem> items = new List<IItem>();
@@ -50,7 +43,6 @@ public class OverheadLayout : MonoBehaviour
         order.Clear();
         foreach (IItem item in items)
             if (item.Visible) order.Add(item);
-        // Tags first, then whatever came up first, so nothing already on screen jumps for something new.
         order.Sort((a, b) =>
         {
             if (a.Priority != b.Priority) return a.Priority.CompareTo(b.Priority);

@@ -4,44 +4,25 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// A conversation with someone aboard, opened by walking up to them and pressing E (CrewMember). Built from code the first
-// time it's needed, so there's no canvas to set up. It's drawn as the station's own voice log, the same one Sonny will
-// later be listening in on:
-//  - a portrait window on the left with the speaker's live sprite in it (breathing, turning), on a CRT with scanlines
-//    and a line of interference rolling down it
-//  - their name on a tab in their own color, with their job beside it, and a voice meter that jumps while they talk
-//  - the line typed out a letter at a time, with a blip per letter pitched to their voice, pausing on punctuation
-//  - E (or Space or Enter) finishes the line, then moves on; a counter shows how far through they are
-//  - now and then the technician gets to answer: a few replies to pick from (W and S, or 1 to 3, then E), and the
-//    technician says the one picked, in their own voice and portrait, before the other goes on
-// It opens like an old monitor switching on, from a bright line out to full height, and closes the same way. The player
-// stands still while it's up, and it's cut off if they end up away from whoever they were talking to. Everything runs on
-// unscaled time. One per scene: DialogueBox.Get().
-//
-// A script is a list of lines, each one box:
-//   Some words.                        said by whoever the player is talking to
-//   > Some words.                      said by the technician
-//   * A reply. = An answer. = More.    one reply the player can pick. Lines in a row starting with * are one choice
-//                                      (three at most); after = come the other one's answers to it, a box each.
+// talking with the crew
 public class DialogueBox : MonoBehaviour
 {
     public class Speaker
     {
         public string name = "";
         public string role = "";
-        public Color color = GameUI.Amber;          // their name tab
-        public SpriteRenderer portrait;             // shown live in the window; null leaves it empty
-        public Color trim = new Color(0f, 0f, 0f, 0f);  // swapped in for the art's red trim, as on the crew
+        public Color color = GameUI.Amber;
+        public SpriteRenderer portrait;
+        public Color trim = new Color(0f, 0f, 0f, 0f);
         public float voicePitch = 1f;
-        [System.NonSerialized] public Transform anchor;  // where they stand; the talk's cut off if the player ends up far away
+        [System.NonSerialized] public Transform anchor;
     }
 
-    // One box of a script, or a choice of replies.
     class Beat
     {
         public bool technician;
         public string text;
-        public List<Reply> replies;             // not null for a choice
+        public List<Reply> replies;
     }
 
     class Reply
@@ -50,7 +31,7 @@ public class DialogueBox : MonoBehaviour
         public List<string> answers = new List<string>();
     }
 
-    const int SortingOrder = 95;                // over the tutorial HUD (90), under lockers and interact prompts
+    const int SortingOrder = 95;
     const float Width = 1360f;
     const float Height = 262f;
     const float PortraitSize = 262f;
@@ -62,7 +43,7 @@ public class DialogueBox : MonoBehaviour
     const float BlipFrequency = 540f;
     const int MaxReplies = 3;
     const float ChoiceRowHeight = 38f;
-    const float CutOffDistance = 4f;            // how far from the speaker the player can end up before the talk's cut off
+    const float CutOffDistance = 4f;
     static readonly Color TechnicianColor = new Color(0.86f, 0.42f, 0.33f);
 
     static readonly Color PortraitTop = new Color(0.07f, 0.2f, 0.25f);
@@ -71,8 +52,6 @@ public class DialogueBox : MonoBehaviour
     static DialogueBox instance;
     static int closedFrame = -10;
 
-    // Open, or closed so recently that the key that closed it is still down this frame. Anything else that answers to E
-    // should wait while this is true, so one press doesn't close a conversation and open something else.
     public static bool Busy => (instance != null && instance.open) || Time.frameCount <= closedFrame + 1;
 
     private bool built;
@@ -126,8 +105,6 @@ public class DialogueBox : MonoBehaviour
     }
 
     public static bool IsOpen => instance != null && instance.open;
-    // Which reply was picked at the last choice in the conversation open now or last closed, counted from 0; -1 if it
-    // had none. For a script that goes one way or another depending on what the technician said.
     public static int LastPick { get; private set; } = -1;
 
     void Awake()
@@ -143,8 +120,6 @@ public class DialogueBox : MonoBehaviour
         if (open && player != null) player.ClearScriptedInput();
     }
 
-    // Plays the script (see the top of this file) with who, and calls onClosed when it's over: true if it was seen to the
-    // end, false if it was cut off. Does nothing if it's already open.
     public void Open(Speaker who, IList<string> script, System.Action<bool> onClosed = null)
     {
         if (open || script == null) return;
@@ -251,7 +226,6 @@ public class DialogueBox : MonoBehaviour
         yield return WaitForAdvance();
     }
 
-    // The technician's turn: their replies, one picked, until E says it.
     IEnumerator Choose(List<Reply> replies, System.Action<int> chosen)
     {
         ShowSpeaker(technician);
@@ -273,7 +247,6 @@ public class DialogueBox : MonoBehaviour
             yield return Switch(true);
         }
 
-        // The press that got here shouldn't also pick.
         yield return null;
         while (true)
         {
@@ -302,7 +275,6 @@ public class DialogueBox : MonoBehaviour
             choiceBars[i].gameObject.SetActive(false);
         }
         chosen(picked);
-        // So the same press doesn't skip the line it's about to say.
         yield return null;
     }
 
@@ -351,7 +323,6 @@ public class DialogueBox : MonoBehaviour
                     Blip();
                     blipped = true;
                 }
-                // Stop after the end of a sentence or a clause, as someone speaking would.
                 pause = PauseAfter(letter);
                 if (pause > 0f) break;
             }
@@ -381,7 +352,6 @@ public class DialogueBox : MonoBehaviour
 
     IEnumerator WaitForAdvance()
     {
-        // The press that finished the typing shouldn't also skip the line.
         yield return null;
         while (!AdvancePressed()) yield return null;
     }
@@ -399,7 +369,6 @@ public class DialogueBox : MonoBehaviour
         SoundManager.PlayOneShot(voice, "Dialogue Blip", pitchScale: current.voicePitch * Random.Range(0.94f, 1.06f), fallback: blip);
     }
 
-    // Folds away without seeing the rest, and tells whoever opened it that it was cut off.
     void CutOff()
     {
         if (!open || cutOff) return;
@@ -430,7 +399,6 @@ public class DialogueBox : MonoBehaviour
         done?.Invoke(completed);
     }
 
-    // Like an old monitor: a bright line across the middle opens out to the full box, or the box folds back into it.
     IEnumerator Switch(bool on)
     {
         float seconds = on ? OpenTime : CloseTime;
@@ -460,7 +428,6 @@ public class DialogueBox : MonoBehaviour
     {
         if (!open) return;
 
-        // Through a door, or anywhere else away from them: the conversation's over.
         if (!cutOff && player != null && crew.anchor != null &&
             (Teleporter.IsTravelling || ((Vector2)player.transform.position - (Vector2)crew.anchor.position).sqrMagnitude > CutOffDistance * CutOffDistance))
         {
@@ -473,12 +440,10 @@ public class DialogueBox : MonoBehaviour
         float now = Time.unscaledTime;
         UpdatePortrait();
 
-        // The interference line rolling down the portrait, every couple of seconds.
         float roll = Mathf.Repeat(now * 0.45f, 1f);
         interference.anchorMin = new Vector2(0f, 1f - roll);
         interference.anchorMax = new Vector2(1f, 1f - roll);
 
-        // The voice meter jumps while they're talking and settles when they stop.
         for (int i = 0; i < meterBars.Count; i++)
         {
             float target = typing ? 0.25f + 0.75f * TitleUI.Hash(i * 17 + Mathf.FloorToInt(now * 14f)) : 0.15f;
@@ -491,7 +456,6 @@ public class DialogueBox : MonoBehaviour
         nextArrow.anchoredPosition = new Vector2(nextArrow.anchoredPosition.x, -2f - Mathf.Abs(Mathf.Sin(now * 5f)) * 5f);
     }
 
-    // Whoever's speaking's current sprite, cropped to their head and shoulders: a square from the top of the art.
     void UpdatePortrait()
     {
         if (current == null || current.portrait == null || current.portrait.sprite == null)
@@ -510,8 +474,6 @@ public class DialogueBox : MonoBehaviour
         portrait.uvRect = uv;
         portrait.enabled = true;
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -532,7 +494,6 @@ public class DialogueBox : MonoBehaviour
         blip = TitleUI.Tone("Dialogue Blip", BlipFrequency, 0.05f, 0.5f);
         tick = TitleUI.Tone("Dialogue Tick", BlipFrequency * 1.5f, 0.03f, 0.4f);
 
-        // A dark wash up from the bottom of the screen, so the box sits in shadow whatever's behind it.
         RectTransform shadeRect = GameUI.Anchor(GameUI.NewRect("Shade", transform), 0f, 0f, 1f, 0f);
         shadeRect.pivot = new Vector2(0.5f, 0f);
         shadeRect.sizeDelta = new Vector2(0f, 460f);
@@ -553,7 +514,6 @@ public class DialogueBox : MonoBehaviour
         BuildPortrait();
         BuildTextPanel();
 
-        // The bright line it opens out of.
         flash = GameUI.NewRect("Flash", box).gameObject.AddComponent<Image>();
         GameUI.Fill(flash.rectTransform);
         flash.material = TitleUI.Additive;
@@ -577,7 +537,6 @@ public class DialogueBox : MonoBehaviour
         backdrop.texture.filterMode = FilterMode.Bilinear;
         backdrop.raycastTarget = false;
 
-        // A soft glow behind their head, like the screen's own light.
         RawImage glow = GameUI.Anchor(GameUI.NewRect("Glow", portraitWindow), 0.1f, 0.25f, 0.9f, 1.05f).gameObject.AddComponent<RawImage>();
         glow.texture = TitleUI.PatchTexture;
         glow.color = TitleUI.Fade(GameUI.Cyan, 0.12f);
@@ -612,7 +571,6 @@ public class DialogueBox : MonoBehaviour
         panel.rectTransform.sizeDelta = new Vector2(-(PortraitSize + Gap), TextPanelHeight);
         Transform body = panel.transform;
 
-        // Name tab and job, sitting on the panel's top edge.
         RectTransform heading = GameUI.NewRect("Heading", body);
         heading.anchorMin = heading.anchorMax = heading.pivot = new Vector2(0f, 1f);
         heading.anchoredPosition = new Vector2(26f, 26f);
@@ -634,14 +592,12 @@ public class DialogueBox : MonoBehaviour
         nameLabel = GameUI.Label("Name", nameTab.transform, "", 30f, GameUI.Ink, TextAlignmentOptions.Center, GameUI.Heading);
         nameLabel.characterSpacing = 8f;
 
-        // Above the panel's edge, beside the top half of the tab.
         roleLabel = GameUI.Label("Role", heading, "", 24f, GameUI.Dim, TextAlignmentOptions.TopLeft);
         roleLabel.characterSpacing = 6f;
         roleLabel.fontSharedMaterial = GameUI.Shadow(roleLabel.font);
         var roleSize = roleLabel.gameObject.AddComponent<LayoutElement>();
         roleSize.minHeight = roleSize.preferredHeight = 52f;
 
-        // Top right: a voice meter and the log it's going into.
         RectTransform log = GameUI.NewRect("Log", body);
         log.anchorMin = log.anchorMax = log.pivot = new Vector2(1f, 1f);
         log.anchoredPosition = new Vector2(-28f, -18f);
@@ -680,7 +636,6 @@ public class DialogueBox : MonoBehaviour
         counter.rectTransform.anchoredPosition = new Vector2(36f, 16f);
         counter.rectTransform.sizeDelta = new Vector2(200f, 30f);
 
-        // The technician's replies, in place of the line, one row each, with a bar behind the one picked.
         RectTransform choices = GameUI.Anchor(GameUI.NewRect("Choices", body), 0f, 0f, 1f, 1f, 26f, 54f, 36f, 46f);
         for (int i = 0; i < MaxReplies; i++)
         {
@@ -707,7 +662,6 @@ public class DialogueBox : MonoBehaviour
             label.gameObject.SetActive(false);
         }
 
-        // Bottom right: [E] NEXT, with an arrow bobbing beside it once the line has finished.
         next = GameUI.NewRect("Next", body);
         next.anchorMin = next.anchorMax = next.pivot = new Vector2(1f, 0f);
         next.anchoredPosition = new Vector2(-30f, 16f);

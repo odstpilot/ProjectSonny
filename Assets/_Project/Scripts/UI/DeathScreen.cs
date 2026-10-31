@@ -3,19 +3,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Sonny's monitor, shown when the player dies. Black glass with scanlines and a faint grid; a life-sign trace sweeps
-// across, beats twice (beeping), and flatlines into a long tone; then a log entry types out underneath, ending with a
-// line from Sonny. Waits for any key, then Hide cuts back through a burst of static.
-// Built from code the first time it's needed, beeps and tone included, so there's nothing to set up. PlayerHealthHandler
-// runs it; Show and Hide use real time, so it works with the game paused.
+// screen when the player dies
 public class DeathScreen : MonoBehaviour
 {
-    const int SortingOrder = 120;           // over the HUD, the tutorial's text, and the view from a locker
+    const int SortingOrder = 120;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
     const int TraceWidth = 320;
     const int TraceHeight = 90;
-    const float SweepSeconds = 2.4f;        // for the trace to cross the monitor once
-    const int GapColumns = 14;              // blank columns ahead of the trace, like a real monitor's sweep
+    const float SweepSeconds = 2.4f;
+    const int GapColumns = 14;
     const float LettersPerSecond = 40f;
     const int SampleRate = 44100;
 
@@ -27,7 +23,6 @@ public class DeathScreen : MonoBehaviour
     static readonly Color LineColor = new Color(0.96f, 0.8f, 0.72f);
     static readonly Color DimColor = new Color(0.62f, 0.34f, 0.28f);
 
-    // The last two heartbeats, the second one weaker, in seconds from the start.
     static readonly float[] BeatTimes = { 0.35f, 1.15f };
     static readonly float[] BeatStrengths = { 1f, 0.55f };
 
@@ -47,7 +42,7 @@ public class DeathScreen : MonoBehaviour
     private TextMeshProUGUI prompt;
     private AudioSource beeper;
     private AudioSource tone;
-    private AudioClip beepClip;         // made in code, played until the scene's sounds have clips for them
+    private AudioClip beepClip;
     private AudioClip flatlineClip;
     private float toneLevel;
     private TMP_FontAsset font;
@@ -68,7 +63,6 @@ public class DeathScreen : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    // Cuts to the monitor and plays it out. Returns once it's waiting for a key: then watch ContinuePressed.
     public IEnumerator Show(string subjectText, string sonnyLine)
     {
         IsShowing = true;
@@ -97,7 +91,6 @@ public class DeathScreen : MonoBehaviour
         WaitingForKey = true;
     }
 
-    // What a key press does. Scripts can call it too.
     public void Continue()
     {
         if (!IsShowing) return;
@@ -105,7 +98,6 @@ public class DeathScreen : MonoBehaviour
         ContinuePressed = true;
     }
 
-    // A burst of static, then the game fades back up underneath.
     public IEnumerator Hide()
     {
         WaitingForKey = false;
@@ -142,8 +134,6 @@ public class DeathScreen : MonoBehaviour
             Continue();
     }
 
-    // --- The trace ---
-
     IEnumerator DrawTrace()
     {
         float elapsed = 0f;
@@ -169,7 +159,6 @@ public class DeathScreen : MonoBehaviour
             traceTexture.SetPixels32(tracePixels);
             traceTexture.Apply(false);
 
-            // A beep on each spike, then the long tone once it's gone flat.
             if (nextBeep < BeatTimes.Length && elapsed >= BeatTimes[nextBeep] + 0.16f)
             {
                 SoundManager.PlayOneShot(beeper, "Monitor Beep", BeatStrengths[nextBeep], fallback: beepClip);
@@ -193,7 +182,6 @@ public class DeathScreen : MonoBehaviour
         }
     }
 
-    // One heartbeat's shape on a monitor: a small bump, a sharp spike and dip, and a slower bump. t in seconds from its start.
     static float Heartbeat(float t)
     {
         if (t < 0f || t > 0.45f) return 0f;
@@ -236,8 +224,6 @@ public class DeathScreen : MonoBehaviour
         traceTexture.SetPixels32(tracePixels);
         traceTexture.Apply(false);
     }
-
-    // --- Building ---
 
     void Build(Font monitorFont)
     {
@@ -299,7 +285,6 @@ public class DeathScreen : MonoBehaviour
         noise = Picture("Static", noiseTexture);
         noise.enabled = false;
 
-        // Its own sound, which carries on while the rest of the game is paused and silent.
         beeper = gameObject.AddComponent<AudioSource>();
         beeper.playOnAwake = false;
         beeper.spatialBlend = 0f;
@@ -313,7 +298,6 @@ public class DeathScreen : MonoBehaviour
         beepClip = Tone("Beep", 1000f, 0.09f, 0.6f, true);
     }
 
-    // A sine tone. A whole number of cycles in a whole second loops without a click, so the flatline skips the fade.
     static AudioClip Tone(string clipName, float frequency, float seconds, float volume, bool fadeEdges)
     {
         int samples = Mathf.CeilToInt(seconds * SampleRate);

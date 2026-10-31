@@ -2,8 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Building blocks shared by the title screen and its menus: UI objects made in code, easing curves, and generated
-// effect textures and sounds. Positions are pixels on the 1920x1080 canvas, measured from the middle of the parent.
+// shared title screen bits
 public static class TitleUI
 {
     public static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
@@ -14,8 +13,6 @@ public static class TitleUI
     static Material additive;
     static Texture2D sparkle, streak, patch;
 
-    // Adds light instead of covering what's behind. Null if the Sonny/UI Additive shader is missing, which leaves the
-    // normal blending.
     public static Material Additive
     {
         get
@@ -28,8 +25,6 @@ public static class TitleUI
             return additive;
         }
     }
-
-    // --- Objects ---
 
     public static RectTransform NewRect(string rectName, Transform parent)
     {
@@ -46,7 +41,6 @@ public static class TitleUI
         return rect;
     }
 
-    // Anchored to the middle of its parent.
     public static RectTransform Place(RectTransform rect, Vector2 position, Vector2 size)
     {
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -92,7 +86,6 @@ public static class TitleUI
         return new[] { new Vector2(left, top), new Vector2(right, top), new Vector2(right, bottom), new Vector2(left, bottom) };
     }
 
-    // A slanted bar segment, like the notches on the loading bar, centered on a point.
     public static Vector2[] Slant(Vector2 center, float width, float height, float lean)
     {
         float halfWidth = width * 0.5f, halfHeight = height * 0.5f;
@@ -121,11 +114,10 @@ public static class TitleUI
     {
         if (font == null) return TMP_Settings.defaultFontAsset;
         TMP_FontAsset asset = TMP_FontAsset.CreateFontAsset(font);
-        asset.TryAddCharacters(FontCharacters);    // up front, so glow materials copied from it see every letter
+        asset.TryAddCharacters(FontCharacters);
         return asset;
     }
 
-    // The font's material with a soft copy of each letter underneath: a glow, or a drop shadow when it's offset.
     public static Material GlowMaterial(TMP_FontAsset font, Color color, float softness, float dilate, Vector2 offset = default)
     {
         var material = new Material(font.material);
@@ -138,8 +130,6 @@ public static class TitleUI
         return material;
     }
 
-    // --- Timing ---
-
     public static float Phase(float time, float start, float end) => Mathf.Clamp01((time - start) / (end - start));
     public static float Smooth(float from, float to, float value) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, value));
     public static float EaseOut(float t) => 1f - (1f - t) * (1f - t) * (1f - t);
@@ -147,7 +137,6 @@ public static class TitleUI
     public static float EaseInOut(float t) => t < 0.5f ? 4f * t * t * t : 1f - Mathf.Pow(-2f * t + 2f, 3f) / 2f;
     public static Color Fade(Color color, float alpha) => new Color(color.r, color.g, color.b, alpha);
 
-    // 0 to 1, pausing at a third and two thirds of the way.
     public static float Stutter(float progress) => progress - Mathf.Sin(progress * 6f * Mathf.PI) / (6f * Mathf.PI);
 
     public static float Hash(int n)
@@ -156,8 +145,6 @@ public static class TitleUI
         return ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 2147483647f;
     }
 
-    // The text with the letters not yet reached shown as shuffling symbols, the same length throughout so a monospaced
-    // font doesn't shift.
     public static string Decode(string text, float progress, float now)
     {
         if (progress >= 1f) return text;
@@ -173,15 +160,10 @@ public static class TitleUI
         return new string(letters);
     }
 
-    // --- Textures ---
-
-    // A soft dot with four thin rays.
     public static Texture2D SparkleTexture => sparkle != null ? sparkle : (sparkle = MakeSparkle());
 
-    // A streak, white at the head on the right, thinning into a teal tail.
     public static Texture2D StreakTexture => streak != null ? streak : (streak = MakeStreak());
 
-    // Solid in the middle, fading out toward every edge. Stretch it over something to hide it softly.
     public static Texture2D PatchTexture => patch != null ? patch : (patch = MakePatch());
 
     public static Texture2D NoiseTexture(int width, int height)
@@ -234,9 +216,6 @@ public static class TitleUI
         return texture;
     }
 
-    // --- Sound ---
-
-    // A short beep that dies away.
     public static AudioClip Tone(string clipName, float frequency, float seconds, float volume)
     {
         int samples = Mathf.CeilToInt(seconds * SampleRate);
@@ -252,7 +231,6 @@ public static class TitleUI
         return clip;
     }
 
-    // A burst of white noise that dies away.
     public static AudioClip Crackle(string clipName, float seconds, float volume)
     {
         int samples = Mathf.CeilToInt(seconds * SampleRate);

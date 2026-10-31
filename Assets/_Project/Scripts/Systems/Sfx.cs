@@ -1,16 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Sound effects played at a point in the level, for anything that hasn't its own AudioSource: the weapons, the EMP, the
-// robots, the wall breaches, the wall grab. Each is played by its name in the scene's SoundManager (SoundDefaults.Combat
-// lists them), quieter the further it is from the camera, its pitch varied a little so repeats don't drone. A sound the
-// scene doesn't list, or lists with no clip yet, plays its placeholder, made in code here (Placeholder).
-// Robots being hit and blowing up are heard from here too, whatever hit them (Health.AnyDamaged, Health.AnyDied).
+// play a sound at a spot
 public static class Sfx
 {
-    const int Voices = 16;              // how many sounds can overlap
-    const float SameSoundGap = 0.04f;   // the same sound no closer together than this, so a volley doesn't stack up
-    const float HearingRange = 18f;     // world units from the camera where a sound has faded out
+    const int Voices = 16;
+    const float SameSoundGap = 0.04f;
+    const float HearingRange = 18f;
 
     static AudioSource[] voices;
     static int nextVoice;
@@ -28,7 +24,6 @@ public static class Sfx
         Health.AnyDied += OnAnyDied;
     }
 
-    // At a point in the level: fainter the further it is from the camera, silent past hearingRange.
     public static void At(string soundName, Vector2 point, float volume = 1f, float pitch = 1f, float hearingRange = HearingRange)
     {
         Camera cam = Camera.main;
@@ -37,7 +32,6 @@ public static class Sfx
         Play(soundName, volume * nearness * nearness, pitch);
     }
 
-    // Wherever the player is: for what's happening to them.
     public static void Play(string soundName, float volume = 1f, float pitch = 1f)
     {
         if (volume <= 0f || string.IsNullOrEmpty(soundName)) return;
@@ -66,8 +60,6 @@ public static class Sfx
         return voices[nextVoice];
     }
 
-    // --- Robots, however they're hurt ---
-
     static bool IsRobot(Health health) =>
         health != null && (health.GetComponent<PlaceholderRobot>() != null || health.GetComponent<Warden>() != null || health.GetComponent<MaintenanceBot>() != null);
 
@@ -83,11 +75,8 @@ public static class Sfx
         At("Robot Explode", health.transform.position, 1f, 1f, HearingRange * 1.4f);
     }
 
-    // --- Placeholders, made in code ---
-
     const int Rate = TitleUI.SampleRate;
 
-    // The placeholder for a sound, made the first time it's wanted. Null for a name with none.
     public static AudioClip Placeholder(string soundName)
     {
         if (placeholders.TryGetValue(soundName, out AudioClip made) && made != null) return made;
@@ -96,7 +85,6 @@ public static class Sfx
         var noise = new System.Random(soundName.GetHashCode());
         float Noise() => (float)noise.NextDouble() * 2f - 1f;
         float filtered = 0f;
-        // White noise through a one-pole low-pass: smooth 0 (dull) to 1 (bright).
         float Lowpass(float smooth)
         {
             filtered += (Noise() - filtered) * smooth;
@@ -108,88 +96,86 @@ public static class Sfx
 
         switch (soundName)
         {
-            // The weapons.
-            case "Melee Swing":     // a whoosh, brightening then dying
+            case "Melee Swing":
                 seconds = 0.24f;
                 wave = t => Lowpass(0.05f + 0.35f * Mathf.Sin(Mathf.PI * t / 0.24f)) * 2.2f * Mathf.Sin(Mathf.PI * t / 0.24f);
                 break;
-            case "Melee Hit":       // a dull metal clang
+            case "Melee Hit":
                 seconds = 0.35f;
                 wave = t => (Sine(220f, t) * 0.5f + Sine(563f, t) * 0.3f + Sine(1170f, t) * 0.2f + Noise() * Mathf.Exp(-t * 80f)) * Mathf.Exp(-t * 12f);
                 break;
-            case "Gun Shot":        // a crack and a thump
+            case "Gun Shot":
                 seconds = 0.22f;
                 wave = t => (Noise() * Mathf.Exp(-t * 35f) * 0.8f + Sine(90f - 40f * t, t) * Mathf.Exp(-t * 18f) * 0.7f) * Attack(t, 0.002f);
                 break;
-            case "Blaster Charge":  // a rising whine
+            case "Blaster Charge":
                 seconds = 0.7f;
                 wave = t => Sine(200f + 900f * t * t, t) * 0.4f * Attack(t, 0.05f) * (1f - Mathf.Clamp01((t - 0.62f) / 0.08f));
                 break;
-            case "Blaster Fire":    // a falling zap
+            case "Blaster Fire":
                 seconds = 0.3f;
                 wave = t => (Square(900f - 2200f * t, t) * 0.25f + Noise() * 0.15f) * Mathf.Exp(-t * 9f) * Attack(t, 0.003f);
                 break;
-            case "Blaster Blast":   // an energy blast
-            case "Robot Explode":   // a bang, a deep boom, and debris rattling down
+            case "Blaster Blast":
+            case "Robot Explode":
                 seconds = 1f;
                 wave = t => (Lowpass(0.25f) * 1.6f * Mathf.Exp(-t * 4f) + Sine(70f - 35f * t, t) * Mathf.Exp(-t * 5f) * 0.9f
                     + (Noise() * 0.5f * (Noise() > 0.97f ? 1f : 0f)) * Mathf.Exp(-t * 2.5f)) * Attack(t, 0.003f);
                 break;
-            case "Projectile Impact":   // a small clank
+            case "Projectile Impact":
                 seconds = 0.15f;
                 wave = t => (Sine(1400f, t) * 0.3f + Noise() * 0.5f) * Mathf.Exp(-t * 40f);
                 break;
-            case "EMP Fire":        // a buzzing pulse sweeping down, crackling out
+            case "EMP Fire":
                 seconds = 0.8f;
                 wave = t => (Square(160f - 90f * t, t) * 0.25f * Mathf.Exp(-t * 3f) + Sine(1800f - 1500f * t, t) * 0.2f * Mathf.Exp(-t * 6f)
                     + Noise() * 0.35f * (Noise() > 0.85f ? 1f : 0.15f) * Mathf.Exp(-t * 3.5f)) * Attack(t, 0.004f);
                 break;
-            case "EMP Ready":       // two rising blips
+            case "EMP Ready":
                 seconds = 0.26f;
                 wave = t => Sine(t < 0.11f ? 880f : 1320f, t) * 0.35f * Mathf.Exp(-(t % 0.13f) * 30f);
                 break;
-            // The robots.
-            case "Robot Hit":       // a crunch of metal and a crackle
+            case "Robot Hit":
                 seconds = 0.25f;
                 wave = t => (Noise() * 0.6f * Mathf.Exp(-t * 25f) + Square(140f, t) * 0.25f * Mathf.Exp(-t * 15f)) * Attack(t, 0.002f);
                 break;
-            case "Arc Charge":      // a buzz climbing as the coil winds up
+            case "Arc Charge":
                 seconds = 1f;
                 wave = t => (Square(90f + 160f * t, t) * 0.18f + Noise() * 0.12f) * Attack(t, 0.05f) * (0.4f + 0.6f * t);
                 break;
-            case "Arc Strike":      // a crack of thunder, close
+            case "Arc Strike":
                 seconds = 0.5f;
                 wave = t => (Noise() * Mathf.Exp(-t * 18f) * 1.1f + Sine(60f, t) * Mathf.Exp(-t * 8f) * 0.5f) * Attack(t, 0.001f);
                 break;
-            case "Surge Klaxon":    // two tones, back and forth, for the length of the warning
+            case "Surge Klaxon":
                 seconds = 3.2f;
                 wave = t => Square(t % 0.6f < 0.3f ? 440f : 330f, t) * 0.18f * (t % 0.3f < 0.26f ? 1f : 0f);
                 break;
-            case "Core Surge":      // a deep boom and a roar dying away
+            case "Core Surge":
                 seconds = 2.2f;
                 wave = t => (Sine(45f - 15f * t, t) * Mathf.Exp(-t * 2f) * 0.9f + Lowpass(0.12f) * 1.6f * Mathf.Exp(-t * 1.6f)) * Attack(t, 0.01f);
                 break;
-            case "Geiger Crackle":  // a dry click or two
+            case "Geiger Crackle":
                 seconds = 0.05f;
                 wave = t => Noise() * (Mathf.Exp(-t * 900f) + (t > 0.018f ? Mathf.Exp(-(t - 0.018f) * 900f) * 0.6f : 0f));
                 break;
-            case "Radiation Burst": // a hiss swelling into a roar, then dying away
+            case "Radiation Burst":
                 seconds = 1.6f;
                 wave = t => (Lowpass(0.6f) * 0.6f + Lowpass(0.08f) * 1.4f) * Attack(t, 0.15f) * Mathf.Exp(-Mathf.Max(0f, t - 0.4f) * 2.2f);
                 break;
-            case "Robot Alert":     // it's seen them: a sharp two-tone beep, rising
+            case "Robot Alert":
                 seconds = 0.32f;
                 wave = t => Square(t < 0.14f ? 740f : 1100f, t) * 0.22f * (t % 0.16f < 0.12f ? 1f : 0f);
                 break;
-            case "Robot Attack Windup":     // a servo winding up
+            case "Robot Attack Windup":
                 seconds = 0.5f;
                 wave = t => (Square(120f + 500f * t, t) * 0.18f + Sine(60f + 250f * t, t) * 0.3f) * Attack(t, 0.04f);
                 break;
-            case "Robot Attack Lunge":      // a lunge: a whoosh and a snap
+            case "Robot Attack Lunge":
                 seconds = 0.3f;
                 wave = t => (Lowpass(0.3f) * 1.4f * Mathf.Sin(Mathf.PI * t / 0.3f) + Sine(320f, t) * 0.4f * Mathf.Exp(-t * 30f)) * Attack(t, 0.003f);
                 break;
-            case "Robot Beep":      // chatter: a few quick beeps
+            case "Robot Beep":
                 seconds = 0.36f;
                 wave = t =>
                 {
@@ -198,28 +184,27 @@ public static class Sfx
                     return Sine(pitches[note % pitches.Length], t) * 0.25f * ((t % 0.09f) < 0.06f ? 1f : 0f);
                 };
                 break;
-            case "Robot Shorted":   // fizzing and sputtering out
+            case "Robot Shorted":
                 seconds = 0.7f;
                 wave = t => (Noise() * (Noise() > 0.6f ? 0.6f : 0.1f) + Square(220f - 150f * t, t) * 0.15f) * Mathf.Exp(-t * 3f) * Attack(t, 0.003f);
                 break;
-            // The set pieces.
-            case "Wall Breach":     // a wall bursting in: a slam, and rubble pouring
+            case "Wall Breach":
                 seconds = 1.3f;
                 wave = t => (Sine(55f, t) * Mathf.Exp(-t * 6f) * 0.9f + Lowpass(0.35f) * 1.8f * Mathf.Exp(-t * 2.2f)) * Attack(t, 0.002f);
                 break;
-            case "Wall Grab":       // metal hands clamping on
+            case "Wall Grab":
                 seconds = 0.4f;
                 wave = t => (Sine(180f, t) * 0.5f + Sine(410f, t) * 0.3f + Noise() * 0.6f * Mathf.Exp(-t * 60f)) * Mathf.Exp(-t * 9f);
                 break;
-            case "Grab Struggle":   // a strain against it: metal grinding
+            case "Grab Struggle":
                 seconds = 0.18f;
                 wave = t => (Lowpass(0.6f) * 0.8f + Square(95f, t) * 0.2f) * Mathf.Sin(Mathf.PI * t / 0.18f);
                 break;
-            case "Grab Squeeze":    // servos crushing down
+            case "Grab Squeeze":
                 seconds = 0.45f;
                 wave = t => (Square(70f, t) * 0.25f + Sine(140f - 60f * t, t) * 0.4f + Lowpass(0.2f) * 0.5f) * Mathf.Sin(Mathf.PI * t / 0.45f);
                 break;
-            case "Break Free":      // torn loose: a heavy clang
+            case "Break Free":
                 seconds = 0.55f;
                 wave = t => (Sine(130f, t) * 0.5f + Sine(347f, t) * 0.35f + Sine(905f, t) * 0.2f + Noise() * Mathf.Exp(-t * 50f)) * Mathf.Exp(-t * 7f);
                 break;

@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// Particles for when this object's Health is hit or killed: sparks spraying away from the attacker and a ring at
-// the impact point, plus an optional burst of debris and smoke on death, and pieces of it thrown across the floor
-// (ScrapBurst). The flash, blink, and knockback are handled by Health itself.
+// sparks and rings when something gets hit
 [RequireComponent(typeof(Health))]
 public class DamageEffects : MonoBehaviour
 {
@@ -53,7 +51,6 @@ public class DamageEffects : MonoBehaviour
         Vector2 direction = info.direction.sqrMagnitude > 0.0001f ? info.direction.normalized : Vector2.up;
         lastHitDirection = direction;
 
-        // If the attacker didn't say where it hit, use the side facing the attacker.
         Vector2 point = info.point ?? (Vector2)transform.position - direction * 0.25f;
         HitEffects.Sparks(point, direction, sparkCount, sparkSpeed, sparkSpread, sparkColor, sparkColorAlt);
         HitEffects.Ring(point, ringColor, ringSize);

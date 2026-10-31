@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class GhostSpawner : MonoBehaviour
 {
-    public GameObject ghostPrefab;      // Assign ghost prefab here
-    public Transform player;            // Assign the player transform
-    public float spawnInterval = 10f;   // How often ghosts spawn (seconds)
+    public GameObject ghostPrefab;
+    public Transform player;
+    public float spawnInterval = 10f;
     public float spawnDistanceMin = 8f;
     public float spawnDistanceMax = 12f;
 
@@ -27,7 +27,7 @@ public class GhostSpawner : MonoBehaviour
         if (timer <= 0f)
         {
             SpawnGhost();
-            timer = spawnInterval + Random.Range(-2f, 3f); // Add randomness
+            timer = spawnInterval + Random.Range(-2f, 3f);
         }
     }
 

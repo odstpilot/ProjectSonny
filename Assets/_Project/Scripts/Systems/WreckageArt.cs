@@ -1,21 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Pixel art for what a space station sheds as it shakes apart, drawn in code at the ship tileset's pixel size. Every piece
-// is drawn fresh from a random seed, so no two look quite alike:
-//   Panel    a white hull or ceiling panel, bent and torn, with its seams and rivets
-//   Foil     a torn scrap of gold insulation blanket (the crinkled foil wrapped around a spacecraft)
-//   Pipe     a length of coolant line, flanged at one end and snapped off at the other
-//   Truss    a section of lattice girder with hazard striping
-//   Grate    a vent grate knocked out of its frame
-//   Fixture  an LED strip light, its diffuser cracked
-//   Cables   a bundle of wiring torn out by the roots, the ends frayed
-//   Circuit  an electronics module: a circuit board in its tray, chips and contacts showing
-//   Scatter  loose odds and ends: bolts, nuts, shards of panel, snippets of cable, a chip
-//   Pile     several of the above heaped up, for wreckage that blocks the way
-//   RobotPart  a piece off a robot that's just been destroyed: plate, strut, lens, bolt, board, or wiring
-// and the marks left on the floor (FloorStain): a scorch where something burned, and a pool of leaked coolant.
-// FallingDebris uses these; each call makes a new canvas, so turn it into a sprite and destroy that when you're done.
+// wreckage art drawn in code
 public static class WreckageArt
 {
     static Color32 C(byte r, byte g, byte b) => new Color32(r, g, b, 255);
@@ -47,7 +33,6 @@ public static class WreckageArt
         C(188, 54, 44), C(54, 96, 188), C(216, 174, 46), C(44, 44, 48), C(226, 226, 226), C(64, 150, 88),
     };
 
-    // The colour of the chips each kind throws when it lands.
     public static readonly Color PanelChips = (Color)HullMid;
     public static readonly Color FoilChips = (Color)Gold;
     public static readonly Color MetalChips = (Color)Steel;
@@ -67,14 +52,11 @@ public static class WreckageArt
         return canvas;
     }
 
-    // --- The pieces ---
-
     public static PixelCanvas Panel(System.Random dice)
     {
         int w = Between(dice, 26, 36), h = Between(dice, 20, 28);
         var canvas = new PixelCanvas(w + 2, h + 2);
 
-        // A rectangle with one corner torn away.
         Vector2[] corners = { new Vector2(1, 1), new Vector2(w + 1, 1), new Vector2(w + 1, h + 1), new Vector2(1, h + 1) };
         Vector2 middle = new Vector2(w * 0.5f + 1, h * 0.5f + 1);
         int torn = dice.Next(4);
@@ -101,7 +83,6 @@ public static class WreckageArt
         Color32 face = Chance(dice, 0.7f) ? HullLight : HullMid;
         canvas.FillPolygon(outline.ToArray(), (x, y) => PixelCanvas.Scale(face, 0.9f + 0.12f * y / h));
 
-        // A seam inset round the edge, with rivets at its corners.
         const int inset = 4;
         for (int x = inset; x <= w + 1 - inset; x++)
         {
@@ -123,7 +104,6 @@ public static class WreckageArt
             canvas.Paint(at.x, at.y + 1, PixelCanvas.Scale(Rivet, 1.8f));
         }
 
-        // A warning band along one side, sometimes.
         if (Chance(dice, 0.4f))
         {
             int bandTop = h - inset - 1;
@@ -132,7 +112,6 @@ public static class WreckageArt
                     canvas.Paint(x, y, ((x + y) / 3) % 2 == 0 ? Hazard : HazardBlack);
         }
 
-        // Bent across the middle: a lit ridge with a shadow under it.
         if (Chance(dice, 0.5f))
         {
             int y0 = Between(dice, h / 3, 2 * h / 3), y1 = Between(dice, h / 3, 2 * h / 3);
@@ -144,7 +123,6 @@ public static class WreckageArt
             }
         }
 
-        // Scuffs.
         for (int i = Between(dice, 1, 3); i > 0; i--)
         {
             int x = Between(dice, 3, w - 3), y = Between(dice, 3, h - 3);
@@ -159,7 +137,6 @@ public static class WreckageArt
         var canvas = new PixelCanvas(radius * 2 + 6, radius * 2 + 4);
         Vector2 middle = new Vector2(canvas.Width * 0.5f, canvas.Height * 0.5f);
 
-        // A ragged scrap: points round a circle, each pulled in by a different amount.
         int count = 11;
         var outline = new Vector2[count];
         for (int i = 0; i < count; i++)
@@ -169,7 +146,6 @@ public static class WreckageArt
             outline[i] = middle + new Vector2(Mathf.Cos(angle) * reach * 1.15f, Mathf.Sin(angle) * reach * 0.85f);
         }
 
-        // Crinkled: creases run across it, and each facet between them catches the light differently.
         var creasePoints = new Vector2[6];
         var creaseNormals = new Vector2[6];
         for (int i = 0; i < creasePoints.Length; i++)
@@ -187,7 +163,6 @@ public static class WreckageArt
             return PixelCanvas.Scale(sheet, Mathf.Clamp(shade, 0.6f, 1.35f));
         });
 
-        // Glints where the foil faces the light.
         Color32 glint = sheet.r == Gold.r ? GoldLight : C(240, 244, 250);
         for (int i = 0; i < canvas.Width * canvas.Height / 18; i++)
             canvas.Paint(dice.Next(canvas.Width), dice.Next(canvas.Height), glint);
@@ -206,7 +181,6 @@ public static class WreckageArt
         bool white = Chance(dice, 0.5f);
         Color32 lit = white ? HullLight : HullMid, dark = white ? Steel : SteelDark;
 
-        // Round: dark underneath, a bright line along the top where the light catches it.
         System.Func<int, int, Color32> round = (x, y) =>
         {
             float across = (float)(y - bottom) / Mathf.Max(1, thickness - 1);
@@ -217,12 +191,10 @@ public static class WreckageArt
             for (int y = bottom; y <= top; y++)
                 canvas.Set(x, y, round(x, y));
 
-        // The flange at the end that came away cleanly.
         for (int x = 1; x <= 4; x++)
             for (int y = bottom - 2; y <= top + 2; y++)
                 canvas.Set(x, y, PixelCanvas.Scale(round(x, Mathf.Clamp(y, bottom, top)), x == 1 ? 1.1f : 0.8f));
 
-        // Clamps along it, and a coolant band.
         for (int x = Between(dice, 12, 16); x < length - 6; x += Between(dice, 14, 18))
             for (int y = bottom - 1; y <= top + 1; y++)
             {
@@ -237,7 +209,6 @@ public static class WreckageArt
                 canvas.Set(x, y, PixelCanvas.Scale(Coolant, Mathf.Lerp(0.65f, 1.2f, across)));
             }
 
-        // Snapped off at the other end: jagged, and dark inside.
         for (int y = bottom; y <= top; y++)
         {
             int cut = Between(dice, 0, 4);
@@ -253,7 +224,6 @@ public static class WreckageArt
         var canvas = new PixelCanvas(length + 2, height + 2);
         int low = 1, high = height;
 
-        // Two rails, posts between them, and bracing zig-zagging from post to post.
         for (int x = 1; x <= length; x++)
             for (int y = 0; y < 3; y++)
             {
@@ -269,12 +239,10 @@ public static class WreckageArt
             up = !up;
         }
 
-        // Hazard striping on the end plate.
         for (int x = 1; x <= 6; x++)
             for (int y = low; y <= high; y++)
                 canvas.Set(x, y, ((x + y) / 3) % 2 == 0 ? Hazard : HazardBlack);
 
-        // Torn off at the far end, sometimes.
         if (Chance(dice, 0.6f))
             for (int y = low; y <= high; y++)
                 for (int x = length - Between(dice, 0, 5); x <= length; x++) canvas.Clear(x, y);
@@ -288,7 +256,6 @@ public static class WreckageArt
         var canvas = new PixelCanvas(size + 2, size + 2);
         canvas.FillRect(1, 1, size, size, Steel);
 
-        // Slats with the floor showing between them.
         for (int y = 5; y <= size - 4; y++)
         {
             bool gap = (y - 5) % 4 >= 2;
@@ -299,7 +266,6 @@ public static class WreckageArt
             }
         }
 
-        // Screws in the frame, one of them sheared, and a corner bent away.
         foreach (Vector2Int at in new[] { new Vector2Int(2, 2), new Vector2Int(size - 2, 2), new Vector2Int(2, size - 2), new Vector2Int(size - 2, size - 2) })
             canvas.Set(at.x, at.y, Rivet);
         int corner = dice.Next(4);
@@ -321,12 +287,10 @@ public static class WreckageArt
         foreach (Vector2Int at in new[] { new Vector2Int(1, 1), new Vector2Int(w, 1), new Vector2Int(1, h), new Vector2Int(w, h) })
             canvas.Clear(at.x, at.y);
 
-        // The diffuser, in segments.
         for (int x = 4; x <= w - 3; x++)
             for (int y = 3; y <= h - 3; y++)
                 canvas.Set(x, y, (x - 4) % 7 == 6 ? DiffuserSeam : PixelCanvas.Scale(Diffuser, 0.9f + 0.1f * (y - 3) / (h - 6)));
 
-        // Cracked, with a piece missing.
         if (Chance(dice, 0.7f))
         {
             int x0 = Between(dice, 6, w - 8);
@@ -359,12 +323,10 @@ public static class WreckageArt
                 canvas.Set(x, y - 1, PixelCanvas.Scale(color, 0.65f));
                 lastY = y;
             }
-            // Frayed copper where it tore.
             for (int strand = -1; strand <= 1; strand++)
                 canvas.Line(end + 1, lastY + strand, end + Between(dice, 2, 4), lastY + strand * 2, Copper);
         }
 
-        // The connector it was pulled out of.
         canvas.FillRect(1, 3, 7, height - 3, SteelDark);
         canvas.FillRect(2, height - 4, 6, height - 3, HullMid);
         for (int y = 5; y < height - 4; y += 2) canvas.Set(7, y, Contact);
@@ -378,7 +340,6 @@ public static class WreckageArt
         canvas.FillRect(1, 1, w, h, Steel);
         canvas.FillRect(3, 3, w - 2, h - 2, Board);
 
-        // Traces wandering across the board in right angles.
         for (int i = Between(dice, 4, 6); i > 0; i--)
         {
             int x = Between(dice, 4, w - 4), y = Between(dice, 4, h - 4);
@@ -391,7 +352,6 @@ public static class WreckageArt
             }
         }
 
-        // Chips with their legs showing.
         for (int i = Between(dice, 2, 3); i > 0; i--)
         {
             int cw = Between(dice, 5, 8), ch = Between(dice, 3, 5);
@@ -405,7 +365,6 @@ public static class WreckageArt
             }
         }
 
-        // Gold contacts along the edge, and a status light.
         for (int x = 4; x < w - 3; x += 2)
         {
             canvas.Set(x, 3, Contact);
@@ -414,7 +373,6 @@ public static class WreckageArt
         int ledX = Between(dice, 4, w - 4);
         canvas.Set(ledX, h - 3, Led);
 
-        // Snapped across a corner, sometimes.
         if (Chance(dice, 0.4f))
         {
             int bite = Between(dice, 4, 8);
@@ -432,25 +390,25 @@ public static class WreckageArt
             int x = Between(dice, 3, canvas.Width - 9), y = Between(dice, 3, canvas.Height - 8);
             switch (dice.Next(5))
             {
-                case 0: // a bolt
+                case 0:
                     canvas.FillRect(x, y, x + 3, y + 3, Steel);
                     canvas.Clear(x, y);
                     canvas.Clear(x + 3, y + 3);
                     canvas.Set(x + 1, y + 2, HullLight);
                     break;
-                case 1: // a nut
+                case 1:
                     canvas.FillRect(x, y, x + 4, y + 4, SteelDark);
                     canvas.FillRect(x + 1, y + 1, x + 3, y + 3, Steel);
                     canvas.Clear(x + 2, y + 2);
                     break;
-                case 2: // a shard of panel
+                case 2:
                     canvas.FillPolygon(new[] { new Vector2(x, y), new Vector2(x + Between(dice, 5, 8), y + Between(dice, 0, 2)), new Vector2(x + Between(dice, 1, 4), y + Between(dice, 4, 6)) }, HullLight);
                     break;
-                case 3: // a snippet of cable
+                case 3:
                     Color32 wire = Insulation[dice.Next(Insulation.Length)];
                     canvas.Line(x, y, x + Between(dice, 4, 7), y + Between(dice, -2, 2), wire, 2);
                     break;
-                default: // a chip
+                default:
                     canvas.FillRect(x, y, x + 4, y + 2, Chip);
                     canvas.Set(x, y - 1, Pins);
                     canvas.Set(x + 2, y - 1, Pins);
@@ -461,7 +419,6 @@ public static class WreckageArt
         return Finish(canvas, dice, 0.03f);
     }
 
-    // Wreckage heaped up: several pieces piled together, those at the back drawn first.
     public static PixelCanvas Pile(System.Random dice)
     {
         var canvas = new PixelCanvas(68, 46);
@@ -481,10 +438,6 @@ public static class WreckageArt
         return canvas;
     }
 
-    // --- Robot parts ---
-
-    // A piece knocked off a robot: a torn plate, a strut, a lens, a bolt, a board, or a length of its wiring. Small, so
-    // a burst of them reads as one thing coming apart.
     public static PixelCanvas RobotPart(System.Random dice)
     {
         switch (dice.Next(6))
@@ -567,9 +520,6 @@ public static class WreckageArt
         return Finish(canvas, dice, 0.04f, bevel: false);
     }
 
-    // --- Stains on the floor ---
-
-    // A burn where something shorted out or caught fire: soot darkest in the middle, feathering out in specks.
     public static PixelCanvas Scorch(System.Random dice)
     {
         int radius = Between(dice, 12, 18);
@@ -582,7 +532,6 @@ public static class WreckageArt
                 float reach = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), middle) / radius;
                 float wobble = 0.85f + 0.3f * (float)dice.NextDouble();
                 if (reach * wobble > 1f) continue;
-                // Solid soot in the middle, broken into specks toward the edge.
                 if (reach > 0.55f && dice.NextDouble() > (1f - reach) * 1.8f) continue;
                 byte alpha = (byte)Mathf.Lerp(200f, 90f, reach);
                 canvas.Set(x, y, new Color32(12, 10, 10, alpha));
@@ -591,7 +540,6 @@ public static class WreckageArt
         return canvas;
     }
 
-    // Coolant leaked from a burst line: a flat, glossy blue pool with a highlight along its top edge.
     public static PixelCanvas CoolantSpill(System.Random dice)
     {
         int width = Between(dice, 26, 38), height = Between(dice, 12, 18);
@@ -602,7 +550,6 @@ public static class WreckageArt
         var sizes = new Vector2[lobes];
         for (int i = 0; i < lobes; i++)
         {
-            // Kept inside the canvas, so no side of the pool is cut straight.
             sizes[i] = new Vector2(Between(dice, width * 0.2f, width * 0.32f), Between(dice, height * 0.28f, height * 0.4f));
             centers[i] = middle + new Vector2(Between(dice, -1f, 1f) * (width * 0.5f - sizes[i].x), Between(dice, -1f, 1f) * (height * 0.5f - sizes[i].y));
         }
@@ -619,7 +566,6 @@ public static class WreckageArt
                 }
             }
         }
-        // Lit along the top edge of the pool, darker round the rest.
         for (int y = 0; y < canvas.Height; y++)
             for (int x = 0; x < canvas.Width; x++)
                 if (canvas.Filled(x, y) && !canvas.Filled(x, y + 1)) canvas.Set(x, y, new Color32(150, 214, 255, 200));

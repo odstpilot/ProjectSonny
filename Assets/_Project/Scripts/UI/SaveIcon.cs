@@ -4,19 +4,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The save icon in the bottom right corner, for a moment each time the game saves (SaveGame): a little data cartridge
-// with its light blinking amber and "SAVING", then the light green and "SAVED", then it fades away. It waits for a fade
-// or title card to clear first, so it's seen. Built from code the first time it's needed, like the tutorial HUD, and runs
-// on unscaled time. One per scene: SaveIcon.Show().
+// save icon
 public class SaveIcon : MonoBehaviour
 {
-    const int SortingOrder = 105;           // over the HUD and Pip, under screens that take over (110)
+    const int SortingOrder = 105;
     const float Margin = 44f;
-    const float IconPixel = 5f;             // canvas units per pixel of the icon
+    const float IconPixel = 5f;
     const float FadeTime = 0.25f;
     const float SavingSeconds = 1.1f;
     const float SavedSeconds = 1.4f;
-    const float MaxWaitForScreen = 8f;      // shown anyway after this long under a fade
+    const float MaxWaitForScreen = 8f;
 
     static readonly string[] CartridgeRows =
     {
@@ -124,7 +121,6 @@ public class SaveIcon : MonoBehaviour
         iconRect.anchoredPosition = Vector2.zero;
         iconRect.sizeDelta = new Vector2(CartridgeRows[0].Length, CartridgeRows.Length) * IconPixel;
 
-        // The activity light, on the cartridge's label.
         lamp = GameUI.NewRect("Light", iconRect).gameObject.AddComponent<Image>();
         lamp.raycastTarget = false;
         var lampRect = (RectTransform)lamp.transform;

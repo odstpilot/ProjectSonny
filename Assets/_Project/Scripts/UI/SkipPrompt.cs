@@ -2,13 +2,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// "HOLD [SPACE] TO SKIP" in the bottom right corner while a cutscene can be skipped, with a bar under it that fills as
-// Space is held; let go and it drains. Escape skips at once. Space only counts once it's been let go since the prompt
-// came up, so a key already held for something else (the install's quick time events) doesn't skip by accident.
-// A cutscene calls Show, watches Wanted, and calls Hide. Built from code the first time it's needed.
+// hold space to skip
 public class SkipPrompt : MonoBehaviour
 {
-    const int SortingOrder = 126;           // over the install view (107), the fade, and the death screen (120)
+    const int SortingOrder = 126;
     const float HoldSeconds = 0.7f;
     const float BarWidth = 210f;
     static readonly Color Cyan = new Color(0.25f, 0.95f, 1f);
@@ -20,7 +17,6 @@ public class SkipPrompt : MonoBehaviour
     private bool shown, armed;
     private float held, shownAt;
 
-    // True once the player has asked to skip, until Hide.
     public static bool Wanted => instance != null && instance.shown && instance.wanted;
     private bool wanted;
 
@@ -89,7 +85,6 @@ public class SkipPrompt : MonoBehaviour
     void Update()
     {
         float dt = Time.unscaledDeltaTime;
-        // In a moment after it's asked for, so it doesn't flash up for a cutscene that's about to end anyway.
         float target = shown && Time.unscaledTime - shownAt > 0.4f ? 1f : 0f;
         group.alpha = Mathf.MoveTowards(group.alpha, target, dt * 4f);
         if (!shown || wanted) return;

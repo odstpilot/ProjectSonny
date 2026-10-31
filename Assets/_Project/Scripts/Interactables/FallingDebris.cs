@@ -2,21 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A piece of the station coming down. Dust trickles from above and a shadow spreads on the floor where it will land;
-// then it drops, and hits hard: the camera jolts and shakes, the picture warps for a moment, sparks and dust fly, and
-// anything underneath (the player, and robots too) is hurt and knocked away. Lamps nearby can break (see StationLight).
-// What's left lies on the floor as wreckage for a while, or stays for good as a solid pile when it's meant to block the way.
-// It's whatever a station sheds as it shakes apart (a hull panel, a scrap of gold insulation foil, a coolant line, a truss
-// section, a vent grate, a strip light, a torn-out cable bundle, an electronics module), drawn fresh by WreckageArt for
-// each piece, so no two crashes look alike.
-// Made from code: StationRumble drops these, and levels can call FallingDebris.Drop. Wreckage that's already on the floor
-// when a level starts is this component with startLanded ticked. No prefab or art needed.
+// a piece of ceiling falling down
 public class FallingDebris : MonoBehaviour
 {
     public enum Kind { Any, Panel, Foil, Pipe, Truss, Grate, Fixture, Cables, Circuit, Scatter }
 
     const float FallHeight = 7f;
-    const float FallTime = 0.35f;       // the end of the warning, spent dropping
+    const float FallTime = 0.35f;
     const float FadeTime = 1.5f;
     const float DustPerSecond = 30f;
     static readonly Color DustColor = new Color(0.72f, 0.74f, 0.78f, 0.8f);
@@ -26,8 +18,6 @@ public class FallingDebris : MonoBehaviour
     static readonly Color SparkElectric = new Color(0.7f, 0.85f, 1f);
     static readonly Color GlassColor = new Color(1f, 0.95f, 0.82f, 0.9f);
 
-    // How each kind is drawn, the colour of the chips it throws, how hard it hits, and whether it's long and thin (lies
-    // at an angle, casts a long shadow).
     class Look
     {
         public System.Func<System.Random, PixelCanvas> draw;
@@ -49,7 +39,6 @@ public class FallingDebris : MonoBehaviour
         { Kind.Scatter, new Look { draw = WreckageArt.Scatter, chips = WreckageArt.MetalChips, weight = 0.5f } },
     };
 
-    // Mostly panels off the walls and ceiling; now and then something heavier or stranger.
     static readonly Kind[] FallingKinds =
     {
         Kind.Panel, Kind.Panel, Kind.Panel, Kind.Foil, Kind.Foil, Kind.Pipe, Kind.Pipe,
@@ -77,15 +66,12 @@ public class FallingDebris : MonoBehaviour
     public bool startLanded;
 
     public event System.Action Landed;
-    // (where, size) whenever any piece of debris lands.
     public static event System.Action<Vector2, float> Impact;
     public bool HasLanded { get; private set; }
 
     static Sprite shadowSprite;
 
     private Look look;
-    // Everything about the piece comes from this: seeded by position for wreckage placed in the level, so it looks the
-    // same every time the level loads, and at random for anything falling.
     private System.Random dice;
     private readonly List<Sprite> madeSprites = new List<Sprite>();
 
@@ -133,7 +119,6 @@ public class FallingDebris : MonoBehaviour
 
         Kind picked = kind;
         if (picked == Kind.Any) picked = Pick(startLanded ? LyingKinds : FallingKinds);
-        // Only wreckage already on the floor is ever odds and ends; a scatter can't fall as one piece.
         if (picked == Kind.Scatter && !startLanded) picked = Kind.Panel;
         kind = picked;
         look = Looks[kind];
@@ -141,7 +126,6 @@ public class FallingDebris : MonoBehaviour
         SpriteRenderer chunk = CreateRenderer("Chunk", Draw(look.draw(dice), new Vector2(0.5f, 0.5f)), "Top", 10);
         chunk.flipX = Range(0f, 1f) < 0.5f;
         chunk.flipY = !look.lengthwise && Range(0f, 1f) < 0.3f;
-        // Only long pieces lie at an angle: turning pixel art by a few degrees makes its pixels uneven.
         float landedAngle = look.lengthwise ? Mathf.Round(Range(-60f, 60f) / 15f) * 15f : 0f;
 
         if (startLanded)
@@ -151,7 +135,6 @@ public class FallingDebris : MonoBehaviour
             yield break;
         }
 
-        // Long pieces cast a long shadow.
         float shadowWidth = Mathf.Max(0.9f, chunk.sprite.bounds.size.x * 0.9f);
         SpriteRenderer shadow = CreateRenderer("Shadow", ShadowSprite, "FloorObject", 5);
         shadow.color = Color.clear;
@@ -168,7 +151,6 @@ public class FallingDebris : MonoBehaviour
             shadow.transform.localScale = new Vector3(shadowWidth, 0.6f, 1f) * Mathf.Lerp(0.35f, 1f, warning);
             shadow.color = new Color(0f, 0f, 0f, Mathf.Lerp(0.1f, 0.65f, warning));
 
-            // Dust shaking loose from the ceiling above, more and more of it.
             gritOwed += DustPerSecond * warning * Time.deltaTime;
             while (gritOwed >= 1f)
             {
@@ -202,7 +184,6 @@ public class FallingDebris : MonoBehaviour
         HitEffects.Ring(point, new Color(1f, 0.92f, 0.8f, 0.45f), 1.4f * weight);
         HitEffects.Sparks(point, Vector2.up, Mathf.RoundToInt(10 * weight), 5f, 160f, SparkBright, SparkHot);
 
-        // A light fitting bursts into a spray of diffuser and sparks; live wiring and electronics short out.
         if (kind == Kind.Fixture)
         {
             HitEffects.Sparks(point, Vector2.up, 18, 7f, 200f, SparkBright, GlassColor);
@@ -214,7 +195,6 @@ public class FallingDebris : MonoBehaviour
             HitEffects.Sparks(point, Vector2.up, 16, 6f, 220f, Color.white, SparkElectric);
         }
 
-        // The thud: a hard jolt down, shake on top, and the picture warping for a moment.
         CameraShake.Kick(Vector2.down, 0.14f * weight * near);
         CameraShake.Shake(0.4f * weight * near);
         StationRumble.Punch(0.4f * weight * near);
@@ -226,7 +206,6 @@ public class FallingDebris : MonoBehaviour
         Impact?.Invoke(point, size);
     }
 
-    // Leaves it lying on the floor: a solid pile, or loose wreckage that fades after a while.
     void Settle(SpriteRenderer rubble, float angle)
     {
         rubble.enabled = true;
@@ -297,7 +276,6 @@ public class FallingDebris : MonoBehaviour
         }
     }
 
-    // 1 on screen, fading to 0 well off it, so far-off crashes shake less.
     static float NearCamera(Vector2 point)
     {
         Camera cam = Camera.main;
@@ -314,7 +292,6 @@ public class FallingDebris : MonoBehaviour
         return child;
     }
 
-    // Placed rubble is only drawn in Play mode, so outline it in the Scene view.
     void OnDrawGizmos()
     {
         if (Application.isPlaying || !startLanded) return;

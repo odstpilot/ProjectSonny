@@ -1,21 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-// Code-driven weapon animation, so attacks read clearly with or without weapon art.
-// Melee: the weapon sits in the player's hand (HandPositions), rests at an angle set per facing direction,
-//        and swings from its Raised angle to its End angle. It never flips. Facing up or down, the swing sweeps side
-//        to side along a flattened arc, so it reads as passing across the floor (see SwingAngles.arcHeight).
-//        While a swing charges, a ring on the floor around the player's feet fills up, and flashes once it's full.
-// Ranged: hidden until you shoot; then it points at the shot, kicks back, and flashes. A blaster also stays out while
-//         charging, with a ball of energy (EnergyOrb) growing at its muzzle.
-// PlayerCombat creates this at runtime as a child of the player named WeaponPivot.
+// draws and animates the held weapon
 public class WeaponVisual : MonoBehaviour
 {
     const float FollowThroughHold = 0.06f;
     const float ReturnDuration = 0.1f;
     const float ChargedOverswing = 20f;
-    // The swing's punch: how much bigger the weapon gets at the peak, the screen shake and kick (toward the swing),
-    // and the thin trail behind it.
     const float SwingPunch = 1.3f;
     const float HeavySwingPunch = 1.55f;
     const float SwingShake = 0.25f;
@@ -27,12 +18,12 @@ public class WeaponVisual : MonoBehaviour
     const float RecoilTilt = 10f;
     const float MuzzleFlashDuration = 0.05f;
     const float MuzzleFlashSize = 0.18f;
-    const float OrbForward = 0.3f;      // how far past the muzzle a blaster's ball sits, as a fraction of its size
+    const float OrbForward = 0.3f;
     static readonly Color ChargedColor = new Color(1f, 0.9f, 0.4f);
     static readonly Color MuzzleFlashColor = new Color(1f, 0.95f, 0.7f);
     const int RingPoints = 40;
     const float RingRadius = 0.42f;
-    const float RingSquash = 0.45f;     // flattened so it lies on the floor
+    const float RingSquash = 0.45f;
     const float RingFadeSpeed = 8f;
     static readonly Color RingTrack = new Color(1f, 0.8f, 0.5f, 0.18f);
     static readonly Color RingFilling = new Color(1f, 0.62f, 0.25f, 0.85f);
@@ -40,7 +31,6 @@ public class WeaponVisual : MonoBehaviour
 
     public SpriteRenderer WeaponRenderer { get; private set; }
     public float MuzzleDistance => ranged != null ? ranged.holdDistance + ranged.Length : 0f;
-    // Where shots start: the muzzle, or for a blaster, the middle of the ball charged in front of it.
     public float LaunchDistance => MuzzleDistance + (blaster != null ? blaster.ballSize * OrbForward : 0f);
 
     private Transform owner;
@@ -60,15 +50,15 @@ public class WeaponVisual : MonoBehaviour
     private Color baseColor = Color.white;
 
     private Vector2 facing = Vector2.down;
-    private float aimAngle;          // ranged: exact aim, in degrees
-    private float poseAngle;         // melee: weapon angle while a swing or charge is driving it
+    private float aimAngle;
+    private float poseAngle;
     private bool swinging;
     private int lastChargeFrame = -10;
     private int lastRangedChargeFrame = -10;
     private bool rangedChargeShown;
     private float scaleMultiplier = 1f;
-    private Vector2 kick;            // recoil and charge shake, along the weapon
-    private float tilt;              // ranged: recoil rotation
+    private Vector2 kick;
+    private float tilt;
     private float gunVisibleUntil;
     private Coroutine motion;
     private LineRenderer ringTrack;
@@ -96,7 +86,6 @@ public class WeaponVisual : MonoBehaviour
 
         visual.trail = CreateChild<TrailRenderer>("SwingTrail", pivot);
         visual.trail.emitting = false;
-        // A short, thin streak: the swing should read from the weapon snapping through, not a long ribbon behind it.
         visual.trail.time = 0.045f;
         visual.trail.minVertexDistance = 0.02f;
         visual.trail.widthMultiplier = SwingTrailWidth;
@@ -110,7 +99,6 @@ public class WeaponVisual : MonoBehaviour
         visual.muzzleFlash.transform.localScale = new Vector3(MuzzleFlashSize, MuzzleFlashSize, 1f);
         visual.muzzleFlash.enabled = false;
 
-        // The weapon is lit like the player; the trail and flash glow so they read in dark rooms.
         Material effectMaterial = CombatSprites.EffectMaterial;
         if (ownerRenderer != null)
         {
@@ -177,26 +165,22 @@ public class WeaponVisual : MonoBehaviour
         }
     }
 
-    // The way the player's body faces. Melee poses come from this, and it decides when a gun flips.
     public void SetFacing(Vector2 direction)
     {
         facing = PlayerController.SnapToFourWay(direction);
     }
 
-    // Exact aim for a ranged weapon.
     public void Aim(Vector2 direction)
     {
         aimAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
     }
 
-    // Called every frame while charging a melee swing. percent goes 0 to 1; at 1 the weapon flashes.
     public void ShowCharge(float percent, float windupAngle)
     {
         if (melee == null) return;
         StopMotion();
         lastChargeFrame = Time.frameCount;
 
-        // Lift from the resting angle up past Raised, away from the way the swing will travel.
         SwingAngles angles = melee.AnglesFor(facing);
         float windup = angles.raised - SwingDirection(angles) * windupAngle;
         poseAngle = Mathf.Lerp(angles.rest, windup, EaseOutCubic(percent));
@@ -212,14 +196,11 @@ public class WeaponVisual : MonoBehaviour
     {
         if (melee == null) return;
 
-        // A swing released from a charge starts wherever the windup got to; a quick swing starts at Raised.
         float? startAngle = IsCharging ? poseAngle : (float?)null;
         StopMotion();
         motion = StartCoroutine(SwingRoutine(duration, heavy, startAngle));
     }
 
-    // Called every frame while charging a blaster. percent goes 0 to 1; the ball at the muzzle grows with it,
-    // and at 1 it crackles and the gun flashes.
     public void ShowRangedCharge(float percent)
     {
         if (blaster == null) return;
@@ -235,7 +216,6 @@ public class WeaponVisual : MonoBehaviour
         WeaponRenderer.color = full && Mathf.Repeat(Time.time * 10f, 1f) > 0.5f ? blaster.energyColor : baseColor;
     }
 
-    // A blaster let go before it was charged: the ball sputters out and nothing fires.
     public void PlayFizzle(float showFor)
     {
         if (blaster == null) return;
@@ -274,12 +254,11 @@ public class WeaponVisual : MonoBehaviour
         ring.numCapVertices = 2;
         ring.sharedMaterial = material;
         if (ownerRenderer != null) ring.sortingLayerID = ownerRenderer.sortingLayerID;
-        ring.sortingOrder = (ownerRenderer != null ? ownerRenderer.sortingOrder : 0) - 2;    // on the floor, under the player
+        ring.sortingOrder = (ownerRenderer != null ? ownerRenderer.sortingOrder : 0) - 2;
         ring.enabled = false;
         return ring;
     }
 
-    // Fills clockwise from the top while the swing charges; once full it flashes and pulses until let go.
     void UpdateRing()
     {
         bool charging = melee != null && IsCharging;
@@ -330,7 +309,6 @@ public class WeaponVisual : MonoBehaviour
             return;
         }
 
-        // Undo the player's scale so everything under the pivot is measured in world units.
         Vector3 ownerScale = owner.lossyScale;
         transform.localScale = new Vector3(1f / ownerScale.x, 1f / ownerScale.y, 1f);
 
@@ -340,7 +318,6 @@ public class WeaponVisual : MonoBehaviour
 
         if (melee != null)
         {
-            // The handle sits in the hand and the weapon extends out from it. It never flips.
             Sprite bodyFrame = ownerRenderer != null ? ownerRenderer.sprite : null;
             float frameTilt = 0f;
             WeaponLayer layer = WeaponLayer.InFront;
@@ -354,10 +331,6 @@ public class WeaponVisual : MonoBehaviour
             SwingAngles angles = melee.AnglesFor(facing);
             float swingAngle = (swinging || IsCharging ? poseAngle : angles.rest + frameTilt) * Mathf.Deg2Rad;
 
-            // The weapon travels around a circle squashed sideways by arcWidth and top to bottom by arcHeight. At 1 and
-            // 1 (left/right) that's a plain rotation. Below 1, the weapon shortens as it passes the squashed part, as if
-            // turning toward or away from the camera: a flattened arcHeight makes an up or down swing a sweep across
-            // the floor in front of or behind the player.
             Vector2 pointing = new Vector2(Mathf.Cos(swingAngle) * angles.arcWidth, Mathf.Sin(swingAngle) * angles.arcHeight);
             float reach = pointing.magnitude;
             angle = Mathf.Atan2(pointing.y, pointing.x) * Mathf.Rad2Deg;
@@ -373,15 +346,13 @@ public class WeaponVisual : MonoBehaviour
         }
         else
         {
-            // Held out from the attack origin toward the aim, and only shown right after a shot.
             offset = aimOffset;
             angle = aimAngle + tilt;
             behind = Mathf.Sin(angle * Mathf.Deg2Rad) > 0.2f;
-            // The pivot tips with a sprinting player's lean; take it back out so the gun still points where they aim.
             if (controller != null) angle -= controller.LeanAngle;
 
             Vector3 scale = baseScale * scaleMultiplier;
-            if (facing.x < 0f) scale.y = -scale.y; // keeps gun art upright; only changes when the body turns
+            if (facing.x < 0f) scale.y = -scale.y;
             weaponTransform.localScale = scale;
             weaponTransform.localPosition = new Vector3(ranged.holdDistance + ranged.Length * 0.5f + kick.x, kick.y, 0f);
             muzzleFlash.transform.localPosition = new Vector3(LaunchDistance + 0.06f, 0f, 0f);
@@ -397,11 +368,9 @@ public class WeaponVisual : MonoBehaviour
             rangedChargeShown = charging;
         }
 
-        // Put away while crouching, to keep low: shown again for a swing or a charge, so an attack still reads.
         if (controller != null && controller.IsCrouching && !swinging && !IsCharging && !IsRangedCharging)
             WeaponRenderer.enabled = false;
 
-        // A crouching or sprinting player's hand moves with their squash or stretch; follow it so the weapon stays in it.
         if (controller != null) offset = Vector2.Scale(offset, controller.BodySquash);
 
         transform.localPosition = new Vector3(offset.x / ownerScale.x, offset.y / ownerScale.y, 0f);
@@ -424,14 +393,12 @@ public class WeaponVisual : MonoBehaviour
         WeaponRenderer.color = baseColor;
         trail.widthMultiplier = heavy ? SwingTrailWidth * 1.6f : SwingTrailWidth;
         poseAngle = from;
-        ApplyTransforms(); // snap to the start first so the trail doesn't streak from the resting pose
+        ApplyTransforms();
         trail.Clear();
         trail.emitting = true;
         CameraShake.ShakeAtLeast(heavy ? HeavySwingShake : SwingShake);
         CameraShake.Kick(facing, heavy ? HeavySwingKick : SwingKick);
 
-        // Snaps through hard (most of the turn in the first third), the weapon swelling as it passes the middle and
-        // flashing white at the peak, so the hit lands with weight instead of drifting round.
         float peakScale = heavy ? HeavySwingPunch : SwingPunch;
         yield return Tween(duration, t =>
         {
@@ -458,7 +425,6 @@ public class WeaponVisual : MonoBehaviour
 
     IEnumerator RecoilRoutine(float distance)
     {
-        // Tilt the barrel up on screen. A gun facing left is flipped, so it tilts the other way.
         float maxTilt = facing.x < 0f ? -RecoilTilt : RecoilTilt;
         scaleMultiplier = 1f;
         WeaponRenderer.color = baseColor;
@@ -498,7 +464,6 @@ public class WeaponVisual : MonoBehaviour
         tilt = 0f;
     }
 
-    // +1 if the swing turns counterclockwise from Raised to End, -1 if clockwise.
     static float SwingDirection(SwingAngles angles)
     {
         return Mathf.Sign(angles.end - angles.raised);
@@ -536,7 +501,6 @@ public class WeaponVisual : MonoBehaviour
     }
 }
 
-// Placeholder art, effect textures, and materials generated at runtime, so combat works before real art exists.
 public static class CombatSprites
 {
     private static Sprite square;
@@ -549,7 +513,6 @@ public static class CombatSprites
     private static Sprite glow;
     private static Sprite disc;
 
-    // A white square, 1 world unit across. Tint and scale it into any shape.
     public static Sprite Square
     {
         get
@@ -567,7 +530,6 @@ public static class CombatSprites
         }
     }
 
-    // Unlit, so trails, flashes, and bullets stay visible in dark rooms. Null if no such shader is available.
     public static Material EffectMaterial
     {
         get
@@ -582,7 +544,6 @@ public static class CombatSprites
         }
     }
 
-    // Draws a sprite as a solid silhouette in the renderer's color. Null if the Sonny/Sprite Flash shader is missing.
     public static Material FlashMaterial
     {
         get
@@ -596,36 +557,28 @@ public static class CombatSprites
         }
     }
 
-    // A thin soft-edged ring, for impact pops.
     public static Texture2D RingTexture =>
         ringTexture != null ? ringTexture : (ringTexture = MakeRadialTexture(64, r => Mathf.Clamp01(1f - Mathf.Abs(r - 0.78f) / 0.14f)));
 
-    // A blurry dot, for smoke.
     public static Texture2D SoftCircleTexture =>
         softCircleTexture != null ? softCircleTexture : (softCircleTexture = MakeRadialTexture(64, r => Mathf.Pow(Mathf.Clamp01(1f - r), 2f)));
 
-    // A solid dot with a soft edge.
     public static Texture2D DiscTexture =>
         discTexture != null ? discTexture : (discTexture = MakeRadialTexture(64, r => Mathf.Clamp01((1f - r) / 0.2f)));
 
-    // SoftCircleTexture as a sprite 1 world unit across, for glows.
     public static Sprite Glow => glow != null ? glow : (glow = MakeSprite(SoftCircleTexture));
 
-    // DiscTexture as a sprite 1 world unit across, for the bright middle of a ball of energy.
     public static Sprite Disc => disc != null ? disc : (disc = MakeSprite(DiscTexture));
 
-    // Clear in the middle, solid toward the edges, for full-screen hurt flashes.
     public static Texture2D VignetteTexture =>
         vignetteTexture != null ? vignetteTexture : (vignetteTexture = MakeRadialTexture(128, r => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 1.3f, r))));
 
-    // The whole texture as a centered sprite, 1 world unit across.
     public static Sprite MakeSprite(Texture2D texture)
     {
         return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f),
             texture.width, 0, SpriteMeshType.FullRect);
     }
 
-    // A white texture whose alpha depends on distance from the center (0 in the middle, 1 at the edge's midpoint).
     public static Texture2D MakeRadialTexture(int size, System.Func<float, float> alphaAtRadius)
     {
         var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };

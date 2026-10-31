@@ -1,9 +1,6 @@
 using UnityEngine;
 
-// A ranged weapon that fires an electromagnetic pulse instead of projectiles: a cone of crackling electricity toward
-// the mouse that stuns every weeping angel it reaches, and shorts out the patrol robots and security cameras in it.
-// Cooldown is how long it takes to recharge.
-// Damage, Knockback, and the Firing and Projectile settings don't apply to it.
+// gun that fires an emp instead of bullets
 [CreateAssetMenu(menuName = "Sonny/Weapons/EMP", fileName = "NewEmp")]
 public class EmpWeaponData : RangedWeaponData
 {

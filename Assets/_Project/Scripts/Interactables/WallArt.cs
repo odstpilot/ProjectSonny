@@ -1,9 +1,6 @@
 using UnityEngine;
 
-// A picture or poster hung on a wall face: the kind of thing a crew puts up to make a station feel lived in. Each is
-// drawn in code until it has art of its own. With an Inspectable beside it (ChapterOneBuilder), the technician has
-// something to say about it.
-// Its position is the middle of the picture, on the wall.
+// poster or picture on a wall
 [ExecuteAlways]
 public class WallArt : MonoBehaviour
 {
@@ -61,7 +58,6 @@ public class WallArt : MonoBehaviour
         int w = poster ? 12 : 14, h = poster ? 15 : 11;
         Texture2D texture = PixelArt.MakeTexture(w, h, (x, y) =>
         {
-            // A crack from corner to corner.
             if (damaged && Mathf.Abs((x - 1) - (h - 2 - y) * (w - 2f) / (h - 2f)) < 0.6f && x > 0 && y > 0 && x < w - 1 && y < h - 1)
                 return new Color32(200, 205, 215, 255);
             bool edge = x == 0 || y == 0 || x == w - 1 || y == h - 1;
@@ -87,15 +83,15 @@ public class WallArt : MonoBehaviour
                 }
                 case Kind.SafetyPoster:
                     if (edge) return hazard;
-                    if (y >= 11 && y <= 12 && x >= 2 && x <= 9) return ink;                  // a heading
-                    if (y >= 4 && y <= 9 && x >= 4 && x <= 7) return y >= 8 ? skin : red;   // someone in a hard hat
+                    if (y >= 11 && y <= 12 && x >= 2 && x <= 9) return ink;
+                    if (y >= 4 && y <= 9 && x >= 4 && x <= 7) return y >= 8 ? skin : red;
                     if (y == 2 && x >= 2 && x <= 9 && x % 2 == 0) return ink;
                     return paper;
                 case Kind.CompanyPoster:
                     if (edge) return frame;
                     {
                         float dx = (x - 5.5f) / 3.5f, dy = (y - 8.5f) / 3.5f;
-                        if (dx * dx + dy * dy <= 1f) return hazard;                         // the sun
+                        if (dx * dx + dy * dy <= 1f) return hazard;
                     }
                     if (y >= 2 && y <= 4 && x >= 2 && x <= 9) return y == 3 ? paper : sky;
                     return space;
@@ -106,14 +102,13 @@ public class WallArt : MonoBehaviour
                     return y <= 2 ? rock : new Color32(170, 180, 190, 255);
                 case Kind.KidsDrawing:
                     if (edge) return paper;
-                    if (x >= 7 && x <= 10 && y >= 10 && y <= 13) return crayonY;           // the sun
-                    if (x == 3 && y >= 3 && y <= 7) return crayonB;                         // someone
+                    if (x >= 7 && x <= 10 && y >= 10 && y <= 13) return crayonY;
+                    if (x == 3 && y >= 3 && y <= 7) return crayonB;
                     if (x >= 2 && x <= 4 && y == 8) return crayonB;
                     if (y == 1) return green;
                     return paper;
                 default:
                     if (edge) return frame;
-                    // A line chart going up, then sharply up.
                     int line = x < 8 ? 2 + x / 2 : 2 + x / 2 + (x - 7) * 2;
                     if (y == Mathf.Min(line, h - 2)) return red;
                     if (x == 1 || y == 1) return ink;

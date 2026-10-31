@@ -2,10 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A monitor Sonny can take over. While Sonny is speaking the screen stutters over to a deep red, pulses with the voice,
-// throws a little red light on the floor, and stutters back to normal afterwards. SetAll switches every one in the scene.
-// Needs nothing set up: it draws its red, in scanlines with Sonny's eye in the middle, over the rectangle given by
-// screenCenter and screenSize.
+// monitor sonny can take over
 public class SonnyScreen : MonoBehaviour
 {
     const float StutterTime = 0.45f;
@@ -22,7 +19,7 @@ public class SonnyScreen : MonoBehaviour
 
     private SpriteRenderer face;
     private Light2D glow;
-    private float level;             // 0 normal, 1 all Sonny
+    private float level;
     private float switchedAt = -10f;
     private float seed;
 
@@ -30,7 +27,6 @@ public class SonnyScreen : MonoBehaviour
 
     private TMPro.TextMeshPro word;
 
-    // A word across the screen while Sonny's saying something through it (SonnyBroadcast), or none.
     public void ShowWord(string text)
     {
         if (word == null)
@@ -54,7 +50,6 @@ public class SonnyScreen : MonoBehaviour
         word.gameObject.SetActive(!string.IsNullOrEmpty(text));
     }
 
-    // Every screen in the scene over to Sonny, or back.
     public static void SetAll(bool on)
     {
         foreach (SonnyScreen screen in screens)
@@ -77,7 +72,7 @@ public class SonnyScreen : MonoBehaviour
         face.transform.localPosition = screenCenter;
         face.sprite = DrawFace();
         face.sortingLayerName = DepthSort.Layer;
-        face.sortingOrder = 10;     // over the monitor's own tiles, within its sorting group
+        face.sortingOrder = 10;
         if (CombatSprites.EffectMaterial != null) face.sharedMaterial = CombatSprites.EffectMaterial;
 
         var glowObject = new GameObject("Sonny Glow");
@@ -95,8 +90,6 @@ public class SonnyScreen : MonoBehaviour
 
     void OnDestroy() => PixelCanvas.Destroy(face != null ? face.sprite : null);
 
-    // White, for the red to tint: scanlines at the tileset's pixel size, and Sonny's eye, a ring round a bright pupil,
-    // in the middle of the screen.
     Sprite DrawFace()
     {
         int width = Mathf.Max(2, Mathf.RoundToInt(screenSize.x * PixelCanvas.DetailPixelsPerUnit));
@@ -125,7 +118,6 @@ public class SonnyScreen : MonoBehaviour
         float target = IsOn ? 1f : 0f;
         float sinceSwitch = Time.time - switchedAt;
 
-        // Stutters between old and new for a moment, like the signal fighting to take over.
         if (sinceSwitch < StutterTime)
             level = Random.value < sinceSwitch / StutterTime ? target : 1f - target;
         else
@@ -136,7 +128,6 @@ public class SonnyScreen : MonoBehaviour
 
     void Apply(float amount)
     {
-        // Pulses as if with the voice, and rolls a faint band down the screen.
         float pulse = 0.75f + 0.25f * Mathf.PerlinNoise(Time.time * 6f, seed);
         float band = 0.9f + 0.1f * Mathf.Sin(Time.time * 9f + seed);
         Color color = Red;

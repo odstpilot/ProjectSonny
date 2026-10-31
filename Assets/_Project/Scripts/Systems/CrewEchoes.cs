@@ -2,17 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 2: Sonny knows someone's left. It heard everyone on the station through their badges, so it plays them back
-// over the station's speakers, the dead crew's own words, to see if anyone answers. Once the technician's found the crew
-// (PatrolReveal), coming into one of the rooms now and then: the speakers chime, a crew member's voice comes over them
-// (a caption with their name, as the station speakers' captions are, TutorialHud.Say), and then Sonny, flat, asking.
-// Then the speakers stay open a moment, humming, listening. Sprint or swing at anything while they're open and Sonny's
-// heard them: every bot in the room comes for where they are (PlaceholderRobot.Alarm). Keeping still is the answer.
-// The first few are things the crew really said to the technician in Chapter 1, word for word; after that Sonny's
-// cutting their words together into things they never said, getting better at it.
-// The first time, the technician puts it together, and works out what to do. The speakers' sounds are the scene's own
-// when it has them (SoundManager: "PA Chime", "PA Hum", "PA Click"); until then they're made in code.
-// Added by ChapterTwoDirector.
+// sonny playing back the crew's voices
 public class CrewEchoes : MonoBehaviour
 {
     [System.Serializable]
@@ -66,7 +56,6 @@ public class CrewEchoes : MonoBehaviour
 
     public static bool Playing { get; private set; }
 
-    // Entering Play mode without reloading scripts keeps statics.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetOnPlay() => Playing = false;
 
@@ -92,7 +81,6 @@ public class CrewEchoes : MonoBehaviour
         hum.playOnAwake = false;
         hum.spatialBlend = 0f;
         hum.loop = true;
-        // Not straight away once the crew's found: there's enough going on then.
         nextAt = Time.time + gap * 0.5f;
     }
 
@@ -104,14 +92,12 @@ public class CrewEchoes : MonoBehaviour
         char here = room.marker;
         if (here == lastRoom) return;
         lastRoom = here;
-        // Coming into one of the rooms, with the gap past and nothing else going on.
         if (rooms.IndexOf(here) < 0 || Time.time < nextAt || !Quiet()) return;
         nextAt = Time.time + gap;
         if (Random.value > chance && played > 0) return;
         StartCoroutine(Play(here));
     }
 
-    // Nothing else talking, on screen, or after them just now.
     bool Quiet()
     {
         if (Time.timeScale <= 0f || DialogueBox.Busy || TutorialHud.ScreenCovered || PatrolReveal.Playing) return false;
@@ -136,7 +122,6 @@ public class CrewEchoes : MonoBehaviour
         yield return new WaitForSeconds(0.6f);
         if (!string.IsNullOrEmpty(ask)) yield return hud.Say(sonnyName, ask, 1.6f);
 
-        // The speakers stay open, humming, listening for an answer.
         hum.clip = SoundManager.Clip("PA Hum", humClip);
         hum.volume = SoundManager.Volume("PA Hum") * 0.7f;
         hum.Play();
@@ -152,7 +137,6 @@ public class CrewEchoes : MonoBehaviour
 
         if (heard)
         {
-            // It heard them: everything in the room comes to look.
             Vector2 at = player.transform.position;
             StationMap map = StationMap.Current;
             foreach (PlaceholderRobot bot in FindObjectsByType<PlaceholderRobot>())
@@ -169,8 +153,6 @@ public class CrewEchoes : MonoBehaviour
         Playing = false;
     }
 
-    // --- Sounds, until the scene has its own ---
-
     void MakeSounds()
     {
         if (chimeClip == null) chimeClip = Chime();
@@ -178,7 +160,6 @@ public class CrewEchoes : MonoBehaviour
         if (clickClip == null) clickClip = Click();
     }
 
-    // Two notes down, like a station announcement, a little out of tune.
     static AudioClip Chime()
     {
         float[] notes = { 659f, 523f };
@@ -198,7 +179,6 @@ public class CrewEchoes : MonoBehaviour
         return clip;
     }
 
-    // An open line: a low mains hum with a hiss over it. Loops.
     static AudioClip Hum()
     {
         const float seconds = 1f;
@@ -216,7 +196,6 @@ public class CrewEchoes : MonoBehaviour
         return clip;
     }
 
-    // The line closing.
     static AudioClip Click()
     {
         const float seconds = 0.08f;

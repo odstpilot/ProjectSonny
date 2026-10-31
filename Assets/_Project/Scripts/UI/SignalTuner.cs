@@ -4,41 +4,29 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The tuning screen for hacking a HackingTerminal. An oscilloscope shows two waves: the station's broadcast (dim and
-// dashed) and the player's own signal (bright). Three knobs shape the player's wave:
-//   AMP    how tall it is
-//   FREQ   how many waves fit across the screen
-//   PHASE  where it sits sideways (this knob turns forever)
-// The player's wave is buried in static that clears as the two line up. Hold all three matched and the signal locks:
-// the player's wave settles onto the broadcast, the transmission types out line by line, and any credential it carries
-// is recovered.
-// Controls: A/D, 1-3, or clicking picks a knob; W/S, the scroll wheel, or dragging round it turns it, with Shift for
-// fine tuning; Esc or E leaves. The world keeps running while tuning, and getting hurt knocks the player off.
-// Built from code the first time a terminal needs it; every terminal shares it.
+// broadcast tuning minigame
 public class SignalTuner : MonoBehaviour
 {
-    const int SortingOrder = 110;           // over the HUD and the tutorial's text, under the death screen
+    const int SortingOrder = 110;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
     const int ScopeWidth = 480;
     const int ScopeHeight = 170;
-    const float LockHoldTime = 0.8f;        // seconds all three have to stay matched
-    const float KeyTurnTime = 2.5f;         // seconds for the keys to turn a knob through its whole range
+    const float LockHoldTime = 0.8f;
+    const float KeyTurnTime = 2.5f;
     const float ScrollStep = 0.025f;
     const float FineTuning = 0.25f;
-    const float KnobSweep = 135f;           // degrees each side of straight up
+    const float KnobSweep = 135f;
     const float LettersPerSecond = 45f;
     const int VisibleLines = 4;
     const int MeterCells = 16;
     const int SampleRate = 44100;
 
-    // Knob values run 0 to 1 and map onto these.
     const float MinAmp = 0.15f;
     const float MaxAmp = 1f;
     const float MinFreq = 1f;
     const float MaxFreq = 6f;
     static readonly string[] KnobNames = { "AMP", "FREQ", "PHASE" };
     static readonly string[] KnobHelp = { "HOW TALL THE WAVE IS", "HOW MANY PEAKS IT HAS", "SLIDES IT SIDEWAYS" };
-    // How close each knob has to be to lock, as a fraction of its range, before the terminal's precision.
     static readonly float[] Tolerance = { 0.07f, 0.03f, 0.055f };
 
     static readonly Color Amber = new Color(1f, 0.72f, 0.3f);
@@ -57,10 +45,9 @@ public class SignalTuner : MonoBehaviour
     public static SignalTuner Current => instance;
 
     public bool IsOpen { get; private set; }
-    // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
     public static bool AnyOpen => openCount > 0;
     static int openCount;
-    private float timeScaleWas = 1f;     // the game's paused while it's open; this is what to put back
+    private float timeScaleWas = 1f;
     public bool IsLocked { get; private set; }
     public bool ShowingTransmission { get; private set; }
     public HackingTerminal Terminal { get; private set; }
@@ -71,9 +58,9 @@ public class SignalTuner : MonoBehaviour
     private List<Behaviour> frozenControls;
     private int selected;
     private float lockHeld;
-    private float match;            // 0 to 1, how well the waves line up
+    private float match;
     private int dragging = -1;
-    private float dragAngle;        // where the mouse was round the knob being dragged, last frame, in degrees
+    private float dragAngle;
     private float lastTick;
     private int openedFrame;
     private int lineIndex;
@@ -117,7 +104,6 @@ public class SignalTuner : MonoBehaviour
         return instance;
     }
 
-    // How far apart two knob positions are, 0 to 1. PHASE wraps around, so its furthest is half a turn.
     public static float KnobDistance(int knob, float a, float b)
     {
         return knob == 2 ? Mathf.Abs(Mathf.Repeat(a - b + 0.5f, 1f) - 0.5f) : Mathf.Abs(a - b);
@@ -128,7 +114,7 @@ public class SignalTuner : MonoBehaviour
         if (IsOpen)
         {
             openCount--;
-            ResumeTime();     // leaving the level with it open mustn't leave the next one frozen
+            ResumeTime();
         }
         if (instance == this) instance = null;
     }
@@ -153,7 +139,6 @@ public class SignalTuner : MonoBehaviour
 
         if (terminal.IsHacked)
         {
-            // Already cracked: straight to the log.
             terminal.GetSignal(targets, values);
             System.Array.Copy(targets, values, 3);
             IsLocked = true;
@@ -186,7 +171,6 @@ public class SignalTuner : MonoBehaviour
         Terminal = null;
     }
 
-    // Sets a knob directly, 0 to 1. For scripts and tests.
     public void SetKnob(int knob, float value)
     {
         float next = knob == 2 ? Mathf.Repeat(value, 1f) : Mathf.Clamp01(value);
@@ -197,7 +181,6 @@ public class SignalTuner : MonoBehaviour
     public float GetKnob(int knob) => values[knob];
     public float GetTarget(int knob) => targets[knob];
 
-    // What E does on the transmission: finish the line typing out, or go to the next one.
     public void Advance()
     {
         if (!ShowingTransmission) return;
@@ -212,7 +195,7 @@ public class SignalTuner : MonoBehaviour
 
     void Update()
     {
-        if (!IsOpen) return;     // runs on unscaled time: the game's paused under it
+        if (!IsOpen) return;
 
         if (ShowingTransmission)
         {
@@ -238,8 +221,6 @@ public class SignalTuner : MonoBehaviour
         UpdateKnobs();
         DrawScope();
     }
-
-    // --- Tuning ---
 
     void StartTuning()
     {
@@ -268,8 +249,6 @@ public class SignalTuner : MonoBehaviour
         for (int i = 0; i < 3; i++)
             if (RectTransformUtility.RectangleContainsScreenPoint(knobAreas[i], mouse, null)) hovered = i;
 
-        // Dragging round the knob turns it with the mouse, like taking hold of it: clockwise turns it up. The whole
-        // range is the dial's sweep (once round, for phase), slower with Shift.
         if (Input.GetMouseButtonDown(0) && hovered >= 0)
         {
             Select(hovered);
@@ -300,7 +279,6 @@ public class SignalTuner : MonoBehaviour
             SetKnob(selected, values[selected] + keys * speed * Time.unscaledDeltaTime / KeyTurnTime);
     }
 
-    // The mouse's angle round a knob's middle, in degrees, counterclockwise from the right.
     float AngleRound(int knob, Vector2 mouse)
     {
         Vector2 middle = RectTransformUtility.WorldToScreenPoint(null, dials[knob].position);
@@ -354,7 +332,6 @@ public class SignalTuner : MonoBehaviour
             float angle = i == 2 ? -values[i] * 360f : Mathf.Lerp(KnobSweep, -KnobSweep, values[i]);
             dials[i].localEulerAngles = new Vector3(0f, 0f, angle);
             rings[i].color = i == selected ? new Color(Amber.r, Amber.g, Amber.b, 0.9f) : new Color(AmberDim.r, AmberDim.g, AmberDim.b, 0.25f);
-            // Green once it's where it should be, so it's plain which still need work.
             bool right = IsLocked || KnobDistance(i, values[i], targets[i]) <= Tolerance[i] * Terminal.precision;
             knobLabels[i].text = right ? KnobNames[i] + "  OK" : KnobNames[i];
             knobLabels[i].color = right ? LockedColor : Amber;
@@ -367,7 +344,6 @@ public class SignalTuner : MonoBehaviour
         readouts[1].text = $"{Mathf.Lerp(MinFreq, MaxFreq, values[1]):0.0} HZ";
         readouts[2].text = $"{values[2] * 360f:000} DEG";
 
-        // A click from the knob as it turns.
         for (int i = 0; i < 3; i++)
         {
             if (turnedSinceTick[i] < 0.02f) continue;
@@ -386,7 +362,6 @@ public class SignalTuner : MonoBehaviour
         sfx.PlayOneShot(lockClip, 0.7f);
         Terminal.MarkHacked();
 
-        // The player's wave settles exactly onto the broadcast.
         var from = (float[])values.Clone();
         for (float t = 0f; t < 0.4f; t += Time.unscaledDeltaTime)
         {
@@ -404,8 +379,6 @@ public class SignalTuner : MonoBehaviour
             yield return null;
         ShowTransmission();
     }
-
-    // --- The transmission ---
 
     void ShowTransmission()
     {
@@ -436,7 +409,6 @@ public class SignalTuner : MonoBehaviour
 
         if (lineIndex < count)
         {
-            // The last few lines, the earlier ones dimmed, and the newest typing out.
             var earlier = new System.Text.StringBuilder();
             for (int i = Mathf.Max(0, lineIndex - VisibleLines + 1); i < lineIndex; i++)
                 earlier.Append("<alpha=#77>").Append(FormatLine(data.lines[i])).Append("\n");
@@ -501,8 +473,6 @@ public class SignalTuner : MonoBehaviour
         Close();
     }
 
-    // --- Drawing ---
-
     void DrawScope()
     {
         System.Array.Clear(scopePixels, 0, scopePixels.Length);
@@ -515,7 +485,6 @@ public class SignalTuner : MonoBehaviour
         scopeTexture.Apply(false);
     }
 
-    // noise shakes the line up and down a little in every column, fresh every frame, like a weak signal.
     void DrawWave(float[] knobs, Color32 color, bool dashed, int thickness, float noiseAmount)
     {
         float amplitude = Mathf.Lerp(MinAmp, MaxAmp, knobs[0]);
@@ -543,8 +512,6 @@ public class SignalTuner : MonoBehaviour
             previousY = y;
         }
     }
-
-    // --- Building ---
 
     void Build(Font screenFont)
     {
@@ -671,7 +638,6 @@ public class SignalTuner : MonoBehaviour
             At(readouts[i].rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), center + new Vector2(0f, -128f), new Vector2(220f, 30f));
         }
 
-        // What to do, along the top of the scope, over the waves.
         goal = Label("Goal", view, "", 28f, Amber, TextAlignmentOptions.Center);
         At(goal.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -90f), new Vector2(1040f, 36f));
 
@@ -701,7 +667,6 @@ public class SignalTuner : MonoBehaviour
         transmissionView.SetActive(false);
     }
 
-    // A ridged knob with a bright pointer notch, drawn pointing straight up.
     static Texture2D MakeDialTexture()
     {
         const int size = 64;
@@ -737,7 +702,6 @@ public class SignalTuner : MonoBehaviour
         return clip;
     }
 
-    // Two rising notes: locked on.
     static AudioClip Chirp()
     {
         const float seconds = 0.32f;
@@ -756,8 +720,6 @@ public class SignalTuner : MonoBehaviour
         clip.SetData(data, 0);
         return clip;
     }
-
-    // --- UI helpers ---
 
     static RectTransform NewRect(string rectName, Transform parent)
     {

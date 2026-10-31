@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Anything combat can hurt: robots, the player, breakable props.
+// anything combat can hurt
 public interface IDamageable
 {
     void TakeDamage(DamageInfo info);
@@ -9,10 +9,10 @@ public interface IDamageable
 public struct DamageInfo
 {
     public float amount;
-    public Vector2 direction;   // points away from the attacker
-    public float knockback;     // how far the target gets pushed, in world units
+    public Vector2 direction;
+    public float knockback;
     public GameObject source;
-    public Vector2? point;      // where the hit landed, if the attacker knows; hit effects play here
+    public Vector2? point;
 
     public DamageInfo(float amount, Vector2 direction, float knockback, GameObject source, Vector2? point = null)
     {
@@ -26,9 +26,6 @@ public struct DamageInfo
 
 public static class Damageable
 {
-    // Solid colliders count for their whole object hierarchy. Trigger colliders only count for their
-    // own object, so something like a robot's detection trigger doesn't soak up hits meant for its body.
-    // Health wins over any other damage script on the same object.
     public static IDamageable FromCollider(Collider2D collider)
     {
         Health health = collider.isTrigger ? collider.GetComponent<Health>() : collider.GetComponentInParent<Health>();

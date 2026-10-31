@@ -3,21 +3,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// An old CRT set on a wall bracket, the station's own: a chunky casing, a curved screen, two knobs down the side.
-// It's how Sonny looks at people, and how it talks to them (SonnyBroadcast). It never speaks aloud.
-//   Calm (Chapter 1, before anything's wrong): it shows the station's feed, a blue screen of slowly crawling readouts.
-//   Rogue (after): mostly dead, a dark screen, or hissing static. When the technician's in its room, now and then one
-//   crackles on, and there's Sonny's lens, filling the screen, its pupil following them about, until it's had a good
-//   look and the set crackles off again.
-//   Broadcasting: Sonny takes it over to say something, a word at a time, static between each one.
-// Lit by the room like the wall art it hangs among (WallArt), but its screen shines in the dark, throwing a little of
-// its colour on the floor. Its sounds are the scene's own when it has them (SoundManager: "TV Static", "Sonny Word");
-// until then they're made in code. Hung by SonnyBroadcast.PlaceTVs.
+// old tv on the wall
 public class StationTV : MonoBehaviour
 {
-    const float PixelsPerUnit = 16f;        // as the wall art's drawn
+    const float PixelsPerUnit = 16f;
     const int CaseWidth = 23, CaseHeight = 17;
-    static readonly RectInt Screen = new RectInt(2, 3, 16, 12);     // in the casing's pixels, from its bottom left
+    static readonly RectInt Screen = new RectInt(2, 3, 16, 12);
     const float HearFrom = 14f;
 
     public static readonly List<StationTV> All = new List<StationTV>();
@@ -68,8 +59,6 @@ public class StationTV : MonoBehaviour
         nextWatch = Time.time + Random.Range(watchGap.x * 0.3f, watchGap.y);
     }
 
-    // --- Broadcasting (SonnyBroadcast) ---
-
     public void BeginBroadcast()
     {
         Broadcasting = true;
@@ -87,7 +76,6 @@ public class StationTV : MonoBehaviour
 
     public void BetweenWords() => Set(Show.Static);
 
-    // Done talking: its eye stays on them a moment longer, then the set goes back to what it was doing.
     public void EndBroadcast(float watchFor)
     {
         tint = rogue ? RogueColor : CalmColor;
@@ -98,21 +86,17 @@ public class StationTV : MonoBehaviour
 
     public void PlayTone(float pitch) => Play("Sonny Word", tone, 0.8f, pitch);
 
-    // --- Every frame ---
-
     void Update()
     {
         float now = Time.time;
         if (!Broadcasting)
         {
-            // Back from looking, or a burst of static.
             if ((show == Show.Lens || show == Show.Static) && showUntil > 0f && now >= showUntil)
             {
                 showUntil = 0f;
                 Set(rogue ? (Random.value < 0.8f ? Show.Off : Show.Static) : Show.Feed);
                 if (rogue) Play("TV Static", hiss, 0.25f);
             }
-            // Rogue, with them in the room: now and then it wakes up to watch them.
             else if (rogue && show != Show.Lens && now >= nextWatch && PlayerInRoom())
             {
                 nextWatch = now + Random.Range(watchGap.x, watchGap.y);
@@ -172,7 +156,6 @@ public class StationTV : MonoBehaviour
                 break;
             case Show.Lens:
             {
-                // Its eye, filling the screen, the pupil turned to wherever they are.
                 screen.sprite = noise[0];
                 screen.color = new Color(tint.r * 0.25f, tint.g * 0.25f, tint.b * 0.25f);
                 iris.color = tint;
@@ -191,16 +174,13 @@ public class StationTV : MonoBehaviour
                 screen.color = new Color(tint.r * 0.3f, tint.g * 0.3f, tint.b * 0.3f);
                 glow.color = tint;
                 glow.intensity = 0.7f;
-                // A shiver in the picture, hostile.
                 word.transform.localPosition = ScreenCenter + (tint == RogueColor && Random.value < 0.15f
                     ? (Vector3)(Random.insideUnitCircle * 0.02f) : Vector3.zero);
                 break;
         }
-        // The scanlines flicker, now dimmer, now darker.
         if (scan.enabled) scan.color = new Color(0f, 0f, 0f, 0.3f + 0.08f * Mathf.Sin(now * 31f));
     }
 
-    // Louder the nearer the player.
     void Play(string soundName, AudioClip fallback, float volume, float pitch = 1f)
     {
         if (voice == null || player == null) return;
@@ -210,8 +190,6 @@ public class StationTV : MonoBehaviour
         voice.panStereo = Mathf.Clamp(offset.x / 8f, -0.8f, 0.8f);
         SoundManager.PlayOneShot(voice, soundName, volume * near, pitch, fallback);
     }
-
-    // --- Building ---
 
     static Vector3 ScreenCenter => new Vector3(Screen.center.x - CaseWidth * 0.5f, Screen.center.y - CaseHeight * 0.5f, 0f) / PixelsPerUnit;
 
@@ -261,7 +239,6 @@ public class StationTV : MonoBehaviour
         if (tone == null) tone = Tone();
     }
 
-    // glowing: drawn unlit, so it shines in the dark (the screen); otherwise lit by the room, like the wall art.
     SpriteRenderer Part(string partName, Sprite sprite, int order, Color color, bool glowing)
     {
         var part = new GameObject(partName).AddComponent<SpriteRenderer>();
@@ -273,8 +250,6 @@ public class StationTV : MonoBehaviour
         if (glowing && CombatSprites.EffectMaterial != null) part.sharedMaterial = CombatSprites.EffectMaterial;
         return part;
     }
-
-    // --- Art, made once ---
 
     static void MakeArt()
     {
@@ -288,18 +263,15 @@ public class StationTV : MonoBehaviour
         var arm = new Color32(55, 56, 60, 255);
         Texture2D body = PixelArt.MakeTexture(CaseWidth, CaseHeight, (x, y) =>
         {
-            // The bracket up to the wall, over the middle of its top.
             if (y == CaseHeight - 1) return x >= 9 && x <= 12 ? arm : default;
             bool edge = x == 0 || x == CaseWidth - 1 || y == 0 || y == CaseHeight - 2;
             bool corner = (x == 0 || x == CaseWidth - 1) && (y == 0 || y == CaseHeight - 2);
             if (corner) return default;
             if (edge) return outline;
-            // The screen's opening, its corners rounded off.
             bool inScreen = x >= Screen.xMin && x < Screen.xMax && y >= Screen.yMin && y < Screen.yMax;
             bool screenCorner = (x == Screen.xMin || x == Screen.xMax - 1) && (y == Screen.yMin || y == Screen.yMax - 1);
             if (inScreen && !screenCorner) return glass;
             if (inScreen) return outline;
-            // Two knobs down the right, under a grille.
             if (x == 20 && (y == 4 || y == 7)) return knob;
             if (x >= 19 && x <= 21 && y >= 9 && y <= 12 && (x + y) % 2 == 0) return dark;
             return y >= CaseHeight - 4 ? light : y <= 1 ? dark : shell;
@@ -320,7 +292,6 @@ public class StationTV : MonoBehaviour
             noise[i] = PixelArt.ToSprite(snow, PixelsPerUnit, new Vector2(0.5f, 0.5f));
         }
 
-        // The feed: readouts in rows, a bar graph, the station's mark.
         Texture2D feed = PixelArt.MakeTexture(Screen.width, Screen.height, (x, y) =>
         {
             bool corner = (x == 0 || x == Screen.width - 1) && (y == 0 || y == Screen.height - 1);
@@ -334,7 +305,6 @@ public class StationTV : MonoBehaviour
         });
         feedSprite = PixelArt.ToSprite(feed, PixelsPerUnit, new Vector2(0.5f, 0.5f));
 
-        // The lens: a ring, and a pupil inside it.
         Texture2D iris = PixelArt.MakeTexture(9, 9, (x, y) =>
         {
             float d = Vector2.Distance(new Vector2(x, y), new Vector2(4f, 4f));
@@ -351,7 +321,6 @@ public class StationTV : MonoBehaviour
         lines = PixelArt.ToSprite(rows, PixelsPerUnit, new Vector2(0.5f, 0.5f));
     }
 
-    // A burst of hiss, the set catching a signal or losing it.
     static AudioClip Hiss()
     {
         int samples = Mathf.CeilToInt(0.3f * TitleUI.SampleRate);
@@ -365,7 +334,6 @@ public class StationTV : MonoBehaviour
         return Clip("TV Static", data);
     }
 
-    // A word coming up on the screen: a flat, clipped machine tone, two notes close together.
     static AudioClip Tone()
     {
         int samples = Mathf.CeilToInt(0.16f * TitleUI.SampleRate);

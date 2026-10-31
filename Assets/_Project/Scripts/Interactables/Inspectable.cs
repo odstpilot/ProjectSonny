@@ -1,12 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Something the technician can take a look at: a sofa, a console, a window, a poster on the wall. Walk up to it and press
-// Q, and they say what they make of it over their head (TechnicianVoice): the next of its thoughts each look, the last
-// one again after that. It never stops the player, and it has its own key and its own little tag ("[Q] Inspect"), so it
-// never gets in the way of E and whatever that's showing over (InteractPrompt). Only the nearest one in reach shows it.
-// Measured to its collider if it has one (the foot of a piece of furniture), to focus otherwise.
-// Built by ChapterOneBuilder, for both chapters, with what the technician would think of each thing then.
+// something to look at with q
 public class Inspectable : MonoBehaviour
 {
     public const KeyCode InspectKey = KeyCode.Q;
@@ -83,10 +78,9 @@ public class Inspectable : MonoBehaviour
     }
 }
 
-// The "[Q] Inspect" tag over whatever can be inspected: the same slim tag as E's (PromptBadge), its words a shade softer.
 public class InspectTag : MonoBehaviour
 {
-    const int SortingOrder = 104;           // just under E's prompt, if they ever meet
+    const int SortingOrder = 104;
     static InspectTag instance;
 
     private Canvas canvas;

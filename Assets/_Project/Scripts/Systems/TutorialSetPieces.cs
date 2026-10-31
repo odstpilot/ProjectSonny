@@ -3,9 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-// The one-off effects the tutorial's set pieces are made of, made from code so they need no assets: sounds synthesized
-// on the spot, the smeared, dark picture of coming round, a wall being blown in, and the arrow that points the way.
-// TutorialDirector decides when each happens.
+// tutorial effects made in code
 public static class TutorialSetPieces
 {
     const int SampleRate = 44100;
@@ -21,16 +19,12 @@ public static class TutorialSetPieces
     static readonly Color32 HotEdge = new Color32(255, 150, 60, 255);
     static readonly Color32 Arrow = new Color32(255, 196, 120, 255);
 
-    // --- Sounds ---
-
-    // A thin high whine with a slow beat in it, like ears ringing after a blast. Loops cleanly.
     public static AudioClip Ringing()
     {
         return Synthesize("Ringing", 2f, t =>
             0.5f * Mathf.Sin(2f * Mathf.PI * 3150f * t) + 0.25f * Mathf.Sin(2f * Mathf.PI * 3152f * t));
     }
 
-    // One deep tone that swells in and rings away for a few seconds, for the cut to black.
     public static AudioClip LowTone()
     {
         return Synthesize("Low Tone", 5f, t =>
@@ -52,8 +46,6 @@ public static class TutorialSetPieces
         return clip;
     }
 
-    // One of the scene's sounds (SoundManager), or the fallback while the scene has no clip for it, played on through
-    // AudioListener.volume, so it can be heard over a silence the level has made. Its volume is left to the caller.
     public static AudioSource Speaker(GameObject host, string soundName, AudioClip fallback, bool loop)
     {
         AudioSource source = host.AddComponent<AudioSource>();
@@ -65,10 +57,6 @@ public static class TutorialSetPieces
         return source;
     }
 
-    // --- Coming round ---
-
-    // The picture as it looks to someone just waking: smeared at the edges, colour washed out, dark, and warped.
-    // Fade it out by lowering the volume's weight, then destroy it.
     public static Volume WakeEffects()
     {
         var profile = ScriptableObject.CreateInstance<VolumeProfile>();
@@ -89,16 +77,12 @@ public static class TutorialSetPieces
 
         var volume = new GameObject("Wake Effects").AddComponent<Volume>();
         volume.isGlobal = true;
-        volume.priority = 60f;      // over StationRumble's screen effects
+        volume.priority = 60f;
         volume.weight = 1f;
         volume.sharedProfile = profile;
         return volume;
     }
 
-    // --- The wall coming in ---
-
-    // A blast through the wall at point: the plating tears open, chunks and sparks fly into the room, dust rolls out,
-    // and wreckage is left on the floor in front of the hole.
     public static void BlowInWall(Vector2 point)
     {
         CameraShake.Kick(Vector2.down, 0.35f);
@@ -117,9 +101,8 @@ public static class TutorialSetPieces
         hole.transform.position = point;
         hole.sprite = DrawBreach(new System.Random()).ToSprite(new Vector2(0.5f, 0.5f));
         hole.sortingLayerName = "Collision";
-        hole.sortingOrder = 6;      // over the wall's tiles and the lamps on it
+        hole.sortingOrder = 6;
 
-        // Wreckage thrown out onto the floor below.
         Vector2 floor = point + Vector2.down * 2.1f;
         for (int i = 0; i < 4; i++)
         {
@@ -131,16 +114,12 @@ public static class TutorialSetPieces
         }
     }
 
-    // A ragged hole blown through the wall, the station's layers showing at its edge: the outer plating peeled back in
-    // petals, then gold insulation, then metal still glowing where it tore, and inside, the dark between the walls with a
-    // rib of the frame and a cut cable hanging across it.
     static PixelCanvas DrawBreach(System.Random dice)
     {
         const int width = 72, height = 64;
         var canvas = new PixelCanvas(width, height);
         Vector2 middle = new Vector2(width * 0.5f, height * 0.5f);
 
-        // How far the hole reaches at each angle round it: ragged, not round.
         var reach = new float[24];
         for (int i = 0; i < reach.Length; i++) reach[i] = 0.72f + 0.28f * (float)dice.NextDouble();
         System.Func<float, float> edgeAt = angle =>
@@ -150,7 +129,6 @@ public static class TutorialSetPieces
             return Mathf.Lerp(reach[i % reach.Length], reach[(i + 1) % reach.Length], at - i);
         };
 
-        // Petals of plating bent outward, between the hole and the wall.
         for (int i = 0; i < 7; i++)
         {
             float angle = (i + (float)dice.NextDouble() * 0.6f) / 7f * Mathf.PI * 2f;
@@ -163,7 +141,6 @@ public static class TutorialSetPieces
         canvas.Bevel(1.15f, 0.7f);
         canvas.Outline(Ink);
 
-        // The hole itself, layer by layer from the edge in.
         var dark = new bool[width * height];
         for (int y = 0; y < height; y++)
         {
@@ -184,7 +161,6 @@ public static class TutorialSetPieces
             }
         }
 
-        // A rib of the frame across the dark, and a cut cable hanging in front of it.
         int ribX = Mathf.RoundToInt(middle.x + (float)dice.NextDouble() * 12f - 6f);
         for (int y = 0; y < height; y++)
             for (int x = ribX; x < ribX + 4; x++)
@@ -199,11 +175,8 @@ public static class TutorialSetPieces
         return canvas;
     }
 
-    // --- The way on ---
-
     public static SpriteRenderer GuideArrow()
     {
-        // A chevron pointing right, at the tileset's pixel size.
         var chevron = new PixelCanvas(12, 16);
         chevron.Line(2, 14, 8, 8, Arrow, 3);
         chevron.Line(8, 8, 2, 2, Arrow, 3);

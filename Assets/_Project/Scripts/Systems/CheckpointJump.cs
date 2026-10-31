@@ -1,16 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// For testers: go straight to any stage of a chapter, with everything before it done and its cutscenes skipped, and the
-// player standing where that stage happens. Each stage is a checkpoint (SaveGame.JumpTo) that the chapter's director
-// fills in for itself (ChapterOneDirector.FillStage, ChapterTwoDirector.FillStage), then sets up the way it does when
-// continuing a save. "start" plays the scene from the top.
-//
-// Two ways in:
-//  - in the editor, Sonny > Checkpoint Tester (CheckpointTesterWindow): a button per stage, which opens the scene and
-//    presses Play, or jumps there if it's already playing
-//  - while playing, in the editor or a development build, F9 opens a list of the stages over the game
-// Keep Stages in step with the directors' FillStage.
+// jump to any checkpoint, for testing
 public static class CheckpointJump
 {
     public const KeyCode PanelKey = KeyCode.F9;
@@ -48,20 +39,20 @@ public static class CheckpointJump
         new Stage("Chapter2", "hallway-caved", "Hallway caved in: upstairs to the maintenance deck"),
         new Stage("Chapter2", "wall-grab", "Just short of the stairs: the bot in the wall (mash E)"),
         new Stage("Chapter2", "upper-deck", "Upper maintenance deck: scavenge for the EMP"),
-        new Stage("Chapter2", "bench-stocked", "At the workbench with parts for everything (EMP, scrap gun)"),
+        new Stage("Chapter2", "bench-stocked", "At the workbench with parts for everything (EMP, blaster)"),
         new Stage("Chapter2", "emp-built", "EMP built: off to the comms ring to reactivate the badge"),
         new Stage("Chapter2", "comms-ring", "Comms ring: arriving (the lights die, Pip goes offline)"),
         new Stage("Chapter2", "comms-generator", "Comms ring, pitch dark: at the generator (its minigame)"),
         new Stage("Chapter2", "comms-power", "Comms ring, power back: tune in the broadcasts (bots through the walls)"),
         new Stage("Chapter2", "comms-relay", "Comms ring: every broadcast in, answer Sonny's relay"),
         new Stage("Chapter2", "comms-done", "Relay passed: a unit's access, back to the control room"),
-        new Stage("Chapter2", "reactor", "Reactor core: arriving (radiation, bots roaming)"),
-        new Stage("Chapter2", "reactor-lockdown", "Reactor core, far side: a step short of the lockdown (armed)"),
-        new Stage("Chapter2", "reactor-cleared", "Reactor core: lockdown beaten, at the stairs down (armed)"),
-        new Stage("Chapter2", "control-room", "In the control room, let in as a unit"),
+
+        new Stage("Chapter3", Start, "From the top (just inside the reactor core)"),
+        new Stage("Chapter3", "reactor-lockdown", "Reactor core, far side: a step short of the lockdown (armed)"),
+        new Stage("Chapter3", "reactor-cleared", "Reactor core: lockdown beaten, at the stairs down (armed)"),
+        new Stage("Chapter3", "control-room", "In the control room, let in as a unit"),
     };
 
-    // Loads the scene set up at that stage.
     public static void Go(string scene, string stage)
     {
         if (!Application.CanStreamedLevelBeLoaded(scene))
@@ -78,7 +69,6 @@ public static class CheckpointJump
 #if UNITY_EDITOR
     public const string EditorRequestKey = "Sonny.CheckpointJump";
 
-    // The Checkpoint Tester window asks for a stage before pressing Play: picked up here, before the scene wakes.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void FromEditor()
     {
@@ -100,8 +90,6 @@ public static class CheckpointJump
 #endif
 }
 
-// The F9 list of stages, drawn plainly over the game: it's a tester's tool, not part of it. Pauses the game while it's
-// open.
 public class CheckpointJumpPanel : MonoBehaviour
 {
     private bool open;

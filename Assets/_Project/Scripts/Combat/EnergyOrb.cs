@@ -1,22 +1,17 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A crackling ball of energy: a soft glow, a bright core, a light so it brightens the room, and sparks that jump off
-// it. The blaster grows one at its muzzle while charging (WeaponVisual) and launches another as its shot (Projectile).
+// glowing ball of energy for the blaster
 public class EnergyOrb : MonoBehaviour
 {
     const float PulseSpeed = 14f;
-    const float CoreScale = 0.6f;      // the core's size, as a fraction of Size
-    const float HaloScale = 1.8f;      // the glow's size, as a multiple of Size
+    const float CoreScale = 0.6f;
+    const float HaloScale = 1.8f;
     const float SpecksPerSecond = 40f;
 
-    // Across the ball, in world units.
     public float Size { get; set; }
-    // 0 to 1: how bright it glows, how far its light reaches, and how often sparks jump off it.
     public float Strength { get; set; } = 1f;
-    // Flickers and throws off more sparks, for a ball that's full and ready to go.
     public bool Unstable { get; set; }
-    // Pulls specks of energy in from the air around it, for a ball that's still charging.
     public bool DrawingIn { get; set; }
 
     private BlasterWeaponData data;
@@ -82,7 +77,6 @@ public class EnergyOrb : MonoBehaviour
         }
     }
 
-    // Call after moving the ball somewhere instantly, so the trail doesn't streak across the jump.
     public void ClearTrail()
     {
         if (trail != null) trail.Clear();
@@ -118,14 +112,12 @@ public class EnergyOrb : MonoBehaviour
         sparkTimer -= Time.deltaTime;
         if (sparkTimer > 0f || Size < 0.05f) return;
 
-        // Stronger balls throw sparks more often; full ones twice as often again.
         sparkTimer = Random.Range(0.04f, 0.12f) / Mathf.Max(0.25f, Strength) * (Unstable ? 0.5f : 1f);
         Vector2 direction = RandomDirection();
         Vector2 surface = (Vector2)transform.position + direction * (Size * 0.35f);
         HitEffects.Sparks(surface, direction, Unstable ? 3 : 2, 2f + 3f * Strength, 50f, data.coreColor, data.energyColor);
     }
 
-    // Motes drift in from a ring around the ball, like it's pulling energy out of the air.
     void EmitSpecks()
     {
         specksOwed += Time.deltaTime * SpecksPerSecond;

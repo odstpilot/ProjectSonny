@@ -1,12 +1,9 @@
 using TMPro;
 using UnityEngine;
 
-// What the player picked from the title menu.
 public enum TitleChoice { None, Start, Continue, Quit, Back }
 
-// The row of choices that replaces "press any button": START, SETTINGS, and QUIT, with brackets that slide over to the
-// one selected; with a save to go back to (SaveGame), CONTINUE, NEW GAME, SETTINGS, and QUIT, with CONTINUE picked to
-// begin with. SETTINGS opens the settings panel over the whole screen. TitleScreen calls Tick every frame.
+// title menu
 public class TitleMenu
 {
     const string ContinueItem = "CONTINUE", NewGameItem = "NEW GAME", StartItem = "START", SettingsItem = "SETTINGS";
@@ -33,7 +30,6 @@ public class TitleMenu
 
     public bool IsOpen { get; private set; }
 
-    // parent holds the row, at position; screen is the whole canvas, which the settings panel covers.
     public TitleMenu(RectTransform parent, Vector2 position, RectTransform screen, TMP_FontAsset font, AudioSource sfx)
     {
         this.sfx = sfx;
@@ -72,7 +68,7 @@ public class TitleMenu
         openedAt = now;
         selected = 0;
         bracketX = labels[0].rectTransform.anchoredPosition.x;
-        input.Read(now);    // so a direction already held to open the menu doesn't also move it
+        input.Read(now);
     }
 
     public void Close(float now)
@@ -81,7 +77,6 @@ public class TitleMenu
         closedAt = now;
     }
 
-    // Runs the menu for a frame and returns what was chosen, if anything. Without acceptInput it only animates.
     public TitleChoice Tick(float now, float dt, bool acceptInput = true)
     {
         input.Read(now);
@@ -130,7 +125,7 @@ public class TitleMenu
         {
             case StartItem:
             case NewGameItem:
-                return TitleChoice.Start;    // TitleScreen plays the start sound, and starts over
+                return TitleChoice.Start;
             case ContinueItem:
                 return TitleChoice.Continue;
             case SettingsItem:
@@ -173,8 +168,6 @@ public class TitleMenu
     }
 }
 
-// Menu input read the same way from the keyboard, a controller, and the mouse: steps that repeat while a direction is
-// held, confirm and cancel, and what the mouse did this frame.
 public class MenuInput
 {
     const float Threshold = 0.5f;
@@ -185,8 +178,8 @@ public class MenuInput
     float nextX, nextY;
     Vector3 lastMouse;
 
-    public int StepX { get; private set; }      // -1 left, 1 right
-    public int StepY { get; private set; }      // -1 up, 1 down the list
+    public int StepX { get; private set; }
+    public int StepY { get; private set; }
     public bool Submit { get; private set; }
     public bool Cancel { get; private set; }
     public bool MouseMoved { get; private set; }
@@ -231,7 +224,6 @@ public class MenuInput
         return Input.mousePresent && RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, null);
     }
 
-    // Where the mouse is across a rect: 0 at its left edge, 1 at its right.
     public static float Across(RectTransform rect)
     {
         RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, Input.mousePosition, null, out Vector2 local);

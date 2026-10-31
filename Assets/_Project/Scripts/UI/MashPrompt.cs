@@ -2,16 +2,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The button-mashing prompt for being grabbed (WallGrab, TutorialDirector's grab): big shaking words over the middle of
-// the screen, a key cap that punches on every press, a bar that fills toward breaking free, and red pulsing in at the
-// edges. Slack off and it flashes FASTER at them; get squeezed and the screen flushes red. Built from code the first
-// time it's shown, so there is nothing to set up.
+// mash e to break free
 public class MashPrompt : MonoBehaviour
 {
-    const int SortingOrder = 106;           // over the HUD and interact prompts, under screens that take over (110)
+    const int SortingOrder = 106;
     const float KeySize = 150f;
     const float BarWidth = 560f, BarHeight = 22f;
-    const float SlackSeconds = 0.55f;       // this long without a press, and it's telling them to go faster
+    const float SlackSeconds = 0.55f;
 
     static readonly Color Hot = new Color(1f, 0.28f, 0.2f);
     static readonly Color Bright = new Color(1f, 0.92f, 0.75f);
@@ -37,7 +34,6 @@ public class MashPrompt : MonoBehaviour
         prompt.target = 1f;
     }
 
-    // A press, and how far toward breaking free they've got now (0 to 1).
     public static void Press(float done)
     {
         if (instance == null) return;
@@ -46,7 +42,6 @@ public class MashPrompt : MonoBehaviour
         instance.lastPress = Time.unscaledTime;
     }
 
-    // Squeezed for not fighting it.
     public static void Squeeze()
     {
         if (instance != null) instance.squeezeFlash = 1f;
@@ -79,7 +74,6 @@ public class MashPrompt : MonoBehaviour
         squeezeFlash = Mathf.MoveTowards(squeezeFlash, 0f, dt * 2.5f);
         bool slack = now - lastPress > SlackSeconds && target > 0f;
 
-        // The words shaking, harder the further along (and while they're slacking), and swelling on each press.
         float shake = 5f + 9f * progress + (slack ? 8f : 0f);
         block.anchoredPosition = new Vector2(Random.Range(-shake, shake), 150f + Random.Range(-shake, shake));
         float beat = 1f + 0.06f * Mathf.Sin(now * Mathf.PI * 2f * 4f);
@@ -87,17 +81,13 @@ public class MashPrompt : MonoBehaviour
         block.localRotation = Quaternion.Euler(0f, 0f, Random.Range(-1f, 1f) * (2f + 3f * pressPunch));
         words.color = Color.Lerp(Hot, Bright, pressPunch);
 
-        // The key cap squashes on a press.
         keyRect.localScale = new Vector3(1f + 0.25f * pressPunch, 1f - 0.2f * pressPunch, 1f);
 
-        // Slacking: FASTER, flashing.
         nag.enabled = slack && Mathf.Repeat(now * 6f, 1f) < 0.6f;
 
-        // The bar, red going to green as it fills.
         fill.rectTransform.anchorMax = new Vector2(progress, 1f);
         fill.color = Color.Lerp(Hot, Free, progress);
 
-        // Red at the edges, pulsing, and flushing in when it squeezes.
         float pulse = 0.5f + 0.5f * Mathf.Sin(now * Mathf.PI * 2f * 2.2f);
         edges.color = new Color(0.75f, 0.05f, 0.03f, Mathf.Clamp01(0.35f + 0.25f * pulse + 0.5f * squeezeFlash));
     }
@@ -119,7 +109,6 @@ public class MashPrompt : MonoBehaviour
         edges.texture = CombatSprites.VignetteTexture;
         edges.raycastTarget = false;
 
-        // Everything that shakes together, a little under the middle of the screen.
         block = GameUI.NewRect("Block", transform);
         block.anchorMin = block.anchorMax = new Vector2(0.5f, 0.5f);
         block.pivot = new Vector2(0.5f, 0.5f);

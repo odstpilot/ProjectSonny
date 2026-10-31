@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-// An area that tells the level when the player walks into it, like crossing the doorway of a new room.
-// Levels listen for PlayerEntered in code or hook up onPlayerEntered in the Inspector.
-// Needs a trigger Collider2D on this object.
+// tells the level when the player walks in
 [RequireComponent(typeof(Collider2D))]
 public class PlayerTriggerZone : MonoBehaviour
 {

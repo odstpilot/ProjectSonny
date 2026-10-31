@@ -1,13 +1,6 @@
 using UnityEngine;
 
-// What to do about each objective, for whoever's lost:
-//  - A step: one line under the objective in the corner (TutorialHud) saying how to go about it, [X] picking out a key.
-//  - Hints, for when they're stuck: the objective hasn't moved on for firstHintAfter seconds of free play, and Pip
-//    nudges them, a little more plainly each time (hintEvery seconds apart), the last one again now and then after
-//    that. With Pip offline (before it's booted, or in the comms ring's blackout), the technician thinks it through
-//    themselves instead.
-// Matched by how the objective starts, so "Intercept Sonny's broadcasts (1/2)" finds "Intercept Sonny's broadcasts".
-// An objective that isn't here gets no step and no hints. Added to the HUD by TutorialHud, so there's nothing to set up.
+// how-to line and hints for each objective
 public class ObjectiveGuide : MonoBehaviour
 {
     const float FirstHintAfter = 40f;
@@ -18,8 +11,8 @@ public class ObjectiveGuide : MonoBehaviour
     {
         public string objective;
         public string step;
-        public string[] pip;        // Pip's nudges, plainer each time. ~ opens a line with static; [M] shows a key
-        public string[] self;       // the technician's own, for when Pip's offline
+        public string[] pip;
+        public string[] self;
 
         public Entry(string objective, string step, string[] pip, string[] self = null)
         {
@@ -32,10 +25,8 @@ public class ObjectiveGuide : MonoBehaviour
 
     static readonly Entry[] Entries =
     {
-        // --- The tutorial ---
         new Entry("Reach the control room", "Keep heading east", null),
 
-        // --- Chapter 1 ---
         new Entry("Talk to the quartermaster by the entrance", "Walk up to them and press [E]", null, new[]
         {
             "The quartermaster... that's the one waving at me by the entrance",
@@ -56,7 +47,6 @@ public class ObjectiveGuide : MonoBehaviour
         new Entry("Find the spare data chip", "Open the tool crate [E]", new[] { "~Spares usually live in the tool crate, try that" }),
         new Entry("Check under the shelf", "Reach under the shelf [E]", new[] { "~Something's shining under that shelf, get down and look" }),
 
-        // --- Chapter 2 ---
         new Entry("Get out of the storage room", "The door's jammed. Find another way out", new[]
         {
             "~The door's not budging... what about that vent grate on the floor?",
@@ -111,10 +101,8 @@ public class ObjectiveGuide : MonoBehaviour
         }),
     };
 
-    // The step for this objective, or empty.
     public static string StepFor(string objective) => Find(objective)?.step ?? "";
 
-    // [X] picked out in amber, for the HUD.
     public static string Keys(string text) =>
         string.IsNullOrEmpty(text) ? text : System.Text.RegularExpressions.Regex.Replace(text, @"\[([^\]]+)\]", "<color=#FFAE52>[$1]</color>");
 
@@ -124,6 +112,14 @@ public class ObjectiveGuide : MonoBehaviour
         foreach (Entry entry in Entries)
             if (objective.StartsWith(entry.objective, System.StringComparison.Ordinal)) return entry;
         return null;
+    }
+
+    public static PipManager.Nudge[] DefaultNudges()
+    {
+        var nudges = new System.Collections.Generic.List<PipManager.Nudge>();
+        foreach (Entry entry in Entries)
+            if (entry.pip.Length > 0) nudges.Add(new PipManager.Nudge { objective = entry.objective, lines = entry.pip });
+        return nudges.ToArray();
     }
 
     private string watching = "";
@@ -149,9 +145,9 @@ public class ObjectiveGuide : MonoBehaviour
         if (stuckFor < nextHintAt) return;
 
         bool pipOn = SuitHelper.Exists;
-        string[] lines = pipOn ? entry.pip : entry.self;
+        string[] lines = pipOn ? PipManager.Lines.NudgesFor(entry.objective) : entry.self;
         if (lines.Length == 0) return;
-        if (pipOn && SuitHelper.Get().Talking) return;      // in a moment, once Pip's done
+        if (pipOn && SuitHelper.Get().Talking) return;
 
         string line = lines[Mathf.Min(given, lines.Length - 1)];
         if (pipOn) SuitHelper.Get().Tell(line);
@@ -160,7 +156,6 @@ public class ObjectiveGuide : MonoBehaviour
         nextHintAt = stuckFor + (given < lines.Length ? HintEvery : RepeatLastEvery);
     }
 
-    // Free to get on with it: not in a cutscene, a conversation, a menu, or a screen of its own.
     bool Free()
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();

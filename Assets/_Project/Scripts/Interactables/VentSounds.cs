@@ -1,17 +1,12 @@
 using UnityEngine;
 
-// The ducts' own noises, made in code, for VentNetwork: the metal round the player groaning and ticking, something
-// skittering behind a panel, slow breathing that isn't theirs, knocking far off down the ducts, the rat, and the drone's
-// servos and the shriek it gives when it locks on. Each is made once and kept. They're the scene's sounds by these
-// names (SoundDefaults.Vents, with no clips), so giving one a clip in the SoundManager replaces the one made here.
+// vent noises
 public static class VentSounds
 {
     const int Rate = TitleUI.SampleRate;
 
     static AudioClip creak, skitter, breath, knock, ratSqueal, ratScurry, servo, lockOn, whisper, bang;
 
-    // Head first into a duct wall: a hard hit, the sheet metal booming and rattling, and the boom coming back off the
-    // far end of the duct a moment later.
     public static AudioClip Bang => bang != null ? bang : (bang = Make("Vent Bang", 2f, 19, (t, rnd) =>
     {
         float Hit(float local, float loudness)
@@ -19,19 +14,16 @@ public static class VentSounds
             if (local < 0f) return 0f;
             float crack = ((float)rnd.NextDouble() * 2f - 1f) * Mathf.Exp(-local * 70f);
             float thump = Mathf.Sin(2f * Mathf.PI * 70f * local) * Mathf.Exp(-local * 10f);
-            // The panel ringing: a handful of out-of-tune partials, the high ones dying first.
             float ring = Mathf.Sin(2f * Mathf.PI * 173f * local) * Mathf.Exp(-local * 3.2f) * 0.55f
                        + Mathf.Sin(2f * Mathf.PI * 289f * local) * Mathf.Exp(-local * 4.5f) * 0.4f
                        + Mathf.Sin(2f * Mathf.PI * 447f * local) * Mathf.Exp(-local * 6f) * 0.3f
                        + Mathf.Sin(2f * Mathf.PI * 731f * local) * Mathf.Exp(-local * 9f) * 0.2f;
-            // A loose panel rattling for a moment after.
             float rattle = (Mathf.PerlinNoise(local * 140f, 2.5f) - 0.5f) * Mathf.Exp(-local * 7f) * (local > 0.05f ? 0.9f : 0f);
             return (crack * 0.8f + thump + ring + rattle) * loudness;
         }
         return Mathf.Clamp((Hit(t, 1f) + Hit(t - 0.28f, 0.35f) + Hit(t - 0.6f, 0.15f)) * 0.75f, -1f, 1f);
     }));
 
-    // A long metal groan: a few out-of-tune partials bending slowly, swelling and dying.
     public static AudioClip Creak => creak != null ? creak : (creak = Make("Vent Creak", 2.2f, 11, (t, rnd) =>
     {
         float bend = 1f + 0.08f * Mathf.Sin(t * 2.1f) + 0.05f * t;
@@ -43,10 +35,8 @@ public static class VentSounds
         return (tone * (0.7f + grit)) * envelope * 0.55f;
     }));
 
-    // Little claws on sheet metal, in bursts, somewhere behind a panel.
     public static AudioClip Skitter => skitter != null ? skitter : (skitter = Make("Vent Skitter", 1.4f, 23, Clicks(1.4f, 34f, 0.5f)));
 
-    // Something breathing in the dark: filtered noise drawn in and let out, twice.
     public static AudioClip Breath => breath != null ? breath : (breath = Make("Vent Breath", 3.6f, 5, Filtered(3.6f, 0.06f, t =>
     {
         float cycle = Mathf.Repeat(t, 1.8f) / 1.8f;
@@ -55,7 +45,6 @@ public static class VentSounds
         return (inhale + exhale) * 0.5f;
     })));
 
-    // Three knocks far off down the ducts, a pause between each, with a ringing tail.
     public static AudioClip Knock => knock != null ? knock : (knock = Make("Vent Knock", 2.6f, 7, (t, rnd) =>
     {
         float sum = 0f;
@@ -71,14 +60,12 @@ public static class VentSounds
         return sum * 0.6f;
     }));
 
-    // A whisper, nearly words: breathy noise shaped into syllables, dropping off at the end.
     public static AudioClip Whisper => whisper != null ? whisper : (whisper = Make("Vent Whisper", 2.4f, 31, Filtered(2.4f, 0.35f, t =>
     {
         float syllable = Mathf.Abs(Mathf.Sin(t * Mathf.PI * 3.3f)) * Mathf.PerlinNoise(t * 4f, 9f);
         return syllable * Mathf.Clamp01(1f - (t - 1.8f) / 0.6f) * 0.45f;
     })));
 
-    // The rat: a run of sharp, high squeals, loud.
     public static AudioClip RatSqueal => ratSqueal != null ? ratSqueal : (ratSqueal = Make("Rat Squeal", 1.1f, 3, (t, rnd) =>
     {
         float sum = 0f;
@@ -93,10 +80,8 @@ public static class VentSounds
         return Mathf.Clamp(sum * 1.4f, -1f, 1f) * 0.8f;
     }));
 
-    // Its feet on the metal, fast and close.
     public static AudioClip RatScurry => ratScurry != null ? ratScurry : (ratScurry = Make("Rat Scurry", 1.2f, 17, Clicks(1.2f, 70f, 0.9f)));
 
-    // The drone turning to look: a short whine of servos.
     public static AudioClip Servo => servo != null ? servo : (servo = Make("Drone Servo", 0.45f, 2, (t, rnd) =>
     {
         float pitch = Mathf.Lerp(180f, 290f, t / 0.45f);
@@ -104,7 +89,6 @@ public static class VentSounds
         return wave * Mathf.Sin(Mathf.PI * t / 0.45f) * 0.45f;
     }));
 
-    // The drone locking on: a rising, tearing shriek with static under it.
     public static AudioClip LockOn => lockOn != null ? lockOn : (lockOn = Make("Drone Lock", 1f, 13, (t, rnd) =>
     {
         float pitch = Mathf.Lerp(260f, 1900f, t * t);
@@ -115,7 +99,6 @@ public static class VentSounds
         return sound * Mathf.Clamp01(t / 0.05f) * 0.75f;
     }));
 
-    // The one made here for a sound's name, for SoundManager's fallback. Null for a name that isn't one of these.
     public static AudioClip Fallback(string soundName) => soundName switch
     {
         "Vent Bang" => Bang,
@@ -131,9 +114,6 @@ public static class VentSounds
         _ => null,
     };
 
-    // --- Making them ---
-
-    // Bursts of clicks: so many a second, each a tiny tick of noise, the bursts coming and going.
     static System.Func<float, System.Random, float> Clicks(float seconds, float perSecond, float loudness)
     {
         var at = new float[Mathf.CeilToInt(seconds * perSecond)];
@@ -158,7 +138,6 @@ public static class VentSounds
         };
     }
 
-    // Noise, low-passed (smoothing is how much each sample keeps of the last, 0 to 1), shaped by an envelope.
     static System.Func<float, System.Random, float> Filtered(float seconds, float smoothing, System.Func<float, float> envelope)
     {
         float last = 0f;
@@ -178,7 +157,6 @@ public static class VentSounds
         var random = new System.Random(seed);
         for (int i = 0; i < samples; i++)
             data[i] = Mathf.Clamp(sample(i / (float)Rate, random), -1f, 1f);
-        // A few milliseconds in and out, so nothing clicks at the ends.
         int fade = Mathf.Min(samples / 2, Rate / 200);
         for (int i = 0; i < fade; i++)
         {

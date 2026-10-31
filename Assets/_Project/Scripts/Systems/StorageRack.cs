@@ -1,19 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// One cell of steel storage racking, a cell deep and taller than a person, stacked with boxes, crates, and cases. Laid
-// out by ChapterOneBuilder into aisles across the upper maintenance deck (PlaceRacks); each cell knows which of its
-// neighbours are racks too, so a run of them reads as one long rack: uprights only at the ends, the shelf face only
-// along the front (front), the top seen from above running on into the next. It sorts like the furniture, from
-// DepthSort.FeetToCenter above its base, so whoever walks behind it is hidden behind it.
-// Its collider is its footprint; it's solid, and blocks what the bots and cameras can see. The art is made in code
-// until it has its own.
+// one storage rack
 public class StorageRack : MonoBehaviour
 {
     public const int Variants = 6;
     const float PixelsPerUnit = 16f;
     const int Size = 16;
-    const int FaceHeight = 24;          // taller than the technician
+    const int FaceHeight = 24;
 
     [Tooltip("The open floor is below it on screen: its shelves face that way.")]
     public bool front = true;
@@ -35,12 +29,12 @@ public class StorageRack : MonoBehaviour
     static readonly Color32 TopSteel = new Color32(70, 74, 84, 255);
     static readonly Color32[] BoxColors =
     {
-        new Color32(164, 120, 74, 255),     // cardboard
+        new Color32(164, 120, 74, 255),
         new Color32(140, 98, 60, 255),
-        new Color32(74, 108, 150, 255),     // blue crate
-        new Color32(112, 116, 126, 255),    // grey case
-        new Color32(186, 150, 60, 255),     // hazard yellow
-        new Color32(96, 132, 92, 255),      // green crate
+        new Color32(74, 108, 150, 255),
+        new Color32(112, 116, 126, 255),
+        new Color32(186, 150, 60, 255),
+        new Color32(96, 132, 92, 255),
     };
 
     void Awake()
@@ -60,10 +54,8 @@ public class StorageRack : MonoBehaviour
 
     int Key() => variant * 16 + (front ? 1 : 0) + (back ? 2 : 0) + (leftEnd ? 4 : 0) + (rightEnd ? 8 : 0);
 
-    // A little hash, so the same variant always gets the same boxes.
     int Roll(int a, int b) => Mathf.Abs((variant * 7919 + a * 104729 + b * 1299709) ^ (a * 31 + b * 17 + variant)) % 1000;
 
-    // Seen from above: the shelf top, with the tops of boxes on it, and its edges where it ends.
     Sprite MakeTop()
     {
         var boxes = new List<RectInt>();
@@ -76,8 +68,8 @@ public class StorageRack : MonoBehaviour
         Texture2D texture = PixelArt.MakeTexture(Size, Size, (x, y) =>
         {
             if ((leftEnd && x == 0) || (rightEnd && x == Size - 1) || (back && y == Size - 1)) return Outline;
-            if (front && y == 0) return SteelLit;                                   // the lip over the front
-            if ((leftEnd && x == 1) || (rightEnd && x == Size - 2)) return Steel;   // the uprights' tops
+            if (front && y == 0) return SteelLit;
+            if ((leftEnd && x == 1) || (rightEnd && x == Size - 2)) return Steel;
             for (int k = 0; k < boxes.Count; k++)
             {
                 RectInt box = boxes[k];
@@ -85,7 +77,6 @@ public class StorageRack : MonoBehaviour
                 Color32 color = BoxColors[Roll(k, 6) % BoxColors.Length];
                 if (x == box.xMin || y == box.yMin) return Darker(color, 0.65f);
                 if (y == box.yMax - 1) return Lighter(color);
-                // A strip of tape across cardboard.
                 return Roll(k, 6) % BoxColors.Length < 2 && x == box.xMin + box.width / 2 ? Lighter(color) : color;
             }
             return (x + y * 3) % 7 == 0 ? Darker(TopSteel, 0.85f) : TopSteel;
@@ -93,7 +84,6 @@ public class StorageRack : MonoBehaviour
         return PixelArt.ToSprite(texture, PixelsPerUnit, new Vector2(0.5f, 0f));
     }
 
-    // The front: uprights at the ends, three shelves with things on them, and the floor shelf.
     Sprite MakeFace()
     {
         int[] boards = { 0, 8, 16 };
@@ -107,8 +97,7 @@ public class StorageRack : MonoBehaviour
                 if (y == board || y == board + 1) return y == board + 1 ? SteelLit : Steel;
                 if (y == board + 2) return Shadow;
             }
-            // What's on the shelf this row's on: a few boxes standing on the board below.
-            int shelf = y / 8, above = y - shelf * 8 - 3;       // rows up from the shadow line
+            int shelf = y / 8, above = y - shelf * 8 - 3;
             for (int k = 0; k < 3; k++)
             {
                 if (Roll(shelf, k) < 250) continue;

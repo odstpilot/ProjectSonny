@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Flies straight and sweeps a circle cast each frame, so fast shots can't skip through thin walls or small enemies.
-// Blaster shots are balls of energy that blow up where they land, hurting everything around the impact.
+// a shot that flies straight
 public class Projectile : MonoBehaviour
 {
     private float damage;
@@ -15,8 +14,6 @@ public class Projectile : MonoBehaviour
     private BlasterWeaponData blaster;
     private bool finished;
 
-    // Starts at the shooter's center and immediately travels out to the muzzle, so firing while
-    // pressed against a wall hits the wall instead of spawning on the far side of it.
     public static Projectile Spawn(RangedWeaponData data, Vector3 origin, Vector2 direction, float muzzleDistance,
         GameObject owner, SpriteRenderer sortingSource)
     {
@@ -81,7 +78,6 @@ public class Projectile : MonoBehaviour
         {
             if (owner != null && hit.collider.transform.IsChildOf(owner.transform)) continue;
 
-            // Fly through trigger zones; stop on anything solid or anything that can be hurt.
             IDamageable target = Damageable.FromCollider(hit.collider);
             if (target == null && hit.collider.isTrigger) continue;
 
@@ -98,7 +94,6 @@ public class Projectile : MonoBehaviour
         }
     }
 
-    // center is where the projectile was when it touched; point is the spot on the surface it touched.
     void Land(Vector2 center, Vector2 point, IDamageable target)
     {
         if (target != null)
@@ -111,7 +106,6 @@ public class Projectile : MonoBehaviour
         Finish();
     }
 
-    // Everything in the blast radius that isn't behind a wall gets hurt, less toward the edge.
     void Explode(Vector2 center, IDamageable directHit)
     {
         bool hurtSomething = directHit != null;
@@ -151,7 +145,6 @@ public class Projectile : MonoBehaviour
         if (hurtSomething) HitStop.Freeze(blaster.blastHitStop);
     }
 
-    // Out of range: the ball comes apart harmlessly.
     void Dissipate(Vector2 at)
     {
         Color faded = new Color(blaster.energyColor.r, blaster.energyColor.g, blaster.energyColor.b, 0.6f);
@@ -167,7 +160,7 @@ public class Projectile : MonoBehaviour
             if (hit.collider == target) return false;
             if (hit.collider.isTrigger) continue;
             if (owner != null && hit.collider.transform.IsChildOf(owner.transform)) continue;
-            if (Damageable.FromCollider(hit.collider) != null) continue; // enemies don't shield each other
+            if (Damageable.FromCollider(hit.collider) != null) continue;
             return true;
         }
         return false;

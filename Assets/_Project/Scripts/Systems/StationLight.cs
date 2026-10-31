@@ -3,22 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A light on the station: a wall lamp, an alarm, or sunlight through a window.
-//   Steady, Flicker: an ordinary lamp, or one with a failing tube.   Alarm: pulses.
-//   Sunlight: breathes slowly and swells with SunBoost as the flare gets closer. FlareProgress (0 to 1) turns every
-//   window from orange toward white hot over the whole level, so the flare works as a countdown without a timer.
-// A lamp with swing sways on its bracket when the station rumbles, its pool of light swinging across the floor. One with
-// dropOnBreak can come away when it's smashed and fall as a light fitting (FallingDebris).
-// Every light stutters while the station rumbles. Breakable lights can be smashed, by debris landing under them, by a hard
-// rumble, or by Break() from a script: they pop, spray sparks and glass, stutter out, and keep sputtering sparks after.
-// PowerOff puts a light out with a flicker instead, like the power failing.
-// With drawFixture ticked a light draws placeholder art for itself: a caged lamp that goes dark and cracked when broken,
-// or, for sunlight, the glare that shows through the window glass.
+// lamp, alarm, or sunlight
 [RequireComponent(typeof(Light2D))]
 public class StationLight : MonoBehaviour
 {
-    const float StutterStep = 0.06f;    // seconds between changes while stuttering, so it doesn't depend on frame rate
-    const float DyingTime = 0.9f;       // a smashed light stutters this long before it's dark
+    const float StutterStep = 0.06f;
+    const float DyingTime = 0.9f;
     const float PowerFlickerTime = 0.6f;
 
     static readonly Color GlassLit = new Color(1f, 0.88f, 0.6f);
@@ -30,8 +20,6 @@ public class StationLight : MonoBehaviour
     static readonly Color SparkHot = new Color(1f, 0.5f, 0.12f);
     static readonly Color Shards = new Color(0.95f, 0.85f, 0.62f);
 
-    // The bulkhead lamp, drawn at the tileset's pixel size: a steel housing bolted to the wall, a cage of bars over its
-    // window, and the glass behind them.
     const int FixtureWidth = 24;
     const int FixtureHeight = 14;
     static readonly Color32 Housing = new Color32(74, 80, 88, 255);
@@ -80,17 +68,13 @@ public class StationLight : MonoBehaviour
     [Tooltip("Sunlight: the size of the window the glare shows through.")]
     public Vector2 windowSize = new Vector2(3f, 3f);
 
-    // Sunlight is multiplied by this: 1 normally, higher as the flare arrives.
     public static float SunBoost { get; set; } = 1f;
-    // 0 to 1: how close the flare is. Sunlight whitens and brightens with it. Set by the level.
     public static float FlareProgress { get; set; }
 
     public bool IsOn { get; private set; }
     public bool IsBroken { get; private set; }
     public Vector2 FixturePoint => (Vector2)transform.position + fixtureOffset;
 
-    // For the view from inside a locker (FirstPersonView): how bright one of its lights is while it's on, leaving out
-    // any flicker; 0 while it's off or broken.
     public float SteadyIntensity(Light2D light)
     {
         if (!IsOn || IsBroken) return 0f;
@@ -108,8 +92,6 @@ public class StationLight : MonoBehaviour
 
     private Light2D lamp;
     private float baseIntensity;
-    // Other lights that are part of it (the glow on the wall round the fitting, FloorOneBuilder), going on and off,
-    // flickering, and dying with it.
     private Light2D[] extras = new Light2D[0];
     private float[] extraIntensities = new float[0];
     private Color bulbColor;
@@ -119,11 +101,11 @@ public class StationLight : MonoBehaviour
     private SpriteRenderer frame;
     private Color baseColor;
     private Vector3 home;
-    private float swingEnergy;      // 0 still, 1 swinging as hard as it goes
+    private float swingEnergy;
     private float swingPhase;
     private Coroutine routine;
-    private float power = 1f;       // dips while the power is failing or coming back
-    private float flash;            // the pop when it breaks, and sparks sputtering after
+    private float power = 1f;
+    private float flash;
     private float nextSputter;
     private float nextCut;
     private float cutUntil;
@@ -151,14 +133,12 @@ public class StationLight : MonoBehaviour
         canvas.Bevel(1.2f, 0.75f);
         canvas.Outline(Ink);
 
-        // The window, cut after the outline so it isn't inked in: open, but for the cage bars across it.
         for (int y = 0; y < FixtureHeight; y++)
             for (int x = 0; x < FixtureWidth; x++)
                 if (InWindow(x, y)) canvas.Set(x, y, OnBar(x, y) ? Bars : default);
         return canvas;
     }
 
-    // White, so the light's colour can tint it. Broken, only a few shards are left round the edge of the window.
     static PixelCanvas DrawGlass(bool broken)
     {
         var canvas = new PixelCanvas(FixtureWidth, FixtureHeight);
@@ -188,7 +168,6 @@ public class StationLight : MonoBehaviour
         }
     }
 
-    // Brightest at the bottom of the window, darkening toward the top.
     static Sprite GlareSprite
     {
         get
@@ -207,7 +186,6 @@ public class StationLight : MonoBehaviour
         }
     }
 
-    // Statics outlive a play session in the Editor, so start each one fresh.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics()
     {
@@ -247,7 +225,6 @@ public class StationLight : MonoBehaviour
         FallingDebris.Impact -= OnDebrisLanded;
     }
 
-    // Straight on or off, no flicker.
     public void SetOn(bool on)
     {
         StopRoutine();
@@ -255,7 +232,6 @@ public class StationLight : MonoBehaviour
         IsOn = on;
     }
 
-    // Smashes it: a pop, sparks and glass, a dying stutter, then dark for good.
     public void Break()
     {
         if (IsBroken) return;
@@ -264,7 +240,6 @@ public class StationLight : MonoBehaviour
         routine = StartCoroutine(Die());
     }
 
-    // Out with a stutter, like the power failing. It isn't broken, so PowerOn brings it back.
     public void PowerOff()
     {
         if (!IsOn || IsBroken)
@@ -305,7 +280,6 @@ public class StationLight : MonoBehaviour
         Swing();
     }
 
-    // The light sways and the fixture stays put on the wall, so the pool of light swings across the floor under it.
     void Swing()
     {
         if (swing <= 0f || mode == Mode.Sunlight) return;
@@ -361,7 +335,6 @@ public class StationLight : MonoBehaviour
             tint.a = 0.45f * glow;
             halo.color = tint;
         }
-        // The sky through the window runs from deep orange to white hot as the flare builds.
         if (glare != null)
         {
             Color sky = Color.Lerp(SunDeep, SunWhite, Mathf.Clamp01((level - 0.8f) * 0.9f));
@@ -378,7 +351,6 @@ public class StationLight : MonoBehaviour
         StationRumble.PlayAt(breakSound, point);
         if (glass != null) glass.sprite = BrokenGlassSprite;
 
-        // Torn off the wall: the fitting falls to the floor under it, and only the bracket is left.
         if (dropOnBreak > 0f && Random.value < dropOnBreak)
         {
             FallingDebris.Drop(home, 0f, 0.45f, 0.85f, false, FallingDebris.Kind.Fixture);
@@ -414,7 +386,6 @@ public class StationLight : MonoBehaviour
         routine = null;
     }
 
-    // A broken light spitting a few sparks, with a flicker of light. Only near the camera, where it can be seen.
     void Sputter()
     {
         nextSputter = Time.time + Random.Range(1.2f, 4.5f);
@@ -430,7 +401,6 @@ public class StationLight : MonoBehaviour
         swingEnergy = Mathf.Clamp01(Mathf.Max(swingEnergy, strength * 1.6f));
         stutterUntil = Mathf.Max(stutterUntil, Time.time + duration * Mathf.Clamp01(strength * 1.5f));
 
-        // A hard rumble can shake a lamp loose, but only one every few seconds, and only where the player can see it.
         if (!breakable || IsBroken || !IsOn || strength < 0.45f || Time.time - lastRumbleBreak < 3f) return;
         Camera cam = Camera.main;
         if (cam == null || Vector2.Distance(cam.transform.position, FixturePoint) > 8f) return;
@@ -446,7 +416,6 @@ public class StationLight : MonoBehaviour
         Break();
     }
 
-    // Debris coming down under the lamp can take it with it; anything landing nearby makes it stutter.
     void OnDebrisLanded(Vector2 point, float size)
     {
         float distance = Vector2.Distance(point, transform.position);
@@ -470,7 +439,6 @@ public class StationLight : MonoBehaviour
     {
         if (mode == Mode.Sunlight)
         {
-            // Behind the walls, so it only shows through the window's glass.
             glare = NewSprite("Window Glare", GlareSprite, "Default", -10);
             Vector2 spriteSize = GlareSprite.bounds.size;
             glare.transform.localScale = new Vector3(windowSize.x / spriteSize.x, windowSize.y / spriteSize.y, 1f);
@@ -500,7 +468,6 @@ public class StationLight : MonoBehaviour
         return child;
     }
 
-    // The art is only made in Play mode, so mark where it goes.
     void OnDrawGizmos()
     {
         if (Application.isPlaying || !drawFixture) return;

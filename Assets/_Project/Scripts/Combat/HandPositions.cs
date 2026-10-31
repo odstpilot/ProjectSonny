@@ -3,14 +3,12 @@ using UnityEngine;
 
 public enum WeaponLayer
 {
-    InFront,            // drawn over the player
-    Behind,             // hidden behind the player's body
-    BehindWhenRaised    // behind while pointing upward (over the head), in front otherwise
+    InFront,
+    Behind,
+    BehindWhenRaised
 }
 
-// Where the player's hand is, so a held melee weapon sits in it.
-// Positions are world units from the player's center. Select the player and drag the hand circle in the
-// Scene view to set them. Changes made during Play mode are kept, because this is an asset.
+// where the player's hand is, per direction
 [CreateAssetMenu(menuName = "Sonny/Hand Positions", fileName = "PlayerHand")]
 public class HandPositions : ScriptableObject
 {
@@ -56,7 +54,6 @@ public class HandPositions : ScriptableObject
         return facing.x < 0f ? facingLeft : facingRight;
     }
 
-    // The frame's own spot if it has one, otherwise the default for the direction. angle is the frame's extra tilt.
     public Vector2 PositionFor(Vector2 facing, Sprite frame, out float angle)
     {
         FrameHand entry = FindFrame(frame);

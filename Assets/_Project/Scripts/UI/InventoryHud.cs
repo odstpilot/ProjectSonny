@@ -3,25 +3,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The readout on the technician's wrist, in the bottom left corner of the screen: what they're carrying, at a glance.
-//  - along the bottom, the tool rack (WeaponHotbar): a slot for each thing they can hold, its picture, and the number
-//    key that holds it. What's in hand is edged in amber, and for a moment after switching its slot opens out to say
-//    its name. A weapon that recharges (the EMP) drains and refills its slot. Something new on the rack pops in.
-//  - above it, once they've found any scrap, the parts pouch: a chip for each part (Inventory.Material), its picture and
-//    how many. A part picked up (ScrapPickup) flies off the floor into its chip, and the count ticks up as it lands.
-//  - at the end of the pouch, the Tab key that opens the pack (InventoryScreen).
-// The first part picked up switches the pack on (SuitFeatures.Inventory), and Pip says how to open it.
-// No sentences on it, only names, numbers, and keys, and nothing past the bottom left corner: the tutorial's prompt
-// along the bottom middle and the captions above that stay clear. It gets out of the way for cutscenes, fades, and
-// conversations.
-// Built from code the first time it's needed: WeaponHotbar hooks the player up to it. Runs on unscaled time.
+// what the player carries, bottom left
 public class InventoryHud : MonoBehaviour
 {
-    const int SortingOrder = 82;            // over the health readout (80), under the crafting guide (85) and the tutorial's text (90)
+    const int SortingOrder = 82;
     const float Margin = 40f;
     const float SlotSize = 64f, SlotGap = 8f;
     const float ChipWidth = 92f, ChipHeight = 40f, RowGap = 10f;
-    const float NameSeconds = 1.6f;         // how long a slot stays open saying its name, after switching to it
+    const float NameSeconds = 1.6f;
     const float FlySeconds = 0.6f;
     const float FadeSpeed = 5f;
 
@@ -38,9 +27,9 @@ public class InventoryHud : MonoBehaviour
         public TextMeshProUGUI key, name;
         public WeaponData weapon;
         public float width = SlotSize;
-        public float pop;           // 1 the moment it's new on the rack, easing to 0
-        public float named;         // seconds left saying its name
-        public float flash;         // a recharge finishing
+        public float pop;
+        public float named;
+        public float flash;
         public float lastReadiness = 1f;
     }
 
@@ -49,7 +38,7 @@ public class InventoryHud : MonoBehaviour
         public RectTransform rect;
         public Image icon;
         public TextMeshProUGUI count;
-        public int pending;         // picked up, still flying in
+        public int pending;
         public float bump;
     }
 
@@ -94,19 +83,17 @@ public class InventoryHud : MonoBehaviour
         ranged = tracked.GetComponent<RangedCombat>();
         player = tracked.GetComponent<PlayerController>();
         held = combat != null ? combat.CurrentWeapon : null;
-        // What's on the rack already is just there, not new.
         seen.Clear();
         foreach (WeaponData weapon in tracked.slots) seen.Add(weapon);
     }
 
-    // A part just picked up, from where it lay: it flies into the pouch. The first one switches the pack on.
     public static void Collected(Inventory.Material material, int amount, Vector3 worldPoint)
     {
         InventoryHud hud = Get();
         if (!SuitFeatures.Has(SuitFeatures.Feature.Inventory))
         {
             SuitFeatures.Unlock(SuitFeatures.Feature.Inventory);
-            if (SuitHelper.Exists) SuitHelper.Get().Tell(PipFirstScrap);
+            if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.firstScrap);
         }
         if (!hud.chips.TryGetValue(material, out Chip chip)) return;
         Camera view = Camera.main;
@@ -119,18 +106,10 @@ public class InventoryHud : MonoBehaviour
         });
     }
 
-    static readonly string[] PipFirstScrap =
-    {
-        "^Scrap! It goes in your pack, and the count's down in the corner",
-        "Press [Tab] to open the pack and see everything you're carrying",
-    };
-
     void OnDestroy()
     {
         if (instance == this) instance = null;
     }
-
-    // --- Every frame ---
 
     void Update()
     {
@@ -141,7 +120,6 @@ public class InventoryHud : MonoBehaviour
             return;
         }
 
-        // A save loaded with parts already in hand, or things made: the pack's on, without Pip going over it again.
         bool anyParts = AnyParts();
         if (!SuitFeatures.Has(SuitFeatures.Feature.Inventory) && anyParts) SuitFeatures.Unlock(SuitFeatures.Feature.Inventory);
 
@@ -161,12 +139,11 @@ public class InventoryHud : MonoBehaviour
         }
     }
 
-    // Judged by how things stood last frame, so the Tab that just closed the map doesn't also open the pack.
     void LateUpdate() => blockedLastFrame = Blocked();
 
     bool Blocked()
     {
-        if (Time.timeScale <= 0f || InventoryScreen.IsOpen) return true;     // the map, crafting, Pip's log, a tip, the pause menu
+        if (Time.timeScale <= 0f || InventoryScreen.IsOpen) return true;
         if (DialogueBox.Busy || TutorialHud.ScreenCovered || TutorialHud.Letterboxed || Locker.IsPlayerHidden) return true;
         if (MapScreen.IsOpen || CraftingScreen.IsOpen || PipLog.IsOpen || TipCard.IsOpen || PauseMenu.IsPaused) return true;
         if (player != null && (player.IsScripted || !player.enabled)) return true;
@@ -194,9 +171,6 @@ public class InventoryHud : MonoBehaviour
                 if (other != now) other.named = 0f;
         }
 
-        // Something new is only noticed while the readout's in view and the game's running, so a weapon made at the
-        // workbench pops in once the crafting screen's away, not unseen behind it.
-        // What's on the rack before it's first been seen (given back from a save) is just there.
         bool watching = Time.timeScale > 0f && group.alpha > 0.9f;
         if (!everShown) foreach (WeaponData weapon in hotbar.slots) seen.Add(weapon);
         everShown |= group.alpha >= 1f;
@@ -208,7 +182,6 @@ public class InventoryHud : MonoBehaviour
             slot.rect.gameObject.SetActive(weapon != null);
             if (weapon == null) continue;
 
-            // New on the rack: it flies in from the technician and pops into its slot.
             if (watching && seen.Add(weapon))
             {
                 slot.pop = 1f;
@@ -232,7 +205,6 @@ public class InventoryHud : MonoBehaviour
             slot.rect.anchoredPosition = new Vector2(x, SlotSize * 0.5f);
             x += slot.width + SlotGap;
 
-            // A weapon that recharges drains, and fills back up; a flash when it's ready again.
             float readiness = weapon is RangedWeaponData shooter && ranged != null ? ranged.Readiness(shooter) : 1f;
             if (readiness >= 1f && slot.lastReadiness < 1f) slot.flash = 1f;
             slot.lastReadiness = readiness;
@@ -252,7 +224,6 @@ public class InventoryHud : MonoBehaviour
 
     void UpdatePouch(float dt)
     {
-
         foreach (KeyValuePair<Inventory.Material, Chip> pair in chips)
         {
             Chip chip = pair.Value;
@@ -266,8 +237,6 @@ public class InventoryHud : MonoBehaviour
         bool on = SuitFeatures.Has(SuitFeatures.Feature.Inventory);
         tabKey.gameObject.SetActive(on);
     }
-
-    // --- Things flying into place ---
 
     void Fly(Sprite sprite, Vector3 from, RectTransform to, float size, System.Action landed)
     {
@@ -288,7 +257,6 @@ public class InventoryHud : MonoBehaviour
             Flyer flyer = flyers[i];
             flyer.t += dt / FlySeconds;
             float p = Mathf.SmoothStep(0f, 1f, flyer.t);
-            // Up off the floor first, then down into its place.
             Vector3 to = flyer.to != null ? flyer.to.TransformPoint(flyer.to.rect.center) : flyer.from;
             flyer.rect.position = Vector3.Lerp(flyer.from, to, p) + Vector3.up * Mathf.Sin(p * Mathf.PI) * lift;
             flyer.rect.localScale = Vector3.one * Mathf.Lerp(1.4f, 0.8f, p);
@@ -298,8 +266,6 @@ public class InventoryHud : MonoBehaviour
             flyers.RemoveAt(i);
         }
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -349,7 +315,6 @@ public class InventoryHud : MonoBehaviour
             chips[material] = chip;
         }
 
-        // The key that opens the pack, at the end of the pouch.
         Image tab = GameUI.KeyCap(pouch, "TAB", 22f, out _);
         tabKey = tab.rectTransform;
         tabKey.anchorMin = tabKey.anchorMax = tabKey.pivot = Vector2.zero;
@@ -370,7 +335,6 @@ public class InventoryHud : MonoBehaviour
         var mask = back.gameObject.AddComponent<RectMask2D>();
         mask.padding = new Vector4(3f, 3f, 3f, 3f);
 
-        // What's left to recharge, a dark band over the top that sinks as it fills back up.
         slot.drain = GameUI.NewRect("Drain", back.rectTransform).gameObject.AddComponent<Image>();
         slot.drain.color = new Color(0f, 0f, 0f, 0.55f);
         slot.drain.raycastTarget = false;
@@ -400,9 +364,6 @@ public class InventoryHud : MonoBehaviour
         return slot;
     }
 
-    // --- Art, made in code ---
-
-    // Corner brackets round a slot, like the frame of a suit display: only the corners, see-through between. Tinted.
     static Sprite bracketSprite;
     public static Sprite BracketSprite
     {
@@ -422,7 +383,6 @@ public class InventoryHud : MonoBehaviour
         }
     }
 
-    // A weapon's picture: its own sprite if it has one, otherwise a stand-in for its kind until it gets its art.
     public static Sprite WeaponIcon(WeaponData weapon)
     {
         if (weapon == null) return null;
@@ -434,7 +394,6 @@ public class InventoryHud : MonoBehaviour
 
     static Sprite empIcon, barIcon, gunIcon;
 
-    // A hand-held emitter: a copper coil round a glowing core, a grip behind it.
     static Sprite EmpIcon => empIcon != null ? empIcon : (empIcon = PixelArt.FromText(new[]
     {
         "....######......",
@@ -448,7 +407,6 @@ public class InventoryHud : MonoBehaviour
         "...........###..",
     }, Palette, 16f, new Vector2(0.5f, 0.5f)));
 
-    // A bar of steel, hooked at one end.
     static Sprite BarIcon => barIcon != null ? barIcon : (barIcon = PixelArt.FromText(new[]
     {
         ".###............",
@@ -459,7 +417,6 @@ public class InventoryHud : MonoBehaviour
         ".###############",
     }, Palette, 16f, new Vector2(0.5f, 0.5f)));
 
-    // A stubby energy gun, its charge cell lit.
     static Sprite GunIcon => gunIcon != null ? gunIcon : (gunIcon = PixelArt.FromText(new[]
     {
         "..###########...",

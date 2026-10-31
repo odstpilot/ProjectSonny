@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// A safety rail around a hole in the floor: nobody can walk into the hole, but shots fly over it. Rails are drawn along
-// the top and bottom edges of the BoxCollider2D, which should cover the hole.
-// Put this object on the Ignore Raycast layer. Projectiles skip that layer; bodies still bump into it.
+// rail around a hole in the floor
 [RequireComponent(typeof(BoxCollider2D))]
 public class Railing : MonoBehaviour
 {
@@ -35,7 +33,6 @@ public class Railing : MonoBehaviour
         rail.sortingOrder = 8;
     }
 
-    // A post and a length of bar, repeated along the rail.
     static Sprite RailSprite
     {
         get

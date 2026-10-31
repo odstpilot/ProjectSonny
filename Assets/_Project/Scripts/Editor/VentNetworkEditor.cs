@@ -3,11 +3,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-// The VentNetwork inspector: the duct map as a grid of squares to paint, instead of a block of text.
-// Pick a brush and click or drag over the grid; right-click paints wall. Width and Height grow or shrink the map from
-// its bottom right corner. Under the grid, anything wrong with the map is listed: grates that can't be reached,
-// squeezes with room to turn in them, and grates on the map with no Vent Grate in the scene to match.
-// The map is still kept as text in the layout field, one character per cell, so nothing else had to change.
+// paint the vent map in the inspector
 [CustomEditor(typeof(VentNetwork))]
 public class VentNetworkEditor : Editor
 {
@@ -38,7 +34,6 @@ public class VentNetworkEditor : Editor
     static readonly Color ButtonColor = new Color(0f, 0f, 0f, 0.15f);
     static readonly Color SelectedColor = new Color(0.24f, 0.48f, 0.9f, 0.55f);
 
-    // Static, so the brush stays picked after selecting something else and coming back.
     static Brush brush = Brush.Duct;
     static int grateNumber = 1;
 
@@ -68,8 +63,6 @@ public class VentNetworkEditor : Editor
         DrawPropertiesExcluding(serializedObject, "m_Script", "layout");
         serializedObject.ApplyModifiedProperties();
     }
-
-    // --- Brushes ---
 
     void DrawBrushes()
     {
@@ -108,8 +101,6 @@ public class VentNetworkEditor : Editor
         }
     }
 
-    // --- Size ---
-
     char[,] DrawSize(char[,] map)
     {
         int width = map.GetLength(0);
@@ -138,7 +129,6 @@ public class VentNetworkEditor : Editor
 
         if (newWidth == map.GetLength(0) && newHeight == map.GetLength(1)) return map;
 
-        // Keeps what's already painted from the top left, and fills anything new with wall.
         char[,] resized = Filled(newWidth, newHeight);
         for (int x = 0; x < Mathf.Min(newWidth, map.GetLength(0)); x++)
             for (int row = 0; row < Mathf.Min(newHeight, map.GetLength(1)); row++)
@@ -146,8 +136,6 @@ public class VentNetworkEditor : Editor
         Store(resized);
         return resized;
     }
-
-    // --- The grid ---
 
     void DrawGrid(char[,] map)
     {
@@ -165,7 +153,6 @@ public class VentNetworkEditor : Editor
         switch (current.GetTypeForControl(control))
         {
             case EventType.MouseDown when area.Contains(current.mousePosition) && (current.button == 0 || current.button == 1):
-                // One drag is one undo.
                 GUIUtility.hotControl = control;
                 Undo.IncrementCurrentGroup();
                 paintGroup = Undo.GetCurrentGroup();
@@ -226,7 +213,6 @@ public class VentNetworkEditor : Editor
         }
     }
 
-    // A letter on the cells that aren't plain wall or duct, so they read without relying on colour alone.
     void DrawCellLabel(Rect square, char mark, int fontSize)
     {
         string text = mark == 'd' ? "D" : mark == 's' ? "S" : mark == 'r' ? "R" : mark >= '1' && mark <= '9' ? mark.ToString() : null;
@@ -235,8 +221,6 @@ public class VentNetworkEditor : Editor
         cellLabel.normal.textColor = mark == 'r' ? Color.white : new Color(0.08f, 0.08f, 0.1f);
         GUI.Label(square, text, cellLabel);
     }
-
-    // --- Problems ---
 
     void DrawProblems(char[,] map)
     {
@@ -299,11 +283,10 @@ public class VentNetworkEditor : Editor
         foreach (string note in notes) EditorGUILayout.HelpBox(note, MessageType.Info);
     }
 
-    // Grates on the map with no Vent Grate in the scene, and Vent Grates in the scene with no grate on the map.
     void FindSceneProblems(SortedDictionary<int, Vector2Int> grates, List<string> warnings, List<string> notes)
     {
         var network = (VentNetwork)target;
-        if (EditorUtility.IsPersistent(network)) return;    // a prefab asset has no scene to look in
+        if (EditorUtility.IsPersistent(network)) return;
 
         bool onlyNetwork = FindObjectsByType<VentNetwork>().Length == 1;
         var inScene = new HashSet<int>();
@@ -343,13 +326,8 @@ public class VentNetworkEditor : Editor
     static bool IsOpen(char[,] map, int x, int row) =>
         x >= 0 && row >= 0 && x < map.GetLength(0) && row < map.GetLength(1) && map[x, row] != '#';
 
-    // Counting from 1 at the top left, the way the grid reads.
     static string Where(Vector2Int cell) => $"column {cell.x + 1}, row {cell.y + 1}";
 
-    // --- The text underneath ---
-
-    // The layout text as a grid, [column, row] with row 0 at the top. Short rows are filled out with wall, and any
-    // character the map doesn't use becomes wall.
     static char[,] Parse(string text)
     {
         var rows = new List<string>((text ?? "").Replace("\r", "").Split('\n'));

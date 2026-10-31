@@ -3,13 +3,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// A panel down the left of the screen on how crafting works, up from arriving on the upper maintenance deck until the
-// workbench is first used (Workshop), when the bench's own card takes over (TipCard). It doesn't stop anything: it's
-// just there to read while scavenging. It sits a little above the middle, or lower when the objective panel above it
-// runs long, so the two never overlap. Built from code the first time it's shown.
+// side panel on how crafting works
 public class CraftingGuide : MonoBehaviour
 {
-    const int SortingOrder = 85;            // over the health readout (80), under the tutorial's text (90)
+    const int SortingOrder = 85;
     const float Width = 520f;
     const float FadeSeconds = 0.35f;
 
@@ -62,7 +59,6 @@ public class CraftingGuide : MonoBehaviour
         fading = null;
     }
 
-    // Clear of the objective panel (TutorialHud), however tall it's grown.
     void LateUpdate()
     {
         float middle = ((RectTransform)transform).rect.height * 0.5f;
@@ -80,7 +76,6 @@ public class CraftingGuide : MonoBehaviour
         scaler.referenceResolution = GameUI.ReferenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
 
-        // The panel, sized to fit what's in it.
         Image panel = GameUI.Sliced("Panel", transform, GameUI.PanelSprite, new Color(1f, 1f, 1f, 0.92f));
         RectTransform rect = panelRect = panel.rectTransform;
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
@@ -110,7 +105,6 @@ public class CraftingGuide : MonoBehaviour
             line.childControlWidth = line.childControlHeight = true;
             line.childForceExpandWidth = line.childForceExpandHeight = false;
 
-            // A key cap where there's a key to press, a small cyan mark where there isn't.
             if (!string.IsNullOrEmpty(key))
             {
                 Image cap = GameUI.KeyCap(row, key, 30f, out _);

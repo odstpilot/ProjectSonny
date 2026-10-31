@@ -4,26 +4,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// On-screen text for the tutorial and its cutscenes, built from code the first time something asks for it, so there's
-// no canvas to set up:
-// It all shares the game's look (GameUI): the terminal font, pixel-framed glass panels, and light key caps.
-//  - a control prompt along the bottom: key caps and what they do, with an optional line of detail under it, on the
-//    same slim glass tag as the prompts over the level (PromptBadge), a thin amber strip down its left edge.
-//    It slides up into place, and once the player has done it the accent turns green and it drops away.
-//  - the current objective in the top left corner. Moving on from one objective means it's done, and saves the game
-//    (SaveGame), with the save icon in the bottom right.
-//  - captions for a voice over the station speakers, typed out a letter at a time over a soft dark backdrop
-//  - letterbox bars, a fade to black, and title cards
-// Everything runs on unscaled time, so hit stop can't stall it. One per scene: TutorialHud.Get().
+// prompts, objective, captions, fades
 public class TutorialHud : MonoBehaviour
 {
-    const int SortingOrder = 90;            // under LockerView (100), so the view from inside a locker covers it
+    const int SortingOrder = 90;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
     const float LetterboxHeight = 130f;
     const float LettersPerSecond = 34f;
     const float PromptFadeTime = 0.25f;
-    const float PromptY = 72f;              // the prompt's resting height off the bottom of the screen
-    const float PromptSlide = 14f;          // how far it slides in and out
+    const float PromptY = 72f;
+    const float PromptSlide = 14f;
     const float DoneHoldTime = 0.8f;
     const float Margin = 56f;
     const float KeyHeight = 54f;
@@ -42,7 +32,6 @@ public class TutorialHud : MonoBehaviour
     public TMP_FontAsset font;
 
     public bool PromptShowing { get; private set; }
-    // True while a finished prompt is still showing its green tick.
     public bool PromptCompleting { get; private set; }
 
     private bool built;
@@ -63,8 +52,8 @@ public class TutorialHud : MonoBehaviour
     private LayoutElement objectiveTextSize, objectiveStepSize;
     private Image objectivePanel, objectiveAccent;
     private RawImage objectiveScanlines;
-    private float objectiveSlide;           // canvas units it's still to slide in from the left
-    private float objectiveFlash;           // 1 just after it changes, settling to 0
+    private float objectiveSlide;
+    private float objectiveFlash;
     private Coroutine objectiveRoutine;
     private string currentObjective = "";
 
@@ -78,15 +67,12 @@ public class TutorialHud : MonoBehaviour
     private Image fade;
     private RawImage vignette;
     private TextMeshProUGUI titleText;
+    private TextMeshProUGUI headingText;
 
-    // True while the screen is mostly faded to black, for anything that shouldn't show over a fade or a title card.
     public static bool ScreenCovered => instance != null && instance.fade != null && instance.fade.enabled && instance.fade.color.a > 0.5f;
 
-    // True while the cutscene bars are in, for anything in the corners that should get out of a cutscene's way.
     public static bool Letterboxed => instance != null && instance.letterboxTop != null && instance.letterboxTop.sizeDelta.y > 1f;
 
-    // How far down the screen the objective panel reaches, in canvas units from the top; 0 while there's none showing.
-    // Whatever else sits down the left (CraftingGuide) keeps below it.
     public static float ObjectiveBottom
     {
         get
@@ -115,15 +101,11 @@ public class TutorialHud : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    // --- Control prompt ---
-
-    // For example ShowPrompt("Move", "W", "A", "S", "D"). Replaces whatever prompt is up.
     public void ShowPrompt(string action, params string[] keys)
     {
         ShowPromptWithHint(action, null, keys);
     }
 
-    // The same, with a smaller line of detail under the action, like ("Swing", "Hold to charge a heavy swing", "LEFT CLICK").
     public void ShowPromptWithHint(string action, string hint, params string[] keys)
     {
         StopPromptRoutine();
@@ -149,7 +131,6 @@ public class TutorialHud : MonoBehaviour
         promptRoutine = StartCoroutine(SlidePrompt(1f, PromptY - PromptSlide, PromptY));
     }
 
-    // Ticks the prompt off: it turns green, pops, and drops away.
     public void CompletePrompt()
     {
         if (!PromptShowing) return;
@@ -215,7 +196,6 @@ public class TutorialHud : MonoBehaviour
         PromptCompleting = false;
     }
 
-    // A key cap, as wide as its label needs.
     void AddKey(string key)
     {
         Image cap = GameUI.Sliced("Key " + key, promptKeys, GameUI.SoftKeyCapSprite, Color.white);
@@ -229,17 +209,13 @@ public class TutorialHud : MonoBehaviour
         keyLabels.Add(label);
     }
 
-    // --- Objective ---
-
-    // Below the health readout, when there is one in the corner.
     void LateUpdate()
     {
-        float top = HealthHud.CellsShowing ? HealthHud.Bottom + 22f : Margin * 0.8f;
+        float top = Margin * 0.5f;
         float dt = Time.unscaledDeltaTime;
         objectiveSlide = Mathf.MoveTowards(objectiveSlide, 0f, dt * 160f);
-        objective.anchoredPosition = new Vector2(Margin - objectiveSlide, -top);
+        objective.anchoredPosition = new Vector2(Margin * 0.5f - objectiveSlide, -top);
 
-        // A new objective lights the panel up amber for a moment, then it settles back to dark glass.
         objectiveFlash = Mathf.MoveTowards(objectiveFlash, 0f, dt * 1.4f);
         float flash = objectiveFlash * objectiveFlash;
         objectivePanel.color = Color.Lerp(Color.white, new Color(1f, 0.82f, 0.55f), flash);
@@ -249,10 +225,8 @@ public class TutorialHud : MonoBehaviour
         objectiveScanlines.uvRect = new Rect(0f, Time.unscaledTime * 0.15f, 1f, area.height / 6f);
     }
 
-    // What's showing now, empty for nothing.
     public string Objective => currentObjective ?? "";
 
-    // Empty hides it. Whatever it was before, if anything, is done, and the game saves.
     public void SetObjective(string text)
     {
         string was = currentObjective;
@@ -276,8 +250,6 @@ public class TutorialHud : MonoBehaviour
         objectiveRoutine = null;
     }
 
-    // The line under the objective saying how to go about it, [X] picking out a key. Empty hides it. ObjectiveGuide
-    // gives one for every objective it knows; this is for a level that wants to say something else for a while.
     public void SetStep(string text) => ShowStep(text);
 
     void ShowStep(string text)
@@ -285,19 +257,14 @@ public class TutorialHud : MonoBehaviour
         bool any = !string.IsNullOrEmpty(text);
         objectiveStep.gameObject.SetActive(any);
         objectiveStep.text = any ? "<color=#5FD7F0>></color>  " + ObjectiveGuide.Keys(text) : "";
-        // As wide as the longer of the two needs, up to a limit, so a short objective gets a small panel.
         const float MaxWidth = 640f, MinWidth = 300f;
         float width = Mathf.Max(objectiveText.GetPreferredValues(objectiveText.text).x, any ? objectiveStep.GetPreferredValues(objectiveStep.text).x : 0f);
         width = Mathf.Clamp(width + 4f, MinWidth, MaxWidth);
         objectiveTextSize.preferredWidth = objectiveStepSize.preferredWidth = width;
     }
 
-    // --- Captions ---
-
-    // Types the line out under the speaker's name, holds it, then fades it out.
     public IEnumerator Say(string speaker, string line, float holdSeconds = 2.5f)
     {
-        // Sonny isn't captioned: it says things through the station's screens, a word at a time (SonnyBroadcast).
         if (SonnyBroadcast.IsSonny(speaker))
         {
             yield return SonnyBroadcast.Say(line, holdSeconds);
@@ -318,8 +285,6 @@ public class TutorialHud : MonoBehaviour
         yield return WaitUnscaled(holdSeconds);
         yield return FadeGroup(captionGroup, 0f, 0.4f);
     }
-
-    // --- Fades, letterbox, and title cards ---
 
     public void SetFade(float alpha)
     {
@@ -350,7 +315,6 @@ public class TutorialHud : MonoBehaviour
         SetLetterbox(end);
     }
 
-    // Darkens the edges of the picture to this much (0 none, 1 black at the corners), over seconds.
     public IEnumerator Vignette(float amount, float seconds)
     {
         float start = vignette.color.a;
@@ -362,7 +326,6 @@ public class TutorialHud : MonoBehaviour
         vignette.color = new Color(0f, 0f, 0f, amount);
     }
 
-    // Clear in the middle, black at the edges, wider than tall like the screen.
     static Texture2D VignetteTexture()
     {
         const int W = 96, H = 54;
@@ -377,7 +340,6 @@ public class TutorialHud : MonoBehaviour
         return texture;
     }
 
-    // Lines of text on black, one after another, each fading in and out. Fades to black first if it isn't already.
     public IEnumerator TitleCard(string[] lines, float holdSeconds = 2f)
     {
         if (fade.color.a < 1f) yield return FadeTo(1f, 0.6f);
@@ -391,12 +353,19 @@ public class TutorialHud : MonoBehaviour
         }
     }
 
-    // Clears a caption or title card left halfway, for a cutscene that's been skipped (its coroutine stopped with the
-    // cutscene's). The fade's left as it is.
+    public IEnumerator Heading(string text, float holdSeconds = 3f)
+    {
+        headingText.text = text.ToUpperInvariant();
+        yield return FadeText(headingText, 1f, 0.9f);
+        yield return WaitUnscaled(holdSeconds);
+        yield return FadeText(headingText, 0f, 1.2f);
+    }
+
     public void CutAway()
     {
         captionGroup.alpha = 0f;
         titleText.alpha = 0f;
+        headingText.alpha = 0f;
     }
 
     void SetLetterbox(float height)
@@ -409,8 +378,6 @@ public class TutorialHud : MonoBehaviour
             edge.color = new Color(0f, 0f, 0f, Mathf.Clamp01(height / 60f));
         }
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -428,19 +395,17 @@ public class TutorialHud : MonoBehaviour
         BuildObjective();
         BuildPrompt();
         BuildCaption();
-        gameObject.AddComponent<ObjectiveGuide>();     // the how-to under the objective, and Pip's nudges when stuck
+        gameObject.AddComponent<ObjectiveGuide>();
 
         letterboxTop = Bar("Letterbox Top", 1f);
         letterboxBottom = Bar("Letterbox Bottom", 0f);
 
-        // The edges of the picture sinking into shadow, for a moment that wants it (Vignette). Under the letterbox.
         vignette = Stretch(NewRect("Vignette", transform), 0f, 0f, 1f, 1f).gameObject.AddComponent<RawImage>();
         vignette.texture = VignetteTexture();
         vignette.raycastTarget = false;
         vignette.color = new Color(0f, 0f, 0f, 0f);
         vignette.transform.SetSiblingIndex(0);
 
-        // Fade and title cards, over everything else.
         fade = Stretch(NewRect("Fade", transform), 0f, 0f, 1f, 1f).gameObject.AddComponent<Image>();
         fade.raycastTarget = false;
         SetFade(0f);
@@ -449,12 +414,13 @@ public class TutorialHud : MonoBehaviour
         titleText.fontSharedMaterial = TitleUI.GlowMaterial(titleText.font, TitleUI.Fade(GameUI.Cyan, 0.35f), 0.85f, 0.35f);
         titleText.alpha = 0f;
         Stretch(titleText.rectTransform, 0.1f, 0f, 0.9f, 1f);
+        headingText = Label("Heading", transform, "", 52f, TextColor, TextAlignmentOptions.Center, GameUI.Heading);
+        headingText.characterSpacing = 20f;
+        headingText.fontSharedMaterial = titleText.fontSharedMaterial;
+        headingText.alpha = 0f;
+        Stretch(headingText.rectTransform, 0.25f, 0.64f, 0.75f, 0.76f);
     }
 
-    // Top left, the corner the health readout would use; the tutorial hides that, since the player can't die in it.
-    // A short amber rule, a small heading, and the objective itself, shadowed so it reads over a bright room.
-    // A pane of dark glass in the suit's style, its top right corner cut off, with an amber edge down the left and faint
-    // scanlines rolling over it: OBJECTIVE, what to do, and under that how (ObjectiveGuide), the pane sized to fit.
     void BuildObjective()
     {
         objective = NewRect("Objective", transform);
@@ -462,7 +428,6 @@ public class TutorialHud : MonoBehaviour
         objective.anchoredPosition = new Vector2(Margin, -Margin * 0.8f);
         objectiveGroup = objective.gameObject.AddComponent<CanvasGroup>();
         objectiveGroup.alpha = 0f;
-        // The suit's tracking it, so it goes when the suit's power does.
         SuitDisplay.Wrap(objective);
 
         objectivePanel = objective.gameObject.AddComponent<Image>();
@@ -479,7 +444,6 @@ public class TutorialHud : MonoBehaviour
         var fit = objective.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // Faint scanlines over the glass, drifting slowly down.
         objectiveScanlines = Stretch(NewRect("Scanlines", objective), 0f, 0f, 1f, 1f).gameObject.AddComponent<RawImage>();
         Texture2D lines = PixelArt.MakeTexture(1, 6, (x, y) => y == 0 ? new Color32(140, 200, 255, 14) : default);
         lines.wrapMode = TextureWrapMode.Repeat;
@@ -489,7 +453,6 @@ public class TutorialHud : MonoBehaviour
         objectiveScanlines.rectTransform.offsetMax = new Vector2(-GameUI.PixelSize * 2f, -GameUI.PixelSize * 2f);
         objectiveScanlines.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
 
-        // The amber edge down the left, just inside the frame.
         RectTransform accent = NewRect("Accent", objective);
         accent.anchorMin = new Vector2(0f, 0f);
         accent.anchorMax = new Vector2(0f, 1f);
@@ -503,7 +466,6 @@ public class TutorialHud : MonoBehaviour
         objectiveAccent.raycastTarget = false;
         accent.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
 
-        // OBJECTIVE, with a small diamond before it and a rule trailing off after it.
         RectTransform header = NewRect("Header", objective);
         HorizontalLayoutGroup headerRow = Row(header.gameObject, new RectOffset(0, 0, 0, 2), 10f);
         headerRow.childAlignment = TextAnchor.MiddleLeft;
@@ -536,8 +498,6 @@ public class TutorialHud : MonoBehaviour
         objectiveStep.gameObject.SetActive(false);
     }
 
-    // Dark glass, a pixel-art pane: a dark rim, a lighter bevel along the top, and the top right corner cut off and
-    // edged in amber. Sliced, so it stretches to any size.
     static Sprite objectivePanelSprite;
     static Sprite ObjectivePanelSprite
     {
@@ -554,7 +514,7 @@ public class TutorialHud : MonoBehaviour
             Texture2D texture = PixelArt.MakeTexture(Size, Size, (x, y) =>
             {
                 int fromRight = Size - 1 - x, fromTop = Size - 1 - y;
-                int corner = fromRight + fromTop;           // how far in from the cut corner
+                int corner = fromRight + fromTop;
                 if (corner < Cut) return default;
                 if (corner == Cut) return amber;
                 if (corner == Cut + 1) return rim;
@@ -568,7 +528,6 @@ public class TutorialHud : MonoBehaviour
         }
     }
 
-    // Bottom middle, sized to fit whatever is in it: [accent] [keys] [ACTION / hint].
     void BuildPrompt()
     {
         prompt = NewRect("Prompt", transform);
@@ -582,14 +541,13 @@ public class TutorialHud : MonoBehaviour
         back.raycastTarget = false;
         HorizontalLayoutGroup row = Row(prompt.gameObject, new RectOffset(16, 28, 12, 12), 16f);
         row.childAlignment = TextAnchor.MiddleLeft;
-        row.childForceExpandHeight = true;      // so the accent runs the full height, with or without a hint
+        row.childForceExpandHeight = true;
         var fit = prompt.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         promptGroup = prompt.gameObject.AddComponent<CanvasGroup>();
         promptGroup.alpha = 0f;
 
-        // A strip down the left edge, just inside the frame.
         RectTransform accent = NewRect("Accent", prompt);
         promptAccent = accent.gameObject.AddComponent<Image>();
         promptAccent.raycastTarget = false;
@@ -616,7 +574,6 @@ public class TutorialHud : MonoBehaviour
         promptHint.fontSharedMaterial = GameUI.Shadow(promptHint.font);
     }
 
-    // Above the prompt and the letterbox, over a soft dark pool so it reads against the sunlight.
     void BuildCaption()
     {
         RectTransform caption = NewRect("Caption", transform);
@@ -653,14 +610,12 @@ public class TutorialHud : MonoBehaviour
         image.color = Color.black;
         image.raycastTarget = false;
 
-        // A soft fade off the bar's inner edge, so it doesn't cut the picture off hard.
         RectTransform edgeRect = NewRect("Soft Edge", bar);
         edgeRect.anchorMin = new Vector2(0f, 1f - edge);
         edgeRect.anchorMax = new Vector2(1f, 1f - edge);
         edgeRect.pivot = new Vector2(0.5f, edge);
         edgeRect.sizeDelta = new Vector2(0f, 140f);
         RawImage fadeEdge = edgeRect.gameObject.AddComponent<RawImage>();
-        // Solid where it meets the bar, clear at the far end.
         Texture2D gradient = PixelArt.MakeTexture(1, 32, (x, y) =>
         {
             float along = edge > 0.5f ? y / 31f : 1f - y / 31f;
@@ -693,7 +648,6 @@ public class TutorialHud : MonoBehaviour
         return rect;
     }
 
-    // Anchors a rect to part of its parent, given as fractions of the parent.
     static RectTransform Stretch(RectTransform rect, float xMin, float yMin, float xMax, float yMax)
     {
         rect.anchorMin = new Vector2(xMin, yMin);
@@ -702,7 +656,6 @@ public class TutorialHud : MonoBehaviour
         return rect;
     }
 
-    // In the HUD's font, or in face if one's given (a heading).
     TextMeshProUGUI Label(string labelName, Transform parent, string text, float size, Color color, TextAlignmentOptions alignment,
                           TMP_FontAsset face = null)
     {

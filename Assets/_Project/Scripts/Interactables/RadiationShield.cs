@@ -1,18 +1,12 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A lead shield wall in the reactor core: a thick slab on the floor, solid, with a hazard-striped cap and a radiation
-// sign. When the core surges (ReactorSurge), whoever's on the far side of one from the core is safe. Its lamp pulses
-// green while a surge is building, so the player can see where to run. Upright, it runs across the screen; not, it
-// runs away up it (for the reactor's sides, so it still stands between them and the core).
-// It stands on the floor and sorts like the furniture (DepthSort): this object sits at the middle of its foot, the
-// near edge for one that runs up the screen. Drawn in code at the tileset's 32 pixels to a cell. Placed by
-// ChapterOneBuilder (PlaceReactorGauntlet).
+// lead wall to hide behind in a surge
 [RequireComponent(typeof(BoxCollider2D))]
 public class RadiationShield : MonoBehaviour
 {
     const float PixelsPerUnit = 32f;
-    const int Rise = 30;                // pixels its face stands up off the floor
+    const int Rise = 30;
 
     static readonly Color32 Outline = new Color32(20, 18, 22, 255);
     static readonly Color32 Lead = new Color32(70, 74, 86, 255);
@@ -47,7 +41,6 @@ public class RadiationShield : MonoBehaviour
         slab.sprite = PixelArt.ToSprite(Draw(pw, pd), PixelsPerUnit, new Vector2(0.5f, 0f));
         slab.sortingLayerName = DepthSort.Layer;
 
-        // The lamp on top, over the sign.
         Vector2 lampAt = new Vector2(0f, (pd + Rise - 3f) / PixelsPerUnit);
         lamp = new GameObject("Lamp").AddComponent<SpriteRenderer>();
         lamp.transform.SetParent(art, false);
@@ -69,15 +62,12 @@ public class RadiationShield : MonoBehaviour
 
     void Update()
     {
-        // Dim green at rest; pulsing bright while a surge builds, so it's plain where cover is.
         float warning = ReactorSurge.Warning;
         float pulse = warning > 0f ? 0.5f + 0.5f * Mathf.Sin(Time.time * 14f) : 0f;
         lamp.color = Color.Lerp(new Color(0.25f, 0.6f, 0.3f), new Color(0.6f, 1f, 0.6f), pulse);
         lampLight.intensity = 0.15f + 1.4f * pulse * warning;
     }
 
-    // The slab from a little above: its top (pd pixels deep), and its face standing Rise pixels below that. A striped cap
-    // along the top's near edge, a radiation sign on the face.
     static Texture2D Draw(int pw, int pd)
     {
         int h = pd + Rise;
@@ -86,13 +76,11 @@ public class RadiationShield : MonoBehaviour
             if (x == 0 || x == pw - 1 || y == 0 || y == h - 1) return Outline;
             if (y >= Rise)
             {
-                // The top: lit, with seams across.
                 if (y == Rise) return Outline;
                 if (y <= Rise + 4) return (x / 4 + y) % 2 == 0 ? Hazard : HazardDark;
                 if ((y - Rise) % 32 == 0 || x % 32 == 0) return LeadDark;
                 return x <= 2 ? LeadLit : Lead;
             }
-            // The face, darker, its sign in the middle: a trefoil.
             if (y <= 2) return LeadDark;
             float cx = pw * 0.5f, cy = Rise * 0.5f + 1f;
             float dx = x - cx, dy = y - cy, r = Mathf.Sqrt(dx * dx + dy * dy);

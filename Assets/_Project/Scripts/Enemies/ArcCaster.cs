@@ -3,18 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// An arc bot's lightning (PlaceholderRobot.look Arc). It doesn't shoot at the player: it marks where it's going to
-// strike, a red ring on the floor at their feet, one where they're heading, and one off to the side, each filling in as
-// its coil winds up, and then lightning comes down out of the coil onto all of them at once. Standing in a ring when it
-// lands hurts; seeing them, there's time to get out. Hitting the bot, or an EMP, spoils the cast (Interrupt).
-// The robot decides when (PlaceholderRobot.KeepDistanceAndCast); this does the rest. Drawn at the tileset's 32 pixels
-// to a cell: the rings, and each bolt, made fresh for the strike.
+// arc bot's lightning strikes
 public class ArcCaster : MonoBehaviour
 {
     const float PixelsPerUnit = 32f;
     const int FillFrames = 7;
-    const float FloorSquash = 0.62f;        // a circle on the floor, seen from above at an angle
-    static readonly Vector2 CoilTip = new Vector2(0f, 0.87f);   // the ball on its antenna, from its middle
+    const float FloorSquash = 0.62f;
+    static readonly Vector2 CoilTip = new Vector2(0f, 0.87f);
     static readonly Color32 Ring = new Color32(255, 44, 32, 255);
     static readonly Color32 RingDark = new Color32(120, 14, 10, 255);
     static readonly Color32 BoltCore = new Color32(255, 255, 255, 255);
@@ -42,7 +37,7 @@ public class ArcCaster : MonoBehaviour
     private readonly List<(GameObject root, SpriteRenderer ring, SpriteRenderer fill, Vector2 at)> marks =
         new List<(GameObject, SpriteRenderer, SpriteRenderer, Vector2)>();
     private Coroutine casting;
-    private readonly List<SpriteRenderer> bolts = new List<SpriteRenderer>();     // on screen now, so a cut-short cast can clear them
+    private readonly List<SpriteRenderer> bolts = new List<SpriteRenderer>();
     private float nextReady;
     private Light2D coilLight;
     private SpriteRenderer body;
@@ -50,7 +45,6 @@ public class ArcCaster : MonoBehaviour
     private Health playerHealth;
 
     public bool Ready => casting == null && Time.time >= nextReady;
-    // How long the robot stands still for one cast: the warning, and the strike.
     public float CastSeconds => telegraphSeconds + 0.35f;
 
     void Awake()
@@ -79,7 +73,6 @@ public class ArcCaster : MonoBehaviour
 
     void OnDisable() => Interrupt();
 
-    // Rings down where the player's standing, where they're going, and off to one side; lightning on all of them.
     public void Cast(Vector2 target, Vector2 targetVelocity)
     {
         if (!Ready) return;
@@ -95,7 +88,6 @@ public class ArcCaster : MonoBehaviour
         casting = StartCoroutine(Run(points));
     }
 
-    // Stops a cast partway: the rings go, nothing lands, and it has to wind up again from scratch.
     public void Interrupt()
     {
         if (casting != null) StopCoroutine(casting);
@@ -106,8 +98,6 @@ public class ArcCaster : MonoBehaviour
         nextReady = Mathf.Max(nextReady, Time.time + cooldown * 0.6f);
     }
 
-    // The bolts gone. A strike that's cut short (the bot shut down, switched off, or the player killed by it and the
-    // level reset) would otherwise leave them lying there for good.
     void ClearBolts()
     {
         foreach (SpriteRenderer bolt in bolts)
@@ -122,9 +112,8 @@ public class ArcCaster : MonoBehaviour
     IEnumerator Run(List<Vector2> points)
     {
         foreach (Vector2 at in points) Mark(at);
-        Sfx.At(chargeSound, transform.position, 0.9f);
+        Sfx.At(chargeSound, transform.position, 0.5f);
 
-        // The coil winds up, sparking, while the rings fill in, flashing faster as it gets close.
         float sparkTimer = 0f;
         for (float t = 0f; t < telegraphSeconds; t += Time.deltaTime)
         {
@@ -147,14 +136,12 @@ public class ArcCaster : MonoBehaviour
             yield return null;
         }
 
-        // Down it comes, on every ring at once.
         Vector2 tip = (Vector2)transform.position + CoilTip;
-        Sfx.At(strikeSound, transform.position, 1f);
+        Sfx.At(strikeSound, transform.position, 0.6f);
         ClearBolts();
         foreach (var mark in marks)
         {
             SpriteRenderer bolt = Bolt(tip, mark.at);
-            // Gone in a moment whatever happens to this cast, even if nothing's left to clear it up.
             Destroy(bolt.sprite.texture, 1f);
             Destroy(bolt.gameObject, 1f);
             bolts.Add(bolt);
@@ -165,7 +152,6 @@ public class ArcCaster : MonoBehaviour
         HurtPlayerIfStruck();
         ClearMarks();
         coilLight.intensity = 2f;
-        // The bolts flicker, jumping about, then they're gone.
         for (int flick = 0; flick < 3; flick++)
         {
             yield return new WaitForSecondsRealtime(0.06f);
@@ -192,7 +178,6 @@ public class ArcCaster : MonoBehaviour
         }
     }
 
-    // A ring on the floor where it'll strike, with its middle filling in.
     void Mark(Vector2 at)
     {
         var root = new GameObject("Strike Mark");
@@ -220,8 +205,6 @@ public class ArcCaster : MonoBehaviour
         marks.Clear();
     }
 
-    // --- Drawing ---
-
     int RadiusPixels => Mathf.Max(6, Mathf.RoundToInt(strikeRadius * PixelsPerUnit));
 
     Sprite RingSprite()
@@ -231,7 +214,6 @@ public class ArcCaster : MonoBehaviour
         return rings[r] = Ellipse(r, (d, edge) => edge < 1.6f ? Ring : edge < 2.8f ? RingDark : default);
     }
 
-    // The middle filling in, a frame at a time, from a dot to the whole ring.
     Sprite[] Fills()
     {
         int r = RadiusPixels;
@@ -245,8 +227,6 @@ public class ArcCaster : MonoBehaviour
         return fills[r] = made;
     }
 
-    // An ellipse on the floor r pixels across its long way; paint gets how far out (0 to 1) and how many pixels in from
-    // the edge each pixel is.
     static Sprite Ellipse(int r, System.Func<float, float, Color32> paint)
     {
         int w = r * 2 + 1, h = Mathf.RoundToInt(r * FloorSquash) * 2 + 1;
@@ -260,8 +240,6 @@ public class ArcCaster : MonoBehaviour
         }), PixelsPerUnit, new Vector2(0.5f, 0.5f));
     }
 
-    // A bolt of lightning from one point to another: a jagged line with a fork or two, a white core in a blue glow, drawn
-    // pixel by pixel so it lines up with everything else.
     static SpriteRenderer Bolt(Vector2 from, Vector2 to)
     {
         var path = Jagged(from, to, 0.28f);
@@ -327,7 +305,6 @@ public class ArcCaster : MonoBehaviour
         return bolt;
     }
 
-    // Points from one end to the other, knocked sideways at random along the way, the ends where they are.
     static List<Vector2> Jagged(Vector2 from, Vector2 to, float wander)
     {
         Vector2 along = to - from;

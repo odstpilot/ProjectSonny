@@ -1,21 +1,15 @@
 using TMPro;
 using UnityEngine;
 
-// A line of speech over someone's head (a crew member, CrewMember.Say; the technician, TechnicianVoice; a bot): on the
-// same slim dark glass tag as the prompts (GameUI.WorldSoftPanelSprite), with a small notch pointing down at them. It
-// fades in, holds, and fades out, and always stays up long enough to read, however briefly it was asked for. The text
-// has a thin dark outline so it stays sharp over the level. Made from code the first time they speak, and kept out of
-// their hierarchy so their sorting group can't bury it behind someone standing in front of them. It follows them about,
-// and goes when they do. It never covers another line or a prompt: if one's in the way, it rises above it
-// (OverheadLayout), gliding there, and its notch stays pointing down toward whoever's speaking.
+// speech bubble over someone
 public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
 {
-    const float Glide = 14f;                // how quickly it slides to where the layout puts it
-    const float Height = 0.72f;             // from the speaker's middle to the bottom of the backing, in world units
+    const float Glide = 14f;
+    const float Height = 0.72f;
     const float FontSize = 4f;
     const float MaxWidth = 6f;
     const float FadeTime = 0.2f;
-    const float ReadBase = 1.2f;            // the least a line stays up: this, and a little more per letter
+    const float ReadBase = 1.2f;
     const float ReadPerLetter = 0.055f;
     static readonly Vector2 Padding = new Vector2(0.22f, 0.12f);
     const string SortingLayer = "UI";
@@ -25,11 +19,11 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
     private SpriteRenderer backing;
     private SpriteRenderer tail;
     private float showFor;
-    private float lift;                     // from the bottom of the backing to its middle
+    private float lift;
     private float alpha;
-    private Vector2 offset;                 // from where it would be, to where the layout's put it
+    private Vector2 offset;
     private bool placedYet;
-    private float since;                    // when it came up, for the layout
+    private float since;
 
     public static CrewSpeech Create(Transform speaker)
     {
@@ -62,7 +56,6 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
         backing.sortingLayerName = SortingLayer;
         backing.sortingOrder = 10;
 
-        // The notch's top edge tucks under the tag's bottom edge, so it reads as one shape.
         tail = new GameObject("Tail").AddComponent<SpriteRenderer>();
         tail.transform.SetParent(transform, false);
         tail.sprite = GameUI.WorldSoftTailSprite;
@@ -84,7 +77,6 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
         SetAlpha(0f);
     }
 
-    // Gone at once, for when they start talking to the player instead.
     public void Hide()
     {
         showFor = 0f;
@@ -105,10 +97,7 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
         if (!Mathf.Approximately(alpha, target)) SetAlpha(Mathf.MoveTowards(alpha, target, Time.deltaTime / FadeTime));
     }
 
-    // Where it would be with nothing in the way: just over the speaker's head.
     Vector3 Home => speaker.position + new Vector3(0f, Height + lift, 0f);
-
-    // --- Keeping out of the way (OverheadLayout) ---
 
     bool OverheadLayout.IItem.Alive => this != null && speaker != null;
     bool OverheadLayout.IItem.Visible => alpha > 0f && speaker != null;
@@ -128,7 +117,6 @@ public class CrewSpeech : MonoBehaviour, OverheadLayout.IItem
 
     void OverheadLayout.IItem.Place(Vector2 target)
     {
-        // Straight to its spot when it first shows; after that it glides, so nothing jumps about.
         offset = placedYet ? Vector2.Lerp(offset, target, 1f - Mathf.Exp(-Glide * Time.unscaledDeltaTime)) : target;
         placedYet = true;
         transform.position = Home + (Vector3)offset;

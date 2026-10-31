@@ -1,41 +1,33 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The stealth arcs around the player. While something is watching them, an arc lies on the floor on the side that
-// watcher is on and fills as it makes them out, with a "?" over it while it's still guessing and a "!" once it's
-// sure; once it fills, that watcher has spotted them and gives chase.
-// Several watchers mean several arcs, so the player can tell which way the danger is and how close it is to being sure.
-// The arcs draw in tighter while the player crouches and swell out while they sprint, so the floor shows how exposed
-// they're making themselves.
-// Watchers call Report every frame they're interested, and an arc fades out by itself once they stop.
-// Built from code the first time something reports, like HitEffects.
+// arcs showing who sees the player
 public class StealthMeter : MonoBehaviour
 {
     const string SortingLayerName = "Player";
-    const int SortingOrder = -1;        // under the player's sprite, so it reads as lying on the floor
+    const int SortingOrder = -1;
     const int ArcPoints = 24;
     const int MaxArcs = 8;
-    const int SignSortingOrder = 60;    // over the characters, so the ! and ? are never hidden behind anything
+    const int SignSortingOrder = 60;
     const float SignPixelsPerUnit = 26f;
     const float SignPopTime = 0.18f;
-    const float SignLift = 0.28f;       // how far above its arc a sign sits
-    const float SignAt = 0.35f;         // how full an arc has to be before a "?" is worth showing
+    const float SignLift = 0.28f;
+    const float SignAt = 0.35f;
 
     const float Radius = 1.15f;
-    const float GroundSquash = 0.5f;    // flattened to an ellipse so it lies on the floor instead of standing up
-    const float GroundDrop = -0.15f;    // sits around the player's feet
-    const float NarrowArc = 9f;         // half width in degrees when a watcher has only just noticed something
-    const float WideArc = 30f;          // half width once it's certain
+    const float GroundSquash = 0.5f;
+    const float GroundDrop = -0.15f;
+    const float NarrowArc = 9f;
+    const float WideArc = 30f;
     const float FadeSpeed = 5f;
-    const float CrouchedSize = 0.72f;   // the arcs' size while the player crouches, as a fraction of normal
-    const float SprintingSize = 1.3f;   // and while they sprint
+    const float CrouchedSize = 0.72f;
+    const float SprintingSize = 1.3f;
     const float ResizeSpeed = 4f;
 
     static readonly Color CalmColor = new Color(0.85f, 0.92f, 1f);
     static readonly Color WarningColor = new Color(1f, 0.75f, 0.25f);
     static readonly Color AlarmColor = new Color(1f, 0.25f, 0.15f);
 
-    // '#' is filled. A black outline is added around the art so it reads on any floor.
     static readonly string[] AlertArt = { "###", "###", "###", "###", "###", "...", "###", "###" };
     static readonly string[] SearchArt = { ".###.", "##.##", "...##", "..##.", "..#..", "..#..", ".....", "..#.." };
 
@@ -72,7 +64,6 @@ public class StealthMeter : MonoBehaviour
     private int linesMade;
     private int signsMade;
 
-    // progress is 0 to 1: how sure the watcher is. spotted means it has given up guessing and is coming.
     public static void Report(Object watcher, Vector2 watcherPosition, float progress, bool spotted)
     {
         if (watcher == null || !Application.isPlaying) return;
@@ -92,7 +83,6 @@ public class StealthMeter : MonoBehaviour
         arc.lastFrame = Time.frameCount;
     }
 
-    // Stops watching. The arc fades out rather than blinking away.
     public static void Clear(Object watcher)
     {
         if (watcher == null || instance == null) return;
@@ -134,7 +124,6 @@ public class StealthMeter : MonoBehaviour
         if (arcMaterial == null)
             arcMaterial = new Material(CombatSprites.EffectMaterial) { mainTexture = MakeSoftBandTexture() };
 
-        // Thickest in the middle of the arc, thinning to nothing at both ends.
         taper = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.25f, 1f), new Keyframe(0.75f, 1f), new Keyframe(1f, 0f));
     }
 
@@ -143,7 +132,6 @@ public class StealthMeter : MonoBehaviour
         Transform target = Player;
         if (target == null) return;
 
-        // Around the feet, which stay put however the body is posed: crouched low or leaning into a sprint.
         Vector2 center = (Vector2)target.position - (playerController != null ? playerController.PoseOffset : Vector2.zero);
         float targetSize = 1f;
         if (playerController != null)
@@ -175,7 +163,7 @@ public class StealthMeter : MonoBehaviour
         if (arc.line == null)
         {
             arc.line = Take();
-            if (arc.line == null) return;   // more watchers at once than there are arcs to draw with
+            if (arc.line == null) return;
         }
 
         Vector2 toWatcher = arc.watcherPosition - center;
@@ -189,7 +177,6 @@ public class StealthMeter : MonoBehaviour
             arcPoints[i] = PointOnRing(center, angle);
         }
 
-        // Pale while it's only suspicious, amber as it fills, red once it's sure - and pulsing while it's chasing.
         Color color = arc.progress < 0.5f
             ? Color.Lerp(CalmColor, WarningColor, arc.progress * 2f)
             : Color.Lerp(WarningColor, AlarmColor, (arc.progress - 0.5f) * 2f);
@@ -205,8 +192,6 @@ public class StealthMeter : MonoBehaviour
         DrawSign(arc, center, bearing, color);
     }
 
-    // A "?" while the watcher is still working it out and a "!" once it's sure, in the same colour as its arc:
-    // amber for the question, red for the alarm.
     void DrawSign(Arc arc, Vector2 center, float bearing, Color color)
     {
         Sprite wanted = arc.spotted || arc.progress >= 1f ? AlertSign
@@ -226,7 +211,6 @@ public class StealthMeter : MonoBehaviour
             if (arc.sign == null) return;
         }
 
-        // Pops in a little too big whenever it changes, so the "?" turning into a "!" catches the eye.
         if (arc.shownSign != wanted)
         {
             arc.shownSign = wanted;
@@ -243,7 +227,6 @@ public class StealthMeter : MonoBehaviour
         Vector3 at = PointOnRing(center, bearing * Mathf.Deg2Rad);
         at.y += SignLift;
 
-        // Brighter than the arc it belongs to, so it stays readable against a busy floor.
         Color signColor = color;
         signColor.a = Mathf.Clamp01(color.a * 1.6f);
 
@@ -319,8 +302,6 @@ public class StealthMeter : MonoBehaviour
         return line;
     }
 
-    // White where the art is filled, with a black outline so it reads on any floor. The renderer tints it to match
-    // the arc it belongs to.
     static Sprite MakeSign(string[] rows)
     {
         int artWidth = 0;
@@ -349,7 +330,7 @@ public class StealthMeter : MonoBehaviour
                         for (int dx = -1; dx <= 1 && color.a == 0; dx++)
                             if (Filled(artX + dx, artY + dy)) color = new Color32(0, 0, 0, 255);
                 }
-                pixels[(height - 1 - y) * width + x] = color; // row 0 of the art is the top
+                pixels[(height - 1 - y) * width + x] = color;
             }
         }
 
@@ -363,7 +344,6 @@ public class StealthMeter : MonoBehaviour
         return Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), SignPixelsPerUnit);
     }
 
-    // White through the middle and clear at both edges, so the arcs have soft sides instead of hard bars.
     static Texture2D MakeSoftBandTexture()
     {
         const int height = 32;

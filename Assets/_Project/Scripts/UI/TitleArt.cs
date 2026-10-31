@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The title screen's art, painted in code: nebula, stars, rocks, the station, and the ship. The turning planet is
-// SpinningPlanet, below.
+// title screen art
 public static class TitleArt
 {
     public const int StationWidth = 110, StationHeight = 172;
@@ -24,8 +23,6 @@ public static class TitleArt
         "    ##        ",
     };
 
-    // Teal smoke, warped so it swirls, brightest toward the upper left. The back layer is solid; the front one is wisps
-    // on a clear ground.
     public static Texture2D NebulaTexture(float seed, bool wisps)
     {
         const int width = 384, height = 216;
@@ -75,19 +72,17 @@ public static class TitleArt
         return texture;
     }
 
-    // A haze just outside a planet's edge, for a picture 1.18 times the planet's size. The planet covers the inside.
     public static Texture2D AtmosphereTexture()
     {
         const float edge = 1f / 1.18f;
         return CombatSprites.MakeRadialTexture(128, r => r < edge ? TitleUI.Smooth(0.6f, edge, r) : Mathf.Pow(1f - Mathf.Clamp01((r - edge) / (1f - edge)), 2.2f));
     }
 
-    // A lumpy, pitted rock lit from the upper left.
     public static Texture2D RockTexture(int width, int height, int seed)
     {
         var random = new System.Random(seed);
         float offsetX = random.Next(100, 900) + 0.31f, offsetY = random.Next(100, 900) + 0.77f;
-        var pits = new Vector3[8 + random.Next(10)];    // x, y, radius
+        var pits = new Vector3[8 + random.Next(10)];
         for (int i = 0; i < pits.Length; i++)
             pits[i] = new Vector3((float)random.NextDouble() * 1.3f - 0.65f, (float)random.NextDouble() * 1.3f - 0.65f, 0.05f + (float)random.NextDouble() * 0.16f);
         float pixel = 2.5f / Mathf.Min(width, height);
@@ -123,7 +118,6 @@ public static class TitleArt
                     tone *= 1.12f;
                     continue;
                 }
-                // In shadow on the side toward the light, lit on the far wall.
                 float side = (dx * RockLight.x + dy * RockLight.y) / Mathf.Max(0.0001f, along);
                 tone *= Mathf.Lerp(0.35f, 0.9f, Mathf.Clamp01(0.5f - 0.5f * side * t));
             }
@@ -138,7 +132,6 @@ public static class TitleArt
         return texture;
     }
 
-    // A station of modules on a truss, with solar panels, in blue pixel art.
     public static Texture2D StationTexture()
     {
         const int width = StationWidth, height = StationHeight;
@@ -208,7 +201,6 @@ public static class TitleArt
         return texture;
     }
 
-    // A small grey ship pointing right, 14 by 9 pixels.
     public static Sprite ShipSprite()
     {
         var palette = new Dictionary<char, Color32>
@@ -234,7 +226,6 @@ public static class TitleArt
         return sum / total;
     }
 
-    // Fbm across a map whose left and right edges meet, by blending into a copy one map-width over.
     public static float WrappedFbm(float u, float v, float scaleU, float scaleV, int octaves, float seed)
     {
         float here = Fbm(u * scaleU + seed, v * scaleV + seed, octaves);
@@ -243,15 +234,12 @@ public static class TitleArt
     }
 }
 
-// A dark blue planet, lit from behind on the left, that slowly turns. Its map is painted once; then, for every pixel of
-// the disc that can be seen on screen, where it looks on the map and how brightly it's lit are worked out once too, so
-// each turn is only a lookup per pixel.
 public class SpinningPlanet
 {
     const int Size = 512;
-    const int MapWidth = 512, MapHeight = 256;     // the width has to be a power of two
-    const float Tilt = 0.35f;                       // radians
-    const float Spin = 0.0035f;                     // turns a second
+    const int MapWidth = 512, MapHeight = 256;
+    const float Tilt = 0.35f;
+    const float Spin = 0.0035f;
     static readonly Vector3 Light = new Vector3(-0.82f, 0.42f, 0.22f).normalized;
 
     static readonly Color OceanDeep = new Color(0.03f, 0.06f, 0.13f);
@@ -271,8 +259,6 @@ public class SpinningPlanet
 
     public Texture2D Texture { get; }
 
-    // center and radius are on the canvas; pixels outside visible, the most of the canvas the planet can ever show on,
-    // are skipped.
     public SpinningPlanet(Vector2 center, float radius, Rect visible)
     {
         var random = new System.Random(21);

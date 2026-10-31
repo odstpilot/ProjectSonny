@@ -13,7 +13,6 @@ public class LightManager : MonoBehaviour
 
     public void TriggerLightOff()
     {
-        // If already running, restart it
         if (lightOffCoroutine != null)
         {
             StopCoroutine(lightOffCoroutine);

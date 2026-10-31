@@ -2,12 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The reactor core surging, every so often while the technician's in its room: a few seconds' warning (a klaxon, the
-// core blazing brighter, the heat on screen swelling, the shield walls' lamps pulsing), then a wave of heat rolls out
-// from it across the whole room. Caught out in it, the technician takes a heavy hit and is thrown back; on the far
-// side of a lead shield wall (RadiationShield) from the core, they're fine. Every bot in the room stops for it, turns
-// to the core and bows low (PlaceholderRobot.Bow), some of them chanting, and comes up untouched once it's passed:
-// a breather from them, and the time to get to cover. Placed by ChapterOneBuilder (PlaceReactorGauntlet).
+// reactor surge: hide behind lead walls
 public class ReactorSurge : MonoBehaviour
 {
     public ReactorCore core;
@@ -26,13 +21,8 @@ public class ReactorSurge : MonoBehaviour
     [SoundName] public string surgeSound = "Core Surge";
     [Tooltip("What the bots chant, bowed to it, in capitals.")]
     public string[] chants = { "THE CORE KEEPS US", "GLORY TO THE CORE", "THE CORE PROVIDES", "WE ARE ITS HANDS", "IT MADE US" };
-    [Tooltip("Pip, the first time it builds. ~ opens a line with static.")]
-    [TextArea] public string[] pipFirstWarning = { "~!The core's surging! Get behind one of those lead walls, now!" };
-    [TextArea] public string[] pipAfterFirst = { "~And the bots just... bowed to it... okay that's creepy, but it's a breather, use it" };
     public string technicianFirstHit = "Ahh... damn, I gotta get behind those lead walls";
 
-    // How far a surge has built, 0 to 1, while one's coming (the core, the shields, and the heat on screen show it),
-    // and the flash of it going off, fading.
     public static float Warning { get; private set; }
     public static float Flash { get; private set; }
 
@@ -97,9 +87,8 @@ public class ReactorSurge : MonoBehaviour
         Vector2 origin = core.transform.position;
         float waveSeconds = reach / waveSpeed;
         Sfx.Play(klaxonSound);
-        if (!warnedOnce && SuitHelper.Exists && pipFirstWarning.Length > 0) SuitHelper.Get().Tell(pipFirstWarning);
+        if (!warnedOnce && SuitHelper.Exists && PipManager.Lines.surgeWarning.Length > 0) SuitHelper.Get().Tell(PipManager.Lines.surgeWarning);
 
-        // Every bot in here stops and bows to it, some chanting, till it's passed.
         var chanted = 0;
         foreach (PlaceholderRobot bot in PlaceholderRobot.All)
         {
@@ -117,7 +106,6 @@ public class ReactorSurge : MonoBehaviour
             yield return null;
         }
 
-        // It goes: a flash, a boom, and the wave rolling out across the floor.
         Warning = 0f;
         Flash = 1f;
         Sfx.Play(surgeSound);
@@ -148,16 +136,14 @@ public class ReactorSurge : MonoBehaviour
         if (!warnedOnce)
         {
             warnedOnce = true;
-            // Lead wall or not, the first one gets into the suit: Pip's failing from here on (SuitHelper.Condition).
             SuitHelper.Worsen(SuitHelper.Condition.Failing);
             yield return new WaitForSeconds(0.8f);
-            if (SuitHelper.Exists && pipAfterFirst.Length > 0) SuitHelper.Get().Tell(pipAfterFirst);
+            if (SuitHelper.Exists && PipManager.Lines.afterFirstSurge.Length > 0) SuitHelper.Get().Tell(PipManager.Lines.afterFirstSurge);
         }
         nextSurge = Time.time + Random.Range(every.x, every.y);
         surging = false;
     }
 
-    // Behind a lead wall from the core: something of one's between them.
     static bool Shielded(Vector2 from, Vector2 to)
     {
         foreach (RaycastHit2D hit in Physics2D.LinecastAll(from, to))

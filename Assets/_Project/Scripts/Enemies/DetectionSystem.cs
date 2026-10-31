@@ -5,8 +5,8 @@ using UnityEngine.AI;
 
 public class DetectionSystem : MonoBehaviour
 {
-    public Transform target; // The player
-    public List<Transform> patrolPoints; // Assign in inspector
+    public Transform target;
+    public List<Transform> patrolPoints;
     private NavMeshAgent agent;
     private Vector3 StartingPos;
 
@@ -116,5 +116,4 @@ public class DetectionSystem : MonoBehaviour
             agent.SetDestination(patrolPoints[patrolIndex].position);
         }
     }
-   
 }

@@ -3,22 +3,12 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The pause screen, in the painted PAUSED panel (Art/UI/Resources/Pause Screen 1) with the painted button frames (Pause
-// Screen Buttons). Escape (or P, or a controller's Start) stops time and the game's sound, dims the level, and opens the
-// panel out of a line: RESUME, SETTINGS, CONTROLS, EXIT TO MENU and QUIT down the left, and down the right where the
-// technician is (chapter, room, objective, vitals) over a heartbeat, with what the station AI is up to. Up and down (or
-// the mouse) pick, Enter or a click chooses; EXIT TO MENU and QUIT ask for a second press. SETTINGS and CONTROLS open the
-// title screen's settings panel (TitleSettings) over it. Escape again, or RESUME, closes it.
-// It won't open over another screen that has Escape of its own (the map, crafting, a terminal, dialogue) or a cutscene,
-// and in a build it opens by itself when the game loses focus.
-// Built from code, one per level, the first time it's asked for: PlayerHealthHandler does, so every level with a player
-// in it can be paused. PlayerController stands still while IsPaused.
+// pause screen
 public class PauseMenu : MonoBehaviour
 {
-    const int SortingOrder = 130;           // over everything: the HUD (80), the map (108), Pip (109), the death screen (120)
+    const int SortingOrder = 130;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-    // The painted panel and button, cut out of their pictures, in pixels of the original images.
     const string PanelArt = "Pause Screen 1";
     static readonly Vector2Int PanelArtSize = new Vector2Int(1536, 1024);
     static readonly RectInt PanelCrop = new RectInt(81, 40, 1376, 913);
@@ -39,15 +29,15 @@ public class PauseMenu : MonoBehaviour
 
     const string Resume = "RESUME", Settings = "SETTINGS", Controls = "CONTROLS", ExitToMenu = "EXIT TO MENU", Quit = "QUIT";
     static readonly string[] Items = { Resume, Settings, Controls, ExitToMenu, Quit };
-    const int ControlsPage = 3;             // TitleSettings' CONTROLS tab
+    const int ControlsPage = 3;
     const string TitleScene = "Title";
 
-    // Each level's name on the status side, and what the station AI is doing in it.
     static readonly (string scene, string chapter, string sonny, bool hostile)[] Chapters =
     {
         ("Tutorial", "PROLOGUE - THE FLARE", "HOSTILE", true),
         ("Chapter1", "CHAPTER 1 - ARRIVAL", "ONLINE", false),
         ("Chapter2", "CHAPTER 2 - A FEW HOURS LATER", "NOT RESPONDING", true),
+        ("Chapter3", "CHAPTER 3 - THE REACTOR", "HOSTILE", true),
     };
 
     public static bool IsPaused { get; private set; }
@@ -110,16 +100,12 @@ public class PauseMenu : MonoBehaviour
     {
         if (instance != this) return;
         instance = null;
-        // Leaving the level mid-pause (a scene load) mustn't leave the next one frozen.
         if (open) Unfreeze();
     }
 
-    // --- Opening and closing ---
-
-    // Whether something else on screen owns Escape just now, or the game's in a moment that shouldn't be paused over.
     static bool Blocked()
     {
-        if (Time.timeScale <= 0f) return true;      // the map, crafting, Pip's log, a tip, the death screen
+        if (Time.timeScale <= 0f) return true;
         if (DialogueBox.Busy || TutorialHud.ScreenCovered || InstallView.Playing || ArrivalCutscene.Playing || ControlRoomCutscene.Playing) return true;
         if (SignalTuner.AnyOpen || DoctrineScreen.AnyOpen || GeneratorScreen.AnyOpen) return true;
         return MapScreen.IsOpen || CraftingScreen.IsOpen || PipLog.IsOpen || TipCard.IsOpen;
@@ -133,7 +119,6 @@ public class PauseMenu : MonoBehaviour
         float now = Time.unscaledTime;
         if (!open)
         {
-            // Judged by how things stood last frame, so the Escape that just closed the map doesn't also pause.
             if (!closing && PausePressed() && !blockedLastFrame) Open(now);
         }
         else Tick(now);
@@ -190,8 +175,6 @@ public class PauseMenu : MonoBehaviour
         Cursor.lockState = cursorWas;
     }
 
-    // --- While it's open ---
-
     void Tick(float now)
     {
         input.Read(now);
@@ -201,7 +184,6 @@ public class PauseMenu : MonoBehaviour
             settingsWasOpen = true;
             return;
         }
-        // Not the press that just closed the settings panel.
         if (settingsWasOpen)
         {
             settingsWasOpen = false;
@@ -273,7 +255,6 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
-    // Where the technician is and how they're doing, for the right side.
     void RefreshStatus()
     {
         string scene = SceneManager.GetActiveScene().name;
@@ -306,8 +287,6 @@ public class PauseMenu : MonoBehaviour
         if (health != null) heartbeat.SetHealth(health.CurrentHealth, health.maxHealth);
     }
 
-    // --- Animation ---
-
     void Animate(float now, float dt)
     {
         if (!open && !closing) return;
@@ -327,7 +306,6 @@ public class PauseMenu : MonoBehaviour
         scanlines.uvRect = new Rect(0f, now * 0.06f, 1f, Screen.height / 4f);
         scanlines.color = new Color(1f, 1f, 1f, 0.06f * shown);
 
-        // The panel opens out of a line: wide first, then tall.
         float wide = TitleUI.EaseOut(TitleUI.Phase(now, openedAt, openedAt + 0.14f));
         float tall = TitleUI.EaseOut(TitleUI.Phase(now, openedAt + 0.08f, openedAt + 0.3f));
         if (!open) wide = tall = TitleUI.EaseOut(shown);
@@ -345,7 +323,6 @@ public class PauseMenu : MonoBehaviour
             bool isSelected = i == selected;
             button.lit = Mathf.Lerp(button.lit, isSelected ? 1f : 0f, follow);
 
-            // Each slides in from the left, one after another, its name decoding as it comes.
             float arrive = open ? TitleUI.EaseOut(TitleUI.Phase(now, openedAt + 0.24f + i * 0.05f, openedAt + 0.5f + i * 0.05f)) : 1f;
             button.rect.anchoredPosition = new Vector2(ButtonsLeft - 40f * (1f - arrive), -(ButtonsTop + i * ButtonSpacing));
             string text = Items[i];
@@ -362,13 +339,11 @@ public class PauseMenu : MonoBehaviour
             button.glow.color = TitleUI.Fade(asking ? Warn : Cyan, button.lit * (0.22f + 0.12f * breathe));
             button.rect.localScale = Vector3.one * (1f + 0.03f * button.lit);
 
-            // A light runs across a button as it's picked.
             float sweep = isSelected ? TitleUI.Phase(now, selectedAt, selectedAt + 0.45f) : 1f;
             button.sheen.gameObject.SetActive(sweep < 1f);
             button.sheen.anchorMin = button.sheen.anchorMax = new Vector2(Mathf.Lerp(-0.2f, 1.2f, TitleUI.EaseInOut(sweep)), 0.5f);
         }
 
-        // The station AI's line flickers when it's not on your side.
         if (sonnyHostile)
         {
             bool glitch = TitleUI.Hash(Mathf.FloorToInt(now * 12f)) > 0.86f;
@@ -377,8 +352,6 @@ public class PauseMenu : MonoBehaviour
         }
         else sonnyValue.color = Cyan;
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -479,7 +452,6 @@ public class PauseMenu : MonoBehaviour
         objectiveValue = Row(parent, font, "OBJECTIVE", ref y, 2);
         vitalsValue = Row(parent, font, "VITALS", ref y, 1);
 
-        // A heartbeat in a cut-cornered box, and the station AI under it.
         float boxTop = y - 8f, boxHeight = 74f;
         RectTransform box = TopLeft(GameUI.NewRect("Heartbeat Box", parent), new Vector2(StatusLeft, boxTop), new Vector2(StatusWidth, boxHeight));
         var outline = box.gameObject.AddComponent<HudShape>();
@@ -503,7 +475,6 @@ public class PauseMenu : MonoBehaviour
         sonnyValue.characterSpacing = 6f;
     }
 
-    // A dim name over a bright value, moving y down past them.
     TextMeshProUGUI Row(RectTransform parent, TMP_FontAsset font, string name, ref float y, int lines)
     {
         TextMeshProUGUI label = Text(name, parent, font, 22f, Dim, new Vector2(StatusLeft, y), new Vector2(StatusWidth, 24f));

@@ -3,14 +3,10 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
-// The reactor core's heat, on screen: walking into its room (by its marker in the layout), the station's light (the
-// global light) turns from emergency red to a hot orange, a broad warm glow fills the room so it's never dark in
-// there, and the picture itself goes warm: an orange wash over everything and a burning edge round it, flaring
-// yellow while the player's wading through radiation (RadiationLeak.PlayerIrradiated). It all eases back out on the
-// way out. Built by ChapterOneBuilder (PlaceReactorGauntlet), with the glow sized to the room.
+// reactor heat on screen
 public class ReactorAmbience : MonoBehaviour
 {
-    const int SortingOrder = 75;    // over the level, under the health readout (80) and the HUD
+    const int SortingOrder = 75;
 
     [Tooltip("The room, by its marker in the layout.")]
     public char room = 'r';
@@ -77,7 +73,6 @@ public class ReactorAmbience : MonoBehaviour
     void Update()
     {
         if (player == null) return;
-        // Between rooms (a doorway, the stairs) it stays as it was.
         StationMap map = StationMap.Current;
         bool inside = blend > 0.5f;
         if (map != null && map.Locate(player.position, out _, out StationMap.Room here)) inside = here.marker == room;
@@ -90,13 +85,11 @@ public class ReactorAmbience : MonoBehaviour
     {
         foreach ((Light2D light, Color color) in station)
             if (light != null) light.color = Color.Lerp(color, stationColor, blend);
-        // The heat shimmers a little: never quite still.
         float flicker = 1f + 0.06f * (Mathf.PerlinNoise(Time.time * 1.3f, 0.7f) - 0.5f);
         if (glow != null) glow.intensity = glowIntensity * blend * flicker;
         if (wash == null) return;
         Color tint = Color.Lerp(washColor, irradiatedColor, irradiated);
         float pulse = irradiated * (0.6f + 0.4f * Mathf.Sin(Time.time * 7f));
-        // A surge building (ReactorSurge) swells the heat, throbbing faster as it comes, then the flash as it goes.
         float building = ReactorSurge.Warning;
         float surge = building * building * (0.65f + 0.35f * Mathf.Sin(Time.time * Mathf.Lerp(6f, 22f, building))) * 0.3f
                       + ReactorSurge.Flash * 0.55f;

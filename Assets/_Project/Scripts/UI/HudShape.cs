@@ -2,10 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// A flat HUD shape made of UI geometry, so its edges stay sharp at any resolution: a filled convex polygon, or a line
-// along a path with a soft glow fading out either side. Points are in the rect's own space, in pixels from its pivot.
-// A line is drawn only between DrawStart and DrawAmount, as fractions of its length: raise DrawAmount to trace it in
-// from its first point, or move both together to send a short dash running along it.
+// flat ui shapes
 [RequireComponent(typeof(CanvasRenderer))]
 public class HudShape : MaskableGraphic
 {
@@ -58,7 +55,6 @@ public class HudShape : MaskableGraphic
         else Stroke(vh);
     }
 
-    // A fan from the middle, which is right for any convex shape.
     void Fill(VertexHelper vh)
     {
         Vector2 middle = Vector2.zero;
@@ -99,7 +95,6 @@ public class HudShape : MaskableGraphic
             Vector2 from = corner + along * Mathf.Max(0f, startAt - segmentStart);
             Vector2 to = corner + along * Mathf.Min(segmentLength, endAt - segmentStart);
 
-            // Square ends half a thickness long, so neighbouring segments overlap at corners rather than leave a notch.
             from -= along * half;
             to += along * half;
             Vector2 side = new Vector2(-along.y, along.x);
@@ -114,7 +109,6 @@ public class HudShape : MaskableGraphic
         }
     }
 
-    // p0 and p1 in the near color, p2 and p3 in the far color.
     static void Quad(VertexHelper vh, Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, Color32 near, Color32 far)
     {
         int start = vh.currentVertCount;

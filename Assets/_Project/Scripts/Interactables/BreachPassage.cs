@@ -1,11 +1,7 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// A stretch of wall that gets blown through, leaving a way on that wasn't there before: until Open, its cells are wall
-// like any other; opened, they're floor, the walls and solid black on them cleared, so the player (and anything after
-// them) can walk through. What does the blowing through is up to whoever opens it (TutorialDirector: a robot punches
-// through from the other side when the door's jammed).
-// Built by TutorialLevelBuilder from the # cells in the layout, which it builds as wall.
+// wall that gets blown open
 public class BreachPassage : MonoBehaviour
 {
     public Tilemap floor;

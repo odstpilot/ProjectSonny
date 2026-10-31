@@ -1,8 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-// Adds a draggable hand marker to the Scene view when the player is selected,
-// so melee weapon placement is set by eye instead of by typing numbers.
+// drag handle for the hand position
 [CustomEditor(typeof(PlayerCombat))]
 public class PlayerCombatEditor : Editor
 {

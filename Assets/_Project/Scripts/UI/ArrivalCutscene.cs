@@ -4,16 +4,11 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Chapter 1's opening shot, before the technician steps aboard: out in space beside the sun, a supply pod crosses to the
-// solar station and docks at its port. It's painted in code in the title screen's style (TitleArt's nebula, stars,
-// station and ship), on its own canvas over everything, between letterbox bars, with a flight log typed out along the
-// bottom. The view starts wide and slowly closes in on the port as the pod slows, fires its retros, and docks: the
-// clamps clunk, the view shakes, the port's lights go green, and it fades to black. Space or Escape skips it.
-// ChapterOneDirector plays it: yield return ArrivalCutscene.Play().
+// chapter 1 opening: pod docking
 public class ArrivalCutscene : MonoBehaviour
 {
-    const int SortingOrder = 115;               // over the HUD and its fade (90), under the death screen (120)
-    const float StationScale = 3f;              // canvas units per pixel of the station art
+    const int SortingOrder = 115;
+    const float StationScale = 3f;
     const float PodScale = 3f;
     const float LetterboxHeight = 120f;
     const float FadeInEnd = 1.8f;
@@ -24,13 +19,11 @@ public class ArrivalCutscene : MonoBehaviour
     const float EndZoom = 2.5f;
     const float LettersPerSecond = 38f;
 
-    // Where the pod sets off from, on the canvas at the widest view.
     static readonly Vector2 PodStart = new Vector2(-1180f, 340f);
     static readonly Vector2 StationAt = new Vector2(380f, 30f);
     static readonly Color SunColor = new Color(1f, 0.72f, 0.38f);
     static readonly Color LogColor = new Color(0.55f, 0.88f, 0.95f);
 
-    // The flight log along the bottom: when each line starts, and what it says.
     static readonly (float time, string text)[] Log =
     {
         (1.6f, "SUPPLY POD 7  //  PASSENGERS: 1"),
@@ -39,7 +32,6 @@ public class ArrivalCutscene : MonoBehaviour
         (15.5f, "CLAMPS ENGAGED. WELCOME ABOARD."),
     };
 
-    // The collar round the docking port, stuck on the left of the station's middle module. Its left face is the port.
     static readonly string[] CollarArt =
     {
         "#####",
@@ -55,9 +47,8 @@ public class ArrivalCutscene : MonoBehaviour
         "#ooo#",
         "#####",
     };
-    const int CollarLeft = 33, CollarBottom = 68;   // in the station art's pixels
+    const int CollarLeft = 33, CollarBottom = 68;
 
-    // Lights on the station that blink: x, y in the station art, and whether they're red (else cyan).
     static readonly (int x, int y, bool red)[] Beacons = { (55, 170, true), (2, 100, false), (108, 100, false), (55, 1, true), (18, 157, false), (92, 157, false) };
 
     private RectTransform sky;
@@ -72,10 +63,10 @@ public class ArrivalCutscene : MonoBehaviour
     private Image black;
     private AudioSource rumble;
     private AudioSource effects;
-    private AudioClip rumbleClip;       // these three are made in code, played until the scene's sounds have clips
+    private AudioClip rumbleClip;
     private AudioClip clunk;
     private AudioClip hiss;
-    private Vector2 dock;               // the port, in the world's canvas units
+    private Vector2 dock;
 
     void OnDestroy() => Playing = false;
 
@@ -96,7 +87,7 @@ public class ArrivalCutscene : MonoBehaviour
         float end = FadeOutStart + FadeOutTime;
         bool docked = false;
         int logLine = -1;
-        float fadeFrom = 0f;           // how dark it was when the fade out began
+        float fadeFrom = 0f;
         float fadeOutAt = FadeOutStart;
         SoundManager.Setup(rumble, "Pod Rumble", rumbleClip);
         rumble.loop = true;
@@ -105,7 +96,6 @@ public class ArrivalCutscene : MonoBehaviour
 
         for (float t = 0f; t < end; t += Time.unscaledDeltaTime)
         {
-            // Skipping jumps straight to the fade out, from wherever it is.
             if (t < fadeOutAt && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape)))
             {
                 fadeOutAt = t;
@@ -125,7 +115,6 @@ public class ArrivalCutscene : MonoBehaviour
                 SoundManager.PlayOneShot(effects, "Docking Hiss", fallback: hiss);
             }
 
-            // The flight log, a line at a time, typed out.
             while (logLine + 1 < Log.Length && t >= Log[logLine + 1].time) logLine++;
             if (logLine >= 0)
             {
@@ -146,7 +135,6 @@ public class ArrivalCutscene : MonoBehaviour
         rumble.Stop();
     }
 
-    // Along a curve that levels out into the port, fast at first and slowing all the way in.
     void UpdatePod(float progress, float t)
     {
         float along = 1f - Mathf.Pow(1f - progress, 2.2f);
@@ -157,7 +145,6 @@ public class ArrivalCutscene : MonoBehaviour
         pod.anchoredPosition = at;
         if (heading.sqrMagnitude > 0.001f) pod.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(heading.y, heading.x) * Mathf.Rad2Deg);
 
-        // Main engine on the way in, easing off; the retros at the nose while it brakes.
         float flicker = 0.8f + 0.2f * Mathf.PerlinNoise(t * 18f, 0.3f);
         float thrust = progress < 0.7f ? 1f - progress * 0.6f : Mathf.Clamp01(1f - (progress - 0.7f) / 0.08f) * 0.6f;
         engine.color = TitleUI.Fade(new Color(1f, 0.6f, 0.28f), thrust * flicker);
@@ -168,7 +155,6 @@ public class ArrivalCutscene : MonoBehaviour
 
     static float RumbleVolume(float progress) => progress >= 1f ? 0f : 0.35f * (1f - progress * 0.7f);
 
-    // Wide to start, then closing in on the port as the pod gets there, with the sky drifting a little behind.
     void UpdateView(float t)
     {
         float zoom = TitleUI.EaseInOut(TitleUI.Phase(t, ZoomStart, DockTime + 0.3f));
@@ -193,18 +179,14 @@ public class ArrivalCutscene : MonoBehaviour
             beacon.image.color = TitleUI.Fade(beacon.color, on ? 0.9f : 0f);
         }
 
-        // The port's lights blink amber on the way in and hold green once it's docked.
         bool blink = Mathf.Repeat(t, 0.6f) < 0.3f;
         foreach (Image light in portLights)
             light.color = docked ? GameUI.Green : blink ? GameUI.Amber : new Color(0.3f, 0.2f, 0.1f);
 
-        // A faint guide beam out from the port, gone once the pod's in.
         beam.color = TitleUI.Fade(GameUI.Cyan, 0.22f * (1f - TitleUI.Phase(t, DockTime - 1f, DockTime)) * TitleUI.Phase(t, 8f, 10f));
     }
 
     static Vector2 Bezier(Vector2 a, Vector2 b, Vector2 c, float t) => Vector2.Lerp(Vector2.Lerp(a, b, t), Vector2.Lerp(b, c, t), t);
-
-    // --- Building ---
 
     void Build()
     {
@@ -227,7 +209,6 @@ public class ArrivalCutscene : MonoBehaviour
         RawImage wisps = TitleUI.Picture("Wisps", sky, TitleArt.NebulaTexture(21.7f, true), new Vector2(-200f, -80f), new Vector2(2500f, 1400f));
         wisps.color = new Color(1f, 1f, 1f, 0.6f);
 
-        // The sun, just off the right of the picture: a wide warm glow, a hot core, and a glint.
         TitleUI.Picture("Sun Glow", sky, CombatSprites.SoftCircleTexture, new Vector2(1180f, 220f), new Vector2(2300f, 2300f), glow: true).color = TitleUI.Fade(SunColor, 0.5f);
         TitleUI.Picture("Sun", sky, CombatSprites.SoftCircleTexture, new Vector2(1060f, 250f), new Vector2(760f, 760f), glow: true).color = TitleUI.Fade(new Color(1f, 0.93f, 0.8f), 0.95f);
         TitleUI.Picture("Glint", sky, TitleUI.SparkleTexture, new Vector2(930f, 260f), new Vector2(260f, 260f), glow: true).color = TitleUI.Fade(Color.white, 0.8f);
@@ -236,7 +217,6 @@ public class ArrivalCutscene : MonoBehaviour
         BuildStation();
         BuildPod();
 
-        // Letterbox bars, with the flight log in the bottom one and how to skip in its corner.
         Bar("Letterbox Top", 1f);
         RectTransform bottom = Bar("Letterbox Bottom", 0f);
         log = GameUI.Label("Log", bottom, "", 32f, LogColor, TextAlignmentOptions.Left);
@@ -297,7 +277,6 @@ public class ArrivalCutscene : MonoBehaviour
     void BuildPod()
     {
         pod = TitleUI.Place(GameUI.NewRect("Pod", world), PodStart, new Vector2(14f, 9f) * PodScale);
-        // Pivoted near its right end, at the back of the hull, so it stretches out behind as the thrust goes up.
         engine = TitleUI.Picture("Engine", pod, CombatSprites.SoftCircleTexture, Vector2.zero, new Vector2(46f, 24f), glow: true);
         engine.rectTransform.pivot = new Vector2(0.75f, 0.5f);
         engine.rectTransform.anchoredPosition = new Vector2(-6f * PodScale, 0f);
@@ -320,16 +299,13 @@ public class ArrivalCutscene : MonoBehaviour
         return bar;
     }
 
-    // --- Sound ---
-
-    // A low engine rumble that loops without a seam: noise, smoothed until only the low end is left.
     static AudioClip Rumble()
     {
         int samples = TitleUI.SampleRate * 2;
         var data = new float[samples];
         var random = new System.Random(5);
         float low = 0f, lower = 0f;
-        for (int pass = 0; pass < 2; pass++)          // twice round, so the end runs into the start smoothly
+        for (int pass = 0; pass < 2; pass++)
         {
             for (int i = 0; i < samples; i++)
             {
@@ -343,7 +319,6 @@ public class ArrivalCutscene : MonoBehaviour
         return clip;
     }
 
-    // The clamps closing: a deep thud with a metallic knock on top.
     static AudioClip Clunk()
     {
         int samples = Mathf.CeilToInt(0.7f * TitleUI.SampleRate);

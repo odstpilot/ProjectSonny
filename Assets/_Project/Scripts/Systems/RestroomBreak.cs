@@ -2,31 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 1's break, after the install (ControlRoomCutscene). With skipRestroom (the default, to keep Chapter 1 short),
-// the first two parts are skipped: the chief asks for the spare data chip for Sonny as the cutscene ends, and it picks up at the storage room. (The
-// storage room lines and objectives below are written for the data chip; with skipRestroom off, Okafor asks for a wrench.)
-//  - A breather: the technician is free to walk about and talk to the crew, who all have something new to say now that
-//    Sonny's on. After a while of it (exploreSeconds of free time, or talking to talksBeforeUrge of them), the technician
-//    realizes they need the restroom, badly: the screen gives a jolt, they say so, and the restroom (its own room, off
-//    the kitchen and lounge) is pinned on the map. Every so often they mutter about it until they get there.
-//  - The restroom has a row of stalls: the one nearest the door out of order all week (its puddle out), the next one
-//    shut with someone's feet showing under the door (Okafor, from life support; knocking gets "Occupied!"), and a free
-//    one at the end. Using the free one (Toilet, E): a fade to black and a flush. Back up, the stall next door flushes,
-//    gurgles, rattles, and floods. Out comes Okafor, who works out that the technician is the new technician and asks
-//    them to fix it. They can say yes or no, but Okafor won't let it go, and either way the technician decides to do it:
-//    the new tech who fixes things on day one will look good to the chief.
-//  - The storage room: the tool crate first (ToolCrate, E), where the wrench should be, and isn't, just a note. Then a
-//    glint under the shelf (ToolShelf, E): down on one knee, an arm under the rack, and they've got it. A far-off
-//    rumble; a moment of quiet; then something big rumbles through the whole station (Sonny taking over, though nobody
-//    says so yet): a deep boom, the picture shaking harder and harder, every lamp stuttering. It rocks the rack until the
-//    crate on top tips off and lands on the technician's head. They go down, and it all goes black: "Chapter 2",
-//    "A few hours later", and Chapter 2's scene loads (wakeUpScene), where they wake up on the storage room floor
-//    (ChapterTwoDirector).
-// Using a toilet before they need to, or the crate or the shelf before anyone's asked for a wrench, just gets a mutter.
-// Continuing from a save partway through (SaveGame), ResumeFrom sets it all up the way it was just after the objective
-// that was saved, and picks up from there.
-// Built by ChapterOneBuilder, which puts the stalls in the restroom and Okafor in the middle one (inactive until they
-// come out), the spot in front of it they come out to, and the crate and the shelf in the storage room.
+// chapter 1: restroom, storage room, blackout
 public class RestroomBreak : MonoBehaviour
 {
     public PlayerController player;
@@ -56,8 +32,6 @@ public class RestroomBreak : MonoBehaviour
     public float urgeShake = 0.35f;
     [Tooltip("The technician, when it comes on.")]
     [TextArea] public string[] urgeLines = { "Oof", "Uhh, I've been holding that since before the install... restroom, right now" };
-    [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipUrge = { "^Restroom's off the lounge, I pinned it on your map!" };
     [Tooltip("The technician, every nagSeconds until they get there, one after another, the last one again and again.")]
     [TextArea] public string[] nags = { "Walk faster, walk faster, walk faster", "Think dry thoughts... dry thoughts" };
     public float nagSeconds = 22f;
@@ -124,8 +98,6 @@ public class RestroomBreak : MonoBehaviour
     public float rumbleShake = 0.18f;
     [Tooltip("The technician, after the far-off rumble.")]
     public string whatWasThat = "...What was that?";
-    [Tooltip("Pip, as the rack starts rocking. Cut off by the crate.")]
-    [TextArea] public string[] pipShelfWobble = { "~Tech? Something big's moving through the sta-" };
     [Tooltip("The scene's sound for it, a deep boom through the whole station.")]
     [SoundName] public string quakeSound = "Station Quake";
     [Tooltip("How hard the picture shakes at the worst of it, and how long it goes on past the crate hitting.")]
@@ -142,7 +114,6 @@ public class RestroomBreak : MonoBehaviour
     [Tooltip("The scene loaded once they're out: Chapter 2, where they wake up.")]
     public string wakeUpScene = "Chapter2";
 
-    // The moment the crate hits.
     public static event System.Action KnockedOut;
 
     private bool breakBegun, urgent, relieved, asked;
@@ -169,7 +140,7 @@ public class RestroomBreak : MonoBehaviour
     void Start()
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();
-        if (attendant != null) attendant.gameObject.SetActive(false);     // in the stall, until they come out
+        if (attendant != null) attendant.gameObject.SetActive(false);
     }
 
     void BeginBreak()
@@ -179,7 +150,6 @@ public class RestroomBreak : MonoBehaviour
         else StartCoroutine(Urge());
     }
 
-    // The short way (skipRestroom): the restroom as it is once Okafor's asked, and off to the storage room.
     void SendForChip()
     {
         AlreadyAsked();
@@ -194,7 +164,6 @@ public class RestroomBreak : MonoBehaviour
         if (breakBegun && !urgent) talkedTo.Add(who);
     }
 
-    // A while into the break, it comes on; then they mutter about it every so often until they get there.
     IEnumerator Urge()
     {
         for (float t = 0f; t < exploreSeconds && talkedTo.Count < talksBeforeUrge; )
@@ -209,7 +178,7 @@ public class RestroomBreak : MonoBehaviour
         yield return TechnicianVoice.Think(urgeLines);
         if (relieved) yield break;
         FindTheRestroom();
-        if (SuitHelper.Exists) SuitHelper.Get().Tell(pipUrge);
+        if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.restroomUrge);
         yield return Nag();
     }
 
@@ -234,19 +203,11 @@ public class RestroomBreak : MonoBehaviour
         }
     }
 
-    // --- Picking up from a save ---
-
-    // Not an objective: a tester's jump to the start of the breather (CheckpointJump), before the urge.
     public const string Breather = "(the breather)";
 
-    // Whether finishing this objective is somewhere in the break (breather is the objective the break starts with,
-    // ControlRoomCutscene.objectiveAfter), so ResumeFrom can pick up after it.
     public bool Knows(string finished, string breather) =>
         finished == Breather || (!string.IsNullOrEmpty(breather) && finished == breather) || finished == objectiveUrge || finished == objectiveFix || finished == objectiveSearch || finished == objectiveShelf;
 
-    // Everything the way it was just after that objective was finished, and on from there: the urge having just come on,
-    // the restroom about to be used, the storage room just walked into, the crate about to be opened, or the shelf about
-    // to be reached under. The player's already back where they were (SaveGame.PlacePlayer).
     public void ResumeFrom(string finished, string breather)
     {
         if (finished == Breather)
@@ -290,7 +251,6 @@ public class RestroomBreak : MonoBehaviour
         }
     }
 
-    // The restroom as it was once Okafor had asked: their toilet broken, them out of the stall, and the wrench wanted.
     void AlreadyAsked()
     {
         urgent = relieved = asked = true;
@@ -309,8 +269,6 @@ public class RestroomBreak : MonoBehaviour
         attendant.gameObject.SetActive(true);
     }
 
-    // --- The restroom ---
-
     void OnToiletUsed()
     {
         if (urgent && !relieved) StartCoroutine(UseRestroom());
@@ -328,7 +286,6 @@ public class RestroomBreak : MonoBehaviour
         TechnicianVoice.Hush();
         Hold();
 
-        // Some privacy.
         ScreenFade fade = ScreenFade.Get();
         yield return fade.FadeTo(1f, 0.6f);
         yield return Wait(blackoutSeconds * 0.6f);
@@ -337,7 +294,6 @@ public class RestroomBreak : MonoBehaviour
         yield return fade.FadeTo(0f, 0.6f);
         yield return Wait(0.8f);
 
-        // Next door goes.
         if (occupiedToilet != null)
         {
             occupiedToilet.SayFromInside(beforeFlush, 1.6f);
@@ -351,7 +307,6 @@ public class RestroomBreak : MonoBehaviour
             occupiedToilet.Vacate();
         }
 
-        // Out comes Okafor.
         if (attendant != null)
         {
             if (attendantComesIn != null)
@@ -379,11 +334,8 @@ public class RestroomBreak : MonoBehaviour
         StartCoroutine(WalkIntoStorage());
     }
 
-    // --- The storage room ---
-
     IEnumerator WalkIntoStorage()
     {
-        // The way there's pointed out in the level while it's pinned on the map (ObjectiveHighlight follows the pin).
         while (player == null || !InRoom(player.transform.position, toolsRoom)) yield return null;
         MapScreen.ClearTarget();
         if (crate == null || crate.IsOpen || shelf == null || shelf.Taken) yield break;
@@ -417,8 +369,6 @@ public class RestroomBreak : MonoBehaviour
         else StartCoroutine(GetWrench());
     }
 
-    // Down on one knee, an arm under the rack, the wrench found; a rumble far off, then the big one, and the crate on top
-    // comes down on their head.
     IEnumerator GetWrench()
     {
         TutorialHud hud = TutorialHud.Get();
@@ -430,7 +380,6 @@ public class RestroomBreak : MonoBehaviour
         Hold();
         yield return Wait(0.3f);
 
-        // An arm under the rack, feeling about, knocking it once or twice.
         if (!string.IsNullOrEmpty(reachLine)) TechnicianVoice.Say(reachLine, 1.2f);
         yield return shelf.Nudge(0.5f);
         yield return Wait(0.25f);
@@ -440,7 +389,6 @@ public class RestroomBreak : MonoBehaviour
         TechnicianVoice.Say(gotIt, 1.4f);
         yield return Wait(1.3f);
 
-        // Far off, something.
         yield return DistantRumble();
         yield return Wait(1.2f);
         yield return TechnicianVoice.Think(whatWasThat);
@@ -448,14 +396,13 @@ public class RestroomBreak : MonoBehaviour
 
         Vector2 at = player.transform.position;
         float feetY = at.y - DepthSort.FeetToCenter;
-        if (pip != null) pip.Tell(pipShelfWobble);
+        if (pip != null) pip.Tell(PipManager.Lines.shelfWobble);
         bool hit = false;
         StartCoroutine(Quake(() => hit));
         yield return shelf.Topple(at + new Vector2(0f, 0.45f), feetY);
         hit = true;
         KnockedOut?.Invoke();
 
-        // Down they go, the picture closing in and going dark.
         if (pip != null) pip.Hush();
         TechnicianVoice.Hush();
         CameraShake.Shake(hitShake);
@@ -480,12 +427,11 @@ public class RestroomBreak : MonoBehaviour
         if (string.IsNullOrEmpty(wakeUpScene)) Debug.LogWarning($"{name}: there's no wakeUpScene to load, so Chapter 1 ends on black.", this);
         else
         {
-            ChapterTwoDirector.ArrivingFromChapterOne = true;     // the title card's just been shown
+            ChapterTwoDirector.ArrivingFromChapterOne = true;
             UnityEngine.SceneManagement.SceneManager.LoadScene(wakeUpScene);
         }
     }
 
-    // A low rumble from somewhere else in the station: a little shake, and the lamps in here dip once.
     IEnumerator DistantRumble()
     {
         ScreenFade.Get().PlaySound(rumbleSound, RumbleTone);
@@ -503,8 +449,6 @@ public class RestroomBreak : MonoBehaviour
         foreach (StationLight lamp in lamps) if (!lamp.IsOn) lamp.SetOn(true);
     }
 
-    // Starting just after the clink of the wrench: the boom, then the shaking and the lamps stuttering, building until
-    // the crate comes down and dying away after.
     IEnumerator Quake(System.Func<bool> hit)
     {
         yield return Wait(0.3f);
@@ -518,7 +462,6 @@ public class RestroomBreak : MonoBehaviour
             else built = Mathf.Min(1f, built + dt / Mathf.Max(0.1f, shelf.rattleSeconds));
             float strength = built * (1f - after / quakeAfterSeconds);
             CameraShake.ShakeAtLeast(quakeShake * strength);
-            // A few lamps at a time cut out for a moment.
             foreach (StationLight lamp in lamps)
                 if (lamp != null && Random.value < strength * 0.08f) lamp.SetOn(!lamp.IsOn);
             yield return null;
@@ -527,9 +470,6 @@ public class RestroomBreak : MonoBehaviour
             if (lamp != null && !lamp.IsOn) lamp.SetOn(true);
     }
 
-    // --- Helpers ---
-
-    // A line to themselves, said as they carry on, letting go of whatever they were using straight away.
     IEnumerator Mutter(string line, System.Action done)
     {
         TechnicianVoice.Say(line);
@@ -537,7 +477,6 @@ public class RestroomBreak : MonoBehaviour
         yield break;
     }
 
-    // The boom, made in code until the scene's Station Quake sound has a clip.
     static AudioClip quakeTone;
     static AudioClip QuakeTone => quakeTone != null ? quakeTone : (quakeTone = TitleUI.Tone("Station Quake", 36f, 2.4f, 1f));
     static AudioClip rumbleTone;
@@ -566,7 +505,6 @@ public class RestroomBreak : MonoBehaviour
         who.TalkEnded -= Ended;
     }
 
-    // The flush, made in code until the scene's Toilet Flush sound has a clip.
     static AudioClip flushNoise;
     static AudioClip FlushNoise => flushNoise != null ? flushNoise : (flushNoise = TitleUI.Crackle("Toilet Flush", 1.4f, 0.6f));
 

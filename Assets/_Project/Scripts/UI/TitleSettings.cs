@@ -3,33 +3,27 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The settings panel: a HUD window over the dimmed title screen, in four tabs (AUDIO, DISPLAY, GAMEPLAY, CONTROLS).
-// Up and down pick a setting, left and right change it, Q and E (or the shoulder buttons) change tab, and the mouse can
-// hover, click, and drag everything. A line under the list says what the selected setting does, and key hints and the
-// RESET DEFAULTS and BACK buttons run along the bottom. Changes apply straight away; BACK or cancel closes the panel and
-// saves them. RESET DEFAULTS asks for a second press. The panel opens out of a line and closes back into one.
+// settings panel
 public class TitleSettings
 {
     enum Kind { Slider, Choice, Toggle }
 
-    // A setting, and how to read and change it.
     class Setting
     {
         public Kind kind;
         public string name, help, unavailableHelp;
-        public System.Func<bool> available;      // null means always
-        public System.Func<float> value;         // a slider's, 0 to 1
+        public System.Func<bool> available;
+        public System.Func<float> value;
         public System.Action<float> setValue;
-        public System.Func<string[]> options;    // a choice's
+        public System.Func<string[]> options;
         public System.Func<int> index;
         public System.Action<int> setIndex;
-        public System.Func<bool> on;             // a toggle's
+        public System.Func<bool> on;
         public System.Action<bool> setOn;
 
         public bool Available => available == null || available();
     }
 
-    // A setting's row on its page.
     class Row
     {
         public Setting setting;
@@ -77,7 +71,6 @@ public class TitleSettings
     static readonly string[] DisplayModes = { "FULLSCREEN", "BORDERLESS", "WINDOWED" };
     static readonly FullScreenMode[] DisplayModeValues = { FullScreenMode.ExclusiveFullScreen, FullScreenMode.FullScreenWindow, FullScreenMode.Windowed };
 
-    // What the controls tab lists: an action and the keys for it.
     static readonly string[] BindingActions = { "MOVE", "SPRINT", "CROUCH", "ATTACK", "INTERACT", "FLASHLIGHT", "SWITCH WEAPON", "CONFIRM / BACK" };
     static readonly string[][] BindingKeys =
     {
@@ -244,7 +237,7 @@ public class TitleSettings
 
     public void Tick(float now, MenuInput input)
     {
-        if (!IsOpen || now - openedAt < 0.2f) return;   // let the press that opened it pass
+        if (!IsOpen || now - openedAt < 0.2f) return;
 
         int tabStep = TabStep();
         if (tabStep != 0) SwitchPage((pageIndex + tabStep + pages.Count) % pages.Count, tabStep, now);
@@ -289,7 +282,6 @@ public class TitleSettings
         if ((input.Click && MenuInput.Over(backButton.hit)) || input.Cancel) Close(now);
     }
 
-    // Down past the last row reaches RESET DEFAULTS; up past the first reaches BACK.
     static int Vertical(int from, int step, int rowCount)
     {
         bool onFooter = from >= rowCount;
@@ -409,8 +401,6 @@ public class TitleSettings
         if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown) || Input.GetKeyDown(KeyCode.JoystickButton5)) return 1;
         return 0;
     }
-
-    // --- Animation ---
 
     public void Animate(float now)
     {
@@ -575,8 +565,6 @@ public class TitleSettings
         button.label.color = isSelected || hover ? Bright : warning ? accent : Dim;
     }
 
-    // --- Building ---
-
     Page AddPage(TMP_FontAsset font, string name)
     {
         int i = pages.Count;
@@ -612,7 +600,6 @@ public class TitleSettings
     {
         Row row = AddRow(page, font, new Setting { kind = Kind.Slider, name = name, help = help, value = value, setValue = setValue });
 
-        // The track doubles as the area the mouse clicks and drags along.
         row.track = TitleUI.Place(TitleUI.NewRect("Track", row.rect), new Vector2(ControlX - 40f, 0f), new Vector2(400f, 44f));
         row.segments = new HudShape[SliderSegments];
         float slot = 400f / SliderSegments;
@@ -661,7 +648,6 @@ public class TitleSettings
         row.onHit = TitleUI.Place(TitleUI.NewRect("On Hit", row.rect), onCenter, new Vector2(144f, 56f));
     }
 
-    // Two columns of actions and their keys. Nothing here can be changed yet, so the page has no rows to select.
     void BuildControls(Page page, TMP_FontAsset font)
     {
         for (int i = 0; i < BindingActions.Length; i++)
@@ -727,7 +713,6 @@ public class TitleSettings
         return button;
     }
 
-    // A keycap with text on it, from one edge: to the left of edge when fromRight, else to the right. Returns its far edge.
     static float KeyCap(Transform parent, TMP_FontAsset font, string text, float edge, float y, bool fromRight)
     {
         TextMeshProUGUI label = TitleUI.Label("Key " + text, parent, font, 28f, Bright, Vector2.zero, new Vector2(300f, 44f));
@@ -741,7 +726,6 @@ public class TitleSettings
         return fromRight ? edge - width : edge + width;
     }
 
-    // A keycap with an arrow on it, from its left edge. Returns its right edge.
     static float ArrowCap(Transform parent, float left, float y, Vector2 direction)
     {
         const float width = 44f;

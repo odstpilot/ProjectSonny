@@ -2,31 +2,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// The reactor core, in the middle of the reactor room on floor 2: a containment vessel taller than the room's wall, a
-// ball of plasma churning behind its glass, magnetic rings wound in coils glowing on their undersides, coolant pipes
-// arcing down to a plinth, and a hazard-ringed pad round it all with a moat of molten coolant. Everything is yellow and
-// orange and too bright to look at for long, so the room feels hot. Placed by FloorOneBuilder (PlaceReactorCore).
-// The art (Resources/Reactor, drawn at the tileset's 32 pixels to a cell): the body (28 cells wide, 24 tall) and the pad
-// under it (34 by 14). Its lit parts are separate layers drawn unlit, so they shine in the dark: the plasma (frames, it
-// churns), the coils and vents (they breathe), and the warning lights (two sets, blinking in turn). It throws a big warm
-// light over the room, pulsing with the plasma, and embers drift up off the moat and out of the exhaust.
-// This object sits at the middle of the plinth's foot, which is where it sorts from (DepthSort), and is solid over it,
-// and over the machinery behind it too (RearHalfWidth, RearDepth), so there's no slipping through behind the reactor:
-// the way past is round it.
+// the reactor itself
 public class ReactorCore : MonoBehaviour
 {
     const float ArtPixelsPerUnit = 32f;
-    const float FootBelowMiddle = 132f / ArtPixelsPerUnit;     // the body art's bottom edge, below the plinth's middle
-    // The plinth's foot, a flat ellipse from the middle, solid so nobody walks into the reactor.
+    const float FootBelowMiddle = 132f / ArtPixelsPerUnit;
     const float PlinthRadiusX = 320f / ArtPixelsPerUnit;
     const float PlinthRadiusY = 128f / ArtPixelsPerUnit;
-    static readonly Vector2 CoreAt = new Vector2(0f, (767f - 366f) / ArtPixelsPerUnit - FootBelowMiddle);     // the plasma
-    static readonly Vector2 ExhaustAt = new Vector2(0f, (767f - 52f) / ArtPixelsPerUnit - FootBelowMiddle);   // the stack's mouth
-    const float MoatRadiusX = 0.622f * 536f / ArtPixelsPerUnit;     // the molten ring on the pad
+    static readonly Vector2 CoreAt = new Vector2(0f, (767f - 366f) / ArtPixelsPerUnit - FootBelowMiddle);
+    static readonly Vector2 ExhaustAt = new Vector2(0f, (767f - 52f) / ArtPixelsPerUnit - FootBelowMiddle);
+    const float MoatRadiusX = 0.622f * 536f / ArtPixelsPerUnit;
     const float MoatRadiusY = 0.622f * 214f / ArtPixelsPerUnit;
     const int CoreFrames = 6;
-    // The solid block behind the plinth, in world units: this far either side of the middle, and from the middle this far
-    // back (up the screen). FloorOneBuilder counts the cells under it as furniture.
     public const float RearHalfWidth = 9.5f;
     public const float RearDepth = 17f;
     const int Embers = 48;
@@ -70,8 +57,6 @@ public class ReactorCore : MonoBehaviour
             return;
         }
 
-        // The pad lies on the floor under everything; the reactor stands, sorting as one from FeetToCenter above its
-        // middle, so it compares like for like with whoever walks round it.
         Layer("Pad", Art("Floor"), transform, "Floor", 5, false);
         floorGlow = Layer("Pad Glow", Art("FloorGlow"), transform, "Floor", 6, true);
         floorHeat = Layer("Pad Heat", CombatSprites.Glow, transform, "Floor", 7, true);
@@ -123,7 +108,7 @@ public class ReactorCore : MonoBehaviour
         {
             var ember = new Ember { sprite = Layer("Ember", emberPixel, art, DepthSort.Layer, 4, true) };
             Respawn(ember);
-            ember.age = Random.value * ember.life;      // already on their way up when the room's walked into
+            ember.age = Random.value * ember.life;
             embers.Add(ember);
         }
     }
@@ -132,11 +117,9 @@ public class ReactorCore : MonoBehaviour
     {
         if (body == null) return;
         float t = Time.time;
-        // A slow breath, with a ripple of noise through it so it never looks like a metronome.
         float breath = 0.5f + 0.5f * Mathf.Sin(t * Mathf.PI * 2f / pulseSeconds);
         float surge = Mathf.PerlinNoise(t * 1.7f, 0.31f);
         float heat = Mathf.Clamp01(0.55f * breath + 0.45f * surge);
-        // A surge building (ReactorSurge): blazing brighter and brighter, flickering, then the flash as it goes.
         float building = ReactorSurge.Warning;
         float blaze = Mathf.Max(building * (0.75f + 0.25f * Mathf.Sin(t * 30f)), ReactorSurge.Flash);
         if (building > 0f) heat = Mathf.Max(heat, building);
@@ -150,7 +133,6 @@ public class ReactorCore : MonoBehaviour
         }
         core.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.85f, 1f, heat));
         glow.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.55f, 1f, heat));
-        // The pad's channels light a beat after the core, as if the heat runs out along them.
         float later = 0.5f + 0.5f * Mathf.Sin((t - 0.4f) * Mathf.PI * 2f / pulseSeconds);
         floorGlow.color = new Color(1f, 1f, 1f, Mathf.Lerp(0.5f, 1f, later));
         floorHeat.color = new Color(heatColor.r, heatColor.g, heatColor.b, Mathf.Lerp(0.14f, 0.24f, later));
@@ -172,7 +154,6 @@ public class ReactorCore : MonoBehaviour
             ember.age += Time.deltaTime;
             if (ember.age >= ember.life) Respawn(ember);
             float k = ember.age / ember.life;
-            // In whole pixels, so they stay crisp like the art.
             Vector2 at = ember.from + new Vector2(Mathf.Sin(ember.phase + ember.age * 2.3f) * ember.sway, ember.rise * ember.age);
             at = new Vector2(Mathf.Round(at.x * ArtPixelsPerUnit), Mathf.Round(at.y * ArtPixelsPerUnit)) / ArtPixelsPerUnit;
             ember.sprite.transform.localPosition = at - new Vector2(0f, DepthSort.FeetToCenter);
@@ -181,7 +162,6 @@ public class ReactorCore : MonoBehaviour
         }
     }
 
-    // Embers come off the moat round the pad most of the time, out of the exhaust stack the rest.
     void Respawn(Ember ember)
     {
         ember.age = 0f;
@@ -230,7 +210,6 @@ public class ReactorCore : MonoBehaviour
         return light;
     }
 
-    // The art's only made in Play mode, so outline where it will be: the pad, the plinth's foot, and the body.
     void OnDrawGizmos()
     {
         Gizmos.color = heatColor;

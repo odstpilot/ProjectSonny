@@ -1,12 +1,9 @@
 using System.Collections;
 using UnityEngine;
 
-// What an EMP pulse looks like: bands of crackling electricity that sweep out across a cone, with forks of lightning
-// flickering inside it. Only a visual; CameraFlash decides what gets stunned. EmpWave.Spawn makes one that plays once
-// and removes itself.
+// how an emp shot looks
 public class EmpWave : MonoBehaviour
 {
-    // Drawn over the characters, just under the spark particles.
     const string SortingLayerName = "Player";
     const int SortingOrder = 45;
 
@@ -14,9 +11,9 @@ public class EmpWave : MonoBehaviour
     const int BoltPoints = 8;
     const int BoltCount = 5;
     const float StartRadius = 0.25f;
-    const float WaveSpacing = 0.08f;    // seconds between bands
-    const float BoltBurst = 0.2f;       // seconds lightning flickers after the pulse
-    const float BoltLife = 0.045f;      // seconds a fork of lightning lasts before it jumps somewhere new
+    const float WaveSpacing = 0.08f;
+    const float BoltBurst = 0.2f;
+    const float BoltLife = 0.045f;
     const float GlowWidth = 0.45f;
     const float CoreWidth = 0.07f;
 
@@ -26,7 +23,7 @@ public class EmpWave : MonoBehaviour
     static AnimationCurve boltWidth;
 
     private Vector2 origin;
-    private float baseAngle;            // degrees
+    private float baseAngle;
     private float halfAngle;
     private float radius;
     private Color color;
@@ -38,7 +35,6 @@ public class EmpWave : MonoBehaviour
     private readonly Vector3[] arcPositions = new Vector3[ArcPoints];
     private readonly Vector3[] boltPositions = new Vector3[BoltPoints];
 
-    // direction is the middle of the cone; halfAngle is in degrees either side of it.
     public static EmpWave Spawn(Vector2 origin, Vector2 direction, float halfAngle, float radius,
         Color color, Color coreColor, int waveCount, float waveDuration)
     {
@@ -56,7 +52,6 @@ public class EmpWave : MonoBehaviour
         return wave;
     }
 
-    // Seconds after the pulse until the first band reaches distance, so whatever it hits can react as it arrives.
     public static float ArrivalTime(float distance, float radius, float waveDuration)
     {
         float travelled = Mathf.InverseLerp(StartRadius, radius, distance);
@@ -69,7 +64,6 @@ public class EmpWave : MonoBehaviour
             glowMaterial = new Material(CombatSprites.EffectMaterial) { mainTexture = MakeBandTexture(2f) };
         if (coreMaterial == null)
             coreMaterial = new Material(CombatSprites.EffectMaterial) { mainTexture = MakeBandTexture(0.6f) };
-        // Bands are thickest in the middle of the cone and thin to nothing at its edges.
         if (bandWidth == null)
             bandWidth = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.2f, 0.8f), new Keyframe(0.5f, 1f),
                 new Keyframe(0.8f, 0.8f), new Keyframe(1f, 0f));
@@ -117,7 +111,6 @@ public class EmpWave : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // t goes 0 to 1 as the band travels from the device out to the edge of the radius.
     void DrawBand(int index, float t)
     {
         LineRenderer glow = glows[index];
@@ -129,7 +122,6 @@ public class EmpWave : MonoBehaviour
 
         float spread = EaseOutCubic(t);
         float bandRadius = Mathf.Lerp(StartRadius, radius, spread);
-        // Every band fades as it spreads, and each one after the first is a little weaker.
         float strength = (1f - t * t) * (1f - 0.2f * index);
         float crackle = Mathf.Lerp(0.04f, 0.18f, spread);
         float scroll = Time.time * 30f + index * 17.3f;
@@ -138,7 +130,6 @@ public class EmpWave : MonoBehaviour
         {
             float across = p / (ArcPoints - 1f);
             float angle = (baseAngle + Mathf.Lerp(-halfAngle, halfAngle, across)) * Mathf.Deg2Rad;
-            // Rough noise makes the band crackle; a fine ripple on top makes it read as a wave.
             float offset = (Mathf.PerlinNoise(across * 7f, scroll) * 2f - 1f) * crackle
                          + Mathf.Sin(across * 45f - scroll) * 0.025f;
             float r = bandRadius + offset;
@@ -154,7 +145,6 @@ public class EmpWave : MonoBehaviour
         core.startColor = core.endColor = WithAlpha(coreColor, strength);
     }
 
-    // Forks of lightning from the device to random spots in the cone, reaching as far as the first band has gone.
     void JumpBolts(float elapsed)
     {
         float reach = Mathf.Lerp(StartRadius, radius, EaseOutCubic(Mathf.Clamp01(elapsed / waveDuration)));
@@ -162,7 +152,6 @@ public class EmpWave : MonoBehaviour
 
         foreach (LineRenderer bolt in bolts)
         {
-            // A few skip a beat each time, so the lightning flickers.
             bolt.enabled = Random.value < 0.8f;
             if (!bolt.enabled) continue;
 
@@ -204,8 +193,6 @@ public class EmpWave : MonoBehaviour
         return line;
     }
 
-    // White, see-through at the top and bottom edges and solid through the middle, so lines have soft sides.
-    // Lower sharpness gives a harder edge.
     static Texture2D MakeBandTexture(float sharpness)
     {
         const int height = 32;

@@ -3,15 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
-// On a string field that names a sound: the inspector offers the scene's sounds to pick from.
 public class SoundNameAttribute : PropertyAttribute { }
 
-// What a sound is for. Music and Ambience follow the Music volume in settings (its slider says "music and background
-// ambience"); everything else follows the Effects volume.
 public enum SoundCategory { Music, Ambience, SoundEffect, UI, Voice }
 
-// One sound in a scene's SoundManager: what it is, the clips for it, and the settings of the audio source it plays on.
-// The settings are the same as an AudioSource's, so anything that can be set there can be set here.
 [Serializable]
 public class Sound
 {
@@ -28,7 +23,6 @@ public class Sound
     [Tooltip("Optional. It plays from here (for 3D sounds); leave empty to play from the SoundManager.")]
     public Transform playFrom;
 
-    // --- The same as an AudioSource's ---
     public AudioMixerGroup output;
     public bool mute;
     public bool bypassEffects;
@@ -46,20 +40,17 @@ public class Sound
     [Range(0f, 1f)] public float spatialBlend;
     [Range(0f, 1.1f)] public float reverbZoneMix = 1f;
 
-    // --- 3D Sound Settings, only heard when Spatial Blend is above 0 ---
     [Range(0f, 5f)] public float dopplerLevel = 1f;
     [Range(0f, 360f)] public float spread;
     public AudioRolloffMode volumeRolloff = AudioRolloffMode.Logarithmic;
     public float minDistance = 1f;
     public float maxDistance = 500f;
 
-    // --- Variation, so repeated sounds (footsteps, hits) don't all sound the same ---
     [Tooltip("Each play is up to this much quieter, at random.")]
     [Range(0f, 1f)] public float volumeVariation;
     [Tooltip("Each play is up to this much higher or lower, at random.")]
     [Range(0f, 1f)] public float pitchVariation;
 
-    // --- Repeat, for sounds that come back now and then: distant groans, music with silence between tracks ---
     [Tooltip("Once started, plays again and again, with a random wait between plays, until stopped. Ignored when it loops.")]
     public bool repeat;
     [Tooltip("The shortest and longest wait, in seconds, from the end of one play to the start of the next.")]
@@ -81,7 +72,6 @@ public class Sound
         return clip != null ? clip : Array.Find(clips, c => c != null);
     }
 
-    // Gives the source every setting here except volume, which SoundManager keeps up to date with the settings menu.
     public void ApplyTo(AudioSource source)
     {
         source.outputAudioMixerGroup = output;
@@ -89,7 +79,7 @@ public class Sound
         source.bypassEffects = bypassEffects;
         source.bypassListenerEffects = bypassListenerEffects;
         source.bypassReverbZones = bypassReverbZones;
-        source.playOnAwake = false;     // SoundManager starts Play On Awake sounds itself, so it can pick the clip
+        source.playOnAwake = false;
         source.loop = loop;
         source.priority = priority;
         source.pitch = pitch;
@@ -104,27 +94,15 @@ public class Sound
     }
 }
 
-// Every sound one scene uses, listed in one place, by category. Put one in each scene (GameObject > Audio > Sound
-// Manager) and list the scene's music, ambience, sound effects, UI sounds and voices on it; sounds still waiting on
-// audio can be listed with no clip and a description, and "Copy List" hands the whole list to whoever finds the audio.
-// Scripts play them by name: SoundManager.Current.Play("Door Open"). UnityEvents can call Play and Stop too.
-// Each sound gets its own AudioSource (a child object, or under Play From), set up from its settings. Changing the
-// settings while playing applies straight away, so sounds can be tuned in play mode (copy the component to keep them).
-// Scripts that need their own AudioSource (to fade it, move it, or bend its pitch) use the static helpers below
-// instead, which still take the clip and settings from here. Either way, every sound follows the Music or Effects
-// volume in settings, by its category.
+// the scene's list of sounds
 public class SoundManager : MonoBehaviour
 {
     private static SoundManager current;
 
-    // The scene's SoundManager. Null when the scene doesn't have one.
     public static SoundManager Current => current != null ? current : (current = FindAnyObjectByType<SoundManager>());
 
     public List<Sound> sounds = new List<Sound>();
 
-    // --- For scripts that play on their own AudioSource ---
-
-    // The scene's sound by that name, or null when the scene doesn't list it.
     public static Sound Get(string soundName)
     {
         SoundManager manager = Current;
@@ -135,24 +113,18 @@ public class SoundManager : MonoBehaviour
         return null;
     }
 
-    // One of the sound's clips, at random. The fallback when the scene doesn't list it or it has no clip yet, for the
-    // placeholder sounds made in code.
     public static AudioClip Clip(string soundName, AudioClip fallback = null)
     {
         AudioClip clip = Get(soundName)?.RandomClip();
         return clip != null ? clip : fallback;
     }
 
-    // The sound's volume times the Music or Effects volume in settings. Multiply a source's volume by this every time
-    // it's set, so the settings reach it.
     public static float Volume(string soundName)
     {
         Sound sound = Get(soundName);
         return sound != null ? sound.volume * CategoryVolume(sound.category) : GameSettings.EffectsVolume;
     }
 
-    // Gives the source the sound's settings and a clip (the fallback when it has none), ready to Play. Its volume is
-    // left to the script, times Volume(soundName).
     public static void Setup(AudioSource source, string soundName, AudioClip fallback = null)
     {
         Sound sound = Get(soundName);
@@ -160,7 +132,6 @@ public class SoundManager : MonoBehaviour
         source.clip = Clip(soundName, fallback);
     }
 
-    // Plays the sound once on the source, at its volume times volumeScale, with its pitch times pitchScale.
     public static void PlayOneShot(AudioSource source, string soundName, float volumeScale = 1f, float pitchScale = 1f, AudioClip fallback = null)
     {
         Sound sound = Get(soundName);
@@ -181,11 +152,11 @@ public class SoundManager : MonoBehaviour
     {
         public Sound sound;
         public AudioSource source;
-        public float playVolume = 1f;   // this play's share of the volume, after variation
+        public float playVolume = 1f;
         public float fade = 1f;
         public float fadeTarget = 1f;
-        public float fadeSpeed;         // fade per second; 0 when not fading
-        public float nextPlay = -1f;    // when a repeating sound plays next (unscaled time); -1 when it isn't repeating
+        public float fadeSpeed;
+        public float nextPlay = -1f;
     }
 
     void Awake()
@@ -239,19 +210,16 @@ public class SoundManager : MonoBehaviour
         UpdateVolumes();
     }
 
-    // Changes made in the inspector while playing take effect straight away.
     void OnValidate()
     {
         foreach (Playing playing in all) playing.sound.ApplyTo(playing.source);
     }
 
-    // Plays the sound. A looping sound that's already playing carries on; anything else plays over itself.
     public void Play(string soundName)
     {
         if (Find(soundName, out Playing playing)) Play(playing);
     }
 
-    // Plays the sound once at a point in the world, for 3D sounds that come from somewhere other than their source.
     public void PlayAt(string soundName, Vector3 position)
     {
         if (!Find(soundName, out Playing playing)) return;
@@ -284,7 +252,6 @@ public class SoundManager : MonoBehaviour
             if (playing.sound.category == category) Stop(playing);
     }
 
-    // Starts the sound silent and brings it up to its volume.
     public void FadeIn(string soundName, float seconds)
     {
         if (!Find(soundName, out Playing playing)) return;
@@ -297,7 +264,6 @@ public class SoundManager : MonoBehaviour
         FadeTo(playing, 1f, seconds);
     }
 
-    // Brings the sound down to silence, then stops it.
     public void FadeOut(string soundName, float seconds)
     {
         if (Find(soundName, out Playing playing)) FadeTo(playing, 0f, seconds);
@@ -308,7 +274,6 @@ public class SoundManager : MonoBehaviour
         return byName.TryGetValue(soundName, out Playing playing) && playing.source.isPlaying;
     }
 
-    // The sound's AudioSource, for anything not covered here. Its volume is set every frame, so change the sound's instead.
     public AudioSource Source(string soundName)
     {
         return Find(soundName, out Playing playing) ? playing.source : null;
@@ -378,7 +343,6 @@ public class SoundManager : MonoBehaviour
         if (warned.Add(key)) Debug.LogWarning(message, this);
     }
 
-    // Follows the Music and Effects volumes in settings.
     void UpdateVolumes()
     {
         foreach (Playing playing in all) UpdateVolume(playing);
@@ -395,10 +359,8 @@ public class SoundManager : MonoBehaviour
         return category == SoundCategory.Voice || category == SoundCategory.UI ? volume : volume * ducked;
     }
 
-    // Everything but voices and UI turned down to this while someone's talking (Pip, SuitHelper sets it), eased into
-    // and out of, so what's said stands out over the music and the fighting. 1 for no change.
     public static float DuckTo { get; set; } = 1f;
-    const float DuckSpeed = 1.5f;                 // volume a second
+    const float DuckSpeed = 1.5f;
     static float ducked = 1f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

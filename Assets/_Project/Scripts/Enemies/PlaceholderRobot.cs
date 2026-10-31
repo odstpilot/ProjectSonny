@@ -1,32 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// A stand-in enemy for testing combat and stealth. It patrols between points. When it spots the player (in front of
-// it, in range, nothing solid in between) a "!" pops over its head and, after a moment, it gives chase: winding up
-// (shaking and turning orange), lunging, and hurting the player if they're still in front of it. Hitting it stuns it.
-// If it loses sight of the player it carries on to where it last saw them and a little past, looks around under a
-// "?", and goes back to its patrol. Hiding in a Locker mid-chase counts as losing sight, so it walks right past the
-// locker, unless it was close enough to see the player climb in: then it pulls them out.
-// No pathfinding: it walks in straight lines and gives up on a point when a wall stops it. Given a Roam Area instead of a
-// route, it roams the room's floor grid (CrewWalkArea) instead: somewhere new each time, at a different speed each
-// time, changing its mind partway there, and snapping its eye about whenever it stops, so it can't be timed. Roaming
-// robots keep out of each other's way: none heads for where another is or is going, and they steer round each other.
-// With Smart Senses it's harder to sneak past: it catches movement out of the corner of its eye and hears footsteps
-// close behind it (crouching only dulls both), goes to look at anything it half saw, calls the others in the room over once
-// it's sure, and when it loses the player it heads the way they were running rather than to where they were.
-// It looks like one of the station's maintenance bots, turned (look, drawn at the tileset's 32 pixels to a cell, in
-// Resources/Bots): a sweeper with a saw for a skirt, a hauler with crushing clamps, or an arc bot with its antenna wound
-// into a coil, which keeps its distance and calls down lightning (ArcCaster) instead of going for the player itself.
-// In the reactor core, when the core surges (ReactorSurge), it stops whatever it's doing, turns to face the core, and
-// bows low to it till the surge has passed (Bow), then picks up where it left off. The surge doesn't touch it.
+// basic robot enemy: patrols, chases, attacks
 [RequireComponent(typeof(Health), typeof(Rigidbody2D))]
 public class PlaceholderRobot : MonoBehaviour
 {
     const float WindupShake = 0.06f;
     const float SquashRecoverTime = 0.15f;
     const float ArriveDistance = 0.2f;
-    const float StuckCheckInterval = 0.5f;  // how often it checks whether a wall has stopped it
-    const float CatchStandOff = 0.8f;       // how far in front of a locker's exit it stands to pull the player out
+    const float StuckCheckInterval = 0.5f;
+    const float CatchStandOff = 0.8f;
 
     public enum BotKind { Placeholder, Sweeper, Hauler, Arc }
 
@@ -116,6 +99,10 @@ public class PlaceholderRobot : MonoBehaviour
     [Tooltip("Damage when it drags the player out of a locker.")]
     public float catchDamage = 2f;
 
+    [Header("Sounds")]
+    [Tooltip("How loud its beeps and attack sounds are, against the scene's sound list.")]
+    [Range(0f, 1f)] public float loudness = 0.45f;
+
     [Header("Movement")]
     [Tooltip("Speed while chasing.")]
     public float moveSpeed = 2.2f;
@@ -152,16 +139,16 @@ public class PlaceholderRobot : MonoBehaviour
     private Health playerHealth;
     private PlayerController playerController;
     private State state = State.Patrol;
-    private float nextChatter;          // when it next beeps to itself, on its rounds
-    private bool inView;                // the player's in front of it, in its view cone, this frame (not just sensed)
-    private float chaseSince;           // when it last went from not hunting to after the player
+    private float nextChatter;
+    private bool inView;
+    private float chaseSince;
     private float stateTimer;
     private Vector2 attackDirection = Vector2.right;
     private Vector2 facing = Vector2.right;
     private bool hitLanded;
-    private float squash;   // 1 right after a hit, easing back to 0
+    private float squash;
 
-    private Vector2 home;   // where it started; the patrol route is relative to this
+    private Vector2 home;
     private int patrolIndex;
     private Vector2 lastSeenPosition;
     private Vector2 investigatePoint;
@@ -172,13 +159,12 @@ public class PlaceholderRobot : MonoBehaviour
     private readonly List<RaycastHit2D> sightHits = new List<RaycastHit2D>();
     private readonly List<Vector2> roamPath = new List<Vector2>();
     private static readonly List<PlaceholderRobot> all = new List<PlaceholderRobot>();
-    // Every robot in the scene that's switched on (CameraZoom).
     public static IReadOnlyList<PlaceholderRobot> All => all;
-    private Vector2 roamGoal;           // where it's roaming to, so the others don't pick the same spot
+    private Vector2 roamGoal;
     private float investigateSpeed;
-    private Vector2 glimpse;            // where it last saw or heard the player, however briefly
+    private Vector2 glimpse;
     private float glimpseTime = -1f;
-    private Vector2 playerHeading;      // which way they were going when it last saw them
+    private Vector2 playerHeading;
     private Vector2 playerVelocity;
     private Vector2 previousPlayerPosition;
     private float roamSpeedNow;
@@ -187,21 +173,17 @@ public class PlaceholderRobot : MonoBehaviour
     private Sprite[] lookFrames;
     private float frameTimer;
     private int frameIndex;
-    private ArcCaster caster;           // an arc bot's lightning, if it has it
-    private float bowUntil;             // bowing to the reactor core till then (Bow)
+    private ArcCaster caster;
+    private float bowUntil;
     private bool bowing;
     private float nextSwerve;
     private float nextGlance;
 
-    // 0 to 1: how sure it is of what it's looking at. At 1 it gives chase. Drawn as the ring around the player.
     private float detection;
 
-    // The way it's facing, for the view from inside a locker (FirstPersonView): its sprite only faces left or right.
     public Vector2 Facing => facing;
-    // After the player: chasing, going for them in a locker, or attacking.
     public bool IsHunting => state == State.Chase || state == State.Catch || state == State.Windup
         || state == State.Lunge || state == State.Recover;
-    // The last point of its patrol, where it ends up standing if the route is a single point.
     public Vector2 PatrolEnd => home + (patrolRoute.Length > 0 ? patrolRoute[patrolRoute.Length - 1] : Vector2.zero);
 
     void Awake()
@@ -233,7 +215,6 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
-    // The eye glow: red, brighter when it's after the player, blue while it's shorted out, out when it's done for.
     void UpdateEyeGlow()
     {
         if (eyeGlow == null) return;
@@ -297,7 +278,7 @@ public class PlaceholderRobot : MonoBehaviour
                 }
                 else if (patrolRoute.Length == 0 || stateTimer > 0f)
                 {
-                    rb.linearVelocity = Vector2.zero; // standing guard, or pausing at a point
+                    rb.linearVelocity = Vector2.zero;
                     if (idleFacing != Vector2.zero) Look(idleFacing);
                 }
                 else if (WalkTo(home + patrolRoute[patrolIndex % patrolRoute.Length], patrolSpeed))
@@ -326,14 +307,12 @@ public class PlaceholderRobot : MonoBehaviour
                     Remember();
                     if (DistanceToPlayer() <= attackRange && Time.time - chaseSince >= spotReaction)
                     {
-                        // Lock the lunge direction now, so the player can sidestep during the windup.
                         attackDirection = DirectionToPlayer();
                         Look(attackDirection);
                         Enter(State.Windup, windupTime);
                     }
                     else if (DistanceToPlayer() <= attackRange)
                     {
-                        // Just spotted them, right there: it stops and faces them before it goes for them.
                         rb.linearVelocity = Vector2.zero;
                         Look(DirectionToPlayer());
                     }
@@ -352,7 +331,6 @@ public class PlaceholderRobot : MonoBehaviour
             case State.Search:
                 if (SpotPlayer() || Suspect()) break;
                 rb.linearVelocity = Vector2.zero;
-                // Looks one way, then the other, then back.
                 if (stateTimer <= nextLookAround)
                 {
                     Look(new Vector2(facing.x >= 0f ? -1f : 1f, 0f));
@@ -362,7 +340,6 @@ public class PlaceholderRobot : MonoBehaviour
                 break;
 
             case State.Catch:
-                // They got out on their own before it reached the door.
                 if (lockerToOpen == null || Locker.Occupied != lockerToOpen)
                 {
                     lockerToOpen = null;
@@ -397,7 +374,6 @@ public class PlaceholderRobot : MonoBehaviour
                 break;
 
             case State.Shorted:
-                // Dead still, blue, spitting sparks; then it comes to, not knowing where the player went.
                 rb.linearVelocity = Vector2.zero;
                 if (body != null) body.color = Color.Lerp(bodyBaseColor, ShortedColor, 0.6f + 0.4f * Mathf.PingPong(Time.time * 6f, 1f));
                 if (Random.value < Time.deltaTime * 5f)
@@ -411,7 +387,6 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
-    // An EMP (EmpPulse) went through it: shorted out for this long, blind and still, having forgotten the player.
     public void Emp(float seconds)
     {
         if (health.IsDead) return;
@@ -426,8 +401,6 @@ public class PlaceholderRobot : MonoBehaviour
 
     public bool IsShorted => state == State.Shorted;
 
-    // Back where it started, calm, at the beginning of its patrol, as if it had never seen the player. For a level
-    // putting a stealth section back to how it began.
     public void ResetToStart()
     {
         lockerToOpen = null;
@@ -441,7 +414,6 @@ public class PlaceholderRobot : MonoBehaviour
         StealthMeter.Clear(this);
     }
 
-    // A camera (StationCamera) saw the player there: unless it's already after them, it hurries over to look.
     public void Alarm(Vector2 at)
     {
         if (health.IsDead || blind || IsHunting || state == State.Stunned || state == State.Shorted) return;
@@ -451,8 +423,6 @@ public class PlaceholderRobot : MonoBehaviour
         Enter(State.Investigate, 0f);
     }
 
-    // Calm again where it is, back on its rounds, as if it had never seen the player. For the player coming back after
-    // dying, somewhere else.
     public void CalmDown()
     {
         if (health.IsDead) return;
@@ -464,16 +434,14 @@ public class PlaceholderRobot : MonoBehaviour
         StealthMeter.Clear(this);
     }
 
-    // Beeping to itself now and then on its rounds, so it can be heard coming before it's seen.
     void Chatter()
     {
-        if (nextChatter <= 0f) nextChatter = Time.time + Random.Range(2f, 8f);
+        if (nextChatter <= 0f) nextChatter = Time.time + Random.Range(6f, 16f);
         if (Time.time < nextChatter) return;
-        nextChatter = Time.time + Random.Range(5f, 11f);
-        Sfx.At("Robot Beep", rb.position, 0.8f, Random.Range(0.85f, 1.2f), 12f);
+        nextChatter = Time.time + Random.Range(12f, 24f);
+        Sfx.At("Robot Beep", rb.position, 0.8f * loudness, Random.Range(0.85f, 1.2f), 8f);
     }
 
-    // What it sounds like as it goes from one thing to the next.
     void Voice(State next)
     {
         if (next == state) return;
@@ -481,12 +449,12 @@ public class PlaceholderRobot : MonoBehaviour
         switch (next)
         {
             case State.Chase:
-                if (state != State.Windup && state != State.Lunge && state != State.Recover && state != State.Catch) Sfx.At("Robot Alert", at);
+                if (state != State.Windup && state != State.Lunge && state != State.Recover && state != State.Catch) Sfx.At("Robot Alert", at, loudness);
                 break;
-            case State.Investigate: Sfx.At("Robot Beep", at, 0.7f, 0.8f, 12f); break;
-            case State.Windup: Sfx.At("Robot Attack Windup", at); break;
-            case State.Lunge: Sfx.At("Robot Attack Lunge", at); break;
-            case State.Shorted: Sfx.At("Robot Shorted", at); break;
+            case State.Investigate: Sfx.At("Robot Beep", at, 0.7f * loudness, 0.8f, 8f); break;
+            case State.Windup: Sfx.At("Robot Attack Windup", at, loudness); break;
+            case State.Lunge: Sfx.At("Robot Attack Lunge", at, loudness); break;
+            case State.Shorted: Sfx.At("Robot Shorted", at, loudness); break;
         }
     }
 
@@ -495,7 +463,6 @@ public class PlaceholderRobot : MonoBehaviour
         if (next == State.Chase && !IsHunting) chaseSince = Time.time;
         Voice(next);
         if (state == State.Windup) ResetBody();
-        // Off its rounds, it'll pick somewhere new once it's back on them.
         if (next != State.Patrol) roamPath.Clear();
         state = next;
         stateTimer = duration;
@@ -504,13 +471,8 @@ public class PlaceholderRobot : MonoBehaviour
         if (next != State.Lunge) rb.linearVelocity = Vector2.zero;
     }
 
-    // --- Senses ---
-
-    // tracking: already after the player, so it keeps them in view whichever way it's facing.
     bool CanSeePlayer(bool tracking = false) => Perceive(tracking) > 0f;
 
-    // How well it can make the player out: 1 in plain view, less out of the corner of its eye or only heard (Smart
-    // Senses), 0 not at all.
     float Perceive(bool tracking)
     {
         if (blind || state == State.Shorted || player == null || Locker.IsPlayerHidden) return 0f;
@@ -518,12 +480,7 @@ public class PlaceholderRobot : MonoBehaviour
 
         Vector2 toPlayer = (Vector2)player.position - rb.position;
         float distance = toPlayer.magnitude;
-        // Crouching keeps the player out of sight at a distance. Sprinting carries further, and it hears the footsteps
-        // coming up behind it. Once it's hunting them it keeps them in view either way.
-        // In the dark (DarkRooms) it sees less far.
         float sight = sightRange * DarkRooms.SightScale;
-        // An arc bot already after them keeps them in view out to its lightning's reach, dark or not: in a blackout its
-        // sight is shorter than the distance it backs off to before casting, so it'd lose them before it ever fired.
         if (tracking && caster != null) sight = Mathf.Max(sight, caster.range);
         float range = sight;
         float allAround = closeRange;
@@ -547,20 +504,16 @@ public class PlaceholderRobot : MonoBehaviour
         }
         else if (smartSenses && !tracking)
         {
-            // Out of the corner of its eye, or the sound of their footsteps behind it. Crouching only dulls both.
             float hush = PlayerCrouching ? crouchDetectionMultiplier : 1f;
             if (distance <= sight * peripheralRange && angle <= peripheralFieldOfView * 0.5f) seen = peripheralRate * hush;
             else if (distance <= walkHearingRange && PlayerMoving) seen = hearingRate * hush;
         }
-        // Aim at their body, not the sprite: the art is centre-pivoted, so with their feet against a wall at the top of
-        // a room the pivot sits inside the wall's collider and the line would always hit the wall first.
         Vector2 body = playerCollider != null ? (Vector2)playerCollider.bounds.center : (Vector2)player.position;
         if (seen > 0f && !HasLineOfSight(body)) seen = 0f;
         if (seen <= 0f) inView = false;
         return seen;
     }
 
-    // Nothing solid between it and the point, apart from itself, the player, other robots, and the crew (bodies too).
     bool HasLineOfSight(Vector2 target)
     {
         var solidOnly = new ContactFilter2D { useTriggers = false };
@@ -568,17 +521,14 @@ public class PlaceholderRobot : MonoBehaviour
         foreach (RaycastHit2D hit in sightHits)
         {
             if (hit.transform.IsChildOf(transform)) continue;
-            // Hits come nearest first, so once it reaches the player nothing past them is in the way.
             if (hit.transform.IsChildOf(player)) return true;
             if (hit.collider.GetComponentInParent<PlaceholderRobot>() != null) continue;
-            if (hit.collider.GetComponentInParent<CrewMember>() != null) continue;     // the crew, standing or fallen
+            if (hit.collider.GetComponentInParent<CrewMember>() != null) continue;
             return false;
         }
         return true;
     }
 
-    // Watches the player and fills the ring around them: quicker up close, draining away once they're out of sight.
-    // While it's already hunting them it stays certain, so the ring stays full until it loses them.
     void UpdateDetection()
     {
         bool hunting = IsHunting;
@@ -593,7 +543,6 @@ public class PlaceholderRobot : MonoBehaviour
             else if (!hunting && PlayerSprinting) rate *= sprintDetectionMultiplier;
             if (!hunting) rate *= seen;
             detection = Mathf.Clamp01(detection + rate * Time.deltaTime);
-            // Sensed but not seen: it can't be sure until it's looked, so it turns to see what's there.
             if (!hunting && !inView && detection >= sensedOnlyCap)
             {
                 detection = sensedOnlyCap;
@@ -614,7 +563,6 @@ public class PlaceholderRobot : MonoBehaviour
             StealthMeter.Clear(this);
     }
 
-    // Checked while patrolling, investigating, or searching: once the ring fills, it gives chase. True if it did.
     bool SpotPlayer()
     {
         if (player == null || detection < 1f) return false;
@@ -626,8 +574,6 @@ public class PlaceholderRobot : MonoBehaviour
         return true;
     }
 
-    // Smart Senses: half sure of something it's making out right now, it drops what it's doing and goes to look,
-    // turning to face it first. True if it did.
     bool Suspect()
     {
         if (!smartSenses || player == null || detection < suspicionThreshold || Time.time - glimpseTime > 0.2f) return false;
@@ -638,7 +584,6 @@ public class PlaceholderRobot : MonoBehaviour
         return true;
     }
 
-    // Smart Senses: sure of the player, it calls the other robots roaming the same room over to where it saw them.
     void Alert()
     {
         if (!smartSenses) return;
@@ -653,7 +598,6 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
-    // How fast the player's moving, and which way, from where they were last frame.
     void TrackPlayer()
     {
         if (player == null || Time.deltaTime <= 0f) return;
@@ -671,10 +615,6 @@ public class PlaceholderRobot : MonoBehaviour
         lastSeenPosition = player.position;
     }
 
-    // --- Losing the player ---
-
-    // The player ducked into a locker mid-chase. Near enough to have seen them climb in, it goes to pull them out.
-    // Otherwise it's as if they vanished: it keeps going past where they were, right by the locker, and searches.
     void PlayerHid()
     {
         Locker locker = Locker.Occupied;
@@ -689,8 +629,6 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
-    // Heads for where it last saw the player, carrying on a little past in the direction it was going. With Smart Senses
-    // it goes the way the player was heading instead, further, to cut them off.
     void LoseTrack()
     {
         Vector2 toLastSeen = lastSeenPosition - rb.position;
@@ -708,8 +646,6 @@ public class PlaceholderRobot : MonoBehaviour
         Enter(State.Search, searchTime);
     }
 
-    // Yanks the locker open (the player sees it from inside, Locker.PullPlayerOut) and hits them as they come out. It
-    // stands there while that plays, then recovers as after any hit.
     void CatchPlayer()
     {
         Locker locker = lockerToOpen;
@@ -721,7 +657,6 @@ public class PlaceholderRobot : MonoBehaviour
 
     void HitPulledOut()
     {
-        // Shorted or knocked back meanwhile: the player's out, but it's in no state to hit them.
         if (!isActiveAndEnabled || player == null || state != State.Recover) return;
         attackDirection = DirectionToPlayer();
         Look(attackDirection);
@@ -729,9 +664,6 @@ public class PlaceholderRobot : MonoBehaviour
         target?.TakeDamage(new DamageInfo(catchDamage, attackDirection, knockback, gameObject, player.position));
     }
 
-    // --- Roaming ---
-
-    // Along the leg it's on, or stopped between legs looking about. Partway along, now and then, it changes its mind.
     void Roam()
     {
         if (stateTimer > 0f)
@@ -744,7 +676,6 @@ public class PlaceholderRobot : MonoBehaviour
             }
             return;
         }
-        // About to run into another one: turn off somewhere else instead.
         bool blocked = roamPath.Count > 0 && Time.time >= nextDodge && RobotAhead((roamPath[0] - rb.position).normalized);
         if (blocked) nextDodge = Time.time + 0.4f;
         if (roamPath.Count == 0 || Time.time >= nextSwerve || blocked)
@@ -755,7 +686,6 @@ public class PlaceholderRobot : MonoBehaviour
                 return;
             }
         }
-        // WalkTo also gives up on a point when something's in the way: the next one's somewhere else.
         if (WalkTo(roamPath[0], roamSpeedNow))
         {
             roamPath.RemoveAt(0);
@@ -763,8 +693,6 @@ public class PlaceholderRobot : MonoBehaviour
         }
     }
 
-    // Somewhere else in the room, clear of where the others are and are headed, the way there over the floor grid, and
-    // how fast to go.
     bool PlanRoam()
     {
         nextSwerve = Time.time + Random.Range(roamSwerve.x, roamSwerve.y);
@@ -775,7 +703,6 @@ public class PlaceholderRobot : MonoBehaviour
             Vector2 goal = roamArea.CenterOf(to);
             if (attempt < 5 && Crowded(goal)) continue;
             if (!roamArea.FindPath(from, to, roamPath) || roamPath.Count == 0) continue;
-            // Heading straight into another one: try somewhere else.
             if (attempt < 5 && RobotAhead((roamPath[0] - rb.position).normalized)) continue;
             roamGoal = goal;
             roamSpeedNow = Random.Range(roamSpeed.x, roamSpeed.y);
@@ -785,7 +712,6 @@ public class PlaceholderRobot : MonoBehaviour
         return false;
     }
 
-    // Another roaming robot is at, or on its way to, somewhere this close to the point.
     bool Crowded(Vector2 point)
     {
         foreach (PlaceholderRobot other in all)
@@ -797,7 +723,6 @@ public class PlaceholderRobot : MonoBehaviour
         return false;
     }
 
-    // Another robot just in front, the way it's going.
     bool RobotAhead(Vector2 direction)
     {
         foreach (PlaceholderRobot other in all)
@@ -809,7 +734,6 @@ public class PlaceholderRobot : MonoBehaviour
         return false;
     }
 
-    // The way it wants to go, bent away from any robot inside its personal space, so they slip past each other.
     Vector2 Steer(Vector2 direction)
     {
         Vector2 away = Vector2.zero;
@@ -826,10 +750,6 @@ public class PlaceholderRobot : MonoBehaviour
         return steered.sqrMagnitude > 0.0001f ? steered.normalized : direction;
     }
 
-    // --- Moving ---
-
-    // Walks straight toward a point. True once it's there, or once a wall has stopped it (it can't path around one).
-    // Roaming, it steers round the other robots on the way.
     bool WalkTo(Vector2 target, float speed)
     {
         Vector2 offset = target - rb.position;
@@ -852,7 +772,6 @@ public class PlaceholderRobot : MonoBehaviour
         return stuck;
     }
 
-    // Faces a direction: its view cone points this way, and the sprite flips to match.
     void Look(Vector2 direction)
     {
         if (direction.sqrMagnitude < 0.0001f) return;
@@ -861,10 +780,6 @@ public class PlaceholderRobot : MonoBehaviour
             body.flipX = facing.x < 0f;
     }
 
-    // --- Bowing to the core ---
-
-    // Stops where it is, faces the point (the reactor core), and bows low to it for this long, whatever it was doing;
-    // then carries on. Shorted out, it can't.
     public void Bow(Vector2 toward, float seconds)
     {
         if (health.IsDead || state == State.Shorted) return;
@@ -875,7 +790,6 @@ public class PlaceholderRobot : MonoBehaviour
 
     public bool IsBowing => bowing;
 
-    // True while it's bowing: dead still, low, its eye dim. Coming up again, it's straight back to what it was doing.
     bool UpdateBow()
     {
         bool now = Time.time < bowUntil;
@@ -899,9 +813,6 @@ public class PlaceholderRobot : MonoBehaviour
         return now;
     }
 
-    // --- Looks ---
-
-    // The turned maintenance bot's frames, in place of the placeholder's sprite.
     void ApplyLook()
     {
         if (look == BotKind.Placeholder) return;
@@ -913,7 +824,6 @@ public class PlaceholderRobot : MonoBehaviour
         frameIndex = Random.Range(0, 2);
     }
 
-    // Its treads rolling and its body bobbing: quick while it's moving, a slow idle rock otherwise.
     void UpdateLookFrames()
     {
         if (lookFrames == null || body == null || health.IsDead || state == State.Shorted || bowing) return;
@@ -924,11 +834,6 @@ public class PlaceholderRobot : MonoBehaviour
         body.sprite = lookFrames[frameIndex];
     }
 
-    // --- Attacking and getting hit ---
-
-    // An arc bot in a fight: it doesn't come in close. It holds off at a distance, backing away if the player closes in,
-    // and while its lightning's ready and they're in reach and in sight, it stops and calls it down on them (ArcCaster),
-    // standing still till the strikes land. Hitting it spoils the cast.
     void KeepDistanceAndCast()
     {
         float distance = DistanceToPlayer();
@@ -949,19 +854,16 @@ public class PlaceholderRobot : MonoBehaviour
         else if (distance > caster.range * 0.85f) WalkTo(player.position, moveSpeed);
         else
         {
-            // In reach and waiting on its coil: edging round them.
             Vector2 side = new Vector2(-toPlayer.y, toPlayer.x) * (Mathf.PerlinNoise(Time.time * 0.4f, home.x) > 0.5f ? 1f : -1f);
             rb.linearVelocity = side * moveSpeed * 0.35f;
         }
     }
-
 
     void TryHitPlayer()
     {
         Vector2 center = rb.position + attackDirection * hitReach;
         foreach (Collider2D col in Physics2D.OverlapCircleAll(center, hitRadius))
         {
-            // Only the player; robots don't hurt each other.
             if (player == null || !col.transform.IsChildOf(player)) continue;
 
             IDamageable target = Damageable.FromCollider(col);
@@ -976,7 +878,6 @@ public class PlaceholderRobot : MonoBehaviour
     void OnDamaged(DamageInfo info)
     {
         if (caster != null) caster.Interrupt();
-        // Getting hit cancels whatever it was doing, and gives away where the player is.
         detection = 1f;
         if (player != null && !Locker.IsPlayerHidden) Remember();
 
@@ -1006,7 +907,6 @@ public class PlaceholderRobot : MonoBehaviour
         body.color = bodyBaseColor;
     }
 
-    // Squash wide and short when hit, then spring back.
     void UpdateSquash()
     {
         if (body == null || squash <= 0f) return;
@@ -1025,9 +925,6 @@ public class PlaceholderRobot : MonoBehaviour
         return toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : attackDirection;
     }
 
-    // Select the robot to see its patrol route (cyan), view cone and close range (white), how far it hears a sprinting
-    // player (orange), how near it must be to a locker to catch the player climbing in (magenta), attack range
-    // (yellow), and where the lunge hurts (red).
     void OnDrawGizmosSelected()
     {
         Vector2 origin = Application.isPlaying ? home : (Vector2)transform.position;

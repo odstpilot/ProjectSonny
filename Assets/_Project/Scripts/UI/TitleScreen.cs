@@ -5,16 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// The title screen: a view out into space, painted and animated in code. Nebula drifts, stars twinkle, meteors streak
-// past, a planet turns, asteroids tumble, a station leans out of a rock, and nearer things shift more as the mouse moves.
-// It boots like a monitor: the picture opens out of a bright line and a scan beam sweeps the view in, PROJECT decodes,
-// SONNY flickers on letter by letter like a neon tube, and the loading bar fills. Then it waits for any button, which
-// opens the menu row (START, SETTINGS, QUIT; or CONTINUE and NEW GAME in place of START when there's a save). START and
-// NEW GAME start over (SaveGame.NewGame) and CONTINUE picks up from the last checkpoint (SaveGame.Continue): either way
-// the screen switches off like an old monitor and the scene loads.
-// A button during the boot skips it.
-// Everything is built when the scene starts (TitleScreen.Build.cs, with the art from TitleArt), so the scene holds only
-// this and a camera.
+// title screen
 public partial class TitleScreen : MonoBehaviour
 {
     [Tooltip("Loaded by START. It has to be in the build settings.")]
@@ -31,14 +22,12 @@ public partial class TitleScreen : MonoBehaviour
     const float AmbienceVolume = 0.35f;
     const string PromptText = "PRESS ANY BUTTON TO BEGIN";
 
-    // The boot, in seconds.
     const float LineOpenEnd = 0.35f;
     const float RevealStart = 0.25f, RevealEnd = 1.25f;
     const float ProjectStart = 1.1f, ProjectEnd = 1.7f;
     const float SonnyStart = 1.5f, SonnyEnd = 2.4f;
     const float BarStart = 2.3f, BarEnd = 3.9f;
     const float PromptStart = 4.1f, IntroEnd = 4.7f;
-    // Switching off, in seconds from the choice.
     const float CollapseStart = 0.55f, CollapseEnd = 0.8f, ShrinkEnd = 0.95f, LeaveEnd = 1.35f;
 
     static readonly Color FrameCyan = new Color(0.25f, 0.95f, 0.95f);
@@ -109,7 +98,7 @@ public partial class TitleScreen : MonoBehaviour
     void Update()
     {
         float now = Time.unscaledTime;
-        float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);   // so a slow first frame doesn't skip half the boot
+        float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
 
         switch (state)
         {
@@ -119,7 +108,7 @@ public partial class TitleScreen : MonoBehaviour
                 if (introTime >= IntroEnd) EnterWaiting(now, true);
                 break;
             case State.Waiting:
-                menu.Tick(now, dt, false);     // so the row finishes fading out after BACK
+                menu.Tick(now, dt, false);
                 if (Input.anyKeyDown && now - waitingSince > 0.15f)
                 {
                     state = State.Menu;
@@ -166,7 +155,7 @@ public partial class TitleScreen : MonoBehaviour
     void EnterWaiting(float now, bool fromBoot)
     {
         state = State.Waiting;
-        waitingSince = fromBoot ? now - 1f : now;   // from the boot, the prompt has already decoded
+        waitingSince = fromBoot ? now - 1f : now;
     }
 
     IEnumerator Leave(bool quit, string scene)
@@ -216,12 +205,9 @@ public partial class TitleScreen : MonoBehaviour
             yield break;
         }
 
-        // Nowhere to go, so switch back on and wait in the menu again.
         lastLight.color = Color.clear;
         state = State.Menu;
     }
-
-    // --- Animation ---
 
     void UpdateParallax(float now, float dt)
     {
@@ -235,7 +221,6 @@ public partial class TitleScreen : MonoBehaviour
         parallax = Vector2.Lerp(parallax, target, 1f - Mathf.Exp(-dt * 2f));
     }
 
-    // The monitor opening, the scan beam sweeping the view in, and each layer of space fading and sliding into place.
     void AnimateBoot()
     {
         float t = introTime;
@@ -327,7 +312,6 @@ public partial class TitleScreen : MonoBehaviour
         }
     }
 
-    // A few meteors close together, high on the left, streaking down to the right.
     void SpawnMeteors()
     {
         int count = Random.Range(1, 4);
@@ -354,7 +338,6 @@ public partial class TitleScreen : MonoBehaviour
     {
         float t = introTime;
 
-        // PROJECT decodes, and the dotted line under it spreads out from the middle.
         project.text = TitleUI.Decode("PROJECT", TitleUI.Phase(t, ProjectStart, ProjectEnd), now);
         TintLetters(project, (i, x) => Color.Lerp(ProjectColor, Color.white, Sheen(project, x, projectSheenAt, now)));
 
@@ -382,7 +365,6 @@ public partial class TitleScreen : MonoBehaviour
         }
         bool glitching = now < glitchEnd || (state == State.Leaving && leaveTime < CollapseStart);
 
-        // Each letter of SONNY catches on its own like a failing tube, the first ones first.
         float on = TitleUI.Phase(t, SonnyStart, SonnyEnd);
         int tick = Mathf.FloorToInt(t * 22f);
         TintLetters(sonny, (i, x) =>
@@ -398,7 +380,6 @@ public partial class TitleScreen : MonoBehaviour
         sonnyMaterial.SetColor(ShaderUtilities.ID_UnderlayColor, TitleUI.Fade(SonnyGlow, SonnyGlow.a * (0.7f + 0.3f * breathe + surge)));
         sonnyHalo.color = new Color(0.3f, 0.9f, 1f, (0.08f + 0.06f * breathe) * on);
 
-        // A glitch: the letters jump and split into red and cyan.
         if (glitching)
         {
             float jump = Random.Range(-8f, 8f);
@@ -416,7 +397,6 @@ public partial class TitleScreen : MonoBehaviour
         }
     }
 
-    // Colors each letter of a label separately. tint gets the letter's index and the middle of it across the label.
     static void TintLetters(TMP_Text label, System.Func<int, float, Color> tint)
     {
         label.ForceMeshUpdate();
@@ -432,7 +412,6 @@ public partial class TitleScreen : MonoBehaviour
         label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
     }
 
-    // How much a sheen sweeping across a label, started at startedAt, lights a letter whose middle is at x.
     static float Sheen(TMP_Text label, float x, float startedAt, float now)
     {
         float sweep = TitleUI.Phase(now, startedAt, startedAt + 0.9f);
@@ -443,7 +422,6 @@ public partial class TitleScreen : MonoBehaviour
         return Mathf.Exp(-distance * distance);
     }
 
-    // Two rows of dashes that crawl and flicker like data.
     void ShuffleDivider(float now)
     {
         float drift = now * 1.5f;
@@ -459,7 +437,6 @@ public partial class TitleScreen : MonoBehaviour
         dividerTexture.Apply(false);
     }
 
-    // Fills in fits and starts, flashes when it's full, then a highlight runs along it now and then.
     void AnimateBar(float now)
     {
         float t = introTime;
@@ -525,7 +502,6 @@ public partial class TitleScreen : MonoBehaviour
         flash.color = new Color(0.85f, 1f, 1f, 0.9f * (1f - TitleUI.EaseOut(TitleUI.Phase(introTime, 0.08f, 0.6f))));
     }
 
-    // Squeezes the picture into a bright line, then a dot, which fades out.
     void AnimateLeaving()
     {
         float t = leaveTime;

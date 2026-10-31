@@ -25,7 +25,6 @@ public class Ghost : MonoBehaviour
             }
         }
 
-        // Spawn at a random point far from player
         if (player != null)
         {
             Vector2 randomDir = Random.insideUnitCircle.normalized * Random.Range(8f, 12f);

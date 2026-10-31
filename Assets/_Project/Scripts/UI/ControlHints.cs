@@ -1,9 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Controls taught the moment they're needed, on the tutorial's prompt at the bottom of the screen (TutorialHud): it
-// comes up when the thing's first worth doing, and ticks off green once it's been done. Each is taught once a play.
-// Waits for the prompt to be free first, so it never talks over another one.
+// teaches controls when they're needed
 public static class ControlHints
 {
     static bool taughtSwitching;
@@ -11,7 +9,6 @@ public static class ControlHints
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetForPlay() => taughtSwitching = false;
 
-    // Once there's more than one thing on the hotbar: the number keys switch between them.
     public static void TeachSwitching(GameObject player)
     {
         if (taughtSwitching || player == null) return;
@@ -37,7 +34,6 @@ public static class ControlHints
         else hud.HidePrompt();
     }
 
-    // Until whatever prompt is up has gone.
     public static IEnumerator WhenFree(TutorialHud hud)
     {
         while (hud.PromptShowing || hud.PromptCompleting) yield return null;

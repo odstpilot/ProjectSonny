@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// One shot of an EMP (EmpWeaponData). EmpPulse.Fire stuns every weeping angel in the cone right away, then plays out
-// the look: bands of electricity sweeping out (EmpWave), a cone of electric-blue light that crackles and sputters out,
-// and sparks crawling over each stunned angel until it recovers. The object removes itself once all of that is done.
+// one emp shot: stuns what's in the cone
 public class EmpPulse : MonoBehaviour
 {
     private EmpWeaponData data;
@@ -13,19 +11,16 @@ public class EmpPulse : MonoBehaviour
     private Vector2 holderOffset;
     private int running;
 
-    // origin is where the cone is measured from; muzzle is where the pulse visibly comes out. The light follows holder.
     public static EmpPulse Fire(EmpWeaponData data, Vector2 origin, Vector2 muzzle, Vector2 direction, Transform holder)
     {
         var pulse = new GameObject("[EmpPulse]").AddComponent<EmpPulse>();
         pulse.data = data;
         pulse.holder = holder;
         pulse.holderOffset = holder != null ? muzzle - (Vector2)holder.position : Vector2.zero;
-        // A point light's cone opens toward its up.
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         pulse.transform.SetPositionAndRotation(muzzle, Quaternion.Euler(0f, 0f, angle - 90f));
 
         float halfAngle = data.coneAngle * 0.5f;
-        // Its own clip if the weapon has one, otherwise the scene's EMP Fire (or its placeholder).
         if (data.fireClip != null) PlaySound(data.fireClip, data.volume);
         else Sfx.Play("EMP Fire");
         pulse.StunAngels(origin, direction, halfAngle);
@@ -42,20 +37,15 @@ public class EmpPulse : MonoBehaviour
         return pulse;
     }
 
-    // Every time one goes off (Workshop ticks off its how-to prompt).
     public static event System.Action Fired;
-    // And the cone it swept (from, which way, how far its light reaches, half its angle in degrees), for anything that
-    // shows up in its flash (Generator).
     public static event System.Action<Vector2, Vector2, float, float> Swept;
 
-    // Whether a point is inside a cone that Swept describes.
     public static bool InCone(Vector2 point, Vector2 origin, Vector2 direction, float radius, float halfAngle)
     {
         Vector2 to = point - origin;
         return to.magnitude <= radius && (to.sqrMagnitude < 0.01f || Vector2.Angle(direction, to) <= halfAngle);
     }
 
-    // The patrol robots and the security cameras in the cone short out for a while, with a burst of sparks on each.
     static void ShortMachines(EmpWeaponData data, Vector2 origin, Vector2 direction, float halfAngle)
     {
         bool InCone(Vector2 point)
@@ -77,7 +67,6 @@ public class EmpPulse : MonoBehaviour
         }
         foreach (StationCamera watcher in StationCamera.All)
         {
-            // Its eye on the floor, or the housing up on the wall: either in the cone counts.
             Vector2 housing = (Vector2)watcher.transform.position + new Vector2(0f, watcher.mountHeight);
             if (!InCone(watcher.transform.position) && !InCone(housing)) continue;
             watcher.Shutdown(data.cameraShortSeconds);
@@ -85,7 +74,6 @@ public class EmpPulse : MonoBehaviour
         }
     }
 
-    // A little crackle so the player knows the EMP can fire again.
     public static void PlayReady(EmpWeaponData data, Vector2 at)
     {
         HitEffects.Sparks(at, Vector2.up, 8, 3f, 360f, data.empCoreColor, data.empColor);
@@ -96,7 +84,6 @@ public class EmpPulse : MonoBehaviour
 
     void StunAngels(Vector2 origin, Vector2 direction, float halfAngle)
     {
-        // An angel with more than one collider still only gets stunned once.
         var stunned = new HashSet<WeepingAngel>();
         foreach (Collider2D hit in Physics2D.OverlapCircleAll(origin, data.stunRadius, data.stunLayers))
         {
@@ -116,7 +103,6 @@ public class EmpPulse : MonoBehaviour
     {
         var cone = gameObject.AddComponent<Light2D>();
         cone.lightType = Light2D.LightType.Point;
-        // Wider and further than what it stuns (stunRadius, coneAngle), so it lights the way, not just the target.
         cone.pointLightInnerAngle = data.lightAngle * 0.6f;
         cone.pointLightOuterAngle = data.lightAngle;
         cone.pointLightInnerRadius = 0f;
@@ -124,7 +110,6 @@ public class EmpPulse : MonoBehaviour
         cone.falloffIntensity = 0.5f;
         cone.color = data.empColor;
 
-        // Crackle at full strength...
         for (float t = 0f; t < data.lightDuration; t += Time.deltaTime)
         {
             FollowHolder();
@@ -132,7 +117,6 @@ public class EmpPulse : MonoBehaviour
             yield return null;
         }
 
-        // ...then sputter out like shorting electronics.
         for (float t = 0f; t < data.lightFadeDuration; t += Time.deltaTime)
         {
             FollowHolder();
@@ -145,7 +129,6 @@ public class EmpPulse : MonoBehaviour
         cone.enabled = false;
     }
 
-    // When the wave reaches a stunned angel it lights up, then sparks crawl over it until it recovers.
     IEnumerator Electrify(WeepingAngel angel, float delay, float stunEndsAt)
     {
         yield return new WaitForSeconds(delay);
@@ -170,7 +153,6 @@ public class EmpPulse : MonoBehaviour
             transform.position = (Vector2)holder.position + holderOffset;
     }
 
-    // Starts a routine and removes this object once every routine has finished.
     void Run(IEnumerator routine)
     {
         running++;

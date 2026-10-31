@@ -2,9 +2,9 @@ using UnityEngine;
 
 public enum AimSnap
 {
-    Free,       // shoots exactly at the mouse
-    EightWay,   // straight or diagonal
-    FourWay     // straight ahead only; matches art where the gun is drawn pointing the way the player faces
+    Free,
+    EightWay,
+    FourWay
 }
 
 [CreateAssetMenu(menuName = "Sonny/Weapons/Ranged Weapon", fileName = "NewRangedWeapon")]

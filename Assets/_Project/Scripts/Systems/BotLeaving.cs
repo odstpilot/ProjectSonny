@@ -1,12 +1,11 @@
 using UnityEngine;
 
-// The bot that dragged the player, done with them: still at first, then rolling off the way it's told, treads turning,
-// fading into the dark as it goes, and gone.
+// bot rolling away after dragging the player
 public class BotLeaving : MonoBehaviour
 {
     const float Speed = 1.6f;
     const float WalkSeconds = 3.2f;
-    const float FadeFrom = 0.45f;           // how far through the walk it starts fading
+    const float FadeFrom = 0.45f;
 
     public Sprite[] frames;
 

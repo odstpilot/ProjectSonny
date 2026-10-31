@@ -3,25 +3,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The player's vitals in the top left corner, in the painted HUD frame (Art/UI/Resources/HealthHUD): VITALS, with a
-// heartbeat (VitalsLine) in the box beside it, the health bar along the middle, and the number in the HP box. Under it,
-// a slimmer stamina bar drawn to match.
-//  - Health eases to where it is now. Damage leaves a red trail that hangs a moment and then drains away, the frame
-//    shakes and the bar flashes; healing flashes it green. A light runs along the bar every so often. With little left,
-//    the bar and the frame pulse red, and the heartbeat races.
-//  - Stamina fills amber. While sprinting, stripes run along it; run it dry and it flashes red. Full and unused for a
-//    moment, it dims out of the way.
-//  - It's the suit's own readout (SuitDisplay): it dies with the suit's power in a blackout and boots back up after.
-//    And the suit only puts it up when there's something to see (Retreats): a hit, healing, little left. Between
-//    times the suit's glow says how they're doing (SuitLight).
-// Also draws the red hurt vignette across the screen.
-// Built from code the first time it's needed; PlayerHealthHandler hooks it up to the player's Health and stamina.
+// health readout
 public class HealthHud : MonoBehaviour
 {
-    const int SortingOrder = 80;            // under the tutorial's text (90) and the death screen (120)
+    const int SortingOrder = 80;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-    // The painted frame, and where its parts are, in pixels of the frame cut out of the picture.
     const string FrameArt = "HealthHUD";
     static readonly Vector2Int FrameArtSize = new Vector2Int(2048, 768);
     static readonly RectInt FrameCrop = new RectInt(38, 242, 1973, 292);
@@ -29,13 +16,11 @@ public class HealthHud : MonoBehaviour
     static readonly Rect HeartBox = new Rect(66f, 77f, 153f, 147f);
     static readonly Rect HpBox = new Rect(1790f, 134f, 126f, 80f);
 
-    // Where it all goes on the 1920x1080 canvas.
     const float FrameWidth = 600f;
     static float Scale => FrameWidth / FrameCrop.width;
     static readonly Vector2 Corner = new Vector2(28f, -20f);
     const float StaminaGap = 8f;
     const float StaminaHeight = 16f;
-    // How far down the screen the readout reaches, from the top; TutorialHud keeps the objective below it.
     public static float Bottom => -Corner.y + FrameCrop.height * Scale + StaminaGap + StaminaHeight;
 
     static readonly Color Cyan = new Color(0.1f, 0.95f, 1f);
@@ -46,15 +31,13 @@ public class HealthHud : MonoBehaviour
     static readonly Color Slot = new Color(0.01f, 0.06f, 0.07f, 0.92f);
     static readonly Color Backing = new Color(0f, 0.035f, 0.045f, 0.72f);
     static readonly Color StaminaColor = new Color(1f, 0.72f, 0.24f);
-    const float LowHealth = 0.3f;           // at or below this share of health, everything pulses red
-    const float RetreatAfter = 4f;          // seconds the vitals stay up after something happens to them
+    const float LowHealth = 0.3f;
+    const float RetreatAfter = 4f;
 
-    // The vitals only come up when there's something to see (a hit, healing, little left), out of the way otherwise;
-    // stamina the same while it's full. Off, they're always up, as they were.
     public static bool Retreats = true;
     const float LowStamina = 0.25f;
-    const float TrailHold = 0.45f;          // how long the damage trail hangs before it drains
-    const float SheenEvery = 3.2f;          // seconds between lights along the bar
+    const float TrailHold = 0.45f;
+    const float SheenEvery = 3.2f;
 
     static HealthHud instance;
 
@@ -86,7 +69,6 @@ public class HealthHud : MonoBehaviour
     private int dividerCount = -1;
     private float hpPunch;
 
-    // Whether the readout is up in the corner, for anything else that wants that corner.
     public static bool CellsShowing => instance != null && instance.root != null && instance.root.gameObject.activeInHierarchy && instance.tracked != null;
 
     public static HealthHud Get()
@@ -114,14 +96,12 @@ public class HealthHud : MonoBehaviour
         OnHealthChanged(tracked.CurrentHealth, tracked.maxHealth);
     }
 
-    // The player whose stamina the bar under the health shows.
     public void TrackStamina(PlayerController player)
     {
         runner = player;
         if (runner != null) staminaShown = Mathf.Clamp01(runner.stamina / Mathf.Max(1f, runner.maxStamina));
     }
 
-    // Hides the readout but keeps the hurt vignette, for when health doesn't matter (the tutorial).
     public void SetCellsVisible(bool visible)
     {
         if (root != null) root.gameObject.SetActive(visible);
@@ -139,7 +119,6 @@ public class HealthHud : MonoBehaviour
         float t = Time.unscaledTime;
         if (shown < 0f)
         {
-            // Coming online: the bar sweeps up from empty.
             bootAt = t;
             shown = 0f;
             trailAt = 0f;
@@ -168,8 +147,6 @@ public class HealthHud : MonoBehaviour
         AnimateStamina(now, dt);
     }
 
-    // --- Health ---
-
     void AnimateHealth(float now, float dt)
     {
         float target = Mathf.Clamp01(current / max);
@@ -177,7 +154,6 @@ public class HealthHud : MonoBehaviour
         float aim = target * TitleUI.EaseOut(boot);
         shown = Mathf.Lerp(Mathf.Max(0f, shown), aim, 1f - Mathf.Exp(-dt * 12f));
 
-        // The trail hangs where the health was, then drains down to it.
         if (trailAt < shown) trailAt = shown;
         else if (now > trailHoldUntil) trailAt = Mathf.MoveTowards(trailAt, shown, dt * 0.7f);
         SetFraction(fill, shown);
@@ -201,20 +177,16 @@ public class HealthHud : MonoBehaviour
         frame.color = Color.Lerp(tint, new Color(1f, 0.6f, 0.6f), hit);
         frameGlow.color = TitleUI.Fade(low ? Danger : Cyan, 0.16f + 0.1f * Mathf.Sin(now * 2.2f) + hit * 0.4f + (low ? beat * 0.2f : 0f));
 
-        // A light along the bar every so often.
         float sweep = Mathf.Repeat(now - bootAt, SheenEvery) / 0.9f;
         sheen.gameObject.SetActive(sweep <= 1f);
         sheen.anchorMin = sheen.anchorMax = new Vector2(Mathf.Lerp(-0.15f, 1.15f, sweep), 0.5f);
 
-        // A hit knocks the frame about.
         float shake = hit * hit * 7f;
         frameRoot.anchoredPosition = new Vector2(Random.Range(-shake, shake), Random.Range(-shake, shake));
 
         hpPunch = Mathf.MoveTowards(hpPunch, 0f, dt * 4f);
         hpText.rectTransform.localScale = Vector3.one * (1f + 0.35f * TitleUI.EaseIn(hpPunch));
 
-        // The suit only puts its vitals up when there's something to see: a knock, healing, little left, or just
-        // switched on. The rest of the time they're out of the way.
         bool wanted = !Retreats || low || now - hitAt < RetreatAfter || now - healAt < RetreatAfter || now - bootAt < RetreatAfter;
         frameGroup.alpha = Mathf.MoveTowards(frameGroup.alpha, wanted ? 1f : 0f, dt * (wanted ? 6f : 0.8f));
     }
@@ -225,7 +197,6 @@ public class HealthHud : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
-    // A thin line between each point of health, so the bar still reads as so many hits left.
     void LayDividers(int count)
     {
         if (count == dividerCount || bar == null) return;
@@ -246,8 +217,6 @@ public class HealthHud : MonoBehaviour
         }
         edge.SetAsLastSibling();
     }
-
-    // --- Stamina ---
 
     void AnimateStamina(float now, float dt)
     {
@@ -275,18 +244,14 @@ public class HealthHud : MonoBehaviour
         staminaLabel.color = low ? Color.Lerp(Cyan, Danger, pulse) : TitleUI.Fade(Cyan, 0.85f);
         staminaLabel.rectTransform.anchoredPosition = new Vector2(Random.Range(-1f, 1f) * emptied * 3f, 0f);
 
-        // Stripes run along it while sprinting.
         Rect uv = staminaStripes.uvRect;
         uv.x -= dt * (sprinting ? 2.4f : 0.3f);
         staminaStripes.uvRect = uv;
         staminaStripes.color = TitleUI.Fade(Color.white, Mathf.MoveTowards(staminaStripes.color.a, sprinting ? 0.35f : 0.08f, dt * 3f));
 
-        // Full and left alone for a moment, it dims out of the way, or goes altogether with the vitals over it (Retreats).
         float wanted = now - lastUsedAt > 2f ? (Retreats ? 0f : 0.6f) : 1f;
         staminaGroup.alpha = Mathf.MoveTowards(staminaGroup.alpha, wanted, dt * (wanted > staminaGroup.alpha ? 6f : 1.2f));
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -303,13 +268,15 @@ public class HealthHud : MonoBehaviour
 
         BuildVignette();
 
-        root = TopLeft(GameUI.NewRect("Vitals", transform), Corner, new Vector2(FrameWidth, -Bottom + Corner.y));
+        root = GameUI.NewRect("Vitals", transform);
+        root.anchorMin = root.anchorMax = root.pivot = new Vector2(0.5f, 0f);
+        root.anchoredPosition = new Vector2(0f, -Corner.y);
+        root.sizeDelta = new Vector2(FrameWidth, Bottom + Corner.y);
         SuitDisplay.Attach(root);
         frameRoot = TopLeft(GameUI.NewRect("Frame", root), Vector2.zero, new Vector2(FrameWidth, FrameCrop.height * Scale));
         frameGroup = frameRoot.gameObject.AddComponent<CanvasGroup>();
         frameGroup.interactable = frameGroup.blocksRaycasts = false;
 
-        // Dark glass behind the painted lines, which are all that's opaque in the art.
         float s = Scale;
         HudShape backing = Polygon("Backing", frameRoot, Backing, true, Chamfered(new Rect(40f, 24f, 1895f, 240f), 46f, s, true));
         backing.raycastTarget = false;
@@ -379,7 +346,6 @@ public class HealthHud : MonoBehaviour
         staminaFill = Strip("Fill", slotRect, out staminaImage);
         staminaImage.color = StaminaColor;
         staminaFill.gameObject.AddComponent<RectMask2D>();
-        // Stripes over the fill, sized to the whole bar so they don't stretch as it empties.
         RectTransform stripes = TopLeft(GameUI.NewRect("Stripes", staminaFill), Vector2.zero, new Vector2(width, StaminaHeight));
         staminaStripes = stripes.gameObject.AddComponent<RawImage>();
         staminaStripes.texture = StripeTexture;
@@ -387,12 +353,10 @@ public class HealthHud : MonoBehaviour
         staminaStripes.color = new Color(1f, 1f, 1f, 0.08f);
         staminaStripes.raycastTarget = false;
 
-        // An outline cut at two corners, like the painted frame above it.
         var edgePoints = Chamfered(new Rect(-3f, -3f, width + 6f, StaminaHeight + 6f), 7f, 1f);
         staminaEdge = Polygon("Edge", slotRect, Cyan, false, edgePoints);
         staminaEdge.thickness = 2f;
         staminaEdge.feather = 3f;
-        // Three notches off its end, after the frame's.
         for (int i = 0; i < 3; i++)
         {
             var notch = Polygon("Notch", slotRect, TitleUI.Fade(Cyan, 0.7f), true,
@@ -401,7 +365,6 @@ public class HealthHud : MonoBehaviour
         }
     }
 
-    // A strip anchored along the left of its parent, as wide as SetFraction makes it, filled with the bar's shading.
     static RectTransform Strip(string stripName, Transform parent, out RawImage image)
     {
         RectTransform rect = GameUI.NewRect(stripName, parent);
@@ -433,7 +396,6 @@ public class HealthHud : MonoBehaviour
         return image;
     }
 
-    // A shape whose points are in its parent's top-left space (y down is negative).
     static HudShape Polygon(string shapeName, RectTransform parent, Color color, bool filled, Vector2[] points)
     {
         RectTransform rect = TopLeft(GameUI.NewRect(shapeName, parent), Vector2.zero, parent.rect.size);
@@ -445,8 +407,6 @@ public class HealthHud : MonoBehaviour
         return shape;
     }
 
-    // A rect (x right, y down from the top left) with its top-left and bottom-right corners cut (or all four), scaled,
-    // in canvas units.
     static Vector2[] Chamfered(Rect r, float cut, float scale, bool allCorners = false)
     {
         Vector2 P(float x, float y) => new Vector2(x * scale, -y * scale);
@@ -473,11 +433,8 @@ public class HealthHud : MonoBehaviour
         vignette.enabled = false;
     }
 
-    // --- Textures made in code ---
-
     static Texture2D shade, sheenTexture, stripes;
 
-    // Lighter along the top, darker toward the bottom, with a bright line at the very top: a lit tube of light.
     static Texture2D ShadeTexture => shade != null ? shade : (shade = MakeTexture(1, 32, (x, y) =>
     {
         float v = y / 31f;
@@ -485,14 +442,12 @@ public class HealthHud : MonoBehaviour
         return new Color(level, level, level, 1f);
     }, TextureWrapMode.Clamp));
 
-    // A soft upright band, bright in the middle, for the light that runs along the bar.
     static Texture2D SheenTexture => sheenTexture != null ? sheenTexture : (sheenTexture = MakeTexture(32, 1, (x, y) =>
     {
         float d = Mathf.Abs(x - 15.5f) / 15.5f;
         return new Color(1f, 1f, 1f, Mathf.Pow(1f - d, 2f));
     }, TextureWrapMode.Clamp));
 
-    // Diagonal stripes that tile, for the stamina bar while sprinting.
     static Texture2D StripeTexture => stripes != null ? stripes : (stripes = MakeTexture(16, 16, (x, y) =>
         Mathf.Repeat(x + y, 16f) < 7f ? Color.white : new Color(1f, 1f, 1f, 0f), TextureWrapMode.Repeat));
 

@@ -1,21 +1,13 @@
 using System.Collections;
 using UnityEngine;
 
-// Chapter 2's common grounds, once the technician's out of the ducts (StorageEscape): the crew are lying where they fell,
-// all through the rooms, with scorch marks beside them. Finding them isn't the objective (PatrolReveal settles that the
-// moment the technician steps out of the restroom); this is what Pip says about them on the way. Walking near one the
-// first time, Pip says something: a few of them have lines of their own (the ones the technician met), the rest take
-// the next of the shared lines. After seeing enough of them, Pip works out what they had in common, their badges, and
-// that the technician's the only one without. In Chapter 2 as it stands, Pip says nothing over them (no lines set).
-// Built by ChapterOneBuilder for ChapterTwoBuilder, which places the bodies where the crew were in Chapter 1.
+// the technician finding the dead crew, and searching them
 public class CrewAftermath : MonoBehaviour
 {
     [System.Serializable]
     public class Body
     {
         public Transform body;
-        [Tooltip("What Pip says on finding this one. Empty takes the next of the shared lines.")]
-        [TextArea] public string[] pipLines = new string[0];
     }
 
     public PlayerController player;
@@ -23,14 +15,33 @@ public class CrewAftermath : MonoBehaviour
     [Tooltip("How close the player has to come to find one.")]
     public float findRange = 2.6f;
 
-    [Header("Pip")]
-    [Tooltip("For the bodies with no lines of their own, one set each, in turn (| between lines). ~ opens a line with static.")]
-    [TextArea] public string[] sharedLines = new string[0];
-    [Tooltip("How many have to be found before Pip works it out.")]
+    [Header("Technician")]
+    [Tooltip("Said near each body, one per body, in turn.")]
+    [TextArea] public string[] technicianSees =
+    {
+        "Oh god... uhh, I was talking to them like an hour ago",
+        "No no no... they didn't even make it to the door",
+        "Damn... burn marks, it was the bots, it had to be",
+        "I don't even know their name... I'm sorry",
+        "They were just doing their job and... damn",
+        "Another one... how many of them are there",
+    };
+    [Tooltip("How many have to be found before the technician works it out.")]
     public int realizeAfter = 3;
-    [TextArea] public string[] pipRealizes = new string[0];
+    [TextArea] public string[] technicianRealizes =
+    {
+        "It's everyone... the whole crew, and I'm the one who installed it",
+    };
 
-    private int nextShared;
+    [Header("Searching")]
+    [Tooltip("What each body has on it, in turn, by material.")]
+    public string[] lootByBody = { "Battery", "Wire Circuit", "MetalSheet", "Circuit", "Battery Wire", "MetalSheet Circuit" };
+    [TextArea] public string[] technicianSearches =
+    {
+        "Sorry... I need this more than you do now",
+        "I'll put it to use, I promise",
+        "Uhh, forgive me for this",
+    };
 
     void OnEnable()
     {
@@ -45,6 +56,30 @@ public class CrewAftermath : MonoBehaviour
     void Start()
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();
+        for (int i = 0; i < bodies.Length; i++)
+            if (bodies[i].body != null) AddLoot(bodies[i].body, i);
+    }
+
+    void AddLoot(Transform body, int index)
+    {
+        if (lootByBody.Length == 0) return;
+        var parts = new System.Collections.Generic.List<Inventory.Material>();
+        foreach (string word in lootByBody[index % lootByBody.Length].Split(' '))
+            if (System.Enum.TryParse(word, out Inventory.Material material)) parts.Add(material);
+        if (parts.Count == 0) return;
+        var holder = new GameObject("Search");
+        holder.transform.SetParent(body, false);
+        holder.transform.position = body.position;
+        var area = holder.AddComponent<BoxCollider2D>();
+        area.isTrigger = true;
+        area.size = new Vector2(1.4f, 0.9f);
+        holder.SetActive(false);
+        var loot = holder.AddComponent<BodyLoot>();
+        loot.id = $"body-{index}";
+        loot.parts = parts.ToArray();
+        loot.interactRange = 0.7f;
+        if (technicianSearches.Length > 0) loot.technicianLine = technicianSearches[index % technicianSearches.Length];
+        holder.SetActive(true);
     }
 
     void BeginSearch() => StartCoroutine(Search());
@@ -52,11 +87,10 @@ public class CrewAftermath : MonoBehaviour
     IEnumerator Search()
     {
         var found = new bool[bodies.Length];
-        int count = 0;
+        int count = 0, said = 0;
         bool realized = false;
-        while (!realized)
+        while (count < bodies.Length || !realized)
         {
-            // Not over the technician taking it all in at the restroom door.
             if (PatrolReveal.Playing)
             {
                 yield return null;
@@ -68,28 +102,15 @@ public class CrewAftermath : MonoBehaviour
                 if (Vector2.Distance(player.transform.position, bodies[i].body.position) > findRange) continue;
                 found[i] = true;
                 count++;
-                Tell(LinesFor(bodies[i]));
+                if (technicianSees.Length > 0) TechnicianVoice.Say(technicianSees[said++ % technicianSees.Length]);
             }
-            if (count >= Mathf.Min(realizeAfter, bodies.Length))
+            if (!realized && count >= Mathf.Min(realizeAfter, bodies.Length))
             {
-                // Once what's being said has been said.
-                while (SuitHelper.Exists && SuitHelper.Get().Talking) yield return null;
+                yield return new WaitForSeconds(3f);
                 realized = true;
-                Tell(pipRealizes);
+                if (technicianRealizes.Length > 0) yield return TechnicianVoice.Think(technicianRealizes);
             }
             yield return null;
         }
-    }
-
-    string[] LinesFor(Body found)
-    {
-        if (found.pipLines.Length > 0) return found.pipLines;
-        if (sharedLines.Length == 0) return new string[0];
-        return sharedLines[nextShared++ % sharedLines.Length].Split('|');
-    }
-
-    static void Tell(string[] lines)
-    {
-        if (SuitHelper.Exists && lines.Length > 0) SuitHelper.Get().Tell(lines);
     }
 }

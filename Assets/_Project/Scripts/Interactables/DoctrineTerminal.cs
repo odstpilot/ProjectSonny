@@ -2,21 +2,13 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-// A relay node where Sonny checks that whoever is at the keyboard is one of its units. There's no password: it asks
-// questions from its doctrine (DoctrineData), and the player has to answer as Sonny's units would, not as a human would.
-// The answers are all out there in intercepted broadcasts, for players who've been listening. On screen they're
-// scrambled, and decrypting them, hesitating, and answering wrong all draw Sonny's attention (see DoctrineScreen).
-// Pass and it hands over its credential. Get traced and it raises the alarm and locks the player out for a while.
-// It can be set to wait for comms nodes (waitingFor): until enough of them are tuned in (needed) it shows NO SIGNAL and
-// won't open. Its questions go one per node, in the same order, and it only asks about the broadcasts that were tuned in.
-// Setup: a solid Collider2D on this object for its footprint, and a DoctrineData. The relay's art is made in code
-// unless a sprite is set.
+// relay that quizzes the player
 public class DoctrineTerminal : Terminal
 {
     const float PixelsPerUnit = 20f;
     const int ArtWidth = 18;
     const int ArtHeight = 34;
-    static readonly Vector2 LensPixel = new Vector2(8.5f, 25.5f);   // the lens's middle, from the art's bottom left
+    static readonly Vector2 LensPixel = new Vector2(8.5f, 25.5f);
 
     static readonly Color Watching = new Color(1f, 0.16f, 0.1f);
     static readonly Color Trusting = new Color(1f, 0.66f, 0.3f);
@@ -64,13 +56,10 @@ public class DoctrineTerminal : Terminal
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
     protected override bool Available => powered && LockoutRemaining <= 0f && Listening;
 
-    // Enough of the nodes it's waiting for tuned in.
     public bool Listening => Tuned >= Needed;
 
     public int Needed => needed <= 0 ? waitingFor.Length : Mathf.Min(needed, waitingFor.Length);
 
-    // Whether it asks the doctrine's question at this index: one per node in waitingFor, in order, and only for the nodes
-    // tuned in. A question past the nodes is always asked.
     public bool Asks(int question) =>
         question >= waitingFor.Length || waitingFor[question] == null || waitingFor[question].IsHacked;
 
@@ -116,7 +105,6 @@ public class DoctrineTerminal : Terminal
         DoctrineScreen.Get(screenFont).Open(this, player);
     }
 
-    // Passed: hand over the credential and let the level know.
     public void Verify()
     {
         if (IsVerified) return;
@@ -126,7 +114,6 @@ public class DoctrineTerminal : Terminal
         onVerified.Invoke();
     }
 
-    // Traced: lock the player out, sound the alarm, and let the level know.
     public void RaiseAlarm()
     {
         lockedUntil = Time.time + lockoutTime;
@@ -135,7 +122,6 @@ public class DoctrineTerminal : Terminal
         onAlarm.Invoke();
     }
 
-    // The lens watches with a slow red pulse, flashes while locked out, and settles to amber once it trusts the player.
     void UpdateLens()
     {
         float level;
@@ -199,7 +185,6 @@ public class DoctrineTerminal : Terminal
         glow.color = Watching;
     }
 
-    // A narrow black pillar with a socket for the lens near the top, a slot of status lights, and cables at the base.
     static Sprite MakeRelay()
     {
         var frame = new Color32(12, 11, 12, 255);

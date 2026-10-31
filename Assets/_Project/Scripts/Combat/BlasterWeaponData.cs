@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// A ranged weapon that has to charge before it fires. Hold the attack button to build a ball of energy at the muzzle,
-// and let go once it's full to launch it. Letting go early fizzles and nothing comes out. The ball blows up on
-// whatever it hits, hurting everything around the impact.
+// gun you hold to charge, then let go to fire
 [CreateAssetMenu(menuName = "Sonny/Weapons/Blaster", fileName = "NewBlaster")]
 public class BlasterWeaponData : RangedWeaponData
 {

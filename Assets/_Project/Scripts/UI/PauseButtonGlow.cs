@@ -18,7 +18,6 @@ public class PauseButtonGlow : MonoBehaviour,
 
         Outline[] outlines = GetComponents<Outline>();
 
-        // Bright inner glow
         if (outlines.Length > 0)
         {
             brightGlow = outlines[0];
@@ -28,7 +27,6 @@ public class PauseButtonGlow : MonoBehaviour,
             brightGlow = gameObject.AddComponent<Outline>();
         }
 
-        // Softer outer glow
         if (outlines.Length > 1)
         {
             softGlow = outlines[1];
@@ -72,7 +70,6 @@ public class PauseButtonGlow : MonoBehaviour,
 
     private void TurnGlowOn()
     {
-        // Slightly brighten the actual button too
         buttonImage.color = new Color(0.75f, 1f, 1f, 1f);
 
         brightGlow.enabled = true;

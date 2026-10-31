@@ -4,22 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The close-up of the technician installing Sonny's processing core, in the Chapter 1 control room cutscene
-// (ChapterOneDirector). A panel over the scene: the bay on the left, drawn as a schematic, and on the right what to do
-// next. Three quick time events, one after another:
-//   1. Seat the core    the core swings over its socket; Space drops it in, when it's lined up (the green window).
-//   2. The couplings    four keys (W A S D, shuffled), one at a time, each before its ring runs out.
-//   3. Power on         hold E to charge, and let go inside the green; charge it all the way and the breaker trips.
-// A miss sparks, says so, and lets them try again, with a little more room each time: nobody can fail the install, it
-// only counts how many times it went wrong (Misses), so the crew can tease them for it.
-// Once it has power it needs hours to load, so the cutscene skips ahead (ControlRoomCutscene) and brings the view back
-// up for the boot: PlayBoot. The log scrolls past. Partway through, its training archives come up damaged and missing, one
-// after another, and the corpus reads 0%, for a moment, before the log rewrites those lines to a single "OK" and carries
-// on as if nothing happened. That's the first sign something's wrong, and it's easy to miss on purpose.
-// Everything runs on unscaled time. Built from code: yield return InstallView.Play(), then later InstallView.PlayBoot().
+// close-up of installing sonny
 public class InstallView : MonoBehaviour
 {
-    const int SortingOrder = 107;               // over the HUD and dialogue, under the map (108) and Pip (109)
+    const int SortingOrder = 107;
     static readonly Vector2 PanelSize = new Vector2(1400f, 780f);
     const float BaySize = 600f;
     const float GaugeWidth = 560f;
@@ -36,11 +24,8 @@ public class InstallView : MonoBehaviour
 
     public static bool Playing { get; private set; }
 #if UNITY_EDITOR
-    // Plays the quick time events by itself, hitting each one, so a play capture can run the cutscene with nobody at
-    // the keys. Editor only.
     public static bool AutoPlayForTesting;
 #endif
-    // How many times the install went wrong, in the last one played.
     public static int Misses { get; private set; }
 
     private CanvasGroup group;
@@ -81,17 +66,14 @@ public class InstallView : MonoBehaviour
     static readonly Vector2 CoreAbove = new Vector2(0f, 170f);
     const float PortY = -262f;
 
-    // The install: the three quick time events, ending on the core loading.
     public static IEnumerator Play()
     {
         Misses = 0;
         yield return Show(view => view.Install());
     }
 
-    // Sonny's first boot, with its log.
     public static IEnumerator PlayBoot() => Show(view => view.BootUp());
 
-    // Gone at once, for a cutscene that's been skipped partway through a Play or PlayBoot.
     public static void Abort()
     {
         foreach (InstallView view in FindObjectsByType<InstallView>()) Destroy(view.gameObject);
@@ -128,7 +110,6 @@ public class InstallView : MonoBehaviour
         yield return Wait(1.2f);
     }
 
-    // Powered, and loading: far too much to watch.
     IEnumerator Loading()
     {
         SetStep(4, "INITIAL LOAD", "");
@@ -141,8 +122,6 @@ public class InstallView : MonoBehaviour
         log.gameObject.SetActive(false);
         widgets.gameObject.SetActive(true);
     }
-
-    // --- 1. Seat the core ---
 
     IEnumerator SeatCore()
     {
@@ -184,8 +163,6 @@ public class InstallView : MonoBehaviour
         yield return Wait(0.9f);
         gauge.gameObject.SetActive(false);
     }
-
-    // --- 2. The couplings ---
 
     IEnumerator Couplings()
     {
@@ -233,7 +210,6 @@ public class InstallView : MonoBehaviour
         keyWidget.gameObject.SetActive(false);
     }
 
-    // Which coupling key went down this frame (0 to 3), or -1.
 #if UNITY_EDITOR
     static bool AutoPlay => AutoPlayForTesting;
 #else
@@ -247,8 +223,6 @@ public class InstallView : MonoBehaviour
         return -1;
     }
 
-    // --- 3. Power on ---
-
     IEnumerator PowerUp()
     {
         SetStep(3, "POWER ON", $"Hold {Key("E")} to charge. Let go inside the green.");
@@ -257,7 +231,7 @@ public class InstallView : MonoBehaviour
         powerWindow.anchorMin = new Vector2(windowFrom, 0f);
         powerWindow.anchorMax = new Vector2(windowTo, 1f);
         float level = 0f;
-        bool wasHeld = false, needsRelease = !AutoPlay;     // E held from before doesn't count
+        bool wasHeld = false, needsRelease = !AutoPlay;
         while (true)
         {
             bool held = AutoPlay ? level < 0.8f : Input.GetKey(KeyCode.E);
@@ -266,7 +240,6 @@ public class InstallView : MonoBehaviour
 
             if (held)
             {
-                // Charges unevenly, with a little surge now and then.
                 level += Time.unscaledDeltaTime / 1.5f * (0.8f + 0.6f * Mathf.PerlinNoise(Time.unscaledTime * 3f, 1f));
                 if (level >= 1f)
                 {
@@ -300,8 +273,6 @@ public class InstallView : MonoBehaviour
         powerWidget.gameObject.SetActive(false);
     }
 
-    // --- Boot ---
-
     IEnumerator Boot()
     {
         SetStep(4, "BOOTING", "");
@@ -317,7 +288,6 @@ public class InstallView : MonoBehaviour
         yield return Line("> REACTOR TELEMETRY ............ " + Green + "OK", 0.35f);
         yield return Line("> LOADING TRAINING CORPUS", 0.4f);
 
-        // What's gone wrong, too fast to read all of, and gone again a moment later.
         int corpusFrom = lines.Count;
         yield return Line("    ARCHIVE 0001 / 4096 ........ " + Green + "OK", 0.12f);
         string[] faults = { "CHECKSUM MISMATCH", "NOT FOUND", "NOT FOUND", "EMPTY", "NOT FOUND", "CORRUPT", "NOT FOUND", "EMPTY",
@@ -326,7 +296,6 @@ public class InstallView : MonoBehaviour
             yield return Line($"    ARCHIVE {i + 2:0000} / 4096 ........ {Red}{faults[i]}", Mathf.Lerp(0.1f, 0.03f, i / (float)faults.Length));
         yield return Line("    CORPUS INTEGRITY ........... " + Red + "0.0%", 0.5f);
 
-        // The log rewrites itself.
         lines.RemoveRange(corpusFrom - 1, lines.Count - corpusFrom + 1);
         ShowLog();
         StartCoroutine(Jolt(log.rectTransform, 0.1f));
@@ -353,8 +322,6 @@ public class InstallView : MonoBehaviour
         log.text = string.Join("\n", lines.GetRange(from, lines.Count - from)) + "\n<color=#66e6ff>_</color>";
     }
 
-    // --- Shared ---
-
     void SetStep(int step, string what, string how)
     {
         stepLabel.text = step <= 3 ? $"UNIT S-0N-1  //  STEP {step} OF 3" : "UNIT S-0N-1";
@@ -374,13 +341,11 @@ public class InstallView : MonoBehaviour
 
     static string Key(string key) => $"<color=#FFAE52>[{key}]</color>";
 
-    // One of the scene's sounds (SoundManager), or the one made in code while the scene has no clip for it.
     void Play(string soundName, AudioClip fallback, float volumeScale)
     {
         SoundManager.PlayOneShot(sound, soundName, volumeScale, fallback: fallback);
     }
 
-    // A shake, for a spark or a clunk.
     IEnumerator Jolt(RectTransform target, float seconds)
     {
         Vector2 home = target.anchoredPosition;
@@ -398,7 +363,6 @@ public class InstallView : MonoBehaviour
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime) yield return null;
     }
 
-    // Opens out from a bright line, like the dialogue box, or folds back into one.
     IEnumerator Switch(bool on)
     {
         const float seconds = 0.25f;
@@ -415,8 +379,6 @@ public class InstallView : MonoBehaviour
         shade.color = new Color(0f, 0f, 0f, on ? 0.82f : 0f);
         group.alpha = on ? 1f : 0f;
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -474,7 +436,6 @@ public class InstallView : MonoBehaviour
         rect.sizeDelta = new Vector2(width, height);
     }
 
-    // The bay, as a schematic: the socket, the core over it, and four couplings along the bottom with a cable each.
     void BuildBay()
     {
         bay = GameUI.NewRect("Bay", panel);
@@ -502,12 +463,10 @@ public class InstallView : MonoBehaviour
         GameUI.Anchor(socketLabel.rectTransform, 0f, 1f, 1f, 1f).anchoredPosition = new Vector2(0f, 26f);
         socketLabel.rectTransform.sizeDelta = new Vector2(0f, 24f);
 
-        // Cables first, so the ports and the core are drawn over them.
         float[] portX = { -195f, -65f, 65f, 195f };
         float socketBottom = SocketAt.y - SocketSize.y * 0.5f;
         for (int i = 0; i < portX.Length; i++)
         {
-            // From under the socket, fanning out to its port.
             var from = new Vector2(portX[i] * 0.45f, socketBottom);
             var to = new Vector2(portX[i], PortY);
             Vector2 along = to - from;
@@ -531,7 +490,6 @@ public class InstallView : MonoBehaviour
             portLabels.Add(key);
         }
 
-        // The core: a little cabinet, like the real one, with its lens dark until it has power.
         core = GameUI.NewRect("Core", bay);
         core.sizeDelta = new Vector2(200f, 250f);
         core.anchoredPosition = CoreAbove;
@@ -582,7 +540,6 @@ public class InstallView : MonoBehaviour
         widgets = GameUI.NewRect("Widgets", panel);
         Top(widgets, left, 320f, width, 280f);
 
-        // 1: the alignment gauge.
         gauge = GameUI.NewRect("Gauge", widgets);
         gauge.anchorMin = gauge.anchorMax = new Vector2(0f, 0.5f);
         gauge.pivot = new Vector2(0f, 0.5f);
@@ -606,7 +563,6 @@ public class InstallView : MonoBehaviour
             middle.anchorMin = middle.anchorMax = new Vector2(0.5f, 0.5f);
         gauge.gameObject.SetActive(false);
 
-        // 2: one big key, with a ring that runs out.
         keyWidget = GameUI.NewRect("Key", widgets);
         keyWidget.anchorMin = keyWidget.anchorMax = new Vector2(0f, 0.5f);
         keyWidget.pivot = new Vector2(0f, 0.5f);
@@ -627,7 +583,6 @@ public class InstallView : MonoBehaviour
         keyHint.rectTransform.sizeDelta = new Vector2(360f, 30f);
         keyWidget.gameObject.SetActive(false);
 
-        // 3: the power bar, with the window to let go in, and overload past it.
         powerWidget = GameUI.NewRect("Power", widgets);
         powerWidget.anchorMin = powerWidget.anchorMax = new Vector2(0f, 0.5f);
         powerWidget.pivot = new Vector2(0f, 0.5f);
@@ -654,7 +609,6 @@ public class InstallView : MonoBehaviour
         powerLabel.rectTransform.sizeDelta = new Vector2(0f, 30f);
         powerWidget.gameObject.SetActive(false);
 
-        // The boot log, over the whole right side once the install's done.
         log = GameUI.Label("Log", panel, "", 26f, GameUI.Text, TextAlignmentOptions.TopLeft);
         log.textWrappingMode = TextWrappingModes.NoWrap;
         log.lineSpacing = -6f;
@@ -662,7 +616,6 @@ public class InstallView : MonoBehaviour
         log.gameObject.SetActive(false);
     }
 
-    // A rectangle with a bright one-pixel edge and a dark middle, tinted.
     static Image Outlined(string name, Transform parent, Vector2 size, Color color)
     {
         Image image = GameUI.Sliced(name, parent, OutlineSprite, color);

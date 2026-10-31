@@ -1,7 +1,6 @@
 using UnityEngine;
 
-// What a DoctrineTerminal asks: Sonny's questions, the answer its units give, and the answers a human would give.
-// Answers are shuffled every time, so there's no index to set. Make one with Create > Sonny > Doctrine.
+// sonny's quiz questions and answers
 [CreateAssetMenu(menuName = "Sonny/Doctrine", fileName = "Doctrine")]
 public class DoctrineData : ScriptableObject
 {

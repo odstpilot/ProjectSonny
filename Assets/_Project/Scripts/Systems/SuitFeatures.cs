@@ -1,10 +1,6 @@
 using UnityEngine;
 
-// What the technician's suit can do so far. Pip, the helper in the suit (SuitHelper), shows them each thing as they need
-// it, and it isn't there until then: the map first, then the inventory and the pause menu later on. Anything that opens
-// one of these checks here first (MapScreen checks Map).
-// It lasts from scene to scene, so a chapter keeps what the ones before it unlocked. Starting a new game should call
-// Reset.
+// what the suit has unlocked
 public static class SuitFeatures
 {
     [System.Flags]
@@ -33,7 +29,6 @@ public static class SuitFeatures
 
     public static void Reset() => Unlocked = Feature.None;
 
-    // Entering Play mode without reloading scripts keeps statics; start each run with nothing unlocked.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetOnPlay() => Reset();
 }

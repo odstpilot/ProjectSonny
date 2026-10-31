@@ -1,20 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Runs Chapter 1's arrival. A title card on black, then the pod crossing to the station and docking (ArrivalCutscene),
-// then the fade up on the ship entrance as the technician steps aboard, unarmed, into a common grounds full of crew going
-// about their day. The crew member waiting by the entrance (the
-// greeter) calls them over, with a "!" over their head; every door aboard stays shut until the technician's talked to
-// them (Teleporter.HoldAll), and trying one has the technician say so and the greeter call again. Talking to them (E)
-// gets the hello, and they switch on Pip, the helper in the technician's
-// suit (SuitHelper). Pip boots up in the top right corner, says hello, and pins the control room on the suit's map;
-// getting there is the objective. (requireMapLook brings back the stop to open the map and look.)
-// Walking into the control room plays the install (ControlRoomCutscene); if that happens before Pip's finished showing
-// the map, Pip's tour stops there, with the map left unlocked.
-// Continuing from a save (SaveGame.Resuming), it skips the arrival and sets the chapter up the way it was just after
-// the objective that was saved: Pip's tour, the way to the control room, or the break after the install
-// (ControlRoomCutscene.SkipToAfter, RestroomBreak.ResumeFrom). The player's put back where they were.
-// Built by ChapterOneBuilder.
+// runs chapter 1
 public class ChapterOneDirector : MonoBehaviour
 {
     public PlayerController player;
@@ -44,22 +31,8 @@ public class ChapterOneDirector : MonoBehaviour
     public string objectiveAfterGreeting = "Report to the control room";
 
     [Header("Pip")]
-    [Tooltip("Pip's first words, once it's booted. A line starting with ^ is said happily; [M] shows a key.")]
-    [TextArea] public string[] pipHello =
-    {
-        "^Bzzt! Pip online! I'm your suit's Personal Integrated Pal",
-        "!Control room's pinned on your map, so hit [M] if you get lost!",
-    };
     [Tooltip("Has the technician open the map and look before the control room's the objective. Off to keep Chapter 1 short.")]
     public bool requireMapLook = false;
-    [TextArea] public string[] pipOpenMap = { "Press [M] to open your map!" };
-    [Tooltip("Said while the map's open for the first time.")]
-    [TextArea] public string[] pipOnMap =
-    {
-        "^Blinking dot's you and the control room's marked in orange... [W] [A] [S] [D] to look around, scroll to zoom",
-        "[M] again to close it",
-    };
-    [TextArea] public string[] pipAfterMap = new string[0];
     [Tooltip("The technician, to themselves, once they've closed the map.")]
     [TextArea] public string[] technicianAfterMap = { "Through the maintenance deck, got it" };
     [Tooltip("The room Pip marks on the map, by its marker in the layout, and what the pin over it says.")]
@@ -85,7 +58,6 @@ public class ChapterOneDirector : MonoBehaviour
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
     }
 
-    // Every door shut until the technician's checked in with the greeter, who calls them over again if they try one.
     void HoldDoors()
     {
         Teleporter.HoldAll(heldDoorLine);
@@ -106,7 +78,6 @@ public class ChapterOneDirector : MonoBehaviour
 
     IEnumerator Start()
     {
-        // The station's TVs, showing its feed: where Sonny will show itself, once it's on (SonnyBroadcast).
         SonnyBroadcast.PlaceTVs(tvRooms, false);
         TutorialHud hud = TutorialHud.Get();
         hud.SetFade(1f);
@@ -139,12 +110,9 @@ public class ChapterOneDirector : MonoBehaviour
         }
     }
 
-    // Continuing from a checkpoint: everything the way it was just after that objective was finished, the player back
-    // where they were, and whatever came next picked up from there. An objective it doesn't know (renamed since the
-    // save, say) picks up on the way to the control room.
     IEnumerator Resume(TutorialHud hud, SaveGame.Checkpoint checkpoint)
     {
-        yield return null;      // so everything else in the scene has started, and can be set up
+        yield return null;
         string done = checkpoint.finishedObjective;
         var cutscene = FindAnyObjectByType<ControlRoomCutscene>();
         var restroomBreak = FindAnyObjectByType<RestroomBreak>();
@@ -179,8 +147,6 @@ public class ChapterOneDirector : MonoBehaviour
         yield return hud.FadeTo(0f, fadeUpSeconds);
     }
 
-    // A tester's jump (CheckpointJump): the stage as the objective that would just have been finished, and where the
-    // player would be standing, as if it had been saved there.
     void FillStage(SaveGame.Checkpoint checkpoint, ControlRoomCutscene cutscene, RestroomBreak restroomBreak)
     {
         Vector2? at = null;
@@ -216,7 +182,6 @@ public class ChapterOneDirector : MonoBehaviour
         }
     }
 
-    // Walks the player in off the entrance to walkInTarget, giving up after a few seconds if something's in the way.
     IEnumerator WalkIn()
     {
         if (player == null || walkInTarget == null) yield break;
@@ -238,8 +203,6 @@ public class ChapterOneDirector : MonoBehaviour
         meetPip = StartCoroutine(MeetPip());
     }
 
-    // Pip boots, says hello, and shows the technician the map. The map's there from the moment Pip mentions it, so
-    // pressing M early is fine; the objective moves on once they've had a look and closed it.
     IEnumerator MeetPip()
     {
         TutorialHud hud = TutorialHud.Get();
@@ -248,13 +211,12 @@ public class ChapterOneDirector : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.6f);
 
         SuitHelper pip = SuitHelper.Get();
-        // Run by Pip itself, so it finishes booting even if the control room cutscene stops this tour partway.
         yield return pip.StartCoroutine(pip.Boot());
         MapScreen.SetTarget(mapTarget, mapTargetLabel);
         bool opened = false;
         void Looked() => opened = true;
         MapScreen.Opened += Looked;
-        yield return pip.Say(pipHello);
+        yield return pip.Say(PipManager.Lines.hello);
 
         SuitFeatures.Unlock(SuitFeatures.Feature.Map);
         if (!requireMapLook)
@@ -269,18 +231,18 @@ public class ChapterOneDirector : MonoBehaviour
         {
             hud.SetObjective(objectiveOpenMap);
             hud.ShowPrompt("Open map", "M");
-            pip.Tell(pipOpenMap);
+            pip.Tell(PipManager.Lines.openMap);
             while (!opened && !MapScreen.IsOpen) yield return null;
         }
         MapScreen.Opened -= Looked;
         hud.CompletePrompt();
         pip.Hush();
-        pip.Tell(pipOnMap);
+        pip.Tell(PipManager.Lines.onMap);
 
         while (MapScreen.IsOpen) yield return null;
         pip.Hush();
         hud.SetObjective(objectiveAfterGreeting);
-        if (pipAfterMap.Length > 0) pip.Tell(pipAfterMap);
+        if (PipManager.Lines.afterMap.Length > 0) pip.Tell(PipManager.Lines.afterMap);
         TechnicianVoice.Say(technicianAfterMap.Length > 0 ? technicianAfterMap[0] : "");
         meetPip = null;
     }

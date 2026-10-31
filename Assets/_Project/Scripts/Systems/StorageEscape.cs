@@ -2,15 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 2's way out of the storage room, where the technician wakes up (ChapterTwoDirector).
-// While they were out, something big came down in the lounge, right against the storage room door: the door's jammed
-// (both ends locked), and rubble lies piled on the lounge side, where they'll find it later. The door won't budge.
-// The first time they try it, the technician says so and Pip spots the floor vent: the air ducts (VentNetwork) run from here to the
-// restroom. The vent grates at both ends only work from the wake-up on. Getting caught in the ducts puts them back in
-// the storage room, where they woke. Climbing out in the restroom, the objective moves on to finding the crew, which is
-// over the moment they step out of it (PatrolReveal). Until they do, the restroom's way out is pointed out
-// (ObjectiveHighlight), so there's no wondering which way to go.
-// Built by ChapterOneBuilder for ChapterTwoBuilder, which places the rubble, the grates, and the ducts.
+// chapter 2: out of the storage room by the vents
 public class StorageEscape : MonoBehaviour
 {
     public PlayerController player;
@@ -30,19 +22,13 @@ public class StorageEscape : MonoBehaviour
     public float tryDoorRange = 1.4f;
     [Tooltip("The technician, when they try the door.")]
     [TextArea] public string[] technicianDoorJammed = { "It won't budge, something's jammed against the other side" };
-    [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily; [W] shows a key.")]
-    [TextArea] public string[] pipDoorJammed = { "~It's jammed, take the vent on the floor" };
-    [Tooltip("Pip, on how to get about in the ducts, said once the vent's been pointed out.")]
-    [TextArea] public string[] pipVentHowTo = { "![W] crawls and [A] and [D] turn, hold [C] to go slow and quiet" };
     public string objectiveVent = "Crawl through the vent";
 
     [Header("Out the other side")]
     [Tooltip("The technician, climbing out.")]
     [TextArea] public string[] technicianOut = { "The restroom... of course it's the restroom" };
-    [TextArea] public string[] pipOut = new string[0];
     public string objectiveOut = "Find the crew";
 
-    // Once they've climbed out in the restroom (CrewAftermath).
     public static event System.Action Escaped;
 
     void OnEnable()
@@ -62,7 +48,6 @@ public class StorageEscape : MonoBehaviour
         SetVents(false);
     }
 
-    // Whatever hit the station while they were out came down right outside the door.
     void Jam()
     {
         foreach (Teleporter door in jammedDoors)
@@ -78,7 +63,6 @@ public class StorageEscape : MonoBehaviour
     void BeginEscape()
     {
         SetVents(true);
-        // Caught in the ducts, they come back here, where they woke.
         if (player != null && player.TryGetComponent(out PlayerHealthHandler handler))
             handler.RespawnPoint = player.transform.position;
         StartCoroutine(Escape());
@@ -91,7 +75,6 @@ public class StorageEscape : MonoBehaviour
         foreach (Teleporter end in jammedDoors)
             if (end != null && InStorageRoom(end.transform.position)) door = end;
 
-        // Trying the door, unless they've gone straight for the vent.
         while (!VentNetwork.IsPlayerInside && (door == null || !Near(door)))
             yield return null;
         if (!VentNetwork.IsPlayerInside)
@@ -102,14 +85,13 @@ public class StorageEscape : MonoBehaviour
             {
                 SuitHelper pip = SuitHelper.Get();
                 pip.Hush();
-                pip.Tell(pipDoorJammed);
-                pip.Tell(pipVentHowTo);
+                pip.Tell(PipManager.Lines.doorJammed);
+                pip.Tell(PipManager.Lines.ventHowTo);
             }
         }
         yield return Crawl();
     }
 
-    // Picking up from a save (ChapterTwoDirector): the door's been tried and the vent's the way out.
     public void ResumeAtVent()
     {
         SetVents(true);
@@ -117,8 +99,6 @@ public class StorageEscape : MonoBehaviour
         StartCoroutine(Crawl());
     }
 
-    // Picking up from a save once they're out of the ducts. searching: they haven't stepped out of the restroom yet
-    // (PatrolReveal, CrewAftermath).
     public void ResumeOut(bool searching)
     {
         SetVents(true);
@@ -128,11 +108,9 @@ public class StorageEscape : MonoBehaviour
         Escaped?.Invoke();
     }
 
-    // In and out of the ducts, until they come out in the restroom.
     IEnumerator Crawl()
     {
         TutorialHud hud = TutorialHud.Get();
-        // In and out again, until they come out in the restroom (caught, they're back in the storage room).
         while (true)
         {
             while (!VentNetwork.IsPlayerInside) yield return null;
@@ -145,11 +123,10 @@ public class StorageEscape : MonoBehaviour
         StartCoroutine(PointOut());
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
         yield return TechnicianVoice.Think(technicianOut);
-        if (SuitHelper.Exists) SuitHelper.Get().Tell(pipOut);
+        if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.outOfVents);
         Escaped?.Invoke();
     }
 
-    // The restroom's doors out, lit up, until they've gone through one.
     IEnumerator PointOut()
     {
         var exits = new List<Teleporter>();

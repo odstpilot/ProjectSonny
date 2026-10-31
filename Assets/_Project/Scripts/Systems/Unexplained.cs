@@ -2,17 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Chapter 2: the station's never quite quiet, and nothing that makes the noise is ever there to see. In the quiet
-// rooms (nothing hunting the technician, nobody talking), every so often something's heard, off to one side or the
-// other and never on screen: something heavy dragged across the deck a few rooms off, three knocks inside the wall
-// right beside them, a skitter of metal feet running past behind a bulkhead, the hull groaning as the sun heats it, a
-// distant thud, heavy steps crossing the deck overhead. The far ones are muffled. Now and then the technician says
-// something about it, under their breath.
-// And now and then a lamp they've just walked past stutters out behind them (StationLight.PowerOff), coming back on a
-// while later, or not.
-// The sounds are the scene's own when it has them (SoundManager: "Unexplained Drag", "Unexplained Knock",
-// "Unexplained Skitter", "Hull Creak", "Distant Thud", "Overhead Steps"); until then they're made in code.
-// Added by ChapterTwoDirector.
+// creepy sounds with nothing there
 public class Unexplained : MonoBehaviour
 {
     [Tooltip("The rooms it happens in, by their markers in the layout.")]
@@ -54,7 +44,6 @@ public class Unexplained : MonoBehaviour
         player = FindAnyObjectByType<PlayerController>();
         near = Source();
         far = Source();
-        // The far ones through the walls: dull.
         far.gameObject.AddComponent<AudioLowPassFilter>().cutoffFrequency = 900f;
         nextAt = Time.time + Random.Range(gap.x, gap.y);
         nextLampAt = Time.time + lampGap * 0.5f;
@@ -92,7 +81,6 @@ public class Unexplained : MonoBehaviour
         return rooms.IndexOf(room) >= 0;
     }
 
-    // Nothing after them, nothing being said, nothing on screen.
     bool Quiet()
     {
         if (Time.timeScale <= 0f || DialogueBox.Busy || TutorialHud.ScreenCovered || PatrolReveal.Playing || CrewEchoes.Playing) return false;
@@ -105,7 +93,6 @@ public class Unexplained : MonoBehaviour
         return !(player.TryGetComponent(out PlayerHealthHandler handler) && handler.IsDying);
     }
 
-    // Anything but the last two, and no skittering in the spider's own room, where it'd only be the spider.
     Kind Pick(char room)
     {
         var options = new List<Kind>();
@@ -136,11 +123,9 @@ public class Unexplained : MonoBehaviour
         switch (kind)
         {
             case Kind.Drag:
-                // A few rooms off: slow, heavy, pulled along in fits.
                 yield return Sound(far, "Unexplained Drag", drag, 0.5f, Random.Range(0.8f, 1f), side * 0.7f, side * 0.4f);
                 break;
             case Kind.Knocks:
-                // Right beside them, inside the wall. Three, not quite evenly.
                 for (int i = 0; i < 3; i++)
                 {
                     PlayOnce(near, "Unexplained Knock", knock, 0.75f, Random.Range(0.9f, 1.05f), side * 0.85f);
@@ -148,7 +133,6 @@ public class Unexplained : MonoBehaviour
                 }
                 break;
             case Kind.Skitter:
-                // Something with a lot of metal feet, running past behind the bulkhead, from one side to the other.
                 yield return Sound(far, "Unexplained Skitter", skitter, 0.65f, Random.Range(0.9f, 1.15f), side * 0.9f, -side * 0.9f);
                 break;
             case Kind.Creak:
@@ -159,7 +143,6 @@ public class Unexplained : MonoBehaviour
                 yield return Sound(far, "Distant Thud", thud, 0.7f, Random.Range(0.85f, 1.05f), side * 0.6f, side * 0.6f);
                 break;
             case Kind.Steps:
-                // Heavy, slow, crossing the deck above them.
                 for (int i = 0; i < 5; i++)
                 {
                     float pan = Mathf.Lerp(side * 0.8f, -side * 0.8f, i / 4f);
@@ -176,7 +159,6 @@ public class Unexplained : MonoBehaviour
         }
     }
 
-    // A clip played out from one side to another, panning as it goes.
     IEnumerator Sound(AudioSource source, string soundName, AudioClip fallback, float volume, float pitch, float panFrom, float panTo)
     {
         AudioClip clip = SoundManager.Clip(soundName, fallback);
@@ -200,9 +182,6 @@ public class Unexplained : MonoBehaviour
         SoundManager.PlayOneShot(source, soundName, volume, pitch, fallback);
     }
 
-    // --- Lamps ---
-
-    // A working lamp they've come right up to and are walking away from: now and then, it goes.
     void WatchLamps()
     {
         Vector2 at = player.transform.position;
@@ -226,8 +205,6 @@ public class Unexplained : MonoBehaviour
         if (lamp != null) lamp.PowerOn();
     }
 
-    // --- Sounds, until the scene has its own ---
-
     static void MakeSounds()
     {
         if (drag == null) drag = Drag();
@@ -245,7 +222,6 @@ public class Unexplained : MonoBehaviour
         return clip;
     }
 
-    // Heavy, along metal plating, in two long pulls with a rattle in each.
     static AudioClip Drag()
     {
         int samples = Mathf.CeilToInt(2.6f * TitleUI.SampleRate);
@@ -255,7 +231,7 @@ public class Unexplained : MonoBehaviour
         for (int i = 0; i < samples; i++)
         {
             float p = i / (float)samples;
-            float pull = Mathf.Max(0f, Mathf.Sin(p * Mathf.PI * 2f));      // two pulls, a pause between
+            float pull = Mathf.Max(0f, Mathf.Sin(p * Mathf.PI * 2f));
             low = Mathf.Lerp(low, (float)random.NextDouble() * 2f - 1f, 0.08f);
             float rattle = Mathf.Sin(p * 380f) > 0.92f ? ((float)random.NextDouble() * 2f - 1f) * 0.5f : 0f;
             data[i] = (low * 1.4f + rattle) * pull * 0.7f;
@@ -263,7 +239,6 @@ public class Unexplained : MonoBehaviour
         return Clip("Unexplained Drag", data);
     }
 
-    // A knuckle on the inside of a steel wall: a dull thump and a short ring.
     static AudioClip Knock()
     {
         int samples = Mathf.CeilToInt(0.3f * TitleUI.SampleRate);
@@ -294,7 +269,6 @@ public class Unexplained : MonoBehaviour
         return Clip("Tick", data);
     }
 
-    // A run of ticks, fast and uneven, like a lot of feet.
     static AudioClip Skitter()
     {
         int samples = Mathf.CeilToInt(1.3f * TitleUI.SampleRate);
@@ -310,7 +284,6 @@ public class Unexplained : MonoBehaviour
         return Clip("Unexplained Skitter", data);
     }
 
-    // The hull under strain: a low groan bending in pitch, with a thin squeal of metal over it.
     static AudioClip Creak()
     {
         int samples = Mathf.CeilToInt(3f * TitleUI.SampleRate);
@@ -331,7 +304,6 @@ public class Unexplained : MonoBehaviour
         return Clip("Hull Creak", data);
     }
 
-    // Something heavy coming down somewhere: a deep boom, dying away.
     static AudioClip Thud()
     {
         int samples = Mathf.CeilToInt(1.2f * TitleUI.SampleRate);

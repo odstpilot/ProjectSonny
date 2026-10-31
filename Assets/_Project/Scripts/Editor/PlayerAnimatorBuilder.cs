@@ -4,26 +4,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
-// Menu: Sonny > Build Player Animator
-//
-// First turns the sprite folders under Art/Characters/Player into clips (PlayerClipBuilder), then builds the player's
-// Animator Controller from animation clips named  Hold_Action_Direction:
-//   Hold:      Unarmed, Melee, Ranged          (the WeaponType parameter picks one: 0, 1, 2)
-//   Action:    Idle, Walk                      (every hold)
-//              Charge, Swing, ChargedSwing     (Melee only)
-//              Shoot                           (Ranged only)
-//              Sprint, Crouch, CrouchIdle      (Unarmed only, used whatever is held; see below)
-//   Direction: Up, UpRight, Right, DownRight,  (the FaceX/FaceY parameters pick one)
-//              Down, DownLeft, Left, UpLeft
-// For example Melee_Walk_Left or Ranged_Shoot_Up. Clips can be in any folder under Animation/Clips.
-//
-// A clip that doesn't exist yet is filled in with the closest one that does (see ResolveClip), so the
-// controller always works and gets better as art arrives. Run it again after adding or renaming clips:
-// the controller is rebuilt in place, and the Console lists every slot and which clip it's using.
-//
-// Sprint and Crouch states only appear once their art exists. Until then sprinting plays the walk and crouching
-// plays idle and walk (PlayerController squashes the sprite). Crouch comes in Left and Right only, picked by the
-// FaceSide parameter; standing still while crouched shows CrouchIdle, or the first frame of Crouch if there's none.
+// builds the player animator
 public static class PlayerAnimatorBuilder
 {
     const string ClipsFolder = "Assets/_Project/Animation/Clips";
@@ -31,7 +12,6 @@ public static class PlayerAnimatorBuilder
     const string ControllerPath = "Assets/_Project/Animation/Controllers/Player.controller";
     const string PlayerPrefabPath = "Assets/_Project/Prefabs/Characters/Player 1.prefab";
 
-    // Position in this array is the WeaponType value for that hold.
     static readonly string[] Holds = { "Unarmed", "Melee", "Ranged" };
     static readonly string[] Directions = { "Up", "UpRight", "Right", "DownRight", "Down", "DownLeft", "Left", "UpLeft" };
     static readonly Vector2[] RawDirections =
@@ -41,7 +21,6 @@ public static class PlayerAnimatorBuilder
     };
     static readonly string[] Sides = { "Left", "Right" };
 
-    // Parameter names are read from PlayerAnimParams so the code and the controller can't drift apart.
     static class Param
     {
         public static readonly string FaceX = nameof(PlayerAnimParams.FaceX);
@@ -57,10 +36,8 @@ public static class PlayerAnimatorBuilder
         public static readonly string Shoot = nameof(PlayerAnimParams.Shoot);
     }
 
-    // Where each direction's clip sits in a blend tree: the exact values PlayerController sends to FaceX/FaceY.
     static Vector2 DirectionPoint(int dir) => PlayerController.SnapToEightWay(RawDirections[dir]);
 
-    // The straight direction a diagonal falls back to when it has no art: the one PlayerController.Facing uses.
     static string StraightFor(int dir)
     {
         Vector2 straight = PlayerController.SnapToFourWay(RawDirections[dir]);
@@ -69,14 +46,12 @@ public static class PlayerAnimatorBuilder
 
     static bool IsDiagonal(int dir) => RawDirections[dir].x != 0 && RawDirections[dir].y != 0;
 
-    // State for one run of the builder.
     static Dictionary<string, AnimationClip> clips;
     static Dictionary<AnimationClip, AnimationClip> firstFrames;
     static StringBuilder report;
     static int slotCount;
     static int ownClipCount;
 
-    [MenuItem("Sonny/Build Player Animator")]
     public static void Build()
     {
         int builtClips = PlayerClipBuilder.Build();
@@ -90,9 +65,6 @@ public static class PlayerAnimatorBuilder
         AddParameters(controller);
         AnimatorStateMachine machine = controller.layers[0].stateMachine;
 
-        // --- States ---
-        // One state per hold and action, laid out in columns: Unarmed, Melee, Ranged, then sprint and crouch.
-        // Each state is a blend tree holding that action's eight directional clips (two for crouching).
         var idle = new AnimatorState[Holds.Length];
         var walk = new AnimatorState[Holds.Length];
         for (int hold = 0; hold < Holds.Length; hold++)
@@ -114,15 +86,10 @@ public static class PlayerAnimatorBuilder
             crouch = AddSideState(controller, machine, "Crouch", Cell(3, 4));
         }
 
-        // --- Transitions ---
-        // Unity checks a state's transitions in the order they were added and takes the first one that matches,
-        // so attacks are added first, then crouching and sprinting, then walking, then weapon switching.
         var shared = new List<AnimatorState>();
         if (sprint != null) shared.Add(sprint);
         if (crouch != null) shared.AddRange(new[] { crouch, crouchIdle });
 
-        // Melee attacks can start from standing, walking, charging, partway through another swing, or a sprint or
-        // crouch (those only reach here with a melee weapon in hand, since only then are these parameters set).
         var meleeStarts = new List<AnimatorState> { idle[1], walk[1], charge, swing, chargedSwing };
         meleeStarts.AddRange(shared);
         foreach (AnimatorState from in meleeStarts)
@@ -136,7 +103,6 @@ public static class PlayerAnimatorBuilder
         Connect(swing, idle[1], waitForClipToEnd: true);
         Connect(chargedSwing, idle[1], waitForClipToEnd: true);
 
-        // Shooting can start from standing, walking, the previous shot (for fast fire), or a sprint or crouch.
         var shootStarts = new List<AnimatorState> { idle[2], walk[2], shoot };
         shootStarts.AddRange(shared);
         foreach (AnimatorState from in shootStarts)
@@ -154,7 +120,6 @@ public static class PlayerAnimatorBuilder
             Connect(idle[hold], walk[hold]).AddCondition(AnimatorConditionMode.If, 0f, Param.IsMoving);
             Connect(walk[hold], idle[hold]).AddCondition(AnimatorConditionMode.IfNot, 0f, Param.IsMoving);
 
-            // Switching weapons jumps straight to the new hold's matching state.
             for (int other = 0; other < Holds.Length; other++)
             {
                 if (other == hold) continue;
@@ -197,7 +162,6 @@ public static class PlayerAnimatorBuilder
         if (controller == null)
             return AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
 
-        // Empty it instead of deleting the file, so it keeps its GUID and everything pointing at it stays connected.
         foreach (Object part in AssetDatabase.LoadAllAssetsAtPath(ControllerPath))
         {
             if (part != null && part != controller)
@@ -212,7 +176,6 @@ public static class PlayerAnimatorBuilder
     static void AddParameters(AnimatorController controller)
     {
         controller.AddParameter(Param.FaceX, AnimatorControllerParameterType.Float);
-        // Start facing down, toward the camera.
         controller.AddParameter(new AnimatorControllerParameter
         {
             name = Param.FaceY,
@@ -235,10 +198,8 @@ public static class PlayerAnimatorBuilder
         controller.AddParameter(Param.Shoot, AnimatorControllerParameterType.Trigger);
     }
 
-    // Where a state sits in the Animator window.
     static Vector3 Cell(int column, int row) => new Vector3(250f + column * 260f, row * 70f, 0f);
 
-    // Whether any Unarmed clip exists for this action, in any direction.
     static bool HasArt(string action)
     {
         string prefix = $"Unarmed_{action}_";
@@ -249,10 +210,8 @@ public static class PlayerAnimatorBuilder
         return false;
     }
 
-    // Adds a state whose motion is a 2D blend tree: FaceX/FaceY choose which of the eight directional clips plays.
     static AnimatorState AddState(AnimatorController controller, AnimatorStateMachine machine, string hold, string action, Vector3 position)
     {
-        // Sprint is one state whatever is held, so its name has no hold.
         string stateName = action == "Sprint" ? action : $"{hold} {action}";
         AnimatorState state = machine.AddState(stateName, position);
         BlendTree tree = AddBlendTree(controller, stateName, BlendTreeType.SimpleDirectional2D);
@@ -271,7 +230,6 @@ public static class PlayerAnimatorBuilder
         return state;
     }
 
-    // Adds a state whose motion is a 1D blend tree on FaceSide: -1 plays the Left clip, 1 the Right.
     static AnimatorState AddSideState(AnimatorController controller, AnimatorStateMachine machine, string action, Vector3 position)
     {
         string stateName = action == "CrouchIdle" ? "Crouch Idle" : action;
@@ -318,7 +276,6 @@ public static class PlayerAnimatorBuilder
         }
     }
 
-    // Crouching, moving or still. Checked before sprinting and walking.
     static void ConnectToCrouch(AnimatorState from, AnimatorState crouch, AnimatorState crouchIdle)
     {
         AnimatorStateTransition moving = Connect(from, crouch);
@@ -329,8 +286,6 @@ public static class PlayerAnimatorBuilder
         still.AddCondition(AnimatorConditionMode.IfNot, 0f, Param.IsMoving);
     }
 
-    // Leaves a shared state (sprint, crouch) once `whileTrue` goes false, straight to the held weapon's idle or walk,
-    // so there's never a frame of the wrong one in between.
     static void ConnectToStanding(AnimatorState from, AnimatorState[] idle, AnimatorState[] walk, string whileTrue)
     {
         for (int hold = 0; hold < Holds.Length; hold++)
@@ -347,8 +302,6 @@ public static class PlayerAnimatorBuilder
         }
     }
 
-    // Sprite frames can't blend into each other, so every transition is instant.
-    // waitForClipToEnd: leave only once the clip finishes (attacks). Otherwise leave as soon as conditions match.
     static AnimatorStateTransition Connect(AnimatorState from, AnimatorState to, bool waitForClipToEnd = false)
     {
         AnimatorStateTransition transition = from.AddTransition(to);
@@ -359,29 +312,14 @@ public static class PlayerAnimatorBuilder
         return transition;
     }
 
-    // Finds the clip for one slot. If it doesn't exist, falls back step by step:
-    //   ChargedSwing          -> Swing
-    //   Charge                -> first frame of Swing (the raised pose), else Idle
-    //   Swing, Shoot          -> Idle
-    //   Sprint                -> Walk
-    //   a diagonal            -> for attacks and sprints, its left or right side if only that has art (DownLeft -> Left),
-    //                            else the straight direction Facing uses (e.g. DownLeft -> Down),
-    //                            and for a Melee/Ranged Idle or Walk that has its own clip that way
-    //   Idle                  -> first frame of the same hold's Walk
-    //   Melee/Ranged Idle/Walk -> the Unarmed version
-    //   Unarmed Walk          -> straight version if diagonal, else the old walk clips named Up, Down, Left, Right
-    //   Unarmed Idle          -> straight version if diagonal, else the old Idle clip when facing down, else the
-    //                            first frame of Unarmed Walk
     static AnimationClip ResolveClip(string hold, string action, int dir)
     {
         string direction = Directions[dir];
         if (clips.TryGetValue($"{hold}_{action}_{direction}", out AnimationClip exact))
             return exact;
 
-        // Attacks and sprints come in four directions at most, so a diagonal borrows the straight one.
         bool standing = action == "Idle" || action == "Walk";
         int straight = System.Array.IndexOf(Directions, StraightFor(dir));
-        // If only the side art exists (like the left/right swings), a diagonal uses that side rather than up or down.
         int side = System.Array.IndexOf(Directions, RawDirections[dir].x > 0 ? "Right" : "Left");
         if (IsDiagonal(dir) && !standing && !HasAttackArt(hold, action, straight) && HasAttackArt(hold, action, side))
             return ResolveClip(hold, action, side);
@@ -403,7 +341,6 @@ public static class PlayerAnimatorBuilder
                 return ResolveClip(hold, "Walk", dir);
         }
 
-        // Only Idle and Walk reach this point.
         if (action == "Idle" && clips.TryGetValue($"{hold}_Walk_{direction}", out AnimationClip walk))
             return FirstFrameOf(walk);
         if (hold != "Unarmed")
@@ -420,15 +357,12 @@ public static class PlayerAnimatorBuilder
         return unarmedWalk != null ? FirstFrameOf(unarmedWalk) : null;
     }
 
-    // Whether an action has drawn art facing this way, counting the swing that charging and charged swings borrow.
     static bool HasAttackArt(string hold, string action, int dir)
     {
         if (clips.ContainsKey($"{hold}_{action}_{Directions[dir]}")) return true;
         return (action == "Charge" || action == "ChargedSwing") && clips.ContainsKey($"{hold}_Swing_{Directions[dir]}");
     }
 
-    // Crouch and CrouchIdle come in Left and Right. A missing CrouchIdle holds the first frame of Crouch facing the
-    // same way; failing that, a missing side uses the other one.
     static AnimationClip ResolveSideClip(string action, string side)
     {
         if (clips.TryGetValue($"Unarmed_{action}_{side}", out AnimationClip exact))
@@ -447,8 +381,6 @@ public static class PlayerAnimatorBuilder
         return null;
     }
 
-    // A one-frame clip showing the first frame of another clip, saved in the _Generated folder.
-    // Stands in for idle and windup poses that haven't been drawn yet.
     static AnimationClip FirstFrameOf(AnimationClip source)
     {
         if (firstFrames.TryGetValue(source, out AnimationClip cached))
@@ -466,7 +398,7 @@ public static class PlayerAnimatorBuilder
             }
         }
         if (keys == null || keys.Length == 0)
-            return source; // not a sprite animation, so use it as-is
+            return source;
 
         EnsureFolder(GeneratedFolder);
         string path = $"{GeneratedFolder}/{source.name}_FirstFrame.anim";
@@ -474,7 +406,6 @@ public static class PlayerAnimatorBuilder
         bool isNew = still == null;
         if (isNew) still = new AnimationClip();
 
-        // Two keys one frame apart give the clip a real length, so "wait for clip to end" transitions behave.
         float frameRate = source.frameRate > 0f ? source.frameRate : 12f;
         still.frameRate = frameRate;
         AnimationUtility.SetObjectReferenceCurve(still, spriteBinding, new[]
@@ -498,7 +429,7 @@ public static class PlayerAnimatorBuilder
         foreach (string guid in AssetDatabase.FindAssets("t:AnimationClip", new[] { ClipsFolder }))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (path.StartsWith(GeneratedFolder)) continue; // the builder's own stand-ins aren't real art
+            if (path.StartsWith(GeneratedFolder)) continue;
 
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if (clip == null) continue;

@@ -2,15 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Stairs to another floor. Walking onto them fades the screen to black and puts the player at the other end, standing
-// just off those stairs on the floor (arrival). The other end is either destination, stairs on another floor in the same
-// scene (every chapter has the whole station in it, one floor beside the other), or, with no destination, the stairs
-// with the same index in targetScene, which is loaded. The floor builders number each floor's stairs from left to right,
-// the way the blueprint lines them up, so the first stairs on floor 1 lead to the first on floor 2, and so on. With
-// neither they go nowhere (a chapter that keeps the player on one floor). Locked, they don't take the player anywhere:
-// stepping on them has the technician say why (lockedLine), like the reactor's, until its bots are dealt with
-// (ReactorFight).
-// Setup: a trigger Collider2D over the stairs, and arrival on the floor beside them, clear of the trigger.
+// stairs to the other floor
 [RequireComponent(typeof(Collider2D))]
 public class Stairway : MonoBehaviour
 {
@@ -30,7 +22,6 @@ public class Stairway : MonoBehaviour
     [Tooltip("What the technician says, stepping on them while they're locked.")]
     public string lockedLine = "";
 
-    // The stairs the player is on their way to, across the scene load.
     static string arrivingScene;
     static int arrivingIndex = -1;
 
@@ -57,7 +48,6 @@ public class Stairway : MonoBehaviour
             if (cam != null && cam.TryGetComponent(out CameraFallow follow)) follow.SnapToPlayer();
         }
 
-        // In from black, as the last floor went out.
         ScreenFade fade = ScreenFade.Get();
         fade.SetAlpha(1f);
         StartCoroutine(fade.FadeTo(0f, fadeTime));
@@ -85,7 +75,6 @@ public class Stairway : MonoBehaviour
 
         if (destination != null)
         {
-            // Out beside the other stairs, clear of them, so they don't send the player straight back.
             Vector3 at = destination.arrival != null ? destination.arrival.position : destination.transform.position;
             player.transform.position = new Vector3(at.x, at.y, player.transform.position.z);
             if (player.TryGetComponent(out Rigidbody2D body))

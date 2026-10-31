@@ -2,11 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A few crew standing in a ring, talking. They take the lines of the conversation in turn round the ring: whoever's
-// talking looks at the one they're talking to, and the rest look at them. The conversation starts when the player comes
-// near enough to overhear, waits for them whenever they wander off, and is only had once: after it they fall quiet,
-// facing each other, so the player never hears the same thing twice, until something gives them something new to talk
-// about (Converse). Built by ChapterOneBuilder, with its members set to Role.Chat.
+// crew talking in a group
 public class CrewChat : MonoBehaviour
 {
     public List<CrewMember> members = new List<CrewMember>();
@@ -27,7 +23,6 @@ public class CrewChat : MonoBehaviour
         StartCoroutine(Run());
     }
 
-    // A new conversation, in place of whatever they were saying (or had finished saying).
     public void Converse(string[] newLines)
     {
         StopAllCoroutines();
@@ -41,7 +36,6 @@ public class CrewChat : MonoBehaviour
         FaceMiddle();
         for (int i = 0; i < lines.Length; i++)
         {
-            // Nothing's said out of the player's hearing, so they don't miss any of it.
             while (!Overheard()) yield return null;
 
             CrewMember speaker = members[i % members.Count];
@@ -50,7 +44,6 @@ public class CrewChat : MonoBehaviour
             foreach (CrewMember member in members)
                 if (member != speaker) member.FaceTowards(speaker.Position);
 
-            // Long enough to read.
             float seconds = Mathf.Clamp(1.6f + lines[i].Length * 0.06f, 2.4f, 6f);
             speaker.Say(lines[i], seconds);
             yield return new WaitForSeconds(seconds + Random.Range(gapSeconds.x, gapSeconds.y));

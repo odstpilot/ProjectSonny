@@ -2,12 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Scrap lying about the station, each piece a kind of part (Inventory.Material): a sheet of metal, a circuit board, a
-// battery, a coil of wire. It bobs a little and gives off a faint cold blue, just enough to catch the eye in the dark,
-// and now and then it glints. Walk up to it and press E to take it into the Inventory; the technician says what it is. Parts are made into
-// things at a workbench (CraftingScreen), each thing needing its own mix of them.
-// Taken once, it's gone for good, saves and all (Inventory.Took, by its id).
-// The art is made in code until it has its own. Built by ChapterOneBuilder for Chapter 2.
+// scrap to pick up
 public class ScrapPickup : Terminal
 {
     const float PixelsPerUnit = 16f;
@@ -48,7 +43,6 @@ public class ScrapPickup : Terminal
         glow.falloffIntensity = 0.6f;
     }
 
-    // Listening the whole time it exists, hidden or not, so a load that puts it back on the floor brings it back.
     void OnDestroy() => Inventory.Changed -= CheckTaken;
 
     protected override void Start()
@@ -57,7 +51,6 @@ public class ScrapPickup : Terminal
         CheckTaken();
     }
 
-    // Off the floor while it's in the technician's pockets, and back if a save from before it was taken is loaded.
     void CheckTaken()
     {
         if (this != null) gameObject.SetActive(!Inventory.Took(id));
@@ -69,7 +62,6 @@ public class ScrapPickup : Terminal
         float t = Time.time + phase;
         art.transform.localPosition = new Vector3(0f, 0.05f * Mathf.Sin(t * 2.5f), 0f);
         glow.intensity = 0.28f + 0.1f * Mathf.Sin(t * 3.1f);
-        // A glint now and then.
         if (Random.value < Time.deltaTime * 0.25f)
             HitEffects.Sparks((Vector2)transform.position + new Vector2(0.15f, 0.2f), Vector2.up, 2, 1.2f, 90f, Color.white, GlowColor);
     }
@@ -78,21 +70,17 @@ public class ScrapPickup : Terminal
     {
         if (!string.IsNullOrEmpty(technicianLine)) TechnicianVoice.Say(technicianLine);
         LightFlash.Spawn(transform.position, GlowColor, 1.2f, 0.8f, 0.2f);
-        Inventory.Add(id, material, amount);     // takes it off the floor, through CheckTaken
-        InventoryHud.Collected(material, amount, transform.position);     // flies into the pouch on screen
+        Inventory.Add(id, material, amount);
+        InventoryHud.Collected(material, amount, transform.position);
     }
-
-    // --- Art ---
 
     static readonly Dictionary<Inventory.Material, Sprite> sprites = new Dictionary<Inventory.Material, Sprite>();
 
-    // The part's picture: on the floor, and on the workbench's screen.
     public static Sprite Make(Inventory.Material material)
     {
         if (sprites.TryGetValue(material, out Sprite made) && made != null) return made;
         string[] rows = material switch
         {
-            // A bent sheet of hull metal, with rivets along its edge.
             Inventory.Material.MetalSheet => new[]
             {
                 "...#########..",
@@ -104,7 +92,6 @@ public class ScrapPickup : Terminal
                 ".#mommmmmmom#.",
                 "..##########..",
             },
-            // A green circuit board, chips and gold tracks.
             Inventory.Material.Circuit => new[]
             {
                 "############",
@@ -117,7 +104,6 @@ public class ScrapPickup : Terminal
                 "#GgGgggGgGg#",
                 "############",
             },
-            // A battery pack, charge showing on its side, terminals on top.
             Inventory.Material.Battery => new[]
             {
                 "..#.....#.",
@@ -130,7 +116,6 @@ public class ScrapPickup : Terminal
                 "#mmmmmmmm#",
                 "##########",
             },
-            // A coil of copper wire, its end trailing.
             _ => new[]
             {
                 "...#####....",
@@ -153,13 +138,13 @@ public class ScrapPickup : Terminal
         { '#', new Color32(20, 22, 28, 255) },
         { 'm', new Color32(120, 128, 140, 255) },
         { 'M', new Color32(176, 184, 196, 255) },
-        { 'c', new Color32(196, 112, 52, 255) },     // copper
+        { 'c', new Color32(196, 112, 52, 255) },
         { 'C', new Color32(236, 160, 90, 255) },
-        { 'b', new Color32(90, 210, 255, 255) },     // charge
-        { 'y', new Color32(230, 190, 60, 255) },     // hazard
+        { 'b', new Color32(90, 210, 255, 255) },
+        { 'y', new Color32(230, 190, 60, 255) },
         { 'r', new Color32(220, 70, 60, 255) },
-        { 'o', new Color32(70, 76, 86, 255) },       // rivet
-        { 'g', new Color32(46, 130, 70, 255) },      // circuit board
+        { 'o', new Color32(70, 76, 86, 255) },
+        { 'g', new Color32(46, 130, 70, 255) },
         { 'G', new Color32(80, 180, 100, 255) },
     };
 }

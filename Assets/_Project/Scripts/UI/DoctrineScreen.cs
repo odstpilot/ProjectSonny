@@ -5,17 +5,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The doctrine check on a DoctrineTerminal: Sonny's red lens over a question, and the answers under it, scrambled.
-// Pick an answer with W/S or the mouse, and give it with E, Enter, or a click. Holding Space or the right mouse button
-// decrypts the picked answer a letter at a time, but Sonny notices: the TRACE meter fills while decrypting, creeps up
-// while the player hesitates, and jumps for a wrong answer, which is then struck off. Answer every question right to be
-// verified and handed the terminal's credential. Let the trace fill and it's HUMAN DETECTED: the alarm goes off and the
-// terminal locks the player out.
-// Scrambled answers keep their spaces, so the shape of the words is a clue, and the answers are reshuffled every time.
-// Built from code the first time a terminal needs it. Getting hurt closes it; Esc leaves, and progress is lost.
+// the relay's quiz screen
 public class DoctrineScreen : MonoBehaviour
 {
-    const int SortingOrder = 110;           // over the HUD and prompts, under the death screen
+    const int SortingOrder = 110;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
     const int MaxAnswers = 4;
     const float LettersPerSecond = 40f;
@@ -46,19 +39,16 @@ public class DoctrineScreen : MonoBehaviour
     public static DoctrineScreen Current => instance;
 
     public bool IsOpen { get; private set; }
-    // Whether any of them is open, for the pause menu, which leaves Escape to them while one is.
     public static bool AnyOpen => openCount > 0;
     static int openCount;
-    private float timeScaleWas = 1f;     // the game's paused while it's open; this is what to put back
+    private float timeScaleWas = 1f;
     public DoctrineTerminal Terminal { get; private set; }
-    // 0 to 1. At 1 the player is caught.
     public float Trace { get; private set; }
     public int QuestionIndex { get; private set; }
     public int AnswerCount => answers.Length;
     public bool WaitingForAnswer => phase == Phase.Asking;
     public bool IsVerified => phase == Phase.Verified;
     public bool Detected => phase == Phase.Detected;
-    // Which answer on screen is right. For tests and debugging.
     public int CorrectIndex => correct;
 
     private Phase phase = Phase.Closed;
@@ -115,7 +105,7 @@ public class DoctrineScreen : MonoBehaviour
         if (IsOpen)
         {
             openCount--;
-            ResumeTime();     // leaving the level with it open mustn't leave the next one frozen
+            ResumeTime();
         }
         if (instance == this) instance = null;
     }
@@ -158,7 +148,6 @@ public class DoctrineScreen : MonoBehaviour
         Terminal = null;
     }
 
-    // For scripts and tests, the same as the keys and mouse.
     public void Pick(int index)
     {
         if (phase != Phase.Asking || index < 0 || index >= answers.Length || struck[index]) return;
@@ -201,7 +190,7 @@ public class DoctrineScreen : MonoBehaviour
 
     void Update()
     {
-        if (!IsOpen) return;     // runs on unscaled time: the game's paused under it
+        if (!IsOpen) return;
 
         bool firstFrame = Time.frameCount == openedFrame;
         if (!firstFrame && Input.GetKeyDown(KeyCode.Escape))
@@ -224,8 +213,6 @@ public class DoctrineScreen : MonoBehaviour
         UpdateAnswers();
     }
 
-    // --- The check ---
-
     IEnumerator RunCheck()
     {
         DoctrineData doctrine = Terminal.doctrine;
@@ -243,7 +230,7 @@ public class DoctrineScreen : MonoBehaviour
 
         for (QuestionIndex = 0; QuestionIndex < doctrine.questions.Length; QuestionIndex++)
         {
-            if (!Terminal.Asks(QuestionIndex)) continue;     // about a broadcast they never tuned in
+            if (!Terminal.Asks(QuestionIndex)) continue;
             SetUpQuestion(doctrine.questions[QuestionIndex]);
             yield return Say(doctrine.questions[QuestionIndex].asks);
             ShowAnswers(answers.Length);
@@ -268,7 +255,6 @@ public class DoctrineScreen : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) Pick(NextOpenAnswer(-1));
         if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) Pick(NextOpenAnswer(1));
 
-        // Pointing at an answer picks it, but only when the mouse actually moves, so it doesn't fight the keys.
         Vector3 mouse = Input.mousePosition;
         int hovered = -1;
         for (int i = 0; i < answers.Length; i++)
@@ -302,7 +288,6 @@ public class DoctrineScreen : MonoBehaviour
                 if (!string.IsNullOrEmpty(wrong) && options.Count < MaxAnswers) options.Add(wrong);
         }
 
-        // Shuffle, keeping track of where the right one ends up.
         int[] order = new int[options.Count];
         for (int i = 0; i < order.Length; i++) order[i] = i;
         for (int i = order.Length - 1; i > 0; i--)
@@ -400,8 +385,6 @@ public class DoctrineScreen : MonoBehaviour
         return picked;
     }
 
-    // --- Drawing ---
-
     void UpdateAnswers()
     {
         if (Time.unscaledTime >= nextScramble)
@@ -429,7 +412,6 @@ public class DoctrineScreen : MonoBehaviour
         }
     }
 
-    // New junk for every letter not yet decrypted. Spaces stay spaces.
     void Rescramble()
     {
         for (int i = 0; i < answers.Length; i++)
@@ -447,7 +429,6 @@ public class DoctrineScreen : MonoBehaviour
 
     void UpdateLens()
     {
-        // Faster and brighter the closer Sonny is to seeing through the player.
         float rate = Mathf.Lerp(0.6f, 4f, Trace);
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * rate);
         Color color = phase == Phase.Verified ? Good : Red;
@@ -488,8 +469,6 @@ public class DoctrineScreen : MonoBehaviour
             yield return null;
     }
 
-    // --- Building ---
-
     void Build(Font screenFont)
     {
         if (built) return;
@@ -523,7 +502,6 @@ public class DoctrineScreen : MonoBehaviour
         TextMeshProUGUI leave = Label("Leave", body, "ESC  LEAVE", 26f, RedDim, TextAlignmentOptions.TopRight);
         At(leave.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-50f, -26f), new Vector2(300f, 40f));
 
-        // Sonny's lens: a soft glow behind a ring.
         RectTransform lens = NewRect("Lens", body);
         At(lens, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -150f), new Vector2(150f, 150f));
         lensGlow = Block("Glow", lens, Red);
@@ -582,7 +560,6 @@ public class DoctrineScreen : MonoBehaviour
         tracePercent = Label("Percent", body, "0%", 26f, RedDim, TextAlignmentOptions.Right);
         At(tracePercent.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-50f, 66f), new Vector2(140f, 34f));
 
-        // What it wants, just above the trace, while it's asking.
         goal = Label("Goal", body, "", 26f, Good, TextAlignmentOptions.Center);
         At(goal.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 108f), new Vector2(1100f, 34f));
 
@@ -599,7 +576,6 @@ public class DoctrineScreen : MonoBehaviour
         chimeClip = Chime();
     }
 
-    // A sine blip, or a harsh square buzz.
     static AudioClip Tone(string clipName, float frequency, float seconds, float volume, bool square)
     {
         int samples = Mathf.CeilToInt(seconds * SampleRate);
@@ -617,7 +593,6 @@ public class DoctrineScreen : MonoBehaviour
         return clip;
     }
 
-    // Two soft notes, falling: accepted.
     static AudioClip Chime()
     {
         const float seconds = 0.4f;
@@ -636,8 +611,6 @@ public class DoctrineScreen : MonoBehaviour
         clip.SetData(data, 0);
         return clip;
     }
-
-    // --- UI helpers ---
 
     static RectTransform NewRect(string rectName, Transform parent)
     {

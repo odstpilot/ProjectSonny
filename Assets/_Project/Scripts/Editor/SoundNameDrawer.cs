@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Draws a [SoundName] string as the name typed in, with a button listing the sounds on the scene's SoundManager to
-// pick from instead. The name turns red when the scene doesn't list it (it still works if a later scene does).
+// pick a sound name from a list
 [CustomPropertyDrawer(typeof(SoundNameAttribute))]
 public class SoundNameDrawer : PropertyDrawer
 {
@@ -51,7 +50,6 @@ public class SoundNameDrawer : PropertyDrawer
         EditorGUI.EndProperty();
     }
 
-    // The SoundManager in the same scene as the object being edited, or any open one (for prefabs).
     static SoundManager ManagerFor(SerializedProperty property)
     {
         if (property.serializedObject.targetObject is Component component && component.gameObject.scene.IsValid())

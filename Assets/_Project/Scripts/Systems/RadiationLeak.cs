@@ -2,15 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A spot on the reactor room's floor where radiation's getting out (ReactorCore): standing in it slows the player right
-// down (SpeedFactor, PlayerController), so the bots catch them, and it hurts. Two kinds:
-//   Pool   a wide puddle of glowing yellow coolant, always hot, with particles drifting up off it
-//   Vent   a grate in the floor that bursts on a cycle: quiet, then its slots flicker as a warning, then a plume of
-//          particles roars up out of it for a few seconds. Only the burst hurts, so it can be timed and slipped past.
-// The player wades through it at a fraction of their speed, and still for a moment after they're out; they take a hit
-// a while after stepping in, then another every so often while they stay (Health), and hear
-// a Geiger counter crackling as they come near. Only the player's hurt: the bots walk right through.
-// The art is drawn in code at the tileset's 32 pixels to a cell. Placed by ChapterOneBuilder (PlaceReactorGauntlet).
+// radiation puddle that slows the player
 public class RadiationLeak : MonoBehaviour
 {
     public enum Kind { Pool, Vent }
@@ -58,10 +50,7 @@ public class RadiationLeak : MonoBehaviour
     static float slowedUntil = float.NegativeInfinity;
     static float slowFactor = 1f;
 
-    // How fast the player can move right now, as a fraction of their speed: slowed while they're in a hot leak, and for a
-    // moment after (PlayerController).
     public static float SpeedFactor => Time.time < slowedUntil ? slowFactor : 1f;
-    // Whether they're wading through it right now (ReactorAmbience shows it).
     public static bool PlayerIrradiated => Time.time < slowedUntil;
 
     class Mote
@@ -77,15 +66,13 @@ public class RadiationLeak : MonoBehaviour
     private Sprite slotsLit;
     private Light2D glowLight;
     private readonly List<Mote> motes = new List<Mote>();
-    private float inside = -1f;         // seconds the player's been in it, or -1 when they're not
+    private float inside = -1f;
     private float nextHit;
     private float nextCrackle;
     private bool wasBursting;
 
-    // Hurting right now: always for a pool, only while a vent's bursting.
     public bool Hot => kind == Kind.Pool || Stage == 2;
 
-    // A vent's place in its cycle: 0 quiet, 1 warning, 2 bursting.
     int Stage
     {
         get
@@ -173,7 +160,6 @@ public class RadiationLeak : MonoBehaviour
         bool bursting = stage == 2;
         float t = Time.time;
 
-        // The look: a pool shimmers; a vent sits dark, flickers its slots as a warning, then glares while it bursts.
         float shimmer = 0.75f + 0.25f * Mathf.Sin(t * 3.1f + transform.position.x);
         if (kind == Kind.Pool)
         {
@@ -216,13 +202,11 @@ public class RadiationLeak : MonoBehaviour
     void HurtPlayer(bool hot)
     {
         if (player == null || playerHealth == null || playerHealth.IsDead || Teleporter.IsTravelling) return;
-        // From their feet, where they stand on it.
         Vector2 feet = (Vector2)player.position - new Vector2(0f, DepthSort.FeetToCenter);
         Vector2 off = feet - (Vector2)transform.position;
         float distance = off.magnitude;
         if (distance < crackleRange && Time.time >= nextCrackle)
         {
-            // Faster and louder the nearer they are.
             float near = 1f - distance / crackleRange;
             nextCrackle = Time.time + Mathf.Lerp(0.6f, 0.12f, near) * Random.Range(0.7f, 1.3f);
             Sfx.Play(crackleSound, Mathf.Lerp(0.15f, 0.7f, near) * (hot ? 1f : 0.5f), Random.Range(0.9f, 1.15f));
@@ -239,7 +223,6 @@ public class RadiationLeak : MonoBehaviour
             inside = 0f;
             nextHit = Time.time + firstHitDelay;
         }
-        // Wading: as slow as the slowest leak they're in.
         slowFactor = Time.time < slowedUntil ? Mathf.Min(slowFactor, slowTo) : slowTo;
         slowedUntil = Time.time + slowLingers;
         inside += Time.deltaTime;
@@ -287,16 +270,12 @@ public class RadiationLeak : MonoBehaviour
         return layer;
     }
 
-    // --- Drawing ---
-
     static Sprite Cached(string key, System.Func<Sprite> draw)
     {
         if (made.TryGetValue(key, out Sprite sprite) && sprite != null) return sprite;
         return made[key] = draw();
     }
 
-    // A splash of glowing coolant, its edge ragged, brightest in the middle, a few bubbles. glowOnly draws just the bright
-    // part, for the layer that shines in the dark.
     static Sprite DrawPool(int variant, bool glowOnly)
     {
         const int W = 136, H = 84;
@@ -308,7 +287,6 @@ public class RadiationLeak : MonoBehaviour
         for (int i = 0; i < 12; i++) bubbles.Add((36 + dice.Next(64), 26 + dice.Next(32)));
         return PixelArt.ToSprite(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // How far inside the splash this pixel is: 1 at a lobe's middle, 0 at its edge (squashed, it's on the floor).
             float best = 0f;
             foreach ((float lx, float ly, float r) in lobes)
             {
@@ -325,7 +303,6 @@ public class RadiationLeak : MonoBehaviour
         }), PixelsPerUnit, new Vector2(0.5f, 0.5f));
     }
 
-    // A round grate in the floor: a steel ring, slots across, and (lit) the slots glowing from below.
     static Sprite DrawVent(bool lit)
     {
         const int W = 52, H = 34;

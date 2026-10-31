@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A burst of light that fades out and removes itself: LightFlash.Spawn(point, color, radius, intensity, duration)
-// from any script. For explosions, muzzle flashes, and EMP pulses, so they light up the room and not just themselves.
+// quick flash of light
 public class LightFlash : MonoBehaviour
 {
     private Light2D glow;

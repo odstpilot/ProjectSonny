@@ -4,10 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// The SoundManager inspector: the scene's sounds grouped under Music, Ambience, Sound Effects, UI and Voice, each
-// with a colored tag, a play button to hear it, and a warning while it has no clip. Open a sound for its description,
-// clips and audio source settings. At the top, a count of what's listed and what's still missing, buttons to add a
-// sound to each category, and Copy List, which copies the whole list as text for whoever is finding the audio.
+// inspector for the sound manager
 [CustomEditor(typeof(SoundManager))]
 public class SoundManagerEditor : Editor
 {
@@ -16,16 +13,15 @@ public class SoundManagerEditor : Editor
 
     static readonly Color[] CategoryColors =
     {
-        new Color(0.55f, 0.4f, 0.9f),     // Music
-        new Color(0.3f, 0.65f, 0.85f),    // Ambience
-        new Color(0.9f, 0.6f, 0.25f),     // Sound Effect
-        new Color(0.4f, 0.75f, 0.45f),    // UI
-        new Color(0.9f, 0.4f, 0.55f),     // Voice
+        new Color(0.55f, 0.4f, 0.9f),
+        new Color(0.3f, 0.65f, 0.85f),
+        new Color(0.9f, 0.6f, 0.25f),
+        new Color(0.4f, 0.75f, 0.45f),
+        new Color(0.9f, 0.4f, 0.55f),
     };
 
     static readonly Color MissingColor = new Color(0.95f, 0.35f, 0.3f);
 
-    // Static, so what's open stays open after selecting something else and coming back.
     static readonly HashSet<SoundCategory> closedCategories = new HashSet<SoundCategory>();
     static readonly HashSet<string> open3D = new HashSet<string>();
     static AudioSource preview;
@@ -154,7 +150,6 @@ public class SoundManagerEditor : Editor
         }
         if (!nowOpen) return;
 
-        // Removing while drawing would shift the indices, so do it afterwards.
         int remove = -1;
         foreach (int index in indices)
             if (DrawSound(soundsProperty.GetArrayElementAtIndex(index), ((SoundManager)target).sounds[index])) remove = index;
@@ -167,7 +162,6 @@ public class SoundManagerEditor : Editor
         EditorGUILayout.Space(4);
     }
 
-    // Returns true when the remove button was clicked.
     bool DrawSound(SerializedProperty property, Sound sound)
     {
         var category = (SoundCategory)property.FindPropertyRelative("category").enumValueIndex;
@@ -276,7 +270,6 @@ public class SoundManagerEditor : Editor
     {
         Undo.RecordObject(manager, "Add Sound");
         var sound = new Sound { category = category, name = UniqueName(manager, category == SoundCategory.SoundEffect ? "New Sound Effect" : "New " + category) };
-        // Music and ambience usually loop and run from the start; UI sounds shouldn't be cut off by other sounds.
         if (category == SoundCategory.Music || category == SoundCategory.Ambience) sound.loop = true;
         if (category == SoundCategory.Music) sound.priority = 0;
         if (category == SoundCategory.UI) sound.priority = 32;
@@ -294,7 +287,6 @@ public class SoundManagerEditor : Editor
         return unique;
     }
 
-    // The list for whoever finds the audio: every sound by category, with what it's for and whether it has audio yet.
     static string SoundList(SoundManager manager)
     {
         var text = new StringBuilder();
@@ -321,7 +313,6 @@ public class SoundManagerEditor : Editor
 
     void Preview(Sound sound)
     {
-        // In play mode, play it through the manager, so it's heard exactly as the game plays it.
         if (Application.isPlaying)
         {
             ((SoundManager)target).Play(sound.name);
@@ -334,7 +325,7 @@ public class SoundManagerEditor : Editor
             preview = EditorUtility.CreateGameObjectWithHideFlags("[Sound Preview]", HideFlags.HideAndDontSave, typeof(AudioSource)).GetComponent<AudioSource>();
         }
         sound.ApplyTo(preview);
-        preview.spatialBlend = 0f;      // there's no listener to be near outside play mode
+        preview.spatialBlend = 0f;
         preview.loop = false;
         preview.pitch = sound.pitch + Random.Range(-sound.pitchVariation, sound.pitchVariation);
         preview.volume = sound.volume * (1f - Random.Range(0f, sound.volumeVariation));

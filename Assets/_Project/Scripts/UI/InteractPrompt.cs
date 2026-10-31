@@ -2,15 +2,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The "[E] Talk" tag over whatever the player can use right now: a small flat key cap and what it does, on a slim dark
-// glass tag (PromptBadge). Objects call Show every frame they're usable and Hide when they're not; if two ask in the same
-// frame, the one nearer the player gets it, so a locker beside a vent grate shows one tag, not two fighting for it.
-// Built from code the first time it's needed.
-// Whatever has the prompt is the only thing E uses: objects ask Pressed(this) rather than reading the key themselves, so
-// a door and a person side by side can't both answer the same press.
+// "[e] use" tag over things
 public class InteractPrompt : MonoBehaviour
 {
-    const int SortingOrder = 105;           // over the HUD, under terminal screens
+    const int SortingOrder = 105;
 
     static InteractPrompt instance;
 
@@ -21,12 +16,10 @@ public class InteractPrompt : MonoBehaviour
     private Vector3 worldPoint;
     private string text;
     private int pressTaken = -1;
-    private int claimedFrame = -1;          // the frame the tag was last asked for, and how far that asker was
+    private int claimedFrame = -1;
     private float claimedDistance;
     private Transform player;
 
-    // text is the key and what it does, two spaces apart, like "E  TUNE IN". Without the two spaces it's all label.
-    // font is ignored: every prompt uses the game's own font, so they all match.
     public static void Show(Object owner, Vector3 worldPoint, string text, Font font = null)
     {
         if (instance == null)
@@ -35,7 +28,6 @@ public class InteractPrompt : MonoBehaviour
             instance.Build();
         }
 
-        // Already asked for this frame by something nearer: that keeps it.
         float distance = instance.DistanceTo(owner);
         if (instance.claimedFrame == Time.frameCount && instance.owner != owner && distance > instance.claimedDistance) return;
         instance.claimedFrame = Time.frameCount;
@@ -50,7 +42,6 @@ public class InteractPrompt : MonoBehaviour
         }
     }
 
-    // True the frame E is pressed, for whatever the prompt was showing over when it was: only that, and only once.
     public static bool Pressed(Object owner, KeyCode key = KeyCode.E)
     {
         if (instance == null || owner == null || instance.shownFor != owner || !Input.GetKeyDown(key)) return false;
@@ -69,7 +60,6 @@ public class InteractPrompt : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    // How far the player is from what's asking (its position, for anything in the level), for picking between askers.
     float DistanceTo(Object asker)
     {
         if (player == null)
@@ -84,7 +74,6 @@ public class InteractPrompt : MonoBehaviour
     void LateUpdate()
     {
         Camera cam = Camera.main;
-        // Nothing to use while the screen's faded out or a cutscene's playing.
         bool show = owner != null && cam != null && !TutorialHud.ScreenCovered && !ArrivalCutscene.Playing;
         if (!show)
         {
@@ -92,7 +81,6 @@ public class InteractPrompt : MonoBehaviour
             badge.Hide();
             return;
         }
-        // Eases in each time it lands on something new.
         if (shownFor != owner)
         {
             shownFor = owner;
@@ -108,15 +96,11 @@ public class InteractPrompt : MonoBehaviour
     }
 }
 
-// A small tag over something in the level: a flat key cap and a word or two, on slim dark glass with a thin edge. It
-// fades in and rises a touch when it appears, sways very slightly while it's up, and fades out when it goes. Used for
-// E (InteractPrompt) and Q (InspectTag), so they look alike. It keeps out of the way of the other boxes over the level
-// (OverheadLayout): E's stays put and the rest make room for it; Q's rises above E's if they'd meet.
 public class PromptBadge : OverheadLayout.IItem
 {
     const float Glide = 16f;
     const float FadeIn = 0.16f, FadeOut = 0.12f;
-    const float Rise = 8f;                  // canvas units it comes up by as it appears
+    const float Rise = 8f;
     const float KeyHeight = 42f;
     const float TextSize = 30f;
 
@@ -132,7 +116,7 @@ public class PromptBadge : OverheadLayout.IItem
     Camera cam;
     Canvas canvas;
     Vector3 worldPoint, screenPoint;
-    float lift;                             // screen pixels up, where the layout's put it
+    float lift;
 
     public static Canvas MakeCanvas(GameObject holder, int sortingOrder)
     {
@@ -185,9 +169,8 @@ public class PromptBadge : OverheadLayout.IItem
         OverheadLayout.Add(this);
     }
 
-    readonly RectTransform panelArea;     // the tag itself, for its size
+    readonly RectTransform panelArea;
 
-    // "E  OPEN" or just "OPEN": the key, then what it does, in sentence case.
     public void SetText(string text)
     {
         int split = text.IndexOf("  ", System.StringComparison.Ordinal);
@@ -202,7 +185,6 @@ public class PromptBadge : OverheadLayout.IItem
 
     public void Restart() => shownAt = Time.unscaledTime;
 
-    // Over a point in the world, easing in.
     public void ShowAt(Camera cam, Vector3 worldPoint, Canvas canvas)
     {
         this.cam = cam;
@@ -229,9 +211,6 @@ public class PromptBadge : OverheadLayout.IItem
             root.position = onCanvas;
     }
 
-    // --- Keeping out of the way (OverheadLayout) ---
-
-    // World units per screen pixel, for the camera it's shown with.
     float WorldPerPixel => cam != null && cam.orthographic && cam.pixelHeight > 0
         ? cam.orthographicSize * 2f / cam.pixelHeight * (cam.TryGetComponent(out CameraZoom zoom) ? zoom.Factor : 1f) : 0.01f;
 

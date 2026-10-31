@@ -1,16 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Chapter 2, the moment the technician steps out of the restroom (StorageEscape): the search for the crew is over before
-// it starts. They're all out here, dead, and the maintenance bots are roaming the rooms among them, fast and at random
-// (PlaceholderRobot.roamArea). The technician stops, Pip says what they're looking at, and that there's no getting
-// off the station (every escape pod launched hours ago), so the objective becomes the control room, Sonny's, pinned
-// on the map (the way there's caved in: BlockedWay). The
-// bots and the cameras (StationCamera) are blind until then, so nobody's caught standing in the doorway taking it in,
-// and for a moment after (grace) so there's a chance to move.
-// Caught from then on, the technician comes back in the restroom, where the bots never go, until a later stage moves
-// that on (BlockedWay.respawnAt); coming back, the bots have forgotten them (OnRespawned).
-// Built by ChapterOneBuilder for ChapterTwoBuilder, which lays out the bodies and puts the bots in the rooms.
+// chapter 2: the bots shown hunting
 public class PatrolReveal : MonoBehaviour
 {
     public PlayerController player;
@@ -24,16 +15,8 @@ public class PatrolReveal : MonoBehaviour
     [Header("Stepping out")]
     [Tooltip("The technician, seeing the bodies.")]
     [TextArea] public string[] technicianSees = { "Oh no... no, no, no..." };
-    [Tooltip("Pip, after that. ~ opens a line with static; [C] shows a key.")]
-    [TextArea] public string[] pipCrewFound = new string[0];
     [Tooltip("The technician, seeing the bots.")]
     [TextArea] public string[] technicianBots = { "The bots... they're hunting" };
-    [TextArea] public string[] pipBots =
-    {
-        "~Stay out of their sight",
-        "~And don't count on the escape pods, every one launched hours ago and there's no way off",
-        "~So we go to Sonny, in the control room",
-    };
     [Tooltip("The card that pops up after that, on how sneaking about works (TipCard).")]
     public string tipsTitle = "Staying hidden";
     public string objective = "Get to the control room";
@@ -41,7 +24,6 @@ public class PatrolReveal : MonoBehaviour
     public char targetRoom = 'o';
     public string targetLabel = "Control Room";
 
-    // How sneaking about works, on the card that pops up once the bots have been seen.
     static readonly TipCard.Row[] StealthTips =
     {
         new TipCard.Row(TipCard.Picture.Eye, "They see what's in front of them",
@@ -58,12 +40,10 @@ public class PatrolReveal : MonoBehaviour
             "It only sees down its beams of light. It hears much more: footsteps, running, a fight. When it goes still, so should you."),
     };
 
-    // While the technician's taking it in (CrewAftermath holds Pip's lines about the bodies until it's over).
     public static bool Playing { get; private set; }
 
     private bool revealed;
 
-    // Once they've stepped out and seen what happened to the crew (CrewEchoes waits for it).
     public bool Revealed => revealed;
 
     void OnEnable()
@@ -79,8 +59,6 @@ public class PatrolReveal : MonoBehaviour
         Playing = false;
     }
 
-    // Caught and back at the last respawn point (the restroom, or wherever the last blocked way put it): the bots
-    // forget them, and don't see them for a moment, so nobody's caught again the second they're back on their feet.
     void OnRespawned()
     {
         if (!revealed) return;
@@ -102,7 +80,6 @@ public class PatrolReveal : MonoBehaviour
 
     void BeginWatch() => StartCoroutine(WatchTheDoor());
 
-    // In the restroom until they walk out of it (the vents count as neither).
     IEnumerator WatchTheDoor()
     {
         while (player == null || VentNetwork.IsPlayerInside || InRoom(player.transform.position, restroomRoom) || !Located(player.transform.position))
@@ -119,17 +96,16 @@ public class PatrolReveal : MonoBehaviour
         TechnicianVoice.Hush();
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
 
-        // Held only for the first look; the rest is said as they get moving.
         yield return Wait(0.3f);
         yield return TechnicianVoice.Think(technicianSees);
-        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipCrewFound);
+        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(PipManager.Lines.crewFound);
         TipCard.Log(tipsTitle, StealthTips);
 
         player.ClearScriptedInput();
         TutorialHud.Get().SetObjective(objective);
         MapScreen.SetTarget(targetRoom, targetLabel);
         if (technicianBots.Length > 0) TechnicianVoice.Say(technicianBots[0]);
-        if (SuitHelper.Exists) SuitHelper.Get().Tell(pipBots);
+        if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.botsRevealed);
         Playing = false;
         revealed = true;
         StartCoroutine(TeachSneaking());
@@ -137,8 +113,6 @@ public class PatrolReveal : MonoBehaviour
         SetBlind(false);
     }
 
-    // At the moment it's needed: crouching, with the bots right there; and the first time one comes after them, how to
-    // shake it.
     IEnumerator TeachSneaking()
     {
         TutorialHud hud = TutorialHud.Get();
@@ -163,7 +137,6 @@ public class PatrolReveal : MonoBehaviour
         return false;
     }
 
-    // Picking up from a save after it's happened (ChapterTwoDirector). setObjective: nothing later has moved it on.
     public void ResumeRevealed(bool setObjective)
     {
         StopAllCoroutines();
@@ -184,7 +157,6 @@ public class PatrolReveal : MonoBehaviour
         SetBlind(false);
     }
 
-    // Where they climbed out: the bots keep to their own rooms, so it's safe.
     void RespawnInRestroom()
     {
         if (player == null || !player.TryGetComponent(out PlayerHealthHandler handler)) return;
@@ -199,10 +171,8 @@ public class PatrolReveal : MonoBehaviour
     {
         foreach (PlaceholderRobot robot in robots)
             if (robot != null) robot.blind = blind;
-        // Whatever else is out there (StationOccupants).
         foreach (CameraSpider spider in CameraSpider.All)
             spider.blind = blind;
-        // The cameras too (StationCamera): the station's own, Sonny's now.
         foreach (StationCamera watcher in StationCamera.All)
             if (watcher.hostile) watcher.blind = blind;
     }

@@ -2,25 +2,22 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// The ways a camera spider (CameraSpider) can get from room to room: every door (Teleporter) that isn't locked, from
-// the floor of the room it's in (a CrewWalkArea) to the floor of the room it leads to. Badge doors don't stop it: it's
-// Sonny's. Worked out the first time a scene asks, from the station's maps (StationMap) and the doors as they are.
+// ways the camera spider can travel
 public static class SpiderRoutes
 {
     public class Door
     {
-        public Teleporter door;
+        public Teleporter door, back;
         public char from, to;
         public CrewWalkArea fromFloor, toFloor;
-        public Vector2 at;                  // where it stands to go through, on this side
-        public Vector2 exit;                // where it comes out, on the other
+        public Vector2 at;
+        public Vector2 exit;
     }
 
     static readonly Dictionary<char, CrewWalkArea> floors = new Dictionary<char, CrewWalkArea>();
     static readonly List<Door> doors = new List<Door>();
     static Scene builtFor;
 
-    // The room a point's in, by its marker in the layout, on whichever floor's map has it; '\0' if none.
     public static char RoomAt(Vector2 point)
     {
         foreach (StationMap map in Object.FindObjectsByType<StationMap>())
@@ -34,7 +31,12 @@ public static class SpiderRoutes
         return floors.TryGetValue(room, out CrewWalkArea floor) ? floor : null;
     }
 
-    // The doors out of a room, to rooms it's allowed in.
+    public static List<Door> In(char room)
+    {
+        Build();
+        return doors.FindAll(door => door.from == room);
+    }
+
     public static List<Door> From(char room, string allowed)
     {
         Build();
@@ -44,8 +46,6 @@ public static class SpiderRoutes
         return out_;
     }
 
-    // The first door to go through, getting from one room to another through only rooms it's allowed in; null if
-    // there's no way.
     public static Door NextTowards(char from, char goal, string allowed)
     {
         Build();
@@ -75,8 +75,6 @@ public static class SpiderRoutes
         floors.Clear();
         doors.Clear();
 
-        // Each room's floor, its own: the crew's (CrewWalkArea, as built) keeps off everyone lying or standing about, and
-        // a spider walks over them.
         var holder = new GameObject("Spider Floors").transform;
         foreach (StationMap map in StationMap.All)
             foreach (StationMap.Room room in map.rooms)
@@ -95,11 +93,22 @@ public static class SpiderRoutes
             if (!Nearest(fromFloor, door.transform.position, out Vector2 at) || !Nearest(toFloor, door.teleportTarget.position, out Vector2 exit)) continue;
             doors.Add(new Door { door = door, from = from, to = to, fromFloor = fromFloor, toFloor = toFloor, at = at, exit = exit });
         }
+        foreach (Door way in doors)
+        {
+            float best = 3f;
+            foreach (Door other in doors)
+            {
+                if (other.from != way.to || other.to != way.from) continue;
+                float gap = Vector2.Distance(other.door.transform.position, way.door.teleportTarget.position);
+                if (gap < best)
+                {
+                    best = gap;
+                    way.back = other.door;
+                }
+            }
+        }
     }
 
-    // A room's floor as a spider can walk it: every cell of it with nothing solid at floor level but the crew, the bots,
-    // the player, or another spider, kept to the biggest stretch of it that joins up, so it never picks somewhere it
-    // can't get to. Null if there's no floor in it at all.
     static CrewWalkArea MakeFloor(StationMap.Room room, Transform holder)
     {
         Rect built = room.World;
@@ -130,13 +139,11 @@ public static class SpiderRoutes
 
     static readonly Vector2 FeetSize = new Vector2(0.6f, 0.45f);
 
-    // What it walks over, or past: anyone, alive or not.
     static bool StepsOver(Collider2D hit) =>
         hit.GetComponentInParent<CrewMember>() != null || hit.GetComponentInParent<PlaceholderRobot>() != null
         || hit.GetComponentInParent<PlayerController>() != null || hit.GetComponentInParent<CameraSpider>() != null
         || hit.GetComponentInParent<MaintenanceBot>() != null;
 
-    // The biggest stretch of open cells that joins up, side to side.
     static bool[] Biggest(bool[] open, int width, int height)
     {
         var region = new int[open.Length];
@@ -172,7 +179,6 @@ public static class SpiderRoutes
         return kept;
     }
 
-    // The middle of the open cell of this floor nearest a point, within a few cells of it.
     static bool Nearest(CrewWalkArea floor, Vector2 point, out Vector2 found)
     {
         Vector2Int cell = floor.CellAt(point);

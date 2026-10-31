@@ -384,7 +384,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slots:
   - {fileID: 11400000, guid: 47278cf36335424dad937570cd866f77, type: 2}
-  - {fileID: 11400000, guid: 624a4c24e38a4e64a00e78066607fda2, type: 2}
   - {fileID: 11400000, guid: e5a2d8c14b7f4a9e8d3b6c0f1a2e7d95, type: 2}
   - {fileID: 11400000, guid: 2c8f4a6e9d1b4c3a7e5f0d8b1c6a4e27, type: 2}
 --- !u!114 &6221208267706784742

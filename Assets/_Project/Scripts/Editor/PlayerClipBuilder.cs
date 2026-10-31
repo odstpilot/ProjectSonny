@@ -3,24 +3,12 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-// Run by Sonny > Build Player Animator before it builds the controller.
-//
-// Turns the player's sprite folders into animation clips, one clip per folder:
-//   Art/Characters/Player/<Action>/<Direction>/          -> Animation/Clips/Player/<Action>/Unarmed_<Action>_<Direction>.anim
-//   Art/Characters/Player/<Hold>/<Action>/<Direction>/   -> Animation/Clips/Player/<Action>/<Hold>_<Action>_<Direction>.anim
-// Hold is Melee or Ranged. Direction is one of Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft.
-// Frames play in filename order, so number them with leading zeros (Player_Walk_Up_00.png, _01, ...).
-//
-// To add an animation, drop its frames into a new folder and run the menu item. For example crouching is
-// Crouch/Left and Crouch/Right, and sprinting is Sprint/Up, Sprint/Down, Sprint/Left, Sprint/Right.
-// Frames are also given the player's import settings, so new art doesn't need setting up by hand.
+// turns player sprite folders into clips
 public static class PlayerClipBuilder
 {
     const string ArtFolder = "Assets/_Project/Art/Characters/Player";
     const string ClipsFolder = "Assets/_Project/Animation/Clips/Player";
 
-    // Most frames are 392x488 (49x61 art pixels drawn at 8x). Bigger poses (crawl 456 wide, swing 520 tall) are padded
-    // so standing feet stay 228px below the centre, so the centre pivot fits all of them.
     const float PixelsPerUnit = 100f;
 
     static readonly string[] Holds = { "Melee", "Ranged" };
@@ -29,9 +17,6 @@ public static class PlayerClipBuilder
         "Up", "UpRight", "Right", "DownRight", "Down", "DownLeft", "Left", "UpLeft"
     };
 
-    // Seconds for one loop of each action, however many frames it has. Every direction of an action is the same
-    // length, so turning mid-stride carries on from the same point in the step. Walk, Sprint and Crouch are two
-    // steps each, timed to PlayerController's footsteps (baseStepRate 0.4s; x0.6 sprinting, x1.4 crouching).
     static readonly Dictionary<string, float> LoopSeconds = new Dictionary<string, float>
     {
         { "Idle", 1f },
@@ -39,14 +24,12 @@ public static class PlayerClipBuilder
         { "Sprint", 0.48f },
         { "Crouch", 1.12f },
         { "CrouchIdle", 1f },
-        // Attacks play once, finishing just inside the crowbar's 0.45s cooldown so the next swing starts it fresh.
         { "Swing", 0.42f },
         { "ChargedSwing", 0.42f },
     };
     static readonly HashSet<string> PlayOnce = new HashSet<string> { "Swing", "ChargedSwing", "Shoot" };
     const float DefaultFramesPerSecond = 8f;
 
-    // Builds or updates every clip, and returns how many there are.
     public static int Build()
     {
         int built = 0;
@@ -108,7 +91,6 @@ public static class PlayerClipBuilder
         return frames;
     }
 
-    // Crisp pixels (no smoothing or compression), centre pivot, and the same size in the world as every other frame.
     static void ApplyImportSettings(string path)
     {
         if (!(AssetImporter.GetAtPath(path) is TextureImporter importer)) return;
@@ -140,7 +122,6 @@ public static class PlayerClipBuilder
         importer.SaveAndReimport();
     }
 
-    // Updates the clip in place if it exists, so it keeps its GUID and the controller stays pointed at it.
     static void WriteClip(string path, string action, List<Sprite> frames)
     {
         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
@@ -151,8 +132,6 @@ public static class PlayerClipBuilder
         float frameTime = LoopSeconds.TryGetValue(action, out float loop) ? loop / frames.Count : 1f / DefaultFramesPerSecond;
         clip.frameRate = 1f / frameTime;
 
-        // One key per frame. Unity gives a sprite clip one extra frame of length after its last key, so the last frame
-        // is on screen as long as the others and the loop has no hitch.
         var keys = new ObjectReferenceKeyframe[frames.Count];
         for (int i = 0; i < frames.Count; i++)
             keys[i] = new ObjectReferenceKeyframe { time = i * frameTime, value = frames[i] };

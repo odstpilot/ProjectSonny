@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Builds the title screen: the view of space in layers, the title, the loading bar, and the screen effects over it all.
-// Positions are pixels on the 1920x1080 canvas, measured from the middle; the canvas always covers the whole screen.
 public partial class TitleScreen
 {
     static readonly Vector2 PlanetCenter = new Vector2(880f, -520f);
@@ -25,14 +23,12 @@ public partial class TitleScreen
     const float StationLean = 16f;
     const float StationScale = 2.6f;
 
-    // Lights on the station, in its pixels: x, y, and 0 for red or 1 for cyan.
     static readonly Vector3[] StationLights =
     {
         new Vector3(55f, 171f, 0f), new Vector3(2f, 111f, 1f), new Vector3(108f, 111f, 1f),
         new Vector3(41f, 22f, 0f), new Vector3(18f, 157f, 1f), new Vector3(92f, 157f, 0f)
     };
 
-    // The asteroid cluster, upper right: x, y, and size.
     static readonly Vector3[] ClusterRocks =
     {
         new Vector3(410f, 330f, 78f), new Vector3(480f, 355f, 44f), new Vector3(520f, 300f, 58f), new Vector3(585f, 330f, 36f),
@@ -40,7 +36,6 @@ public partial class TitleScreen
         new Vector3(560f, 230f, 24f), new Vector3(740f, 240f, 40f), new Vector3(650f, 360f, 22f)
     };
 
-    // A layer of the view: faded and slid in during the boot, and moved against the mouse, more the nearer it is.
     class Layer
     {
         public RectTransform rect;
@@ -98,7 +93,7 @@ public partial class TitleScreen
         var scaler = root.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = TitleUI.ReferenceResolution;
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Shrink;   // the view always covers the screen
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Shrink;
 
         TitleUI.StretchedPicture("Black", root, Texture2D.whiteTexture).color = Color.black;
         monitor = TitleUI.Stretch(TitleUI.NewRect("Monitor", root));
@@ -177,7 +172,6 @@ public partial class TitleScreen
             meteors.Add(meteor);
         }
 
-        // The planet only works out the pixels that can reach the screen, allowing for its slide in and the mouse.
         Layer planetLayer = AddLayer("Planet", 26f, 0.45f, 2.2f, new Vector2(200f, -80f));
         atmosphere = TitleUI.Picture("Atmosphere", planetLayer.rect, TitleArt.AtmosphereTexture(), PlanetCenter + new Vector2(-34f, 18f), Vector2.one * PlanetRadius * 2.36f, glow: true);
         planet = new SpinningPlanet(PlanetCenter, PlanetRadius, Rect.MinMaxRect(-1000f, -590f, 1000f, 650f));
@@ -220,7 +214,6 @@ public partial class TitleScreen
             motes.Add(mote);
         }
 
-        // Two rocks drifting close past the view, out of focus and in shadow.
         Layer near = AddLayer("Near", 110f, 1f, 2.6f, new Vector2(-90f, 70f));
         Texture2D blurryRock = TitleArt.RockTexture(40, 40, 211);
         AddRock(near.rect, blurryRock, new Vector2(-930f, 500f), 320f, 3f, 10f).image.color = new Color(0.22f, 0.25f, 0.28f);
@@ -247,7 +240,6 @@ public partial class TitleScreen
         return rock;
     }
 
-    // The station, leaning out of the top of the big rock, lights blinking.
     void BuildStation(RectTransform rock)
     {
         Texture2D texture = TitleArt.StationTexture();
@@ -269,7 +261,6 @@ public partial class TitleScreen
         }
     }
 
-    // Darkness over the view, whose top edge sweeps down during the boot with a beam of light along it.
     void BuildShade()
     {
         shade = TitleUI.Place(TitleUI.NewRect("Shade", monitor), new Vector2(0f, -650f), new Vector2(2300f, 1300f));
@@ -325,7 +316,6 @@ public partial class TitleScreen
         TitleUI.Shape("Left Wire", rect, TitleUI.Fade(HudTeal, 0.9f), new[] { new Vector2(-380f, 0f), new Vector2(-halfWidth - 4f, 0f) }, thickness: 2.5f, feather: 1.5f, closed: false);
         TitleUI.Shape("Right Wire", rect, TitleUI.Fade(HudTeal, 0.9f), new[] { new Vector2(halfWidth + 4f, 0f), new Vector2(380f, 0f) }, thickness: 2.5f, feather: 1.5f, closed: false);
 
-        // Slanted segments, like the notches on a gauge.
         segments = new HudShape[SegmentCount];
         float slot = 522f / SegmentCount;
         for (int i = 0; i < SegmentCount; i++)

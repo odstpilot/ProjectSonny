@@ -2,15 +2,12 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The weeping angel's jumpscare, the moment it catches the player (WeepingAngel): its face slams up to fill the screen,
-// shaking hard, with a red flash and a slam, then the screen cuts to black and fades back up with the player already
-// sent back. The face is its own sprite, crushed down to chunky pixels so it matches the game. Unscaled time, so the
-// hit stop on the catch can't stall it. Built from code the first time it's needed.
+// weeping angel jumpscare
 public class AngelJumpscare : MonoBehaviour
 {
-    const int SortingOrder = 118;           // over the fade and terminal screens (110), under the death screen (120)
+    const int SortingOrder = 118;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
-    const int FacePixels = 72;              // how many pixels across the face is crushed to
+    const int FacePixels = 72;
     const float LungeSeconds = 0.32f;
     const float HoldSeconds = 0.38f;
     const float BlackSeconds = 0.22f;
@@ -25,7 +22,6 @@ public class AngelJumpscare : MonoBehaviour
 
     public static bool Playing => instance != null && instance.playing != null;
 
-    // Real seconds from the catch until the face is gone and it's black, for anything to be done out of sight then.
     public const float ToBlack = LungeSeconds + HoldSeconds;
 
     public static void Play(Sprite faceSprite)
@@ -51,7 +47,6 @@ public class AngelJumpscare : MonoBehaviour
         backing.enabled = face.enabled = ghost.enabled = flash.enabled = true;
         RectTransform faceRect = face.rectTransform, ghostRect = ghost.rectTransform;
 
-        // It comes at the screen: from a little way off to right up against it, the whole view jolting.
         for (float t = 0f; t < LungeSeconds + HoldSeconds; t += Time.unscaledDeltaTime)
         {
             float lunge = Mathf.Clamp01(t / LungeSeconds);
@@ -61,7 +56,6 @@ public class AngelJumpscare : MonoBehaviour
             Vector2 shake = Random.insideUnitCircle * ShakePixels * Mathf.Lerp(1f, 0.55f, held);
             faceRect.localScale = Vector3.one * scale;
             faceRect.anchoredPosition = shake;
-            // A red double of it, jittering off to one side, like the picture's breaking up.
             ghostRect.localScale = Vector3.one * scale * 1.04f;
             ghostRect.anchoredPosition = shake + new Vector2(Random.Range(-28f, 28f), Random.Range(-10f, 10f));
             ghost.color = new Color(1f, 0.1f, 0.05f, Random.value < 0.5f ? 0.45f : 0.15f);
@@ -70,7 +64,6 @@ public class AngelJumpscare : MonoBehaviour
             yield return null;
         }
 
-        // Gone: a beat of black, then the room comes back.
         face.enabled = ghost.enabled = flash.enabled = false;
         backing.color = Color.black;
         for (float t = 0f; t < BlackSeconds; t += Time.unscaledDeltaTime) yield return null;
@@ -83,7 +76,6 @@ public class AngelJumpscare : MonoBehaviour
         playing = null;
     }
 
-    // The face shrunk to a few chunky pixels and drawn back up without smoothing, so it's pixel art like everything else.
     void Crush(Sprite faceSprite)
     {
         Texture source = faceSprite != null ? faceSprite.texture : null;
@@ -104,7 +96,6 @@ public class AngelJumpscare : MonoBehaviour
         var offset = new Vector2(r.x / source.width, r.y / source.height);
         Graphics.Blit(source, crushed, scale, offset);
         face.texture = ghost.texture = crushed;
-        // Square to the screen's height, whatever its shape.
         var size = new Vector2(ReferenceResolution.y / aspect, ReferenceResolution.y);
         face.rectTransform.sizeDelta = ghost.rectTransform.sizeDelta = size;
     }

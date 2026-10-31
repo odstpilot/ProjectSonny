@@ -1,17 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// What the technician's carrying that isn't a weapon in hand: parts scavenged around the station (ScrapPickup), each a
-// kind of material (metal sheets, circuit boards, batteries, wire), and what's been made from them at a workbench
-// (CraftingScreen). Saved with each checkpoint (SaveGame), so continuing puts what was taken back in their pockets, not on
-// the floor, and what they made back in their hands.
+// scrap and made things the player has
 public static class Inventory
 {
     public enum Material { MetalSheet, Circuit, Battery, Wire }
 
     public static readonly Material[] Materials = { Material.MetalSheet, Material.Circuit, Material.Battery, Material.Wire };
 
-    // So many of a material: what a recipe costs.
     [System.Serializable]
     public struct Stack
     {
@@ -43,7 +39,6 @@ public static class Inventory
 
     static Saved state = new Saved();
 
-    // Whenever something's picked up or spent, or made.
     public static event System.Action Changed;
 
     public static int Count(Material material)
@@ -53,7 +48,6 @@ public static class Inventory
         return 0;
     }
 
-    // Whether there's enough of everything this costs.
     public static bool Has(IEnumerable<Stack> cost)
     {
         foreach (Stack need in cost)
@@ -61,7 +55,6 @@ public static class Inventory
         return true;
     }
 
-    // How much of this cost is in hand, counted part by part, up to what it needs of each.
     public static int Toward(IEnumerable<Stack> cost)
     {
         int have = 0;
@@ -69,10 +62,8 @@ public static class Inventory
         return have;
     }
 
-    // Whether a pickup (by its id) has already been taken.
     public static bool Took(string pickup) => state.taken.Contains(pickup);
 
-    // Whether this has been made (by its recipe's name).
     public static bool Made(string recipe) => state.made.Contains(recipe);
 
     public static void Add(string pickup, Material material, int amount)
@@ -82,7 +73,6 @@ public static class Inventory
         Changed?.Invoke();
     }
 
-    // Spends what it costs and remembers it's made. False, and nothing spent, if there isn't enough.
     public static bool Make(string recipe, IEnumerable<Stack> cost)
     {
         if (!Has(cost)) return false;
@@ -92,7 +82,6 @@ public static class Inventory
         return true;
     }
 
-    // Made, for nothing: a tester's jump past it.
     public static void Grant(string recipe)
     {
         if (!state.made.Contains(recipe)) state.made.Add(recipe);
@@ -115,7 +104,6 @@ public static class Inventory
 
     public static void Reset() => Load(null);
 
-    // Entering Play mode without reloading scripts keeps statics.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics()
     {

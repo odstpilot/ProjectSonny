@@ -4,56 +4,32 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Pip, the little helper built into every crew suit ("Personal Integrated Pal"). The quartermaster switches the
-// technician's on when they come aboard, and from then on Pip pops up in the top right corner of the screen whenever it
-// has something to say: a round little face on a green screen that bobs, blinks, and chatters, with a speech bubble of
-// its own beside it. Once it's said its piece it switches itself off again, until it's needed next. Pip shows
-// the technician whatever the tutorial didn't, as they need it (the map first; the inventory and pausing later), and
-// unlocks each thing in the suit as it does (SuitFeatures).
-//
-// It talks on its own, a line at a time, and doesn't stop the player: each line is typed out with a chirp every other
-// letter, held long enough to read, then the next. Tell(lines) queues lines and carries on; yield return Say(lines)
-// waits until they've been said. A line starting with ^ is said happily (eyes squeezed shut, big smile), one starting
-// with ~ opens with a burst of static over Pip's face (something interfering), and a key in square brackets, like [M],
-// is picked out in amber. One starting with ! is one they mustn't miss: it comes in with a chime and an amber edge
-// round the bubble, and stays up a good while longer than the rest, the clock only running while nothing's covering it
-// (a paused game, a screen over it), so it's there to read when they look. Nobody has to press anything to move Pip
-// on. They can go together, in that order: "~!^".
-// While Pip's talking, the music and sound effects are turned down a little (SoundManager.DuckTo), so it's heard.
-// Glitch() does the static on its own, if Pip's showing.
-//
-// Pip doesn't come through Chapter 2 in one piece (Condition, which lasts from scene to scene like SuitFeatures). Back
-// from the comms ring's blackout it's Damaged: lines open on static now and then, it stalls partway through them, and
-// its face flickers. In the reactor's radiation it's Failing as well: it can't smile any more, its voice sags, and a
-// line they don't have to hear (not a ! one) may be cut off partway or lost to static altogether. Die() is the end of
-// it: one last line that doesn't get finished, and it's Gone, never to come online again, so the technician faces
-// what's left alone.
-//
-// Built from code the first time something asks for it, like the tutorial HUD. It draws over the map (MapScreen), so it
-// can talk the technician through it, and stays out of the way of fades and title cards. Everything runs on unscaled
-// time, since the map pauses the game. One per scene: SuitHelper.Get().
+// pip, the suit helper
 public class SuitHelper : MonoBehaviour
 {
-    const int SortingOrder = 109;               // over the map (108), under fades and screens that take over (110)
+    const int SortingOrder = 109;
     const float Margin = 40f;
     const float PortraitSize = 150f;
     const float BubbleWidth = 600f;
     const float BubbleGap = 18f;
-    const float FacePixel = 6f;                 // canvas units per pixel of Pip's face
+    const float FacePixel = 6f;
     const float LettersPerSecond = 85f;
-    const float HoldBase = 1.6f;                // how long a line stays up once it's typed, plus a little per letter
+    const float HoldBase = 1.6f;
     const float HoldPerLetter = 0.05f;
-    const float LastLineLinger = 2f;            // how long Pip stays after the last line in the queue, before switching off
-    const float SwitchTime = 0.18f;             // switching on or off, like an old screen
+    const float LastLineLinger = 2f;
+    const float SwitchTime = 0.18f;
     const float ChirpFrequency = 880f;
-    const float KeyLineHold = 2f;               // how many times longer a key line stays up than any other
-    const float KeyLineMinimum = 5f;            // and never less than this many seconds, uncovered
-    const float DuckVolume = 0.7f;              // music and effects, while Pip's talking
-    const float DamagedStatic = 0.3f;           // chance a line opens on static, Damaged, without a ~
-    const float DamagedStall = 0.012f;          // chance, each letter typed, of stalling on static: Damaged
-    const float FailingStall = 0.03f;           // and Failing
-    const float FailingLost = 0.2f;             // chance a line they don't have to hear is lost to static, Failing
-    const float FailingCut = 0.3f;              // or cut off partway
+    const float KeyLineHold = 2f;
+    const float KeyLineMinimum = 5f;
+    const float CenterSeconds = 0.45f;
+    const float CenterHeight = 0.72f;
+    const float CenterScale = 1.12f;
+    const float DuckVolume = 0.7f;
+    const float DamagedStatic = 0.3f;
+    const float DamagedStall = 0.012f;
+    const float FailingStall = 0.03f;
+    const float FailingLost = 0.2f;
+    const float FailingCut = 0.3f;
 
     public static readonly Color PipColor = new Color(0.45f, 1f, 0.78f);
     static readonly Color ScreenTop = new Color(0.06f, 0.24f, 0.2f);
@@ -63,7 +39,6 @@ public class SuitHelper : MonoBehaviour
     enum Eyes { Open, Blink, Happy }
     enum Mouth { Closed, Open, Smile }
 
-    // How much of Pip is left. It only gets worse (Worsen), except starting over or picking up from a save.
     public enum Condition { Fine, Damaged, Failing, Gone }
     public static Condition Wear { get; set; }
 
@@ -72,17 +47,14 @@ public class SuitHelper : MonoBehaviour
         if (to > Wear) Wear = to;
     }
 
-    // Entering Play mode without reloading scripts keeps statics.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     public static void ResetWear() => Wear = Condition.Fine;
 
-    // Starts a line cut off partway, whatever the Wear: Pip's last words (Die).
     const char CutMarker = '\u0003';
 
     static SuitHelper instance;
 
     public bool Online { get; private set; }
-    // True while there's something being said, or waiting to be.
     public bool Talking => running;
 
     private bool built;
@@ -98,7 +70,7 @@ public class SuitHelper : MonoBehaviour
     private CanvasGroup bubbleGroup;
     private RectTransform bubble;
     private TextMeshProUGUI lineLabel;
-    private Outline keyEdge;                    // amber round the bubble, for a line they mustn't miss
+    private Outline keyEdge;
     private AudioSource voice;
     private AudioClip chirp;
     private AudioClip chime;
@@ -108,14 +80,16 @@ public class SuitHelper : MonoBehaviour
     private int queuedCount;
     private int saidCount;
     private bool running;
-    private bool hushed;                        // let a key line go without holding it up
+    private bool hushed;
     private bool happy;
     private bool mouthOpen;
     private float blinkTimer = 2f;
     private float blinkLeft;
-    private float shown;                        // how visible the whole thing is, 0 to 1, faded out over title cards
-    private bool present;                       // switched on, and in the corner; only while it's got something to say
+    private float shown;
+    private bool present;
     private Coroutine hideRoutine;
+    private float centered, centerGoal;
+    private Vector2 homeOffset = new Vector2(-(PortraitSize + BubbleGap), 0f);
     private readonly Dictionary<int, Sprite> faces = new Dictionary<int, Sprite>();
 
     public static SuitHelper Get()
@@ -145,9 +119,6 @@ public class SuitHelper : MonoBehaviour
         if (noiseTexture != null) Destroy(noiseTexture);
     }
 
-    // --- Talking ---
-
-    // Queues the lines and carries on.
     public void Tell(params string[] lines)
     {
         if (Wear == Condition.Gone) return;
@@ -163,7 +134,6 @@ public class SuitHelper : MonoBehaviour
         if (!running) StartCoroutine(Run());
     }
 
-    // Queues the lines and waits until they've all been said.
     public IEnumerator Say(params string[] lines)
     {
         Tell(lines);
@@ -171,12 +141,10 @@ public class SuitHelper : MonoBehaviour
         while (saidCount < until) yield return null;
     }
 
-    // Everything Pip's said this session, oldest first, as it was shown (keys picked out): for the log (PipLog).
     public static readonly List<string> History = new List<string>();
     public const int HistoryLimit = 200;
     public static event System.Action<string> Said;
 
-    // Entering Play mode without reloading scripts keeps statics.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetHistory()
     {
@@ -184,10 +152,8 @@ public class SuitHelper : MonoBehaviour
         Said = null;
     }
 
-    // Marks an entry in History that's a tip card kept for reading again (TipCard), not something Pip said.
     public const char TipMarker = '\u0002';
 
-    // Keeps something in History without Pip saying it: a tip card's text, to read back in the log (PipLog).
     public static void Note(string text)
     {
         History.Add(TipMarker + text);
@@ -203,16 +169,14 @@ public class SuitHelper : MonoBehaviour
         Said?.Invoke(shown);
     }
 
-    // Drops whatever hasn't been said yet; the line being said finishes (a key line without waiting to be read: it's
-    // in the log).
     public void Hush()
     {
         hushed = true;
+        centerGoal = 0f;
         saidCount += queue.Count;
         queue.Clear();
     }
 
-    // Switches Pip on for the first time: static, a start-up line, then its face, and a little chime.
     public IEnumerator Boot(string bootLine = "PIP v2.3  //  BOOTING...")
     {
         if (Online) yield break;
@@ -223,7 +187,6 @@ public class SuitHelper : MonoBehaviour
         faceImage.enabled = false;
         nameTab.gameObject.SetActive(false);
 
-        // The screen pops on from a bright line.
         for (float t = 0f; t < 0.18f; t += Time.unscaledDeltaTime)
         {
             float p = t / 0.18f;
@@ -255,9 +218,6 @@ public class SuitHelper : MonoBehaviour
         if (!running) hideRoutine = StartCoroutine(HideWhenQuiet());
     }
 
-    // The suit's power cut out from under it: what's left unsaid is dropped (the line being said finishes, unless instant),
-    // a last burst of static, and the screen collapses to nothing. Off until ComeOnline, and Exists is false meanwhile,
-    // so nothing else has it talk.
     public IEnumerator GoOffline(bool instant = false)
     {
         if (!Online) yield break;
@@ -289,8 +249,6 @@ public class SuitHelper : MonoBehaviour
         root.gameObject.SetActive(false);
     }
 
-    // The last of Pip: what's left unsaid is dropped, then lastLine, cut off partway, and it goes offline for good
-    // (Gone). Nothing brings it back, and Exists is false from then on, so nothing else has it talk.
     public IEnumerator Die(string lastLine)
     {
         if (Wear == Condition.Gone) yield break;
@@ -302,8 +260,6 @@ public class SuitHelper : MonoBehaviour
         yield return GoOffline();
     }
 
-    // On without the start-up, for a scene that picks up after Pip's already been switched on. It stays out of sight
-    // until it's told something. Not once it's Gone.
     public void ComeOnline()
     {
         if (Wear == Condition.Gone) return;
@@ -333,7 +289,6 @@ public class SuitHelper : MonoBehaviour
             if (key) line = line.Substring(1);
             happy = line.StartsWith("^");
             if (happy) line = line.Substring(1).TrimStart();
-            // Failing, it can't manage a smile, and what they don't have to hear may not come through.
             if (Wear >= Condition.Failing)
             {
                 happy = false;
@@ -351,6 +306,7 @@ public class SuitHelper : MonoBehaviour
             Remember(line);
             hushed = false;
             keyEdge.enabled = key;
+            centerGoal = key ? 1f : 0f;
             if (key && voice != null) SoundManager.PlayOneShot(voice, "Pip Chime", fallback: chime);
             ShowBubble(true);
             yield return TypeLine(Styled(line), true);
@@ -360,15 +316,15 @@ public class SuitHelper : MonoBehaviour
             else
                 for (float t = 0f; t < hold; t += Time.unscaledDeltaTime) yield return null;
             keyEdge.enabled = false;
+            if (queue.Count == 0 || !queue.Peek().TrimStart(CutMarker, '~').StartsWith("!")) centerGoal = 0f;
             saidCount++;
         }
         happy = false;
         running = false;
+        centerGoal = 0f;
         hideRoutine = StartCoroutine(HideWhenQuiet());
     }
 
-    // A key line stays up longer, and only counts down while it can be seen: not while the game's paused or a screen's
-    // over it. Hushed, it goes at once.
     IEnumerator HoldKeyLine(float seconds)
     {
         for (float t = 0f; t < seconds && !hushed;)
@@ -380,8 +336,6 @@ public class SuitHelper : MonoBehaviour
         }
     }
 
-    // A line broken off somewhere past a third of the way through, mid-word if it falls there, like "come b-". Never
-    // inside a [key].
     static string CutOff(string line)
     {
         int at = Mathf.RoundToInt(line.Length * Random.Range(0.35f, 0.7f));
@@ -391,13 +345,11 @@ public class SuitHelper : MonoBehaviour
         return kept + "-";
     }
 
-    // Static over Pip's face for a moment, with a crackle, as if something else were on the line.
     public void Glitch(float seconds = 0.3f)
     {
         if (present) StartCoroutine(GlitchRoutine(seconds));
     }
 
-    // quiet: the static without the crackle, for a flicker.
     IEnumerator GlitchRoutine(float seconds, bool quiet = false)
     {
         if (crackle == null) crackle = TitleUI.Crackle("Pip Static", 0.4f, 0.5f);
@@ -406,7 +358,6 @@ public class SuitHelper : MonoBehaviour
         faceImage.enabled = false;
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
         {
-            // A frame of face now and then through the static.
             faceImage.enabled = Random.value < 0.2f;
             yield return null;
         }
@@ -414,7 +365,6 @@ public class SuitHelper : MonoBehaviour
         faceImage.enabled = true;
     }
 
-    // A moment to finish reading, then the bubble goes and Pip switches off. Anything new to say cancels it (Tell).
     IEnumerator HideWhenQuiet()
     {
         for (float t = 0f; t < LastLineLinger; t += Time.unscaledDeltaTime) yield return null;
@@ -435,7 +385,6 @@ public class SuitHelper : MonoBehaviour
         hideRoutine = null;
     }
 
-    // Pops back into the corner: out from a bright line to the full screen, with a little chirp.
     IEnumerator SwitchOn()
     {
         present = true;
@@ -471,7 +420,6 @@ public class SuitHelper : MonoBehaviour
             {
                 char c = lineLabel.textInfo.characterInfo[i].character;
                 if (chatter && i % 2 == 0 && char.IsLetterOrDigit(c)) Chirp();
-                // Damaged, it catches on a letter now and then, static over its face, before getting the rest out.
                 if (Random.value < stall)
                 {
                     now = i + 1;
@@ -504,13 +452,11 @@ public class SuitHelper : MonoBehaviour
     void Chirp()
     {
         if (voice == null) return;
-        // Lower and less steady the worse it gets.
         float low = Wear >= Condition.Failing ? 0.6f : Wear >= Condition.Damaged ? 0.8f : 0.9f;
         float high = Wear >= Condition.Failing ? 1.15f : 1.35f;
         SoundManager.PlayOneShot(voice, "Pip Chirp", pitchScale: Random.Range(low, high), fallback: chirp);
     }
 
-    // [M] picked out in amber.
     static string Styled(string line)
     {
         var styled = new System.Text.StringBuilder();
@@ -525,6 +471,24 @@ public class SuitHelper : MonoBehaviour
             else styled.Append(line[i]);
         }
         return styled.ToString();
+    }
+
+    void LateUpdate()
+    {
+        if (bubble == null) return;
+        centered = Mathf.MoveTowards(centered, centerGoal, Time.unscaledDeltaTime / CenterSeconds);
+        float k = Mathf.SmoothStep(0f, 1f, centered);
+        bubble.anchoredPosition = homeOffset;
+        bubble.localScale = Vector3.one * Mathf.Lerp(1f, CenterScale, k);
+        if (k <= 0f) return;
+        Canvas canvas = bubble.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        var screen = (RectTransform)canvas.rootCanvas.transform;
+        Rect area = screen.rect;
+        Vector3 middle = screen.TransformPoint(new Vector3(area.center.x, area.yMin + area.height * CenterHeight, 0f));
+        Rect size = bubble.rect;
+        Vector3 target = middle + bubble.TransformVector(new Vector3(size.width * 0.5f, size.height * 0.5f, 0f));
+        bubble.position = Vector3.Lerp(bubble.position, target, k);
     }
 
     void ShowBubble(bool show)
@@ -543,11 +507,11 @@ public class SuitHelper : MonoBehaviour
         {
             float p = Mathf.SmoothStep(0f, 1f, t / seconds);
             bubbleGroup.alpha = Mathf.Lerp(from, to, p);
-            bubble.anchoredPosition = new Vector2(-(PortraitSize + BubbleGap) + (1f - bubbleGroup.alpha) * 24f, 0f);
+            homeOffset = new Vector2(-(PortraitSize + BubbleGap) + (1f - bubbleGroup.alpha) * 24f * (1f - centered), 0f);
             yield return null;
         }
         bubbleGroup.alpha = to;
-        bubble.anchoredPosition = new Vector2(-(PortraitSize + BubbleGap) + (1f - to) * 24f, 0f);
+        homeOffset = new Vector2(-(PortraitSize + BubbleGap) + (1f - to) * 24f * (1f - centered), 0f);
         bubbleRoutine = null;
     }
 
@@ -557,20 +521,16 @@ public class SuitHelper : MonoBehaviour
         routine = null;
     }
 
-    // --- Every frame: bobbing, blinking, static, and keeping out of the way ---
-
     void Update()
     {
         SoundManager.DuckTo = Online && running && present ? DuckVolume : 1f;
         if (!Online) return;
 
-        // Only there while it's got something to say, and faded out over title cards and fades to black.
         float wanted = present && !TutorialHud.ScreenCovered ? 1f : 0f;
         shown = Mathf.MoveTowards(shown, wanted, Time.unscaledDeltaTime * 6f);
         rootGroup.alpha = shown;
 
         float time = Time.unscaledTime;
-        // A pixel up and down, like it's floating.
         face.anchoredPosition = new Vector2(0f, Mathf.Round(Mathf.Sin(time * 2.6f)) * FacePixel * 0.5f - 4f);
 
         blinkTimer -= Time.unscaledDeltaTime;
@@ -583,13 +543,11 @@ public class SuitHelper : MonoBehaviour
 
         Eyes eyes = happy ? Eyes.Happy : blinkLeft > 0f ? Eyes.Blink : Eyes.Open;
         Mouth mouth = mouthOpen ? Mouth.Open : happy ? Mouth.Smile : Mouth.Closed;
-        // Its antenna bulb stutters once it's Damaged, and Failing it's mostly out.
         bool bulb = Wear >= Condition.Failing ? Random.value < 0.08f
             : Wear >= Condition.Damaged ? (Mathf.Repeat(time, 1.6f) < 0.9f || running) && Random.value > 0.15f
             : Mathf.Repeat(time, 1.6f) < 0.9f || running;
         faceImage.sprite = Face(eyes, mouth, bulb);
 
-        // Damaged, its face flickers out for a moment every so often, without a sound.
         float flicker = Wear >= Condition.Failing ? 0.5f : Wear >= Condition.Damaged ? 0.2f : 0f;
         if (present && !noise.enabled && Random.value < flicker * Time.unscaledDeltaTime)
             StartCoroutine(GlitchRoutine(Random.Range(0.05f, 0.14f), true));
@@ -609,10 +567,6 @@ public class SuitHelper : MonoBehaviour
         noiseTexture.Apply(false);
     }
 
-    // --- Pip's face ---
-
-    // 18 by 16: an antenna with a bulb, a round white shell, and a dark screen with the face on it. The eyes, mouth, and
-    // bulb are drawn in afterwards (Face), so they can change.
     static readonly string[] FaceRows =
     {
         "       ####       ",
@@ -636,15 +590,15 @@ public class SuitHelper : MonoBehaviour
     static readonly Dictionary<char, Color32> FacePalette = new Dictionary<char, Color32>
     {
         { '#', new Color32(7, 9, 13, 255) },
-        { 'a', new Color32(120, 255, 205, 255) },   // antenna bulb, lit
-        { 'A', new Color32(40, 110, 90, 255) },     // and dark
-        { 'W', new Color32(228, 234, 242, 255) },   // shell
-        { 's', new Color32(140, 150, 170, 255) },   // shell, in shadow
-        { 'k', new Color32(14, 32, 38, 255) },      // screen
-        { 'e', new Color32(115, 255, 200, 255) },   // eyes and mouth
-        { 'h', new Color32(255, 255, 255, 255) },   // a glint in each eye
-        { 'p', new Color32(255, 120, 165, 255) },   // cheeks
-        { 'o', new Color32(255, 105, 150, 255) },   // inside an open mouth
+        { 'a', new Color32(120, 255, 205, 255) },
+        { 'A', new Color32(40, 110, 90, 255) },
+        { 'W', new Color32(228, 234, 242, 255) },
+        { 's', new Color32(140, 150, 170, 255) },
+        { 'k', new Color32(14, 32, 38, 255) },
+        { 'e', new Color32(115, 255, 200, 255) },
+        { 'h', new Color32(255, 255, 255, 255) },
+        { 'p', new Color32(255, 120, 165, 255) },
+        { 'o', new Color32(255, 105, 150, 255) },
     };
 
     Sprite Face(Eyes eyes, Mouth mouth, bool bulb)
@@ -658,7 +612,6 @@ public class SuitHelper : MonoBehaviour
         if (!bulb)
             for (int x = 7; x <= 10; x++) Set(x, 1, 'A');
 
-        // Two eyes: columns 5-6 and 11-12, rows 8-9.
         foreach (int left in new[] { 5, 11 })
         {
             switch (eyes)
@@ -670,7 +623,7 @@ public class SuitHelper : MonoBehaviour
                 case Eyes.Blink:
                     Set(left, 9, 'e'); Set(left + 1, 9, 'e');
                     break;
-                case Eyes.Happy:            // ^ ^
+                case Eyes.Happy:
                     Set(left, 8, 'e'); Set(left + 1, 8, 'e');
                     Set(left - 1, 9, 'e'); Set(left + 2, 9, 'e');
                     break;
@@ -697,8 +650,6 @@ public class SuitHelper : MonoBehaviour
         faces[key] = sprite;
         return sprite;
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -774,7 +725,6 @@ public class SuitHelper : MonoBehaviour
         flash.color = Color.clear;
         flash.raycastTarget = false;
 
-        // A little name tab hanging off the bottom of the screen.
         Image tab = GameUI.Sliced("Name Tab", root, GameUI.TabSprite, PipColor);
         nameTab = tab.rectTransform;
         nameTab.anchorMin = nameTab.anchorMax = new Vector2(0.5f, 0f);
@@ -786,7 +736,6 @@ public class SuitHelper : MonoBehaviour
         GameUI.Fill(name.rectTransform).offsetMin = new Vector2(4f, 3f);
     }
 
-    // To the left of the portrait: a panel with a pointer toward Pip, a heading, and the line.
     void BuildBubble()
     {
         bubble = GameUI.NewRect("Bubble", root);
@@ -825,7 +774,6 @@ public class SuitHelper : MonoBehaviour
         lineLabel.textWrappingMode = TextWrappingModes.Normal;
         lineLabel.lineSpacing = -8f;
 
-        // Pointing right, at Pip.
         Image pointer = GameUI.Sliced("Pointer", bubble, GameUI.ArrowSprite, new Color(0.66f, 0.72f, 0.78f));
         pointer.type = Image.Type.Simple;
         pointer.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
@@ -837,9 +785,6 @@ public class SuitHelper : MonoBehaviour
         p.localRotation = Quaternion.Euler(0f, 0f, 90f);
     }
 
-    // --- Sounds ---
-
-    // A short upward chirp: Pip's voice, pitched a little differently each time.
     static AudioClip Chirp(string clipName, float frequency, float seconds)
     {
         int samples = Mathf.CeilToInt(seconds * TitleUI.SampleRate);
@@ -850,7 +795,6 @@ public class SuitHelper : MonoBehaviour
             float t = i / (float)samples;
             phase += 2f * Mathf.PI * frequency * (1f + 0.6f * t) / TitleUI.SampleRate;
             float envelope = Mathf.Sin(t * Mathf.PI);
-            // A square-ish wave, for a little electronic buzz.
             data[i] = Mathf.Clamp(Mathf.Sin(phase) * 2.2f, -1f, 1f) * envelope * 0.5f;
         }
         AudioClip clip = AudioClip.Create(clipName, samples, 1, TitleUI.SampleRate, false);
@@ -858,7 +802,6 @@ public class SuitHelper : MonoBehaviour
         return clip;
     }
 
-    // Three notes going up: Pip's switched on.
     static AudioClip Chime()
     {
         float[] notes = { 784f, 988f, 1318f };

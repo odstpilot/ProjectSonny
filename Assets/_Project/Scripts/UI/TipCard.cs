@@ -4,11 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// A card that pops up over the game to explain how something works, a few rows of it: each with its keys (as key caps)
-// or a little picture, a heading, and a line or two under it. The game pauses while it's up; E, Space, Enter, or a
-// click puts it away. yield return TipCard.Show(title, rows) waits until it's gone.
-// Each one's kept in Pip's log (PipLog, L) too, so it can be read again.
-// Built from code the first time it's needed. Runs on unscaled time, since it pauses the game.
+// how-to card that pops up
 public class TipCard : MonoBehaviour
 {
     const int SortingOrder = 112;
@@ -44,8 +40,6 @@ public class TipCard : MonoBehaviour
 
     public static bool IsOpen { get; private set; }
 
-    // Kept in Pip's log only, to read there, with nothing popping up over the game. The game teaches as it goes now
-    // (ControlHints, ObjectiveGuide), so this is what the levels use.
     public static void Log(string title, params Row[] rows) => Keep(title, rows);
 
     public static IEnumerator Show(string title, params Row[] rows)
@@ -56,7 +50,6 @@ public class TipCard : MonoBehaviour
         Destroy(card.gameObject);
     }
 
-    // Into Pip's log: the title, then each row, its keys picked out in amber.
     static void Keep(string title, Row[] rows)
     {
         var text = new System.Text.StringBuilder();
@@ -91,7 +84,6 @@ public class TipCard : MonoBehaviour
         group.alpha = 1f;
         panel.localScale = Vector3.one;
 
-        // A moment before it can be put away, so a key already held doesn't skip it.
         for (float t = 0f; t < 0.6f; t += Time.unscaledDeltaTime) yield return null;
         prompt.alpha = 1f;
         while (!(Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)
@@ -154,7 +146,6 @@ public class TipCard : MonoBehaviour
             rect.sizeDelta = new Vector2(-80f, RowHeight);
             rect.anchoredPosition = new Vector2(0f, -110f - i * (RowHeight + 12f));
 
-            // The keys, or the picture, in a column on the left.
             RectTransform badge = GameUI.NewRect("Badge", rect);
             badge.anchorMin = badge.anchorMax = badge.pivot = new Vector2(0f, 0.5f);
             badge.anchoredPosition = new Vector2(20f, 0f);
@@ -197,8 +188,6 @@ public class TipCard : MonoBehaviour
         GameUI.Anchor(prompt.rectTransform, 0f, 0f, 1f, 0f, 40f, 30f, 40f, -70f);
         return group;
     }
-
-    // --- Pictures, made in code ---
 
     static readonly Dictionary<Picture, Sprite> pictures = new Dictionary<Picture, Sprite>();
 

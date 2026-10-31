@@ -1,12 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The player's settings, kept between sessions. They're loaded before the first scene, so they apply in every scene,
-// the title screen or not. Change them through the setters, which apply and store them; Save writes them to disk.
-// Display mode and resolution are here too, but Unity remembers those between sessions itself.
-// Music and Effects volumes aren't applied to every sound by themselves: an audio source follows them if its script
-// multiplies its volume by MusicVolume or EffectsVolume (SoundManager and the title screen do). Master volume covers
-// everything.
+// saved player settings
 public static class GameSettings
 {
     const string Prefix = "Sonny.";
@@ -20,17 +15,12 @@ public static class GameSettings
     public static bool MuteInBackground { get; private set; }
     public static bool VSync { get; private set; } = true;
     public static int FrameRateIndex { get; private set; } = FrameRates.Length - 1;
-    // CameraShake is multiplied by this: 0 turns it off.
     public static float ScreenShake { get; private set; } = 1f;
-    // Whether HitStop freezes the game for a moment when hits land.
     public static bool FreezeOnHit { get; private set; } = true;
-    // Scanlines and film grain on screens and menus.
     public static bool ScreenEffects { get; private set; } = true;
     public static bool ShowFps { get; private set; }
-    // Tap to crouch and tap again to stand (PlayerController), instead of holding the key down. On to start with.
     public static bool ToggleCrouch { get; private set; } = true;
 
-    // A new key since toggling became the default, so a hold-to-crouch left over from before doesn't stick.
     const string ToggleCrouchKey = "CrouchToggles";
 
     static bool focused = true;
@@ -54,7 +44,6 @@ public static class GameSettings
         SettingsRunner.Ensure();
     }
 
-    // Everything back to how it started, except the display mode and resolution.
     public static void ResetToDefaults()
     {
         SetMasterVolume(1f);
@@ -142,7 +131,6 @@ public static class GameSettings
         PlayerPrefs.SetInt(Prefix + ToggleCrouchKey, on ? 1 : 0);
     }
 
-    // SettingsRunner calls this when the game's window gains or loses focus.
     public static void SetFocused(bool isFocused)
     {
         focused = isFocused;
@@ -160,14 +148,11 @@ public static class GameSettings
         Application.targetFrameRate = VSync ? -1 : FrameRates[FrameRateIndex];
     }
 
-    // --- Display ---
-
     public static void SetDisplayMode(FullScreenMode mode)
     {
         Screen.fullScreenMode = mode;
     }
 
-    // Every size the display offers, smallest first, each once whatever its refresh rates. Never empty.
     public static List<Vector2Int> Resolutions()
     {
         var sizes = new List<Vector2Int>();

@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// Blaster burns on someone lying where they were shot (CrewAftermath's bodies): a few scorched holes over their suit, each
-// a black center with a dull ember ring and a smudge of soot, placed and sized by the body's position so they look the
-// same every time the scene loads. Drawn in code when the scene starts, over the sprite on this object.
+// burn marks on the bodies
 [RequireComponent(typeof(SpriteRenderer))]
 public class ShotMarks : MonoBehaviour
 {
@@ -20,7 +18,6 @@ public class ShotMarks : MonoBehaviour
     {
         var body = GetComponent<SpriteRenderer>();
         if (body.sprite == null) return;
-        // One group, so the burns always draw over the suit they're on.
         DepthSort.Group(gameObject);
 
         Vector2 at = transform.position;
@@ -44,7 +41,6 @@ public class ShotMarks : MonoBehaviour
         }
     }
 
-    // A scorched hole: black in the middle, a dull ember ring, and soot fading out around it.
     static Sprite Burn
     {
         get

@@ -1,18 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Starts Chapter 2, a few hours after Chapter 1 ends (RestroomBreak): the technician wakes up on the storage room floor,
-// where the crate off the shelf knocked them out. The scene opens on black (Chapter 1 has just shown the title card),
-// the eyes open, twice, they get up off the floor holding their head, and Pip comes back on in a crackle, unable to
-// raise anyone. Then
-// getting out of the storage room is the objective, and StorageEscape takes it from there.
-// The station is built already the way it is now (ChapterTwoBuilder): emergency lighting, the crew gone, the storage
-// room door jammed with rubble behind it. Chapter 2 keeps what the suit had (the map); played straight from this scene
-// in the editor, it unlocks it.
-// Continuing from a save (SaveGame.Resuming), there's no waking up: the player's back on their feet where they were,
-// Pip's on, and the chapter picks up after the objective that was saved (StorageEscape, PatrolReveal, BlockedWay,
-// Workshop, BadgeLockout, CommsRing).
-// Built by ChapterTwoBuilder.
+// runs chapter 2, up to the reactor door
 public class ChapterTwoDirector : MonoBehaviour
 {
     public PlayerController player;
@@ -27,36 +16,18 @@ public class ChapterTwoDirector : MonoBehaviour
     public float titleHoldSeconds = 1.8f;
     [Tooltip("The technician, getting up.")]
     [TextArea] public string[] technicianWakeUp = { "Ugh... my head.", "...And my badge is dead, light's out" };
-    [Tooltip("Pip, coming back on. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipWakeUp =
-    {
-        "~Tech? You were out for hours",
-        "~Something's wrong, get out of this room",
-    };
     public string objectiveWakeUp = "Get out of the storage room";
     [Tooltip("Seconds the prompt for Pip's log (PipLog) stays up after waking, unless it's opened first.")]
     public float logPromptSeconds = 10f;
 
-    // Once they're back on their feet and Pip's said its piece (StorageEscape).
     public static event System.Action WokeUp;
 
-    // Set by whatever loads this scene straight after Chapter 1's title card, so it isn't shown twice.
     public static bool ArrivingFromChapterOne;
 
     IEnumerator Start()
     {
         if (player == null) player = FindAnyObjectByType<PlayerController>();
-        // Darker than it was built (StationGloom).
-        if (!TryGetComponent(out StationGloom _)) gameObject.AddComponent<StationGloom>();
-        // The station's TVs, Sonny's now: dead, or static, or its eye looking out of them (SonnyBroadcast).
-        SonnyBroadcast.PlaceTVs(tvRooms, true);
-        // Fewer bots about, and the camera spider in the common grounds instead.
-        if (!TryGetComponent(out StationOccupants _)) gameObject.AddComponent<StationOccupants>();
-        // Sounds with nothing there to make them, and lamps going out behind them.
-        if (!TryGetComponent(out Unexplained _)) gameObject.AddComponent<Unexplained>();
-        // Sonny, playing the crew's voices back over the speakers once they've been found.
-        if (!TryGetComponent(out CrewEchoes _)) gameObject.AddComponent<CrewEchoes>();
-        SuitFeatures.Unlock(SuitFeatures.Feature.Map);
+        DressStation(gameObject, tvRooms);
         BreakBadge();
         TutorialHud hud = TutorialHud.Get();
         hud.SetFade(1f);
@@ -69,14 +40,22 @@ public class ChapterTwoDirector : MonoBehaviour
             yield break;
         }
 
-        Inventory.Reset();      // from the top: nothing scavenged yet
+        Inventory.Reset();
         if (!ArrivingFromChapterOne) yield return hud.TitleCard(titleCard, titleHoldSeconds);
         ArrivingFromChapterOne = false;
         yield return WakeUp(hud);
     }
 
-    // Sonny's takeover killed every badge, the technician's temp one too: it's still on them, but it opens nothing until
-    // the comms ring's relay switches it back on (CommsRing), which a save past that point does again as it resumes.
+    public static void DressStation(GameObject on, string tvRooms)
+    {
+        if (!on.TryGetComponent(out StationGloom _)) on.AddComponent<StationGloom>();
+        SonnyBroadcast.PlaceTVs(tvRooms, true);
+        if (!on.TryGetComponent(out StationOccupants _)) on.AddComponent<StationOccupants>();
+        if (!on.TryGetComponent(out Unexplained _)) on.AddComponent<Unexplained>();
+        if (!on.TryGetComponent(out CrewEchoes _)) on.AddComponent<CrewEchoes>();
+        SuitFeatures.Unlock(SuitFeatures.Feature.Map);
+    }
+
     void BreakBadge()
     {
         AccessCredentials.Grant(AccessCredentials.TempBadge);
@@ -87,11 +66,9 @@ public class ChapterTwoDirector : MonoBehaviour
         if (comms.relay != null && comms.relay.doctrine != null) AccessCredentials.Revoke(comms.relay.doctrine.credential);
     }
 
-    // Continuing from a checkpoint. Which one is told mostly by the objective that came next, since the way out of the
-    // storage room can be finished two ways (trying the door first, or going straight for the vent).
     IEnumerator Resume(TutorialHud hud, SaveGame.Checkpoint checkpoint)
     {
-        yield return null;      // so everything else in the scene has started, and can be set up
+        yield return null;
         player.transform.rotation = Quaternion.identity;
         if (!string.IsNullOrEmpty(checkpoint.stage)) FillStage(checkpoint);
         Inventory.Load(checkpoint.inventory);
@@ -99,18 +76,23 @@ public class ChapterTwoDirector : MonoBehaviour
         if (player.TryGetComponent(out PlayerHealthHandler handler)) handler.RespawnPoint = player.transform.position;
         SuitHelper.Get().ComeOnline();
 
+        CatchUp(checkpoint.nextObjective);
+        SaveGame.DoneResuming();
+
+        player.ClearScriptedInput();
+        yield return hud.FadeTo(0f, 1.2f);
+    }
+
+    public static BlockedWay CatchUp(string next)
+    {
         var escape = FindAnyObjectByType<StorageEscape>();
         var reveal = FindAnyObjectByType<PatrolReveal>();
-        string next = checkpoint.nextObjective;
-        // The last blocked way found, if it was one of those (the exit, then the way to the control room).
         BlockedWay passed = null;
         foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
             if (!string.IsNullOrEmpty(way.objective) && next == way.objective) passed = way;
-        // Or past it: up in the comms ring (the EMP made sends them straight there), or let into the control room after.
         var lockout = FindAnyObjectByType<BadgeLockout>();
         var comms = FindAnyObjectByType<CommsRing>();
         bool commsStage = comms != null && comms.Owns(next);
-        // Or somewhere in scavenging and making the EMP on the upper maintenance deck.
         var crafting = FindAnyObjectByType<Workshop>();
         bool craftingStage = crafting != null && crafting.Owns(next) && !commsStage;
         bool pastComms = passed != null && comms != null && passed.afterObjective == comms.afterObjective;
@@ -130,30 +112,11 @@ public class ChapterTwoDirector : MonoBehaviour
         if (commsStage) comms.Resume(next);
         else if (pastComms) comms.Resume(next, true);
         if (passed != null) passed.ResumePassed();
-        // Pip as it was by then (SuitHelper.Condition): Damaged past the comms ring (CommsRing.Resume sees to it inside),
-        // and Gone once they've got down to Sonny, since it died at the end of the reactor's lockdown.
+        if (pastDeck && crafting != null) crafting.SkipUnlockedLine();
         if (pastComms) SuitHelper.Worsen(SuitHelper.Condition.Damaged);
-        if (passed != null && passed.arriveInRoom != '\0' && IsSonnysRoom(passed.arriveInRoom))
-        {
-            SuitHelper.Wear = SuitHelper.Condition.Gone;
-            StartCoroutine(SuitHelper.Get().GoOffline(true));
-        }
-        SaveGame.DoneResuming();
-
-        player.ClearScriptedInput();
-        yield return hud.FadeTo(0f, 1.2f);
+        return passed;
     }
 
-    // Whether this room on the map is the one Sonny's in: the control room.
-    static bool IsSonnysRoom(char marker)
-    {
-        var sonny = FindAnyObjectByType<SonnyBox>();
-        StationMap map = StationMap.Current;
-        return sonny != null && map != null && map.Locate(sonny.transform.position, out _, out StationMap.Room room) && room.marker == marker;
-    }
-
-    // A tester's jump (CheckpointJump): the stage as the objectives either side of it, as if it had been saved there, and
-    // where the player would be standing.
     void FillStage(SaveGame.Checkpoint checkpoint)
     {
         var escape = FindAnyObjectByType<StorageEscape>();
@@ -181,7 +144,6 @@ public class ChapterTwoDirector : MonoBehaviour
                 at = crafting != null ? crafting.benchStandAt : (Vector2?)null;
                 break;
             case "wall-grab":
-                // The hallway's caved in and it's upstairs next; standing a few steps short of where the bot comes out.
                 next = StageObjective("hallway-caved");
                 var grab = FindAnyObjectByType<WallGrab>();
                 at = grab != null ? grab.triggerAt + Vector2.down * (grab.triggerRange + 1.5f) : (Vector2?)null;
@@ -191,8 +153,6 @@ public class ChapterTwoDirector : MonoBehaviour
             case "comms-power":
             case "comms-relay":
             case "comms-done":
-                // In the comms ring: just arrived (the lights about to die), in the dark at the generator, the power
-                // back with no broadcasts in yet, every broadcast in and the relay to answer, or the relay passed.
                 var ring = FindAnyObjectByType<CommsRing>();
                 if (ring == null) break;
                 switch (checkpoint.stage)
@@ -204,28 +164,7 @@ public class ChapterTwoDirector : MonoBehaviour
                     default: next = ring.afterObjective; at = ring.relayStandAt; break;
                 }
                 break;
-            case "reactor":
-            case "reactor-lockdown":
-            case "reactor-cleared":
-                // Past the comms ring, let into the reactor core: just inside, on the far side a step short of the
-                // lockdown, or with it beaten, by the stairs down. For the fight, armed with what the bench makes.
-                var comms = FindAnyObjectByType<CommsRing>();
-                var lockdown = FindAnyObjectByType<ReactorLockdown>();
-                next = comms != null ? comms.afterObjective : null;
-                BlockedWay arrival = System.Array.Find(FindObjectsByType<BlockedWay>(), w => w.arriveInRoom == 'r');
-                if (checkpoint.stage == "reactor") at = arrival != null ? arrival.standAt : (Vector2?)null;
-                else
-                {
-                    at = lockdown == null ? (Vector2?)null : checkpoint.stage == "reactor-lockdown" ? lockdown.standAt : lockdown.clearedStandAt;
-                    if (arrival != null) arrival.ResumePassed();
-                    if (lockdown != null && checkpoint.stage == "reactor-cleared") lockdown.SkipToCleared();
-                    Inventory.Reset();
-                    foreach (string made in new[] { Workshop.EmpId, Workshop.CrowbarId, Workshop.ScrapGunId }) Inventory.Grant(made);
-                    checkpoint.inventory = Inventory.Save();
-                }
-                break;
             case "bench-stocked":
-                // Up on the deck, at the bench, with enough of every part for everything on it.
                 var bench = FindAnyObjectByType<Workshop>();
                 next = StageObjective("upper-deck");
                 at = bench != null ? bench.benchStandAt : (Vector2?)null;
@@ -233,14 +172,13 @@ public class ChapterTwoDirector : MonoBehaviour
                 {
                     Inventory.Reset();
                     int part = 0;
-                    foreach (Inventory.Stack[] cost in bench.crowbarOnBench ? new[] { bench.empCost, bench.crowbarCost, bench.scrapGunCost } : new[] { bench.empCost, bench.scrapGunCost })
+                    foreach (Inventory.Stack[] cost in bench.crowbarOnBench ? new[] { bench.empCost, bench.crowbarCost, bench.blasterCost } : new[] { bench.empCost, bench.blasterCost })
                         foreach (Inventory.Stack need in cost)
                             Inventory.Add($"tester-{part++}", need.material, need.count);
                     checkpoint.inventory = Inventory.Save();
                 }
                 break;
             default:
-                // Found one of the blocked ways: standing in front of it, with where it sends them next.
                 foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
                 {
                     if (way.stage != checkpoint.stage) continue;
@@ -260,7 +198,6 @@ public class ChapterTwoDirector : MonoBehaviour
         }
     }
 
-    // Where the blocked way that's this stage sends them next.
     static string StageObjective(string stage)
     {
         foreach (BlockedWay way in FindObjectsByType<BlockedWay>())
@@ -268,7 +205,6 @@ public class ChapterTwoDirector : MonoBehaviour
         return null;
     }
 
-    // Eyes opening, twice, then up off the floor, and Pip coming back on.
     IEnumerator WakeUp(TutorialHud hud)
     {
         yield return Wait(0.6f);
@@ -293,14 +229,13 @@ public class ChapterTwoDirector : MonoBehaviour
         SuitHelper pip = SuitHelper.Get();
         if (!wasOn) pip.ComeOnline();
         pip.Glitch(0.6f);
-        yield return pip.Say(pipWakeUp);
+        yield return pip.Say(PipManager.Lines.wakeUp);
         player.ClearScriptedInput();
         hud.SetObjective(objectiveWakeUp);
         WokeUp?.Invoke();
         StartCoroutine(ShowLogPrompt(hud));
     }
 
-    // How to read back what Pip's said: up for a while, or until they look.
     IEnumerator ShowLogPrompt(TutorialHud hud)
     {
         hud.ShowPromptWithHint("Pip's log", "Read back anything Pip's said", PipLog.LogKey.ToString());

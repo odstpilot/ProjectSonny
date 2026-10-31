@@ -1,7 +1,6 @@
 using UnityEngine;
 
-// A breaker box hung on a wall: a grey panel with a row of switches, and two status lights that never settle (a green
-// one blinking, a red one flickering: BlinkLight). Just dressing. The art's made in code.
+// breaker box on a wall
 public class BreakerBox : MonoBehaviour
 {
     const float PixelsPerUnit = 20f;
@@ -29,7 +28,7 @@ public class BreakerBox : MonoBehaviour
         var holder = new GameObject(lightName);
         holder.transform.SetParent(transform, false);
         holder.transform.localPosition = pixel / PixelsPerUnit;
-        holder.SetActive(false);        // set up before it wakes
+        holder.SetActive(false);
         var light = holder.AddComponent<BlinkLight>();
         light.pattern = pattern;
         light.color = color;
@@ -40,7 +39,6 @@ public class BreakerBox : MonoBehaviour
         holder.SetActive(true);
     }
 
-    // A grey box with a dark frame and two rows of switches, centered on this object.
     static Sprite MakePanel()
     {
         var frame = new Color32(22, 22, 24, 255);

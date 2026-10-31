@@ -2,12 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// A grate into the air ducts. Walk up to it and press E to crawl in: the player comes out on the VentNetwork's map at
-// this grate's number. Climbing out over a grate on the map brings them out at the VentGrate with that number, which
-// can be anywhere in the level.
-// Setup: a Collider2D on this object for the grate's footprint (a trigger is fine), and the sprite on a child so it can rattle.
-// The grate itself is drawn in code (drawGrate): a steel frame, bolted at the corners, over slats with the dark of the
-// duct showing between them, put in place of whatever sprite the child has, over the same spot.
+// grate into the vents
 [RequireComponent(typeof(Collider2D))]
 public class VentGrate : MonoBehaviour
 {
@@ -30,7 +25,6 @@ public class VentGrate : MonoBehaviour
 
     public Vector2 ExitPoint => (Vector2)transform.position + exitOffset;
     public VentNetwork Network => network != null ? network : (network = FindAnyObjectByType<VentNetwork>());
-    // Just above the top of the sprite, where the prompt sits.
     Vector3 PromptPoint =>
         new Vector3(transform.position.x, (body != null ? body.bounds.max.y : transform.position.y) + 0.2f, transform.position.z);
 
@@ -42,7 +36,6 @@ public class VentGrate : MonoBehaviour
     private Health playerHealth;
     private PlayerController playerController;
 
-    // The grate with this number into these ducts, or null.
     public static VentGrate Find(VentNetwork network, int number)
     {
         foreach (VentGrate grate in all)
@@ -56,7 +49,6 @@ public class VentGrate : MonoBehaviour
         body = GetComponentInChildren<SpriteRenderer>();
         if (body != null && drawGrate)
         {
-            // Over the middle of what was there, or the grate's own middle.
             Vector3 middle = body.sprite != null ? body.bounds.center : transform.position;
             body.sprite = GrateSprite;
             body.transform.position = new Vector3(middle.x, middle.y, body.transform.position.z);
@@ -64,9 +56,7 @@ public class VentGrate : MonoBehaviour
         if (body != null) bodyBasePosition = body.transform.localPosition;
     }
 
-    // --- The grate's art ---
-
-    const int GratePixels = 32;          // the tileset's 32 pixels to a cell
+    const int GratePixels = 32;
     static Sprite grateSprite;
 
     static Sprite GrateSprite => grateSprite != null ? grateSprite : (grateSprite = PixelArt.ToSprite(PixelArt.MakeTexture(GratePixels, GratePixels, GratePixel),
@@ -82,7 +72,6 @@ public class VentGrate : MonoBehaviour
     static readonly Color32 GrateDuct = new Color32(8, 10, 14, 255);
     static readonly Color32 GrateDuctDeep = new Color32(18, 24, 34, 255);
 
-    // (0, 0) is the bottom left. Lit from the top left, like the tileset.
     static Color32 GratePixel(int x, int y)
     {
         const int n = GratePixels;
@@ -90,15 +79,12 @@ public class VentGrate : MonoBehaviour
         if (edge == 0) return GrateOutline;
         if (edge <= 3)
         {
-            // Bolts in the corners of the frame.
             bool corner = (x == 2 || x == n - 3) && (y == 2 || y == n - 3);
             if (corner) return GrateBolt;
             if (edge == 1) return x == 1 || y == n - 2 ? GrateFrameLit : GrateFrameShade;
             return GrateFrame;
         }
         if (edge == 4) return GrateOutline;
-        // Inside: slats three pixels thick with a lit top edge, two pixels of duct showing between them, the duct a
-        // little lighter in the middle where the light gets down into it.
         int band = (n - 5 - y) % 5;
         if (band < 3) return band == 0 ? GrateSlatLit : GrateSlat;
         float fromMiddle = Mathf.Abs(x - (n - 1) * 0.5f) / (n * 0.5f);
@@ -147,13 +133,11 @@ public class VentGrate : MonoBehaviour
         }
     }
 
-    // Shakes when someone climbs in or out.
     public void Rattle()
     {
         if (isActiveAndEnabled && body != null) StartCoroutine(RattleRoutine());
     }
 
-    // Not paused, not hidden somewhere already, not dead, and not frozen by a terminal or the death respawn.
     bool CanPlayerAct()
     {
         if (Time.timeScale <= 0f || Locker.IsPlayerHidden) return false;
@@ -161,7 +145,6 @@ public class VentGrate : MonoBehaviour
         return playerHealth == null || !playerHealth.IsDead;
     }
 
-    // Edge to edge, so it doesn't matter which side the player walks up from.
     float DistanceToPlayer()
     {
         if (playerCollider != null && playerCollider.enabled)
@@ -183,7 +166,6 @@ public class VentGrate : MonoBehaviour
         body.transform.localPosition = bodyBasePosition;
     }
 
-    // Select the grate to see where the player climbs out (green).
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;

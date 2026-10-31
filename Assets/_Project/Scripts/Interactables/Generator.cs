@@ -2,14 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
 
-// A backup generator, dead, in a room with the power out (the comms ring, CommsRing). Dead, it barely glows, the
-// faintest amber pulse from its coil lamps, easy to miss in the pitch dark; an EMP's flash shows it up brighter:
-// caught in a pulse's cone (EmpPulse.Swept), it crackles and its coil lamps blink for a few seconds. Running, it glows
-// green. Walk up and press E to start it
-// (GeneratorScreen): bring its coils up one at a time by engaging each as the rotor comes round into sync. A miss
-// backfires, loud enough to bring the bots (Backfired), and knocks a coil back down. All of them up and it starts.
-// Coils already up stay up between tries.
-// Setup: a solid Collider2D on this object for its footprint. The art is made in code unless a sprite is set.
+// backup generator to start
 public class Generator : Terminal
 {
     const float PixelsPerUnit = 20f;
@@ -44,21 +37,16 @@ public class Generator : Terminal
 
     public UnityEvent onStarted = new UnityEvent();
     public event System.Action Started;
-    // A missed sync: a bang, and a cloud of sparks. A good place to bring the bots.
     public event System.Action Backfired;
 
     public bool IsRunning { get; private set; }
-    // Won't take a start until the comms ring's stage begins (CommsRing), so a look round the ring early for scrap can't
-    // get the power back before the blackout it's meant to end.
     [System.NonSerialized] public bool locked;
-    // Up so far; kept between tries.
     public int CoilsLit { get; set; }
     public override bool InUse => GeneratorScreen.Current != null && GeneratorScreen.Current.Generator == this;
     protected override string PromptText => IsRunning ? "RUNNING" : locked ? "OFFLINE" : "START GENERATOR";
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, ArtHeight / PixelsPerUnit + 0.2f, 0f);
     protected override bool Available => !IsRunning && !locked;
 
-    // The sync window for this coil, as a fraction of the gauge, and the needle's speed.
     public float WindowFor(int coil) => Mathf.Max(0.04f, window - windowShrink * coil);
     public float SpeedFor(int coil) => needleSpeed + needleSpeedUp * coil;
 
@@ -96,7 +84,6 @@ public class Generator : Terminal
         GeneratorScreen.Get(screenFont).Open(this, player);
     }
 
-    // Caught in an EMP's flash: a crackle over it, and its lamps blinking for a while.
     void OnSwept(Vector2 origin, Vector2 direction, float radius, float halfAngle)
     {
         if (IsRunning) return;
@@ -107,7 +94,6 @@ public class Generator : Terminal
         LightFlash.Spawn(middle, Pinged, 2.4f, 1.2f, 0.5f);
     }
 
-    // All the coils up: it starts, with a shudder through the floor. quietly: picking up from a save, no show.
     public void MarkStarted(bool quietly = false)
     {
         if (IsRunning) return;
@@ -125,7 +111,6 @@ public class Generator : Terminal
         onStarted.Invoke();
     }
 
-    // A missed sync (GeneratorScreen): a bang, sparks, and a coil knocked back down.
     public void Backfire()
     {
         CoilsLit = Mathf.Max(0, CoilsLit - 1);
@@ -137,8 +122,6 @@ public class Generator : Terminal
         Backfired?.Invoke();
     }
 
-    // A slow amber pulse while it's dead, blinking after an EMP's caught it, the lit coils steady while it's being
-    // started, and all green, humming, once it runs.
     void UpdateLamps()
     {
         bool pinged = Time.time < pingUntil;
@@ -171,7 +154,6 @@ public class Generator : Terminal
         body.sprite = sprite != null ? sprite : MakeGenerator();
         body.sortingLayerName = "Player";
 
-        // A lamp per coil, in a row along the top of the housing.
         Texture2D white = PixelArt.MakeTexture(3, 2, (x, y) => new Color32(255, 255, 255, 255));
         Sprite lampSprite = PixelArt.ToSprite(white, PixelsPerUnit, new Vector2(0.5f, 0.5f));
         lamps = new SpriteRenderer[coils];
@@ -199,7 +181,6 @@ public class Generator : Terminal
         glow.enabled = false;
     }
 
-    // A squat housing: a big round fan on the left, a grille and a panel for the coil lamps on the right, feet below.
     static Sprite MakeGenerator()
     {
         var frame = new Color32(20, 19, 18, 255);

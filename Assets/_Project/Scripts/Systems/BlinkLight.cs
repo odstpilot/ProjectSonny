@@ -1,13 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A small light that never holds still: a warning beacon blinking on the ceiling, a lamp on the wall, a status light on
-// a console, a breaker, or a medical bay. Only the light itself, a soft glow, going by its pattern:
-//   Blink    on for part of each period, then off
-//   Pulse    swelling up and down
-//   Flicker  mostly on, guttering, dropping out now and then like a failing contact
-// Each starts at its own point in its pattern (phase), so a row of them never blinks together.
-// Made in code (the comms ring's are placed by ChapterOneBuilder); set it up before it wakes.
+// small blinking light
 public class BlinkLight : MonoBehaviour
 {
     public enum Pattern { Blink, Pulse, Flicker }
@@ -53,7 +47,6 @@ public class BlinkLight : MonoBehaviour
             case Pattern.Pulse:
                 return 0.5f + 0.5f * Mathf.Sin(cycles * 2f * Mathf.PI);
             case Pattern.Flicker:
-                // Every so often it drops out for a moment; otherwise it gutters.
                 if (Time.time >= nextDrop)
                 {
                     dropUntil = Time.time + Random.Range(0.05f, 0.3f);

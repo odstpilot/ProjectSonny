@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Takes the player's controls away and gives them back, for anything that takes over the screen, like a terminal.
-// Moving, attacking, and swapping weapons stop. Health and its handler stay on, so the player can still be hurt, and so
-// do lights. Release turns back on exactly what Freeze turned off.
+// turns the player's controls off and on
 public static class PlayerControls
 {
     public static List<Behaviour> Freeze(Transform player)

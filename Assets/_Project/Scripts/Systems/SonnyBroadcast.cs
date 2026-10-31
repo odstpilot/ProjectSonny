@@ -2,32 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Sonny never speaks aloud, and isn't captioned. When it has something to say, it takes over the screens near the
-// technician (StationTV, and the tutorial's monitors, SonnyScreen) and puts it up a word at a time: each word on every
-// one of those screens at once, with a flat machine tone, a flicker of static between words, and its eye left watching
-// them from the screens once it's done.
-// Calm in Chapter 1, its words come up clean, in blue; after that, in red, the picture shivering. A slip (Say with
-// slip) is the red showing through in Chapter 1.
-// Whatever shows captions for Sonny goes through here: TutorialHud.Say hands over any line from Sonny (IsSonny).
-// PlaceTVs hangs the sets on the rooms' walls, where there's space for them, as a chapter starts.
+// sonny talking through the screens
 public static class SonnyBroadcast
 {
     const float TvWidth = 1.45f, TvHeight = 1.1f;
-    const float Apart = 3.5f;               // the least distance between two sets, whatever rooms they're in
-    const float WallLift = 1.5f;            // the middle of the wall face over the floor's top edge, where pictures hang
-    const float NearPlayer = 14f;           // screens this close count as near, if none's in their room
+    const float Apart = 3.5f;
+    const float WallLift = 1.5f;
+    const float NearPlayer = 14f;
 
-    // Whether a caption's speaker is Sonny.
     public static bool IsSonny(string speaker) =>
         !string.IsNullOrEmpty(speaker) && speaker.Trim().Equals("Sonny", System.StringComparison.OrdinalIgnoreCase);
 
     public static bool Speaking { get; private set; }
 
-    // Entering Play mode without reloading scripts keeps statics.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetOnPlay() => Speaking = false;
 
-    // Says it, a word at a time, on the screens near the player, then leaves its eye on them for holdSeconds.
     public static IEnumerator Say(string line, float holdSeconds = 2f, bool slip = false)
     {
         string[] words = (line ?? "").Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
@@ -50,7 +40,6 @@ public static class SonnyBroadcast
             StationTV loudest = Nearest(tvs);
             if (loudest != null) loudest.PlayTone(hostile ? Random.Range(0.85f, 0.95f) : 1f);
             else Sfx.Play("Sonny Word", 0.6f, hostile ? 0.9f : 1f);
-            // Longer words, and the ends of sentences, stay up longer.
             bool stop = shown.EndsWith(".") || shown.EndsWith("?") || shown.EndsWith("!");
             yield return Wait(0.4f + 0.04f * shown.Length + (stop ? 0.35f : 0f));
             foreach (StationTV tv in tvs) tv.BetweenWords();
@@ -65,7 +54,6 @@ public static class SonnyBroadcast
 
     static Object FindChapterOne() => Object.FindAnyObjectByType<ChapterOneDirector>();
 
-    // The sets in the player's room; failing that, any close by.
     static List<StationTV> TVsNearPlayer()
     {
         var near = new List<StationTV>();
@@ -104,13 +92,8 @@ public static class SonnyBroadcast
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime) yield return null;
     }
 
-    // --- Hanging the sets ---
-
-    // A set or two on the wall of each of these rooms (by their markers in the layout), wherever there's a clear stretch
-    // of wall: one, or two in a long room. rogue: Sonny's already taken them.
     public static void PlaceTVs(string rooms, bool rogue)
     {
-        // What's already on the walls: pictures, lamps, doors, cameras. Big things (backdrops) don't count.
         var taken = new List<Bounds>();
         foreach (SpriteRenderer drawn in Object.FindObjectsByType<SpriteRenderer>())
             if (drawn.enabled && drawn.bounds.size.x < 6f && drawn.bounds.size.y < 6f) taken.Add(drawn.bounds);
@@ -138,7 +121,6 @@ public static class SonnyBroadcast
             }
     }
 
-    // The clear stretch of wall nearest where it's wanted, if any.
     static float? ClearSpot(Rect floor, float y, float wanted, List<Bounds> taken, List<float> hung)
     {
         float? best = null;

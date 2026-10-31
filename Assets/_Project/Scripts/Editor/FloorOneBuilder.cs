@@ -8,69 +8,27 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 using Map = TutorialLevelBuilder.Map;
 
-// Builds the whole station into a chapter's scene (ChapterOneBuilder, ChapterTwoBuilder), both floors as the blueprint
-// lays them out. Floor 1 is from the text map in Scenes/Levels/Station/Floor1Layout.txt: the common grounds (kitchen and lounge, restroom,
-// hallway, bedrooms) with the ship entrance at the west end, the storage room, the maintenance deck (straight off the
-// east end of the common grounds hallway), and the hallway up to the control room. Floor 2 (the comms ring, the upper maintenance deck, and the
-// reactor core) is upstairs, as the blueprint has it: from Scenes/Levels/Station/Floor2Layout.txt, built above floor 1 in
-// the world, far enough off that neither shows from the other, with the stairs up on floor 1 (>) leading to the stairs
-// down on floor 2 (<) (Stairway). Every chapter's scene is built
-// the same way (ChapterOneBuilder, ChapterTwoBuilder), so the whole station is always there. What differs between
-// floors (the map, the rooms, their floors and furniture) is a FloorSpec, below. It uses the Tutorial builder's map format and paints the same tiles, lamps, windows, and
-// lockers (see TutorialLevelBuilder), so edit the map and run this again. It replaces everything in the scene but the Sound Manager.
-//
-// The map is drawn compact, like the blueprint, but the rooms are built bigger and far apart. Each room is stretched to
-// about RoomScale times its size by repeating rows and columns of plain floor through its middle (never through a piece
-// of furniture, a doorway, or a marker, so what's drawn together stays together, and its furniture keeps its place in
-// proportion), and each keeps its place in the layout at four times the distance, so no room can be seen from another.
-// The ways between them are Teleporters, which fade the screen through black and put the player on the other side.
-// Every room also keeps the camera inside its outside walls (CameraRoom).
-//
-// Built as drawn instead (StationBlueprintBuilder, for testing), every room is its drawn size and in its drawn place,
-// right next to the others as on the blueprint, and the camera goes wherever the player does.
-//
-// Rooms are dressed the way the rooms on Map (DEMO) are, with the same tiles put together the same way: a floor laid for
-// each room (FloorKits), machinery and pipes along the walls of the working rooms (PipeWallRooms), and furniture (Furnishings):
-// console banks with chairs, pods in rows, desks, sofas, tables on hazard-striped floor, and railings. Furniture stands on
-// the floor the way the characters do, sorted by height on screen, with a shadow under it (DepthDressing), and there's
-// shade along the foot of every wall. The light comes from lamps on the walls, not the ceiling.
-//
-// On top of the Tutorial builder's walls, floor, windows, lamps, and lockers, the map has:
-//   P        where the player starts
-//   1 - 9    closed doors: the same digit at each end, on the floor cells against the wall the door is in. Walk up to
-//            one and press E to come out just inside the other.
-//   ! ? $    hallways that carry on: the same symbol at each end, on floor that runs into a dead end. Walking in takes
-//            the player straight through.
-//   X        a door that stays locked (the ship entrance)
-//   k w h b s m c o   one cell in each room, which names it: kitchen and lounge, restroom, common grounds hallway,
-//            bedrooms, storage room, maintenance deck, hallway to the control room, and control room. Everything the
-//            marker's floor reaches is that room.
-//   < >      stairs down and up, to the other floor (Stairway). Each floor's stairs are numbered from the left, and lead to
-//            the stairs with the same number on the other floor, as the blueprint lines them up.
-//   S        where Sonny gets installed
+// builds both station floors from the layout files
 public static class FloorOneBuilder
 {
     const string TilesFolder = "Assets/_Project/Art/Environment/Tilesets/ShipTiles";
     const string DoorMarkers = "123456789";
     const string PassageMarkers = "!?$";
-    const float ArrivalGap = 1f;        // how far past a doorway's inner edge the player comes out
-    const int SpreadFactor = 4;         // how much further apart the rooms are built than they're drawn
-    const float RoomScale = 1.15f;      // how much bigger each room is built than it's drawn
-    // The two above, for the build going on: both 1 when it's built as drawn.
+    const float ArrivalGap = 1f;
+    const int SpreadFactor = 4;
+    const float RoomScale = 1.15f;
     static int spreadFactor = SpreadFactor;
     static float roomScale = RoomScale;
     static bool asDrawn;
-    const int FaceRows = 3;             // rows of wall face above a room's floor
-    const float CameraSize = 7f;        // half the height the camera shows, in tiles (the prefab's is 5)
-    static readonly Vector2 ViewSize = new Vector2(CameraSize * 2f * 16f / 9f, CameraSize * 2f);   // what the camera shows, in tiles
+    const int FaceRows = 3;
+    const float CameraSize = 7f;
+    static readonly Vector2 ViewSize = new Vector2(CameraSize * 2f * 16f / 9f, CameraSize * 2f);
 
-    // Bright and ordinary: this is the station before anything goes wrong. The ambient light is kept low enough that the
-    // lamps on the walls show: a warm pool on the floor below each, and a glow on the wall around its fitting.
     static readonly Color AmbientColor = new Color(0.86f, 0.92f, 1f);
-    const float AmbientIntensity = 0.62f;
+    const float AmbientIntensity = 0.7f;
     static readonly Color LampColor = new Color(1f, 0.9f, 0.74f);
-    const int LampSpacing = 7;          // the most cells along a wall between one lamp and the next
-    const float CharacterZ = 1f;        // where characters and furniture stand
+    const int LampSpacing = 7;
+    const float CharacterZ = 1f;
 
     static readonly (char marker, string name)[] FloorOneRooms =
     {
@@ -86,16 +44,8 @@ public static class FloorOneBuilder
 
     static readonly Vector2Int[] Steps = { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down };
 
-    // --- Decorations ---
-
-    // What each kind of piece is. Furniture, and what stands in front of it (chairs at a console), are objects that sort
-    // by height on screen like the characters do, solid only at their foot (PlaceProp). Rugs and details are laid on the
-    // floor, and wall pieces hang on the wall faces.
     enum Layer { Rug, Detail, Furniture, Front, Wall }
 
-    // A piece of furniture or floor detail: tiles from the ship tileset, top row first, -1 where there's nothing.
-    // A piece can reach up onto the wall above the floor (wallRows); its position is where its first floor row starts.
-    // Where furniture is solid is worked out from its tiles and its name (FurnitureFootprint).
     class Stamp
     {
         public readonly string name;
@@ -117,19 +67,16 @@ public static class FloorOneBuilder
     static readonly Stamp Sofa = new Stamp("sofa", Layer.Furniture, new[] { new[] { 18, 19, 20 }, new[] { 42, 43, 44 } });
     static readonly Stamp Beds = new Stamp("beds", Layer.Furniture, new[] { new[] { 164, 165 }, new[] { 196, 197 } });
     static readonly Stamp Pod = new Stamp("pod", Layer.Furniture, new[] { new[] { 13, 14 }, new[] { 37, 38 }, new[] { 62, 63 } });
-    // Chairs go on columns 1 and 3.
     static readonly Stamp ConsoleBank = new Stamp("console bank", Layer.Furniture, new[]
     {
         new[] { 59, 60, 61, 117, 118, 119 },
         new[] { 88, -1, -1, -1, 148, 149 }
     });
-    // Chairs go on columns 1, 4, 5, and 8.
     static readonly Stamp LongConsoleBank = new Stamp("long console bank", Layer.Furniture, new[]
     {
         new[] { 59, 60, 61, 179, 180, 61, 60, 179, 180, 181 },
         new[] { 88, -1, -1, -1, -1, -1, -1, -1, -1, 211 }
     });
-    // Chairs go on columns 2 and 5.
     static readonly Stamp Counter = new Stamp("counter", Layer.Furniture, new[]
     {
         new[] { 10, 11, 12, 61, 179, 180, 181, -1 },
@@ -148,7 +95,6 @@ public static class FloorOneBuilder
         return new Stamp("railing", Layer.Furniture, new[] { tiles });
     }
 
-    // Floor edged in hazard stripes.
     static Stamp HazardFloor(int width, int height)
     {
         var rows = new int[height][];
@@ -161,12 +107,9 @@ public static class FloorOneBuilder
         return new Stamp("hazard floor", Layer.Rug, rows);
     }
 
-    // What goes in each room, from the top-left corner of its floor: x cells right and y rows down. A piece that wouldn't
-    // fit on open floor, or would stand in front of a doorway, the stairs, or a marker, is left out with a warning.
     static readonly Dictionary<char, (Stamp stamp, int x, int y)[]> FloorOneFurnishings = new Dictionary<char, (Stamp, int, int)[]>
     {
         {
-            // Map (DEMO)'s lounge: a counter along the top wall, desks with chairs, and sofas side by side.
             'k', new[]
             {
                 (Counter, 1, 0), (Chair, 3, 0), (Chair, 6, 0),
@@ -188,16 +131,12 @@ public static class FloorOneBuilder
             }
         },
         {
-            // Map (DEMO)'s dark storerooms, cut down to a closet: a grid on the black floor. The shelf (Chapter 1) goes
-            // against the back wall, beside the door.
             's', new[]
             {
                 (FloorGrid, 2, 3),
             }
         },
         {
-            // The north bay like Map (DEMO)'s control rooms: console banks with chairs, and pods in rows of three. The south
-            // bay like its workshops: pipes down the wall, and tables with benches on hazard-striped floor.
             'm', new[]
             {
                 (ConsoleBank, 12, 0), (Chair, 13, 0), (Chair, 15, 0), (ConsoleBank, 24, 0), (Chair, 25, 0), (Chair, 27, 0),
@@ -208,19 +147,14 @@ public static class FloorOneBuilder
                 (Railing(5), 24, 30),
             }
         },
-        // The control room ('o') has no furniture of its own: it's Sonny's, and Sonny brings its rig of pylons, consoles,
-        // monitor banks, and server racks (SonnyBox).
     };
 
-    // How each room's floor is laid, after Map (DEMO): the tile for a cell, counted from the top-left corner of the room's
-    // floor, or -1 to leave the plain grating. Rooms not listed keep the grating.
     static readonly Dictionary<char, System.Func<Room, int, int, int>> FloorOneKits = new Dictionary<char, System.Func<Room, int, int, int>>
     {
         { 'h', Corridor }, { 'c', Corridor },
         { 'k', Lounge }, { 's', DarkFloor }, { 'm', Workshop }, { 'o', Bridge },
     };
 
-    // Plates along the walls and panels between, the long way down a hallway.
     static int Corridor(Room room, int x, int y)
     {
         bool lengthwise = room.Width >= room.Height;
@@ -228,7 +162,6 @@ public static class FloorOneBuilder
         return across == 0 || across == size - 1 ? 370 : 339;
     }
 
-    // Light tiles inside a two-tile border.
     static int Lounge(Room room, int x, int y)
     {
         int right = room.Width - 1, bottom = room.Height - 1;
@@ -241,8 +174,6 @@ public static class FloorOneBuilder
 
     static int DarkFloor(Room room, int x, int y) => NineSlice(x, y, room.Width, room.Height, 5, 6, 7, 30, 31, 32, 54, 55, 56);
 
-    // The maintenance deck: panels with grated walkways across the north bay, and in the south bay a grate floor with
-    // grates running down under the wall pipes, crates along the wall at the top, and a row of crates along the bottom.
     static int Workshop(Room room, int x, int y)
     {
         const int northBayEnd = 12, westWallEnd = 9;
@@ -253,7 +184,6 @@ public static class FloorOneBuilder
         return 372;
     }
 
-    // Panels along the walls, walkways inside them, and plates in the middle.
     static int Bridge(Room room, int x, int y)
     {
         int fromBottom = room.Height - 1 - y;
@@ -261,8 +191,6 @@ public static class FloorOneBuilder
         return y == 2 || fromBottom == 2 ? 430 : 370;
     }
 
-    // The tile for a cell of an area drawn as corners, edges, and a middle: top-left, top, top-right, left, middle,
-    // right, bottom-left, bottom, bottom-right.
     static int NineSlice(int x, int y, int width, int height, params int[] tiles)
     {
         int column = x == 0 ? 0 : x == width - 1 ? 2 : 1;
@@ -270,14 +198,9 @@ public static class FloorOneBuilder
         return tiles[row * 3 + column];
     }
 
-    // Wall faces in the working rooms become machinery: a run of cylinder with an end cap at each side. Rows are the top,
-    // middle, and bottom of the three-row face. (Map (DEMO) also breaks runs up with a duct, but in a wall it reads as a
-    // doorway, so it's left out.)
     static readonly int[] PipeLeftCap = { 68, 95, 126 };
     static readonly int[] PipeRightCap = { 74, 101, 132 };
-    static readonly int[] PipeMiddle = { 69, 96, 127 };        // the first of five that repeat
-
-    // --- Floor 2 ---
+    static readonly int[] PipeMiddle = { 69, 96, 127 };
 
     static readonly (char marker, string name)[] FloorTwoRooms =
     {
@@ -289,8 +212,6 @@ public static class FloorOneBuilder
     static readonly Dictionary<char, (Stamp stamp, int x, int y)[]> FloorTwoFurnishings = new Dictionary<char, (Stamp, int, int)[]>
     {
         {
-            // Listening posts: consoles under the windows, desks in rows, and pods; more consoles, pods, and railings
-            // through the south half, so there's something to duck behind all the way across.
             'g', new[]
             {
                 (LongConsoleBank, 2, 0), (Chair, 3, 0), (Chair, 6, 0), (Chair, 7, 0), (Chair, 10, 0),
@@ -313,8 +234,6 @@ public static class FloorOneBuilder
             }
         },
         {
-            // Pipes down the north wall behind the core (the core itself is ReactorCore, PlaceReactorCore), and the
-            // workshop band along the south with pipes down its wall.
             'r', new[]
             {
                 (WallPipe, 50, 0), (WallPipe, 55, 0), (WallPipe, 69, 0), (WallPipe, 74, 0),
@@ -329,27 +248,18 @@ public static class FloorOneBuilder
         { 'g', Bridge }, { 'd', ReactorFloor }, { 'r', ReactorFloor },
     };
 
-    // The reactor core (ReactorCore): the room it's in, and about where the middle of its foot goes, in cells from the
-    // top-left of that room's floor as it's drawn. It's built where it fits nearest that.
     const char ReactorRoom = 'r';
     static readonly Vector2Int ReactorSpot = new Vector2Int(61, 23);
-    // How much of the room it takes, in cells from the middle of its foot: the pad round it (all on open floor, clear of
-    // doorways and stairs), the body standing up off it (not hanging over a wall), and its solid foot (an ellipse).
     static readonly RectInt ReactorPad = new RectInt(-17, -7, 34, 14);
     static readonly RectInt ReactorBody = new RectInt(-14, -20, 28, 16);
     static readonly Vector2 ReactorFoot = new Vector2(10.6f, 4.4f);
 
-    // Plates round the edge and grating over the rest.
     static int ReactorFloor(Room room, int x, int y)
     {
         int right = room.Width - 1, bottom = room.Height - 1;
         return x <= 1 || y <= 1 || x >= right - 1 || y >= bottom - 1 ? 339 : 372;
     }
 
-    // --- Floors ---
-
-    // What makes one floor different from another: its map, its rooms and what's in them, and which rooms have machinery
-    // along their walls.
     class FloorSpec
     {
         public string name, layoutPath, pipeWallRooms;
@@ -378,11 +288,8 @@ public static class FloorOneBuilder
         floorKits = FloorTwoKits,
     };
 
-    // The floor being built. Floor 1 between builds and while a chapter fills the station in, for anything asking about
-    // its map (ChapterOneBuilder).
     static FloorSpec spec = FloorOne;
 
-    // Rows of empty space between one floor and the next in the world.
     const int FloorGap = 64;
 
     internal class Room
@@ -398,23 +305,18 @@ public static class FloorOneBuilder
 
     static readonly Dictionary<int, TileBase> decorTiles = new Dictionary<int, TileBase>();
 
-    // What a build of a floor made, for a chapter to fill in (see ChapterOneBuilder).
     internal class BuiltFloor
     {
         public string name;
         public Map map;
         public List<Room> rooms;
-        public HashSet<Vector2Int> furniture;   // the cells solid furniture stands on
-        public HashSet<Vector2Int> seats;       // of those, the ones with a chair on
+        public HashSet<Vector2Int> furniture;
+        public HashSet<Vector2Int> seats;
         public GameObject player;
         public Transform level;
         public Stairway[] stairs;
     }
 
-    // The whole station, built into the scene at scenePath (made if it isn't there yet): floor 1 where the player starts,
-    // and floor 2 upstairs, above it in the world, far enough off that neither is ever seen from the other. Each floor's
-    // stairs lead to the other's with the same number. Then populate (if there is one) gets both, floor 1 first, to fill
-    // in before it's saved. drawn builds every room at its drawn size, in its drawn place (see the top).
     internal static bool Build(string scenePath, System.Action<BuiltFloor[]> populate, bool drawn = false)
     {
         FloorSpec previous = spec;
@@ -436,7 +338,6 @@ public static class FloorOneBuilder
 
     static bool BuildStation(string scenePath, System.Action<BuiltFloor[]> populate)
     {
-        // Everything is loaded before the scene is touched, so a missing asset leaves it as it was.
         FloorSpec[] floors = { FloorOne, FloorTwo };
         var compacts = new Map[floors.Length];
         for (int i = 0; i < floors.Length; i++)
@@ -474,7 +375,6 @@ public static class FloorOneBuilder
         {
             spec = floors[i];
             Map map = Spread(compacts[i], out Dictionary<char, RoomStretch> stretches);
-            // Each floor after the first is upstairs: above the one before it, with a wide gap between.
             if (i > 0) up += built[i - 1].map.Height + FloorGap;
             map.Origin = new Vector2(0f, up);
             if (i == 0)
@@ -490,7 +390,6 @@ public static class FloorOneBuilder
         }
         spec = FloorOne;
 
-        // Each floor's stairs to the ones with the same number on the other.
         for (int i = 0; i < built.Length; i++)
         {
             BuiltFloor other = built[(i + 1) % built.Length];
@@ -507,13 +406,11 @@ public static class FloorOneBuilder
 
         EditorSceneManager.MarkSceneDirty(scene);
         if (!EditorSceneManager.SaveScene(scene, scenePath)) return Fail($"couldn't save {scenePath}.");
-        if (!asDrawn) AddToBuild(scenePath);     // a test scene stays out of the game
+        if (!asDrawn) AddToBuild(scenePath);
         Debug.Log($"Station builder: built {string.Join(" and ", built.Select(f => $"{f.name} ({f.rooms.Count} rooms)"))}, and saved {scenePath}.");
         return true;
     }
 
-    // One floor, where its map's Origin puts it: its tilemaps (their Grid moved there), rooms, doorways, stairs, lamps,
-    // lockers, plan for the map screen, and furniture, all under a root of its own.
     static BuiltFloor BuildFloor(Map compact, Map map, Dictionary<char, RoomStretch> stretches, GameObject lockerPrefab, int index)
     {
         Tilemap floor = TutorialLevelBuilder.BuildTilemaps(map);
@@ -531,7 +428,6 @@ public static class FloorOneBuilder
         PlaceDoorways(map, roomOf, TutorialLevelBuilder.Group("Doorways", level));
         Stairway[] stairs = PlaceStairs(map, TutorialLevelBuilder.Group("Stairs", level));
 
-        // Every lamp steady: nothing has gone wrong yet (a chapter that's later on turns some off).
         Transform lights = TutorialLevelBuilder.Group("Lights", level);
         foreach (StationLight lamp in TutorialLevelBuilder.PlaceLamps(WithWallLamps(map), lights, ""))
             LightWall(lamp);
@@ -548,24 +444,16 @@ public static class FloorOneBuilder
         return new BuiltFloor { name = spec.name, map = map, rooms = rooms, furniture = furniture, seats = seats, level = level, stairs = stairs };
     }
 
-    // --- Rooms ---
-
-    // Pulls the rooms apart. Each room, with the wall faces over it, keeps its place in the layout but at three times the
-    // distance from the others, so the camera never shows one room from inside another.
-    // How a room was stretched, counted from the top-left cell of its floor: for each column and row as it's drawn, where
-    // it is now, and for each one now, which one it was drawn as.
     internal class RoomStretch
     {
         public int[] newX, newY, drawnX, drawnY;
-        public RectInt drawnFloor;      // the floor as it's drawn in the layout, from its top-left cell
-
+        public RectInt drawnFloor;
 
         public int X(int drawn) => At(newX, drawn);
         public int Y(int drawn) => At(newY, drawn);
         public int DrawnX(int now) => At(drawnX, now);
         public int DrawnY(int now) => At(drawnY, now);
 
-        // The room as it's drawn, for the floor kits, which lay their patterns out by the drawn size.
         public Room Drawn => new Room { minX = 0, maxX = newX.Length - 1, minRow = 0, maxRow = newY.Length - 1 };
 
         static int At(int[] map, int i) => map.Length == 0 ? i : i < 0 ? i : i < map.Length ? map[i] : map[map.Length - 1] + i - (map.Length - 1);
@@ -580,7 +468,7 @@ public static class FloorOneBuilder
         foreach ((char marker, string roomName) in spec.rooms)
         {
             List<Vector2Int> found = compact.Find(marker);
-            if (found.Count == 0 || owner.ContainsKey(found[0])) continue;     // PlaceRooms says why
+            if (found.Count == 0 || owner.ContainsKey(found[0])) continue;
             List<Vector2Int> cells = Flood(compact, found[0]);
             foreach (Vector2Int cell in cells) owner[cell] = chunks.Count;
             chunks.Add(cells);
@@ -597,7 +485,6 @@ public static class FloorOneBuilder
                 if (Map.IsFloor(c) && !owner.ContainsKey(new Vector2Int(x, row))) stray++;
                 if (!Map.IsFace(c)) continue;
 
-                // Each wall face goes with the floor it stands over.
                 for (int below = 1; below <= FaceRows; below++)
                 {
                     if (Map.IsFace(compact.At(x, row + below))) continue;
@@ -619,7 +506,6 @@ public static class FloorOneBuilder
             Stretch(compact, cells, markers[i], min, max, out int[] copiesX, out int[] copiesY, out RoomStretch stretch);
             stretches[markers[i]] = stretch;
 
-            // Where each drawn column and row of the chunk starts now.
             int[] startX = Starts(copiesX), startY = Starts(copiesY);
             Vector2Int origin = min * spreadFactor + Vector2Int.one;
             foreach (Vector2Int cell in cells)
@@ -633,8 +519,6 @@ public static class FloorOneBuilder
             boxes.Add(new RectInt(origin - Vector2Int.one, size + 2 * Vector2Int.one));
         }
 
-        // A room narrower or shorter than the camera's view shows past its walls; check nothing else is there. (As
-        // drawn, they're meant to.)
         for (int i = 0; i < boxes.Count && !asDrawn; i++)
         {
             RectInt seen = boxes[i];
@@ -657,15 +541,11 @@ public static class FloorOneBuilder
         return new Map(string.Join("\n", lines.Select(line => new string(line))));
     }
 
-    // How many extra copies of each column and row of a chunk (from its top-left corner) make its room about RoomScale
-    // times as big. Only rows and columns of nothing but plain floor (and plain wall above it) are repeated, away from
-    // the room's edges, and never one a piece of furniture stands on, so pieces drawn together stay together.
     static void Stretch(Map compact, List<Vector2Int> cells, char marker, Vector2Int min, Vector2Int max,
         out int[] copiesX, out int[] copiesY, out RoomStretch stretch)
     {
         var inChunk = new HashSet<Vector2Int>(cells);
         List<Vector2Int> floor = cells.Where(c => Map.IsFloor(compact.At(c.x, c.y))).ToList();
-        // Measured from the room's own floor, not stairs let into its wall, so furniture keeps its place.
         List<Vector2Int> ownFloor = floor.Where(c => !IsStairs(compact.At(c.x, c.y))).ToList();
         var floorMin = new Vector2Int(ownFloor.Min(c => c.x), ownFloor.Min(c => c.y));
         var floorMax = new Vector2Int(floor.Max(c => c.x), floor.Max(c => c.y));
@@ -707,7 +587,6 @@ public static class FloorOneBuilder
         };
     }
 
-    // Extra copies spread evenly over the lines that can take them, doubling up if there are more than lines.
     static int[] Copies(List<int> lines, int extra, int count)
     {
         var copies = new int[count];
@@ -724,8 +603,6 @@ public static class FloorOneBuilder
         return starts;
     }
 
-    // For each drawn line of the floor from first to last, where it starts now, counted from the first; and the other
-    // way, for each line now, which drawn line it's a copy of.
     static int[] Offsets(int[] copies, int first, int last, out int[] drawn)
     {
         int[] starts = Starts(copies);
@@ -740,8 +617,6 @@ public static class FloorOneBuilder
         return now;
     }
 
-    // Each room is the floor its marker can reach. It gets a trigger zone over its floor, and a CameraRoom around its
-    // outside walls.
     static List<Room> PlaceRooms(Map map, Transform parent)
     {
         var rooms = new List<Room>();
@@ -762,7 +637,6 @@ public static class FloorOneBuilder
 
             List<Vector2Int> cells = Flood(map, found[0]);
             foreach (Vector2Int cell in cells) taken[cell] = roomName;
-            // Its top-left corner is its own floor's, not stairs let into its wall: furniture and floors are laid from it.
             List<Vector2Int> ownFloor = cells.Where(c => !IsStairs(map.At(c.x, c.y))).ToList();
             var room = new Room
             {
@@ -784,8 +658,6 @@ public static class FloorOneBuilder
             zone.isTrigger = true;
             zone.size = area.size;
             roomObject.AddComponent<PlayerTriggerZone>();
-            // Out to the black wall edge all round, over the faces above the floor. As drawn, the camera's free to show
-            // the rooms around.
             if (!asDrawn) roomObject.AddComponent<CameraRoom>().bounds = map.WorldRect(room.minX - 1, room.maxX + 1, room.minRow - FaceRows - 1, room.maxRow + 1);
         }
         return rooms;
@@ -806,12 +678,6 @@ public static class FloorOneBuilder
         return cells;
     }
 
-    // --- The map ---
-
-    // The plan for the map in the technician's suit (StationMap, MapScreen): each room's floor as it's drawn in the
-    // layout, the wall between the two ends of each door filled in as the way through, and marks on the doorways, the
-    // ship entrance, the stairs, and where Sonny goes in. Each room also keeps how it was stretched, so the player's place
-    // in the built room can be found on the drawn one.
     static void PlaceStationMap(Map compact, Map built, List<Room> rooms, Dictionary<char, RoomStretch> stretches, Transform parent)
     {
         var plan = new GameObject("Station Map").AddComponent<StationMap>();
@@ -850,8 +716,6 @@ public static class FloorOneBuilder
             List<List<Vector2Int>> ends = Clusters(compact, marker);
             foreach (Vector2Int cell in ends.SelectMany(end => end)) plan.marks[Index(cell)] = (byte)StationMap.Mark.Door;
             if (ends.Count != 2) continue;
-            // Two ends facing each other across a wall: the wall between is the way through. Hallways that carry on
-            // somewhere else entirely are left as the marks at each end.
             RectInt a = Bounds(ends[0]), b = Bounds(ends[1]);
             bool acrossX = a.yMin < b.yMax && b.yMin < a.yMax;
             bool acrossY = a.xMin < b.xMax && b.xMin < a.xMax;
@@ -877,10 +741,6 @@ public static class FloorOneBuilder
         return new RectInt(xMin, yMin, cells.Max(c => c.x) - xMin + 1, cells.Max(c => c.y) - yMin + 1);
     }
 
-    // --- Doorways ---
-
-    // Pairs of teleporters: closed doors (digits) and hallways that carry on (symbols), each end sending the player to
-    // just inside the other. Then the locked doors (X), which go nowhere.
     static int PlaceDoorways(Map map, Dictionary<Vector2Int, Room> roomOf, Transform parent)
     {
         int count = 0;
@@ -917,8 +777,6 @@ public static class FloorOneBuilder
         return count;
     }
 
-    // A teleporter over the cells, drawn against the wall beside them, with an Arrival point just inside the room for the
-    // other end to send the player to.
     static Teleporter MakeDoorway(Map map, List<Vector2Int> cells, Transform parent, string doorwayName, Teleporter.Mode mode)
     {
         Rect area = Bounds(map, cells);
@@ -943,7 +801,6 @@ public static class FloorOneBuilder
         return teleporter;
     }
 
-    // The side the wall is on, in world directions: away from the room floor that most of the cells open onto.
     static Vector2 WallSide(Map map, List<Vector2Int> cells)
     {
         var inCluster = new HashSet<Vector2Int>(cells);
@@ -956,12 +813,9 @@ public static class FloorOneBuilder
             most = open;
             inward = step;
         }
-        // Map rows count down the screen, so a step down the map is up in the world.
         return new Vector2(-inward.x, inward.y);
     }
 
-    // The stairs to the other floor (Stairway), numbered from the left the way the blueprint lines them up, each with the
-    // spot on the floor beside it where the player comes out.
     static Stairway[] PlaceStairs(Map map, Transform parent)
     {
         var made = new List<Stairway>();
@@ -989,13 +843,12 @@ public static class FloorOneBuilder
             var stairway = stairs.AddComponent<Stairway>();
             stairway.index = i;
             stairway.arrival = arrival;
-            StairsDresser.Dress(stairway);      // the steps themselves, drawn over the trigger
+            StairsDresser.Dress(stairway);
             made.Add(stairway);
         }
         return made.ToArray();
     }
 
-    // A couple of cells out onto the floor from the side of the stairs the floor's on.
     static Vector2 StairsArrival(Map map, List<Vector2Int> cells, Vector2 center)
     {
         var stairs = new HashSet<Vector2Int>(cells);
@@ -1016,7 +869,6 @@ public static class FloorOneBuilder
         return edge + (edge - center).normalized * 1.5f;
     }
 
-    // So the stairs can load it.
     static void AddToBuild(string scenePath)
     {
         List<EditorBuildSettingsScene> scenes = EditorBuildSettings.scenes.ToList();
@@ -1034,12 +886,8 @@ public static class FloorOneBuilder
         point.transform.position = map.Center(found[0].x, found[0].y);
     }
 
-    // --- Decorating ---
-
-    // Repaints the wall faces over the working rooms' floors as machinery (see PipeLeftCap).
     static void PipeWalls(Map map, Dictionary<Vector2Int, Room> roomOf, Tilemap walls)
     {
-        // The plain faces (not windows) standing over those rooms' floor.
         var faces = new HashSet<Vector2Int>();
         for (int row = 0; row < map.Height; row++)
         {
@@ -1059,7 +907,6 @@ public static class FloorOneBuilder
 
         foreach (Vector2Int cell in faces)
         {
-            // Which row of the face: counting the face cells below it, top, middle, or bottom.
             int below = 0;
             while (below < FaceRows - 1 && faces.Contains(cell + new Vector2Int(0, below + 1))) below++;
             int band = FaceRows - 1 - below;
@@ -1076,8 +923,6 @@ public static class FloorOneBuilder
         }
     }
 
-    // Lays each room's floor and puts its furnishings in: rugs, details, and wall pieces on tilemaps of their own, and
-    // furniture as objects under props. Returns how many pieces went in, and the cells the furniture stands on.
     static int Decorate(Map map, List<Room> rooms, Dictionary<char, RoomStretch> stretches, Grid grid, Transform props,
         out HashSet<Vector2Int> furniture, out HashSet<Vector2Int> seats)
     {
@@ -1101,7 +946,6 @@ public static class FloorOneBuilder
             };
             if (spec.floorKits.TryGetValue(room.marker, out System.Func<Room, int, int, int> kit))
             {
-                // Laid out as drawn: each repeated line of floor gets the pattern of the line it repeats.
                 Room drawn = stretch.newX.Length > 0 ? stretch.Drawn : room;
                 foreach (Vector2Int cell in room.cells)
                 {
@@ -1148,10 +992,6 @@ public static class FloorOneBuilder
         return placed;
     }
 
-    // The reactor core, as near ReactorSpot as it fits: its pad all on open floor in the room, clear of doorways and
-    // stairs, its body standing over the room's floor, not hanging off past a wall. Its middle goes on a corner of the
-    // grid, so the pad's art lines up with the tiles. Its solid foot, and the machinery behind it, count as furniture,
-    // so nothing's put on them.
     static void PlaceReactorCore(Map map, Room room, RoomStretch stretch, HashSet<Vector2Int> inRoom, HashSet<Vector2Int> furniture,
         Transform parent)
     {
@@ -1189,7 +1029,6 @@ public static class FloorOneBuilder
                 float fx = (dx + 0.5f) / ReactorFoot.x, fy = (dy + 0.5f) / ReactorFoot.y;
                 if (fx * fx + fy * fy <= 1f) furniture.Add(middle + new Vector2Int(dx, dy));
             }
-        // And the machinery behind it, solid too.
         int halfWidth = Mathf.CeilToInt(ReactorCore.RearHalfWidth), depth = Mathf.CeilToInt(ReactorCore.RearDepth);
         for (int dx = -halfWidth; dx < halfWidth; dx++)
             for (int dy = -depth; dy < 0; dy++)
@@ -1198,8 +1037,6 @@ public static class FloorOneBuilder
             Debug.Log($"{spec.name} builder: the reactor core is {middle.x - target.x}, {middle.y - target.y} cells off where it's meant to go, the nearest it fits.");
     }
 
-    // The empty cells inside a piece on the floor: the knee space under a console or counter, where the chairs go. Nobody
-    // stands or walks about in there, though a chair can go in.
     static IEnumerable<Vector2Int> Nooks(Stamp stamp, Vector2Int corner)
     {
         for (int row = stamp.wallRows; row < stamp.rows.Length; row++)
@@ -1207,17 +1044,12 @@ public static class FloorOneBuilder
                 if (stamp.rows[row][column] < 0) yield return corner + new Vector2Int(column, row - stamp.wallRows);
     }
 
-    // A piece of furniture as one object that sorts by where it stands, the way characters do (DepthSort): anyone lower
-    // on screen than its front edge is drawn in front of it, anyone higher up behind it. Only the part of it standing on
-    // the floor is solid (FurnitureFootprint), so the player can walk right up to it and behind a tall piece, and it has
-    // a shadow under it. A piece standing in front of another (a chair at a console) sorts a hair in front of it.
     static void PlaceProp(Map map, Stamp stamp, List<(Vector2Int cell, int tile)> cells, Transform parent)
     {
         int minX = cells.Min(c => c.cell.x), baseRow = cells.Max(c => c.cell.y);
         float lift = DepthSort.FeetToCenter - (stamp.layer == Layer.Front ? 0.05f : 0f);
         float front = map.Origin.y + map.Height - 1 - baseRow;
 
-        // The object sits at its sorting point; everything in it is placed down from there.
         var prop = new GameObject(char.ToUpperInvariant(stamp.name[0]) + stamp.name.Substring(1));
         prop.transform.SetParent(parent);
         prop.transform.position = new Vector3(map.Origin.x + minX, front + lift, CharacterZ);
@@ -1236,9 +1068,6 @@ public static class FloorOneBuilder
 
         FurnitureFootprint.AddColliders(prop, stamp.name, stamp.rows, stamp.wallRows, lift);
 
-        // The shadow is where the art meets the floor, a column at a time: under a console, along the front of the desk
-        // and under its two ends, not across the knee space in front of it where the chairs go. Each one is only as wide
-        // as the art, so it doesn't run out past an end piece that's mostly empty tile.
         Sprite shadowSprite = DepthDressing.FurnitureShadow;
         if (shadowSprite == null) return;
         foreach ((int start, int end, int lowest) in FurnitureFootprint.Runs(stamp.rows, stamp.wallRows))
@@ -1258,9 +1087,6 @@ public static class FloorOneBuilder
         }
     }
 
-    // How far across a tile its art reaches, from its left edge, as a fraction of the tile: (left, right), or null if it
-    // can't tell. The end pieces of a console slant down to the floor, so it's the whole tile, not only its bottom edge.
-    // Read from the tileset image itself, which isn't imported readable.
     static readonly Dictionary<int, Vector2?> artSpans = new Dictionary<int, Vector2?>();
     static readonly Dictionary<string, Texture2D> tilesetImages = new Dictionary<string, Texture2D>();
     static Vector2? ArtSpan(int number)
@@ -1268,7 +1094,6 @@ public static class FloorOneBuilder
         if (artSpans.TryGetValue(number, out Vector2? known)) return known;
         Vector2? span = null;
         Sprite sprite = (Tile(number) as Tile)?.sprite;
-        // The sprite's own image, not sprite.texture: that's the atlas the tiles are packed into.
         string path = sprite != null ? AssetDatabase.GetAssetPath(sprite) : null;
         if (!string.IsNullOrEmpty(path))
         {
@@ -1292,9 +1117,6 @@ public static class FloorOneBuilder
         return span;
     }
 
-    // The map with more lamps ('^') along its walls, so no stretch of wall runs more than LampSpacing cells without one.
-    // They go on the middle row of a wall face over a room's floor, never on a window, and never right at the end of a
-    // wall. The layout's own lamps stay where they are.
     static Map WithWallLamps(Map map)
     {
         var rows = new char[map.Height][];
@@ -1319,7 +1141,6 @@ public static class FloorOneBuilder
                 while (x < map.Width && MiddleOfFace(x, row)) x++;
                 int end = x - 1;
 
-                // Along the run, a lamp wherever the last one is too far back and the next one isn't close ahead.
                 int last = int.MinValue / 2;
                 for (int cell = start; cell <= end; cell++)
                 {
@@ -1337,8 +1158,6 @@ public static class FloorOneBuilder
         return new Map(string.Join("\n", rows.Select(line => new string(line)))) { Origin = map.Origin };
     }
 
-    // A lamp on the wall as the station's lighting: warm white, a pool of it on the floor below, and a glow spilling
-    // over the wall around the fitting, so the light reads as coming from the lamp.
     static void LightWall(StationLight lamp)
     {
         lamp.mode = StationLight.Mode.Steady;
@@ -1357,7 +1176,6 @@ public static class FloorOneBuilder
         wash.falloffIntensity = 0.7f;
     }
 
-    // Shade along the floor at the foot of every wall face, as if the wall stood up out of it.
     static void ShadeWalls(Map map, Grid grid)
     {
         TileBase shade = DepthDressing.WallShadeTile;
@@ -1369,8 +1187,6 @@ public static class FloorOneBuilder
                     tilemap.SetTile(map.Cell(x, row), shade);
     }
 
-    // The player stands on the floor like everyone else: solid only at the feet, a shadow under them, and (unless
-    // keepLantern, for the dark of the tutorial) no lantern, since the station's own lights are on.
     internal static void GroundPlayer(GameObject player, bool keepLantern = false)
     {
         if (!keepLantern)
@@ -1393,7 +1209,6 @@ public static class FloorOneBuilder
         DepthDressing.AddShadow(player, sprite.sprite);
     }
 
-    // Each tile of a piece placed at corner: where it goes, on which layer, and which tile.
     static IEnumerable<(Vector2Int cell, Layer layer, int tile)> Cells(Stamp stamp, Vector2Int corner)
     {
         for (int row = 0; row < stamp.rows.Length; row++)
@@ -1408,9 +1223,6 @@ public static class FloorOneBuilder
         }
     }
 
-    // Why a piece can't go here, or null if it can. Wall tiles need a wall face; everything else needs to be in the room,
-    // and on open floor unless it's overhead. Nothing can overlap something already on its layer, and solid pieces can't
-    // stand right beside a doorway, the stairs, the start, or Sonny's spot.
     static string Blocked(Map map, HashSet<Vector2Int> inRoom, Dictionary<Layer, HashSet<Vector2Int>> used, Stamp stamp, Vector2Int corner)
     {
         foreach ((Vector2Int cell, Layer layer, int tile) in Cells(stamp, corner))
@@ -1434,8 +1246,6 @@ public static class FloorOneBuilder
         return null;
     }
 
-    // Warns if furniture cuts anything off: every doorway, stairway, and marker in a room has to be reachable from the
-    // others without walking through furniture.
     static void CheckReachable(Map map, Room room, HashSet<Vector2Int> solid)
     {
         List<Vector2Int> targets = room.cells.Where(c => IsKeptClear(map.At(c.x, c.y))).ToList();
@@ -1490,9 +1300,6 @@ public static class FloorOneBuilder
         return tile;
     }
 
-    // --- Helpers ---
-
-    // The groups of touching cells with this marker.
     static List<List<Vector2Int>> Clusters(Map map, char marker)
     {
         var clusters = new List<List<Vector2Int>>();

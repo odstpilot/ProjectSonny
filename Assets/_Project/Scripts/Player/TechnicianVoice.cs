@@ -1,10 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// The technician talking to themselves: a line over their head, on the same little panel the crew talk on (CrewSpeech),
-// for what they mutter as they go. Pip does the explaining; this is just them thinking out loud. Say(line) shows a line
-// and carries on; yield return Think(lines) shows them one after another and waits until the last has been up long
-// enough to read. Made the first time it's needed, and gone with the scene.
+// the player talking to themselves
 public static class TechnicianVoice
 {
     const float HoldBase = 0.9f;
@@ -13,7 +10,6 @@ public static class TechnicianVoice
 
     static CrewSpeech speech;
 
-    // How long a line stays up.
     public static float HoldFor(string line) => HoldBase + line.Length * HoldPerLetter;
 
     public static void Say(string line, float seconds = -1f)

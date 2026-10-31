@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The floor of one room as a grid of cells the crew can walk on: open floor, clear of walls, furniture, doorways, and
-// anyone standing still. Crew wandering the room pick somewhere on it to go and find the shortest way there, stepping
-// diagonally only where neither side is blocked, so nobody cuts a corner through a desk. Built by ChapterOneBuilder.
+// where crew can walk in a room
 public class CrewWalkArea : MonoBehaviour
 {
     [Tooltip("World position of the bottom-left corner of cell (0, 0).")]
@@ -28,12 +26,10 @@ public class CrewWalkArea : MonoBehaviour
     public bool IsWalkable(Vector2Int cell) =>
         cell.x >= 0 && cell.y >= 0 && cell.x < width && cell.y < height && walkable[cell.y * width + cell.x];
 
-    // The cell someone standing here has their feet in, and where they stand to be in a cell.
     public Vector2Int CellAt(Vector2 standing) => Vector2Int.FloorToInt(standing - origin - new Vector2(0f, standHeight));
 
     public Vector2 CenterOf(Vector2Int cell) => origin + cell + new Vector2(0.5f, 0.5f + standHeight);
 
-    // Somewhere walkable at least minDistance cells from here, or anywhere walkable if nowhere is that far.
     public bool TryPickDestination(Vector2Int from, float minDistance, out Vector2Int destination)
     {
         if (open.Count == 0)
@@ -52,8 +48,6 @@ public class CrewWalkArea : MonoBehaviour
         return true;
     }
 
-    // The way from one cell to another as world points, one per turn, not counting where it starts. False if there's
-    // no way through.
     public bool FindPath(Vector2Int from, Vector2Int to, List<Vector2> path)
     {
         path.Clear();
@@ -78,7 +72,6 @@ public class CrewWalkArea : MonoBehaviour
         }
         if (!cameFrom.ContainsKey(to)) return false;
 
-        // Walk it back, keeping only the cells where the direction changes.
         var cells = new List<Vector2Int>();
         for (Vector2Int cell = to; cell != from; cell = cameFrom[cell]) cells.Add(cell);
         cells.Reverse();

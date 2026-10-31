@@ -1,8 +1,6 @@
 using UnityEngine;
 
-// Keeps the settings that need a running object working in every scene: it silences the game while its window is in
-// the background, if the player asked for that, and draws the frame rate counter. GameSettings creates it before the
-// first scene, so nothing needs setting up.
+// keeps settings working in every scene
 public class SettingsRunner : MonoBehaviour
 {
     static SettingsRunner instance;

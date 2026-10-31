@@ -2,12 +2,10 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Black over the whole screen, faded in and out, for moving the player somewhere else without the jump showing.
-// Teleporter uses it for doors. Built from code the first time it's needed; it runs on real time, so it works whatever
-// the time scale is, and it has its own sound source for whatever plays during the fade.
+// fade to black and back
 public class ScreenFade : MonoBehaviour
 {
-    const int SortingOrder = 110;           // over the HUD and prompts, under the death screen
+    const int SortingOrder = 110;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
     static ScreenFade instance;
@@ -27,7 +25,6 @@ public class ScreenFade : MonoBehaviour
         return instance;
     }
 
-    // Takes the fade away at once, if there is one.
     public static void Clear()
     {
         if (instance != null) instance.SetAlpha(0f);
@@ -51,7 +48,6 @@ public class ScreenFade : MonoBehaviour
         SetAlpha(alpha);
     }
 
-    // Plays one of the scene's sounds (SoundManager), or the fallback while the scene has no clip for it.
     public void PlaySound(string soundName, AudioClip fallback = null)
     {
         if (!string.IsNullOrEmpty(soundName)) SoundManager.PlayOneShot(audioSource, soundName, fallback: fallback);

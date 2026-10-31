@@ -3,25 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Chapter 1's control room: the technician installs Sonny. It plays the first time they walk into the room.
-//  - The bars come in, and the technician walks up to the processing box (Sonny, still dark and silent). The station
-//    chief standing beside it gives them the rundown (a conversation in the dialogue box, with a reply to pick).
-//  - The install itself is the close-up in InstallView: seat the core, connect the couplings, power it on, three quick
-//    time events. It can't be failed, only fumbled, and the chief has something to say about how it went.
-//  - The core needs hours to load, so it fades to black: "A few hours later". It fades back up on Sonny's first boot
-//    (InstallView.PlayBoot, with the log).
-//  - Sonny comes on. The crew gather round, and Sonny speaks (captions): polite, helpful, grateful. Then it asks where
-//    it was before this. "Nowhere, pal. You're brand new." For a moment its lens goes red, the room's lights dip, and a
-//    low note sounds under everything. "Nowhere." Then it's all back to normal, and Sonny says how much it looks forward
-//    to working with everyone.
-//  - The bars go, the technician has control again, Pip pops up (crackling) to cheer, and the technician wonders
-//    whether the lights just flickered. From then on the whole station talks about Sonny: the crew in and around the
-//    control room about what they saw (sonnyTalk, dealt out one each), everyone else about what they've heard since
-//    (CrewMember.SonnyCameOnline), the greeter and the guards in their own words, and every group has something new to
-//    say (sonnyChats). The technician gets a while to walk about and hear it before the break goes wrong (RestroomBreak).
-// Everything after the install itself, up to Sonny's last line, can be skipped: hold Space, or press Escape (SkipPrompt).
-// The hidden cues are the boot log (see InstallView), the red flicker and dip on "Nowhere", and Pip's static.
-// Built by ChapterOneBuilder, which puts Sonny's box at the install point (S in the layout) and the chief beside it.
+// chapter 1: installing sonny
 public class ControlRoomCutscene : MonoBehaviour
 {
     public PlayerController player;
@@ -126,8 +108,6 @@ public class ControlRoomCutscene : MonoBehaviour
     [Header("Then")]
     [Tooltip("Shown once the technician has control again. Empty leaves it to RestroomBreak, which sends them for a wrench.")]
     public string objectiveAfter = "";
-    [Tooltip("Pip, once the technician has control again. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipAfter = { "~^Sonny's up and running! Nice work, tech!" };
     [Tooltip("The technician, to themselves, after Pip.")]
     [TextArea] public string[] technicianAfter = { "...Did the lights just flicker?" };
 
@@ -135,12 +115,9 @@ public class ControlRoomCutscene : MonoBehaviour
     public Color slipColor = new Color(1f, 0.12f, 0.08f);
     public float slipSeconds = 0.7f;
 
-    // Once it's begun, for anything else that should stand down (ChapterOneDirector, Pip's map tour).
     public static event System.Action Started;
-    // Once the technician has control again and the break's begun (RestroomBreak).
     public static event System.Action Finished;
     public bool HasPlayed { get; private set; }
-    // While it's running, so the pause menu stays out of the way (its last part is skipped with SkipPrompt instead).
     public static bool Playing { get; private set; }
 
     private readonly List<CrewMember> roomCrew = new List<CrewMember>();
@@ -188,7 +165,6 @@ public class ControlRoomCutscene : MonoBehaviour
             chief.FaceTowards(player.transform.position);
             chief.Say("Over here, tech!", 1.8f);
         }
-        // Round Sonny's rig, not through it: down from the door to the clear strip in front, then along it.
         Vector2 workAt = (Vector2)sonny.transform.position + workSpot;
         yield return WalkTo(new Vector2(player.transform.position.x, workAt.y), false);
         yield return WalkTo(workAt);
@@ -204,7 +180,6 @@ public class ControlRoomCutscene : MonoBehaviour
         yield return InstallView.Play();
         Hold();
 
-        // The rest, up to Sonny's last line, can be skipped (SkipPrompt).
         afterInstallDone = false;
         Coroutine rest = StartCoroutine(AfterInstall(hud));
         SkipPrompt.Show();
@@ -224,19 +199,18 @@ public class ControlRoomCutscene : MonoBehaviour
         {
             chief.FaceTowards(player.transform.position);
             chief.Say(sendOff, 4.5f);
-            yield return Wait(1.6f);        // they can get moving while it's still up
+            yield return Wait(1.6f);
         }
         player.ClearScriptedInput();
         Playing = false;
         if (!string.IsNullOrEmpty(objectiveAfter)) hud.SetObjective(objectiveAfter);
         Finished?.Invoke();
         yield return Wait(0.8f);
-        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(pipAfter);
+        if (SuitHelper.Exists) yield return SuitHelper.Get().Say(PipManager.Lines.afterInstall);
         yield return Wait(0.4f);
         yield return TechnicianVoice.Think(technicianAfter);
     }
 
-    // From the install done to Sonny's last line: the chief's verdict, the hours of loading, the boot, and Sonny coming on.
     IEnumerator AfterInstall(TutorialHud hud)
     {
         if (chief != null)
@@ -253,7 +227,6 @@ public class ControlRoomCutscene : MonoBehaviour
             }
         }
 
-        // Hours of loading, skipped.
         yield return hud.TitleCard(timeSkip, timeSkipHoldSeconds);
         yield return Wait(0.4f);
         fadingUp = StartCoroutine(hud.FadeTo(0f, 1.2f));
@@ -261,7 +234,6 @@ public class ControlRoomCutscene : MonoBehaviour
         yield return InstallView.PlayBoot();
         Hold();
 
-        // It comes on, and everyone turns to look.
         sonny.PowerOn();
         foreach (CrewMember crew in roomCrew) crew.FaceTowards(sonny.transform.position);
         if (chief != null) chief.FaceTowards(sonny.transform.position);
@@ -277,7 +249,6 @@ public class ControlRoomCutscene : MonoBehaviour
         afterInstallDone = true;
     }
 
-    // Skipped: a quick cut through black to Sonny on and the room turned to it, wherever the scene had got to.
     IEnumerator SkipAhead(TutorialHud hud)
     {
         if (fadingUp != null) StopCoroutine(fadingUp);
@@ -291,8 +262,6 @@ public class ControlRoomCutscene : MonoBehaviour
         yield return hud.FadeTo(0f, 0.4f);
     }
 
-    // Straight to how things are once it's over, for a scene picking up after it (SaveGame): Sonny on, and everyone
-    // talking about it. The break isn't started (Finished isn't raised); whoever's picking up sees to that.
     public void SkipToAfter()
     {
         HasPlayed = true;
@@ -301,8 +270,6 @@ public class ControlRoomCutscene : MonoBehaviour
         TalkAboutSonny();
     }
 
-    // Everyone aboard has something to say about Sonny now: the ones who saw it come on say sonnyTalk, the greeter and
-    // guards their own lines, and everyone else their own small talk about it (CrewMember).
     void TalkAboutSonny()
     {
         CrewMember.SonnyCameOnline();
@@ -317,7 +284,6 @@ public class ControlRoomCutscene : MonoBehaviour
         foreach (CrewMember crew in FindObjectsByType<CrewMember>())
             if (crew != chief && crew != greeter && System.Array.IndexOf(guards, crew) < 0 && crew.role != CrewMember.Role.Chat
                 && In(crew.Position, sonnyTalkRooms)) people.Add(crew);
-        // Nearest the box first, so whoever the player's likeliest to talk to has the first thing to say.
         Vector2 box = sonny.transform.position;
         people.Sort((a, b) => (a.Position - box).sqrMagnitude.CompareTo((b.Position - box).sqrMagnitude));
         for (int i = 0; i < people.Count && sonnyTalk.Length > 0; i++)
@@ -332,7 +298,6 @@ public class ControlRoomCutscene : MonoBehaviour
         }
     }
 
-    // Sonny in captions, the chief over their head, one after another.
     IEnumerator Exchange(TutorialHud hud)
     {
         foreach (string raw in exchange)
@@ -348,9 +313,8 @@ public class ControlRoomCutscene : MonoBehaviour
             if (sonnySays)
             {
                 if (chief != null) chief.FaceTowards(sonny.transform.position);
-                // On the screens, a word at a time (SonnyBroadcast); a slip is the rogue one showing through.
                 yield return SonnyBroadcast.Say(line, slip ? 2.2f : 1.4f, slip);
-                if (slip) yield return Wait(1f);        // an uncomfortable pause
+                if (slip) yield return Wait(1f);
                 continue;
             }
             if (chief == null) continue;
@@ -361,11 +325,9 @@ public class ControlRoomCutscene : MonoBehaviour
         }
     }
 
-    // The low note, made in code until the scene's Sonny Slip sound has a clip.
     static AudioClip slipTone;
     static AudioClip SlipTone => slipTone != null ? slipTone : (slipTone = TitleUI.Tone("Sonny Slip", 48f, 1.2f, 0.9f));
 
-    // The moment something's off: the lens red, the room's lights dipping, and a low note under it all.
     IEnumerator Slip()
     {
         sonny.Flicker(slipColor, slipSeconds);
@@ -391,14 +353,8 @@ public class ControlRoomCutscene : MonoBehaviour
         }
     }
 
-    // --- Moving the technician about ---
-
-    // Holds them still for the cutscene. A conversation lets go of them when it closes, so this is done again after.
     void Hold() => player.SetScriptedInput(Vector2.zero, false);
 
-    // Walks them over, and if something's in the way, fades out and puts them there.
-    // Walks there in a straight line. Caught on something (barely moving for a moment) or out of time, it fades over
-    // instead, or for a leg of the way (fadeIfStuck off), just carries on from where it got to.
     IEnumerator WalkTo(Vector2 spot, bool fadeIfStuck = true)
     {
         const float GiveUpAfter = 5f;
@@ -427,7 +383,6 @@ public class ControlRoomCutscene : MonoBehaviour
         yield return fade.FadeTo(0f, 0.3f);
     }
 
-    // A step toward the box, so they're facing it.
     IEnumerator FaceUp()
     {
         player.SetScriptedInput(Vector2.up, false);
@@ -456,7 +411,6 @@ public class ControlRoomCutscene : MonoBehaviour
             if (crew == chief) continue;
             if (map.Locate(crew.Position, out _, out StationMap.Room inRoom) && inRoom.marker == room) roomCrew.Add(crew);
         }
-        // Nearest the box first, so the ones reacting are the ones in view.
         Vector2 box = sonny.transform.position;
         roomCrew.Sort((a, b) => (a.Position - box).sqrMagnitude.CompareTo((b.Position - box).sqrMagnitude));
     }

@@ -4,13 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A locker the player can hide in. Walk up to it and press E (the same "[E] Hide" tag as everything else, InteractPrompt):
-// the player climbs in and is taken out of the world
-// (no sprite, no physics, so enemies can't see, touch, or hit them), and the screen switches to the view from
-// inside, looking out through the door's vent slats (see LockerView). Press E again to step back out the door.
-// Enemy scripts can check Locker.IsPlayerHidden to decide whether to keep hunting, Locker.Occupied for which locker
-// the player is in, and call PullPlayerOut on it if they saw the player climb in.
-// Setup: a solid Collider2D on this object for the locker's footprint, and the sprite on a child so it can rattle.
+// locker to hide in
 [RequireComponent(typeof(Collider2D))]
 public class Locker : MonoBehaviour
 {
@@ -32,25 +26,19 @@ public class Locker : MonoBehaviour
     [Tooltip("Font for the prompt and hint. Leave empty for TextMesh Pro's default.")]
     public TMP_FontAsset font;
 
-    // True from the moment the player climbs in until they are standing outside again, and while they're crawling
-    // through the air ducts (VentNetwork), which hide them from everything the same way.
     public static bool IsPlayerHidden => inLocker || VentNetwork.IsPlayerInside;
-    // The locker the player is hiding in, or null.
     public static Locker Occupied => inLocker ? inUse : null;
 
     public Vector2 DoorDirection => doorDirection.sqrMagnitude > 0f ? doorDirection.normalized : Vector2.down;
     public Vector2 ExitPoint => (Vector2)transform.position + DoorDirection * exitDistance;
     public SpriteRenderer Body => body;
-    // Where the player looks out from while inside: the middle of the door, on the edge of the footprint.
     public Vector2 EyePoint => (Vector2)footprint.bounds.center + Vector2.Scale(DoorDirection, footprint.bounds.extents);
-    // Just above the top of the sprite, where the "[E] Hide" tag sits.
     public Vector3 PromptPoint =>
         new Vector3(transform.position.x, (body != null ? body.bounds.max.y : transform.position.y) + 0.2f, transform.position.z);
 
     enum State { Outside, GettingIn, Inside, GettingOut }
 
     static readonly List<Locker> all = new List<Locker>();
-    // The locker the player is in or on the way in or out of. The others ignore the player meanwhile.
     static Locker inUse;
     static bool inLocker;
 
@@ -85,7 +73,6 @@ public class Locker : MonoBehaviour
         all.Remove(this);
         InteractPrompt.Hide(this);
 
-        // Switched off or unloaded with the player inside: put everything back at once instead of trapping them.
         if (inUse == this) ForceOut();
     }
 
@@ -105,7 +92,6 @@ public class Locker : MonoBehaviour
     {
         if (player == null) return;
 
-        // timeScale 0 means a menu paused the game.
         if (state == State.Inside)
         {
             if (Input.GetKeyDown(InteractKey) && Time.timeScale > 0f)
@@ -127,9 +113,6 @@ public class Locker : MonoBehaviour
         }
     }
 
-    // For an enemy that saw the player climb in. Seen from inside: something blocks the light through the vent, the door
-    // shakes, then it's torn open and a robot lunges in (LockerView.PullOut). Then the player's back outside, and
-    // whenOut is called, for the enemy to land its hit. Takes LockerView.PullOutSeconds; at once if they're not inside.
     public void PullPlayerOut(System.Action whenOut = null)
     {
         if (inUse != this || !inLocker)
@@ -146,7 +129,6 @@ public class Locker : MonoBehaviour
     {
         yield return LockerView.Get(font).PullOut();
 
-        // Out, as ForceOut does, but from in here: ForceOut would stop this coroutine before whenOut.
         ShowPlayer();
         LockerView.ForceClose();
         if (body != null) body.transform.localPosition = bodyBasePosition;
@@ -185,7 +167,6 @@ public class Locker : MonoBehaviour
         state = State.Outside;
     }
 
-    // Puts everything back immediately, skipping any transition: the player outside and the normal view.
     void ForceOut()
     {
         StopAllCoroutines();
@@ -196,7 +177,6 @@ public class Locker : MonoBehaviour
         state = State.Outside;
     }
 
-    // In range, able to act (not dead or frozen by the death respawn), and the nearest locker if several are in reach.
     bool IsClosestUsable()
     {
         if (playerController != null && !playerController.enabled) return false;
@@ -213,7 +193,6 @@ public class Locker : MonoBehaviour
         return true;
     }
 
-    // Edge to edge, so it doesn't matter which side the player walks up from.
     float DistanceToPlayer()
     {
         if (playerCollider != null && playerCollider.enabled)
@@ -224,14 +203,10 @@ public class Locker : MonoBehaviour
         return Vector2.Distance(footprint.ClosestPoint(player.position), player.position);
     }
 
-    // Takes the player out of the world without destroying anything. Whatever gets turned off is remembered so
-    // exactly that comes back, the same way PlayerHealthHandler freezes the player on death.
     void HidePlayer()
     {
         inLocker = true;
 
-        // Scripts stop, so no moving, attacking, or weapon swapping. Health and its handler stay on for the HUD,
-        // and lights stay on so there's something to see out the vent in a dark room.
         foreach (MonoBehaviour behaviour in player.GetComponentsInChildren<MonoBehaviour>())
         {
             if (!behaviour.enabled || behaviour is Health || behaviour is PlayerHealthHandler || behaviour is Light2D) continue;
@@ -246,7 +221,6 @@ public class Locker : MonoBehaviour
             hiddenRenderers.Add(renderer);
         }
 
-        // No simulation means no collisions, triggers, raycast hits, or overlap checks: invisible to every enemy.
         if (playerBody != null)
         {
             playerWasSimulated = playerBody.simulated;
@@ -280,7 +254,6 @@ public class Locker : MonoBehaviour
         disabledBehaviours.Clear();
     }
 
-    // The door shakes when someone climbs in or out.
     IEnumerator Rattle()
     {
         if (body == null) yield break;
@@ -294,7 +267,6 @@ public class Locker : MonoBehaviour
         body.transform.localPosition = bodyBasePosition;
     }
 
-    // Select the locker to see where the player steps out (green) and which way the view from inside looks (cyan).
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.green;

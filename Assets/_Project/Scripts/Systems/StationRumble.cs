@@ -4,18 +4,13 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 
-// The station shaking itself apart. Every so often the screen shakes and warps, a low rumble plays, the lights brown
-// out, dust drifts down, and debris falls near the player: a shadow spreads on the floor first, so there's time to step
-// aside (see FallingDebris). Between rumbles a few warm motes of dust hang in the air. Levels can set a rumble off on cue
-// with Rumble, and raise intensity so they come stronger and more often. Heavy impacts call Punch to jolt the picture.
-// Lamps with StationLight listen for Rumbled and stutter along.
-// One per scene. Put it on an empty object; it needs nothing else.
+// station shaking
 public class StationRumble : MonoBehaviour
 {
-    const float DustPerSecond = 70f;    // specks at full strength
+    const float DustPerSecond = 70f;
     const float MotesPerSecond = 6f;
-    const float LightDip = 0.5f;        // how far the global light dims at the peak of a rumble
-    const float PunchRecovery = 2.5f;   // a full punch fades in 0.4 seconds
+    const float LightDip = 0.5f;
+    const float PunchRecovery = 2.5f;
     const string DustSortingLayer = "Top";
 
     [Header("Rumbles On Their Own")]
@@ -57,7 +52,6 @@ public class StationRumble : MonoBehaviour
     [SoundName] public string ambientSound = "Station Hum";
 
     public static StationRumble Instance { get; private set; }
-    // (strength, duration) as each rumble starts.
     public static event System.Action<float, float> Rumbled;
 
     public bool IsRumbling => Time.time < rumbleEnd;
@@ -122,7 +116,6 @@ public class StationRumble : MonoBehaviour
         ScheduleNext();
     }
 
-    // Shakes the station now. shake is 0 to 1; debris falls around the player over the first part of it.
     public void Rumble(float shake, float seconds, int debrisCount)
     {
         rumbleStrength = Mathf.Clamp01(shake);
@@ -136,33 +129,28 @@ public class StationRumble : MonoBehaviour
         ScheduleNext();
     }
 
-    // A sudden jolt to the picture (warp, color fringing, darker edges) that fades in a moment. amount is 0 to 1.
     public static void Punch(float amount)
     {
         if (Instance != null) Instance.punch = Mathf.Clamp01(Mathf.Max(Instance.punch, amount));
     }
 
-    // For the level to change the lighting it goes back to between rumbles, like turning everything red near the end.
     public void SetLightBase(float intensityValue, Color color)
     {
         lightIntensity = intensityValue;
         lightColor = color;
     }
 
-    // One of the scene's sounds (SoundManager), at its volume times volumeScale.
     public void PlaySound(string soundName, float volumeScale = 1f)
     {
         SoundManager.PlayOneShot(sfx, soundName, volumeScale);
     }
 
-    // A sound from somewhere in the level, quieter the further it is from the camera.
     public static void PlayAt(string soundName, Vector2 point, float volumeScale = 1f)
     {
         if (Instance == null) return;
         SoundManager.PlayOneShot(Instance.sfx, soundName, volumeScale * Nearness(point));
     }
 
-    // For FallingDebris: a crash, quieter the further it lands from the camera.
     public static void PlayImpact(Vector2 point)
     {
         if (Instance == null) return;
@@ -196,7 +184,6 @@ public class StationRumble : MonoBehaviour
         nextRumble = Time.time + Random.Range(secondsBetween.x, secondsBetween.y) / Mathf.Max(0.1f, intensity);
     }
 
-    // 0 to 1 over a rumble: swells in over the first fifth, then dies away.
     float Envelope()
     {
         if (!IsRumbling) return 0f;
@@ -208,13 +195,11 @@ public class StationRumble : MonoBehaviour
     {
         if (globalLight == null) return;
 
-        // An uneven browning out rather than a smooth fade.
         float flicker = Mathf.PerlinNoise(Time.time * 14f, 0.3f);
         globalLight.intensity = lightIntensity * (1f - LightDip * amount * (0.5f + flicker));
         globalLight.color = Color.Lerp(lightColor, emergencyColor, Mathf.Clamp01(amount * 1.5f));
     }
 
-    // Its own post-processing, layered over the level's and faded in by weight: lens warp, color fringing, darker edges.
     void CreateScreenEffects()
     {
         var profile = ScriptableObject.CreateInstance<VolumeProfile>();
@@ -235,8 +220,6 @@ public class StationRumble : MonoBehaviour
         screenEffects.sharedProfile = profile;
     }
 
-    // --- Debris ---
-
     IEnumerator DropDebrisDuring(int count, float seconds)
     {
         bool aimed = false;
@@ -252,7 +235,6 @@ public class StationRumble : MonoBehaviour
         }
     }
 
-    // Somewhere clear on the floor near the player, or right at their feet if aimAtPlayer.
     public bool TryPickDebrisPoint(bool aimAtPlayer, out Vector2 point)
     {
         point = default;
@@ -265,7 +247,6 @@ public class StationRumble : MonoBehaviour
             feet = new Vector2(bounds.center.x, bounds.min.y + 0.4f);
         }
 
-        // Heading somewhere: most pieces come down in front, within a cone either side of the way they're going.
         Vector2 velocity = playerBody != null ? playerBody.linearVelocity : Vector2.zero;
         bool ahead = velocity.sqrMagnitude > 0.25f && Random.value < aheadChance;
 
@@ -282,7 +263,6 @@ public class StationRumble : MonoBehaviour
         return false;
     }
 
-    // On a floor tile, with nothing solid there but characters.
     public bool IsClearFloor(Vector2 point)
     {
         if (floor != null && !floor.HasTile(floor.WorldToCell(point))) return false;
@@ -297,9 +277,6 @@ public class StationRumble : MonoBehaviour
         return true;
     }
 
-    // --- Dust and sound ---
-
-    // Specks drifting down across the whole view while it rumbles, and a few warm motes hanging in the air all the time.
     void EmitDust(float amount)
     {
         Camera cam = Camera.main;
@@ -347,7 +324,6 @@ public class StationRumble : MonoBehaviour
         var system = child.AddComponent<ParticleSystem>();
         system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
-        // Particles only come from Emit calls.
         ParticleSystem.MainModule main = system.main;
         main.loop = true;
         main.playOnAwake = false;

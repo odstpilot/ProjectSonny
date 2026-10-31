@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-// A group of robots the level treats as one fight. It can keep them powered down, dark and still, until the player
-// arrives, then wake them all at once; hitting a powered-down robot wakes the group early. It reports when the last one
-// is destroyed, for instance to open the way on.
-// Put it on an empty object and list the robots, or leave the list empty to use every robot under this object.
+// a group of robots fought as one
 public class RobotEncounter : MonoBehaviour
 {
     const float WakeBlinkTime = 0.06f;
@@ -35,7 +32,6 @@ public class RobotEncounter : MonoBehaviour
     public bool IsCleared { get; private set; }
     public int Remaining { get; private set; }
 
-    // The scripts switched off on each dormant robot, so exactly those come back on.
     private readonly List<Behaviour> sleeping = new List<Behaviour>();
     private readonly Dictionary<SpriteRenderer, Color> litColors = new Dictionary<SpriteRenderer, Color>();
 
@@ -58,7 +54,6 @@ public class RobotEncounter : MonoBehaviour
 
     void Start()
     {
-        // Tinted here rather than in Awake, after the robots have remembered their real colors.
         if (IsActive) return;
         foreach (Health robot in robots)
         {
@@ -93,7 +88,6 @@ public class RobotEncounter : MonoBehaviour
             if (clip != null) AudioSource.PlayClipAtPoint(clip, Camera.main.transform.position, SoundManager.Volume(wakeSound));
         }
 
-        // Their lights stutter on before they move.
         for (int i = 0; i < WakeBlinks; i++)
         {
             SetDark(i % 2 == 1);
@@ -106,7 +100,6 @@ public class RobotEncounter : MonoBehaviour
         sleeping.Clear();
     }
 
-    // Everything on the robot but its health and hit effects stops, so it can still be hurt while it waits.
     void PowerDown(Health robot)
     {
         foreach (MonoBehaviour behaviour in robot.GetComponents<MonoBehaviour>())
@@ -140,7 +133,6 @@ public class RobotEncounter : MonoBehaviour
         if (Remaining > 0 || IsCleared) return;
 
         IsCleared = true;
-        // The room falls quiet: everything drops into slow motion for a moment as the last one comes apart.
         if (lastKillSlowMotion < 1f) HitStop.Hold(lastKillSlowMotion, lastKillSeconds);
         CameraShake.Shake(lastKillShake);
         Cleared?.Invoke();

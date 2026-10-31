@@ -2,25 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A security camera up on a room's wall, the station's own, there since before anything went wrong. It sweeps the room
-// from side to side, easing into each end and resting there, sometimes stopping short partway as if something caught
-// its eye, with the patch of floor it can see drawn as a cone of light from its lens, clipped where walls and furniture
-// block it. The real light it throws is cut to the same shape, so it doesn't shine through a desk.
-//
-// In Chapter 1 it's harmless (hostile off): a green light blinking on it, a faint pale cone. Once Sonny's on
-// (CrewMember.SonnyOnline) it takes to following the technician a little when they cross its view.
-// In Chapter 2 it's Sonny's eyes (hostile on). Catching sight of the player, it stops and turns to them while its ring
-// fills (StealthMeter), amber going red; crouching makes it slower to be sure, but only staying out of the cone, or in
-// a locker, beats it. Sure, it sounds the alarm: the robots in the room (PlaceholderRobot.Alarm), and any Wardens near
-// enough, and the camera spiders (CameraSpider.Hear), come to where it saw them, and it keeps following and calling them for as long as the player's in view.
-// Losing them, it holds on the spot a moment, then goes back to its sweep. An EMP (Shutdown) puts it out for a while.
-// The art is made in code until it has its own. Its position is the eye: the foot of the wall below it, where its view
-// of the floor starts; the housing hangs mountHeight above, on the wall. Built by ChapterOneBuilder, for both chapters.
+// wall camera that watches for the player
 public class StationCamera : MonoBehaviour
 {
     const float PixelsPerUnit = 16f;
     const int ConeRays = 28;
-    const float ActiveDistance = 24f;      // it only draws and looks when the player's this close
+    const float ActiveDistance = 24f;
 
     [Tooltip("Sonny's (Chapter 2): it watches for the player and calls the robots. Off, it only sweeps.")]
     public bool hostile;
@@ -83,8 +70,8 @@ public class StationCamera : MonoBehaviour
     static AudioClip servoFallback, alertFallback;
 
     private State state = State.Sweep;
-    private float aim;                  // where it's facing, in degrees
-    private float legTarget;            // where this pass of the sweep is heading
+    private float aim;
+    private float legTarget;
     private float pauseUntil;
     private bool stoppedShort;
     private float detection;
@@ -110,13 +97,11 @@ public class StationCamera : MonoBehaviour
     public static IReadOnlyList<StationCamera> All => all;
     public bool IsAlarmed => state == State.Alarm;
 
-    // For the view from inside a locker (FirstPersonView): whether its light's on, its colour, and the lens.
     public bool Lit => coneRenderer != null && coneRenderer.enabled;
     public Color LightColor => shownColor;
     public Color LensColor => lens.color;
     public float LensHeight => mountHeight;
 
-    // How brightly its light falls on a point of the floor: 0 out of its view or behind something, up to 1 close in.
     public float LightAt(Vector2 point)
     {
         if (!Lit) return 0f;
@@ -162,7 +147,6 @@ public class StationCamera : MonoBehaviour
         if (state == State.Off)
         {
             if (Time.time >= stateUntil) state = State.Sweep;
-            // Shorted out: spitting the odd spark.
             if (near && Random.value < Time.deltaTime * 3f)
                 HitEffects.Sparks((Vector2)housingPivot.position + new Vector2(0f, -0.4f), Vector2.down, 3, 2f, 120f, Color.white, new Color(0.4f, 0.85f, 1f));
             Show(near, 0f);
@@ -179,8 +163,6 @@ public class StationCamera : MonoBehaviour
         shownColor = Color.Lerp(shownColor, want, Time.deltaTime * 10f);
         Show(near, 1f);
     }
-
-    // --- Chapter 2 ---
 
     void Think(float seen)
     {
@@ -247,7 +229,6 @@ public class StationCamera : MonoBehaviour
         state = next;
     }
 
-    // The robots in the room come to where it saw them, and any Wardens near enough.
     void RaiseAlarm()
     {
         nextAlert = Time.time + realertInterval;
@@ -263,15 +244,11 @@ public class StationCamera : MonoBehaviour
             warden.ActivitedByCam();
             warden.NewTarget(lastSeen);
         }
-        // The camera spiders hear it too: one in the room, or near enough, comes to look, through a door if it has to.
         foreach (CameraSpider spider in CameraSpider.All)
             if (spider.room == room || Vector2.Distance(spider.transform.position, transform.position) <= alertRange)
                 spider.Hear(lastSeen);
     }
 
-    // --- Chapter 1 ---
-
-    // Sweeping, and once Sonny's on, following the technician a while when they cross its view.
     void Wander(float seen)
     {
         if (seen > 0f && CrewMember.SonnyOnline)
@@ -288,9 +265,6 @@ public class StationCamera : MonoBehaviour
         else Sweep();
     }
 
-    // --- Sweeping ---
-
-    // Easing into each end, resting there, and now and then stopping short on the way.
     void Sweep()
     {
         if (Time.time < pauseUntil) return;
@@ -308,14 +282,12 @@ public class StationCamera : MonoBehaviour
             }
             else
             {
-                // Stopped short: a look, then on to the end it was going to.
                 pauseUntil = Time.time + Random.Range(0.35f, 0.8f);
                 legTarget = Mathf.DeltaAngle(baseAngle, aim) < 0f ? baseAngle - sweep : baseAngle + sweep;
                 if (Random.value < 0.5f) aim += Random.Range(-4f, 4f);
             }
             return;
         }
-        // Slower near where it's stopping, so it eases in rather than bumping.
         float ease = Mathf.Clamp01(Mathf.Abs(left) / 12f) * 0.8f + 0.2f;
         aim = Mathf.MoveTowardsAngle(aim, legTarget, sweepSpeed * ease * Time.deltaTime);
     }
@@ -327,24 +299,16 @@ public class StationCamera : MonoBehaviour
         aim = Mathf.MoveTowardsAngle(aim, clamped, speed * Time.deltaTime);
     }
 
-    // --- Seeing ---
-
-    // How well it can make the player out: 1 standing in its view, less crouching, 0 not at all.
     float Sees()
     {
         if (blind || player == null || Locker.IsPlayerHidden || (playerHealth != null && playerHealth.IsDead)) return 0f;
         Vector2 eye = transform.position;
         Vector2 toPlayer = (Vector2)player.position - eye;
         if (toPlayer.magnitude > range || Vector2.Angle(Direction(aim), toPlayer) > fieldOfView * 0.5f) return 0f;
-        // No line-of-sight check: it hangs from the ceiling looking down over everything, so walls and furniture
-        // don't hide the player from it. Only the cone and range do (and lockers, above).
         lastSeen = player.position;
         return playerController != null && playerController.IsCrouching ? crouchRate : 1f;
     }
 
-    // --- Being put out ---
-
-    // An EMP, or anything else that shorts it out: dark for this long, then back to its sweep, having forgotten.
     public void Shutdown(float seconds)
     {
         state = State.Off;
@@ -353,7 +317,6 @@ public class StationCamera : MonoBehaviour
         StealthMeter.Clear(this);
     }
 
-    // Back to sweeping, as if it had never seen the player. For the player coming back after dying.
     public void CalmDown()
     {
         if (state == State.Off) return;
@@ -376,12 +339,8 @@ public class StationCamera : MonoBehaviour
 
     static Vector2 Direction(float degrees) => new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad));
 
-    // --- Showing it ---
-
-    // The housing turned the way it's looking, the light on it, and the cone on the floor. power: 1 on, 0 out.
     void Show(bool near, float power)
     {
-        // The housing: a frame for down, down-and-across, and across, mirrored for the left.
         float fromDown = Mathf.DeltaAngle(-90f, aim);
         int frame = Mathf.Abs(fromDown) < 22f ? 0 : Mathf.Abs(fromDown) < 62f ? 1 : 2;
         bool left = fromDown < 0f;
@@ -390,7 +349,6 @@ public class StationCamera : MonoBehaviour
         Vector2 lensAt = LensPixel[frame];
         lens.transform.localPosition = new Vector3((left ? -1f : 1f) * (lensAt.x - HousingHalfWidth) / PixelsPerUnit, -lensAt.y / PixelsPerUnit, 0f);
 
-        // The light on it: blinking slow while calm, steady watching, flashing in alarm, out when it's out.
         float blink = state == State.Alarm ? (Mathf.Repeat(Time.time * 6f, 1f) < 0.5f ? 1f : 0.25f)
             : hostile && state == State.Watch ? 1f
             : Mathf.Repeat(Time.time, 1.4f) < 0.25f ? 1f : 0.35f;
@@ -403,8 +361,6 @@ public class StationCamera : MonoBehaviour
         beam.enabled = near && power > 0f;
         if (!near || power <= 0f) return;
 
-        // The cone: fanned out across its view from the eye at full range (it sees over walls from the ceiling), drawn
-        // from the lens up on the wall, so the light comes out of the camera.
         float alpha = hostile ? coneAlpha : coneAlpha * 0.45f;
         if (state == State.Alarm) alpha *= 1.6f;
         coneVertices[0] = lens.transform.position - transform.position;
@@ -422,17 +378,14 @@ public class StationCamera : MonoBehaviour
         coneMesh.colors = coneColors;
         coneMesh.RecalculateBounds();
 
-        // The light, the same shape as the cone.
         System.Array.Copy(coneVertices, beamPath, beamPath.Length);
         beam.SetShapePath(beamPath);
         beam.color = shownColor;
-        // Even all over, unlike the round light it was, so a little dimmer to match.
         beam.intensity = 0.6f * (hostile ? lightIntensity : lightIntensity * 0.4f) * (state == State.Alarm ? 1.4f : 1f);
     }
 
     void BuildArt()
     {
-        // Made once, and again after a scene change has unloaded them (they're not assets, so nothing keeps them).
         if (housingFrames == null || housingFrames[0] == null || bracketSprite == null || lensSprite == null) MakeSprites();
 
         housingPivot = new GameObject("Housing").transform;
@@ -455,7 +408,6 @@ public class StationCamera : MonoBehaviour
         Wall(lens, 5);
         if (CombatSprites.EffectMaterial != null) lens.sharedMaterial = CombatSprites.EffectMaterial;
 
-        // A little glow round the lens, so it reads in the dark.
         lensGlow = new GameObject("Lens Glow").AddComponent<Light2D>();
         lensGlow.transform.SetParent(lens.transform, false);
         lensGlow.lightType = Light2D.LightType.Point;
@@ -463,7 +415,6 @@ public class StationCamera : MonoBehaviour
         lensGlow.pointLightOuterRadius = 0.7f;
         lensGlow.falloffIntensity = 0.7f;
 
-        // The cone, on the floor, glowing (unlit, so it shows under emergency lighting).
         var cone = new GameObject("View Cone");
         cone.transform.SetParent(transform, false);
         coneMesh = new Mesh { name = "Camera View Cone" };
@@ -483,8 +434,6 @@ public class StationCamera : MonoBehaviour
         coneRenderer.sortingLayerName = "FloorObject";
         coneRenderer.sortingOrder = 6;
 
-        // Real light over the cone, so it lights the floor and whoever's standing in it. Shaped to the cone each frame
-        // (Show), so it stops where the cone does: nothing in the level casts 2D shadows to stop it otherwise.
         beam = new GameObject("Beam").AddComponent<Light2D>();
         beam.transform.SetParent(transform, false);
         beam.lightType = Light2D.LightType.Freeform;
@@ -512,9 +461,6 @@ public class StationCamera : MonoBehaviour
         SoundManager.PlayOneShot(voice, sound, volume * nearness, pitch, fallback);
     }
 
-    // --- Art, made in code ---
-
-    // The middle of the lens on each frame, in pixels from the top-left of the housing (which hangs from its top middle).
     const float HousingHalfWidth = 7f;
     static readonly Vector2[] LensPixel = { new Vector2(7f, 9f), new Vector2(12f, 8f), new Vector2(13f, 5f) };
 
@@ -528,12 +474,11 @@ public class StationCamera : MonoBehaviour
             { 's', new Color32(104, 110, 120, 255) },
             { 'b', new Color32(42, 46, 54, 255) },
             { 'L', new Color32(12, 14, 18, 255) },
-            { 'r', new Color32(70, 76, 86, 255) },      // a rivet
+            { 'r', new Color32(70, 76, 86, 255) },
         };
         var top = new Vector2(0.5f, 1f);
         housingFrames = new[]
         {
-            // Looking straight down.
             PixelArt.FromText(new[]
             {
                 "...########...",
@@ -548,7 +493,6 @@ public class StationCamera : MonoBehaviour
                 "....#bLLb#....",
                 ".....####.....",
             }, palette, PixelsPerUnit, top),
-            // Down and across.
             PixelArt.FromText(new[]
             {
                 "..#######.....",
@@ -563,7 +507,6 @@ public class StationCamera : MonoBehaviour
                 ".....#####bbb#",
                 "..........####",
             }, palette, PixelsPerUnit, top),
-            // Across.
             PixelArt.FromText(new[]
             {
                 "..............",
@@ -592,7 +535,6 @@ public class StationCamera : MonoBehaviour
             new Dictionary<char, Color32> { { 'W', new Color32(255, 255, 255, 255) } }, PixelsPerUnit, new Vector2(0.5f, 0.5f));
     }
 
-    // A quick rising whirr, as it turns to look.
     static AudioClip ServoFallback => servoFallback != null ? servoFallback : (servoFallback = MakeClip("Camera Servo", 0.28f, t =>
     {
         float pitch = 180f + 260f * t / 0.28f;
@@ -600,7 +542,6 @@ public class StationCamera : MonoBehaviour
         return buzz * Mathf.Clamp01(t / 0.03f) * Mathf.Clamp01((0.28f - t) / 0.06f);
     }));
 
-    // Two sharp tones, twice.
     static AudioClip AlertFallback => alertFallback != null ? alertFallback : (alertFallback = MakeClip("Camera Alert", 0.6f, t =>
     {
         float pitch = (int)(t / 0.15f) % 2 == 0 ? 1320f : 990f;

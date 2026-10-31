@@ -15,5 +15,4 @@ public class KeyCard : MonoBehaviour
             Destroy(gameObject);
         }
     }
-
 }

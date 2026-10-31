@@ -13,6 +13,4 @@ public class LoadNextSceneOnPlayerCollision : MonoBehaviour
         }
         Debug.Log("peepoopeepooo");
     }
-    
 }
-

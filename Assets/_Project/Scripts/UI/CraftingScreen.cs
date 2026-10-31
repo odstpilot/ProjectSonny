@@ -4,20 +4,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The workbench's screen (CraftingBench, Workshop): the parts the technician's carrying (Inventory), a picture and a
-// count of each along the top, and what they can be made into, a card each: a picture, what it's for, the parts it
-// takes (each with how many there are of how many it needs, green when there's enough, red when not), and whether it's
-// made already, three to a row (scaled down to fit when there are more rows than fit). Pick one with A/D (W/S for the
-// row above or below), the arrow keys, the number keys, or the mouse, and make it with E, Enter, or a click:
-// a bar fills with the sound of soldering, and it's done (Crafted). Short of something, and the parts it's short of
-// flash red. Esc, Tab, or a click outside it closes it. The game's paused while it's up.
-// yield return CraftingScreen.Show(recipes) waits until it's closed.
-// Built from code each time it opens. Runs on unscaled time, since it pauses the game.
+// the workbench screen
 public class CraftingScreen : MonoBehaviour
 {
     const int SortingOrder = 110;
     const float CardWidth = 520f, CardHeight = 500f, CardGap = 40f;
-    const int Columns = 3;                      // cards to a row; more go on the next row down
+    const int Columns = 3;
     const float CraftSeconds = 1.2f;
     const float FadeTime = 0.16f;
     static readonly Color PanelColor = new Color(0.05f, 0.05f, 0.06f, 0.97f);
@@ -32,15 +24,12 @@ public class CraftingScreen : MonoBehaviour
         public string description;
         public Inventory.Stack[] cost = new Inventory.Stack[0];
         public Sprite picture;
-        // Set, it can't be made yet, and its card says this instead (Workshop: everything but the EMP, until the comms
-        // ring's done).
         public string lockedText;
         public bool Locked => !string.IsNullOrEmpty(lockedText);
     }
 
     public static bool IsOpen { get; private set; }
 
-    // Something's just been made at the bench.
     public static event System.Action<Recipe> Crafted;
 
     class Card
@@ -57,7 +46,7 @@ public class CraftingScreen : MonoBehaviour
     private readonly List<Card> cards = new List<Card>();
     private readonly Dictionary<Inventory.Material, TextMeshProUGUI> carried = new Dictionary<Inventory.Material, TextMeshProUGUI>();
     private RectTransform panel;
-    private float fit = 1f;     // how far the panel's shrunk to fit the screen
+    private float fit = 1f;
     private int picked;
     private bool crafting;
     private AudioSource voice;
@@ -91,7 +80,7 @@ public class CraftingScreen : MonoBehaviour
         }
         group.alpha = 1f;
         panel.localScale = Vector3.one * fit;
-        yield return null;      // so the E that opened it doesn't make something
+        yield return null;
 
         while (true)
         {
@@ -116,7 +105,6 @@ public class CraftingScreen : MonoBehaviour
 
     void OnDestroy() => IsOpen = false;
 
-    // Picking a card, and making what's on it.
     void Choose()
     {
         int before = picked;
@@ -231,8 +219,6 @@ public class CraftingScreen : MonoBehaviour
         }
     }
 
-    // --- Building ---
-
     CanvasGroup Build(Recipe[] recipes)
     {
         PromptBadge.MakeCanvas(gameObject, SortingOrder);
@@ -257,7 +243,6 @@ public class CraftingScreen : MonoBehaviour
         panel = frame.rectTransform;
         panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
         panel.sizeDelta = new Vector2(width, height);
-        // Shrunk to fit the screen when there's a lot on it.
         fit = Mathf.Min(1f, 1840f / width, 1040f / height);
         var edge = frame.gameObject.AddComponent<Outline>();
         edge.effectColor = Edge;
@@ -267,7 +252,6 @@ public class CraftingScreen : MonoBehaviour
         title.characterSpacing = 8f;
         GameUI.Anchor(title.rectTransform, 0f, 1f, 1f, 1f, 60f, -90f, 60f, 36f);
 
-        // What's being carried, along the top right: a picture and a count of each part.
         for (int i = 0; i < Inventory.Materials.Length; i++)
         {
             Inventory.Material material = Inventory.Materials[Inventory.Materials.Length - 1 - i];
@@ -312,7 +296,6 @@ public class CraftingScreen : MonoBehaviour
             about.textWrappingMode = TextWrappingModes.Normal;
             GameUI.Anchor(about.rectTransform, 0f, 0f, 1f, 1f, 30f, 200f, 30f, 232f);
 
-            // The parts it takes, side by side: a picture of each, and how many of how many.
             const float slot = 112f;
             float left = (CardWidth - recipe.cost.Length * slot) * 0.5f;
             for (int k = 0; k < recipe.cost.Length; k++)
@@ -351,7 +334,6 @@ public class CraftingScreen : MonoBehaviour
         return group;
     }
 
-    // A part's picture, a square this big, its corner at this anchor (and pivot), so far from it.
     static void Icon(RectTransform parent, Inventory.Material material, Vector2 corner, Vector2 at, float size)
     {
         Image icon = GameUI.NewRect("Icon", parent).gameObject.AddComponent<Image>();

@@ -1,14 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// The storage room's shelf: a metal rack against the wall, stacked with crates, with a spare data chip for Sonny's core
-// that's slid underneath it. Walk up and press E to reach under it. Reaching nudges the rack (Nudge); pulling it out
-// (Grab) clinks it free;
-// and something rocking the rack harder and harder tips the crate on top off onto whoever's under it (Topple). What happens when E is pressed is up to whoever's listening
-// (RestroomBreak, in Chapter 1): Used is raised, and the shelf stays in use until they call Done. With nobody listening
-// it does nothing.
-// Like the furniture, the object sits at its sorting point, DepthSort.FeetToCenter above the base of the rack, and its
-// art is placed down from there. The art is made in code until it has its own. Built by ChapterOneBuilder.
+// shelf in the storage room
 public class ToolShelf : Terminal
 {
     const float PixelsPerUnit = 16f;
@@ -67,13 +60,10 @@ public class ToolShelf : Terminal
         Used.Invoke();
     }
 
-    // Lets go of it, for whoever took it on Used.
     public void Done() => inUse = false;
 
-    // Takes it as if it had been used, without raising Used, for a script that's using it (until Done).
     public void Occupy() => inUse = true;
 
-    // An arm under the rack, feeling about: it knocks the rack a little this way and that.
     public IEnumerator Nudge(float strength = 1f)
     {
         const float Seconds = 0.22f;
@@ -86,7 +76,6 @@ public class ToolShelf : Terminal
         art.transform.localRotation = Quaternion.identity;
     }
 
-    // The wrench found and pulled out from under it: a clink, and it's gone from the gap.
     public IEnumerator Grab()
     {
         if (Taken) yield break;
@@ -96,9 +85,6 @@ public class ToolShelf : Terminal
         yield return Wait(0.35f);
     }
 
-    // The rack rocks, worse and worse, until the crate on top tips off and comes down on the head at headPoint (pulling
-    // the wrench out first, if it's still there). Done the moment it hits; then it bounces off onto the floor beside
-    // them (feetY is the floor there) on its own.
     public IEnumerator Topple(Vector2 headPoint, float feetY)
     {
         yield return Grab();
@@ -114,7 +100,6 @@ public class ToolShelf : Terminal
         }
         art.transform.localRotation = Quaternion.identity;
 
-        // Off it comes: the top crate leaves the rack and drops in an arc onto their head.
         art.sprite = MakeShelf(false, false);
         SpriteRenderer crate = MakeFallingCrate();
         Vector2 from = TopCratePoint;
@@ -130,7 +115,6 @@ public class ToolShelf : Terminal
         StartCoroutine(Bounce(crate, headPoint, feetY));
     }
 
-    // Off their head and onto the floor, where it stays.
     IEnumerator Bounce(SpriteRenderer crate, Vector2 from, float feetY)
     {
         Vector2 to = new Vector2(from.x + 0.9f, feetY);
@@ -145,11 +129,9 @@ public class ToolShelf : Terminal
         }
         crate.transform.position = new Vector3(to.x, to.y, 0f);
         crate.transform.rotation = Quaternion.Euler(0f, 0f, -90f);
-        // Down on the floor with everything else, sorted like it.
         crate.sortingLayerName = DepthSort.Layer;
     }
 
-    // Where the crate on the top shelf sits, in the world.
     Vector2 TopCratePoint => (Vector2)art.transform.position + new Vector2((12.5f - Width * 0.5f) / PixelsPerUnit, 36.5f / PixelsPerUnit);
 
     SpriteRenderer MakeFallingCrate()
@@ -158,7 +140,7 @@ public class ToolShelf : Terminal
         crate.transform.SetParent(transform.parent, false);
         crate.transform.position = TopCratePoint;
         crate.sprite = MakeCrate();
-        crate.sortingLayerName = "Top";     // over everyone while it's in the air
+        crate.sortingLayerName = "Top";
         return crate;
     }
 
@@ -167,8 +149,6 @@ public class ToolShelf : Terminal
         for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime) yield return null;
     }
 
-    // --- Art ---
-
     static AudioClip clinkTone;
     static AudioClip ClinkTone => clinkTone != null ? clinkTone : (clinkTone = TitleUI.Tone("Wrench Pickup", 880f, 0.25f, 0.5f));
     static AudioClip rattleNoise;
@@ -176,9 +156,6 @@ public class ToolShelf : Terminal
     static AudioClip hitTone;
     static AudioClip HitTone => hitTone != null ? hitTone : (hitTone = TitleUI.Tone("Knockout Hit", 70f, 0.5f, 1f));
 
-    // A grey rack: two uprights, three shelves of crates and boxes, and a dark gap along the floor with the wrench's
-    // glint in it (while it's there).
-    // The crate off the top shelf, on its own.
     static Sprite MakeCrate()
     {
         var crate = new Color32(150, 112, 64, 255);
@@ -205,12 +182,9 @@ public class ToolShelf : Terminal
         {
             bool upright = x <= 1 || x >= Width - 2;
             if (upright) return x == 0 || x == Width - 1 ? frame : frameLit;
-            // Shelves at these heights; the bottom one sits over the gap.
             if (y == 6 || y == 7 || y == 19 || y == 20 || y == 32 || y == 33) return y % 2 == 0 ? frame : frameLit;
             if (y < 6)
             {
-                // The spare data chip, slid into the dark under the bottom shelf: a little green board with gold
-                // contacts along one edge, a black chip on it, and a lit status light.
                 if (withWrench && y >= 1 && y <= 4 && x >= 18 && x <= 26)
                 {
                     if (y == 1) return x % 2 == 0 ? gold : board;
@@ -220,7 +194,6 @@ public class ToolShelf : Terminal
                 }
                 return gap;
             }
-            // Crates on the bottom shelf, boxes above, a smaller box on top.
             if (y > 7 && y < 17 && x >= 3 && x <= 14) return x == 3 || x == 14 || y == 16 || y == 12 ? crateDark : crate;
             if (y > 7 && y < 14 && x >= 17 && x <= 28) return x == 17 || x == 28 || y == 13 ? boxDark : box;
             if (y > 20 && y < 29 && x >= 5 && x <= 18) return x == 5 || x == 18 || y == 28 ? boxDark : box;

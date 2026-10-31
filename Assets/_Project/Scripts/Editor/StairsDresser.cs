@@ -2,24 +2,15 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Menu: Sonny > Dress Stairs (in the open scene). FloorOneBuilder does it for every flight it places.
-//
-// Gives each Stairway its steps: a sprite over its trigger, from Art/Environment/Stairs, named
-//   Stairs_<Up|Down>_<width>x<height>_<N|S>.png
-// Up or Down by the stairs' name ("Stairs Up 1"), the size in cells by its trigger, and N or S by which way the flight
-// runs away from the floor it's reached from (its arrival spot is on that floor). The art is drawn at the tileset's own
-// scale, 32 pixels to a cell, so it's imported here the same way: crisp, uncompressed, 32 pixels per unit.
-// Run it again any time: each flight's steps are made once and updated in place.
+// puts stair art on each stairway
 public static class StairsDresser
 {
     const string ArtFolder = "Assets/_Project/Art/Environment/Stairs";
     const string ChildName = "Steps";
     const float PixelsPerUnit = 32f;
-    // On the floor, over its rugs and details (FloorOneBuilder's floor tilemaps go up to 3), under anyone standing on them.
     const string SortingLayer = "Floor";
     const int SortingOrder = 5;
 
-    [MenuItem("Sonny/Dress Stairs")]
     public static void DressOpenScene()
     {
         int dressed = 0;
@@ -29,13 +20,13 @@ public static class StairsDresser
         Debug.Log($"Dressed {dressed} flights of stairs.");
     }
 
-    // For a batch run over the scenes with stairs in them: opens, dresses, and saves each.
     public static void DressStationScenes()
     {
         foreach (string scene in new[]
                  {
                      "Assets/_Project/Scenes/Levels/Chapter1.unity",
                      "Assets/_Project/Scenes/Levels/Chapter2.unity",
+                     "Assets/_Project/Scenes/Levels/Chapter3.unity",
                      "Assets/_Project/Scenes/Levels/StationBlueprint.unity",
                  })
         {
@@ -81,7 +72,6 @@ public static class StairsDresser
         return true;
     }
 
-    // Crisp pixels, no compression, centre pivot, 32 pixels to the cell like the tileset.
     static Sprite LoadSprite(string path)
     {
         if (!(AssetImporter.GetAtPath(path) is TextureImporter importer)) return null;

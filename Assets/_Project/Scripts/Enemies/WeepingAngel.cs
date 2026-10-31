@@ -1,21 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-// A converted maintenance robot that hunts the player without pause. Light doesn't touch it and hiding doesn't stop it:
-// only an EMP shuts it down (Stun), and a hit from a weapon staggers it for a moment. It can't be destroyed - the EMP
-// and running are the only answers.
-//
-// Catching the player, it jumpscares them (AngelJumpscare), its face filling the screen, and sends them back: dragged
-// there in the dark, coming to on the floor as it rolls away (DraggedBack), held still itself till that's over.
-//
-// It gives off no light of its own, so in a dark corridor its footsteps are the only warning the player gets: heavy
-// metal feet, a thud and a clank, louder the closer it is and from the side it's on. They quicken as it works up to
-// speed, and stop dead the instant it's shut down.
-//
-// It chases over a NavMesh, or, given a walkArea (a room's floor as a grid, CrewWalkArea), over that instead, with its
-// Nav Mesh Agent switched off: for the station's rooms, which have no NavMesh. It keeps to that floor; with the player
-// off it, it waits. There it can be snuck past (stealth), the way the robots are: it has to notice the player before it
-// comes for them, seeing and hearing much further than they do, and crouching barely dulls it.
+// bot that only moves when not seen
 [RequireComponent(typeof(NavMeshAgent))]
 public class WeepingAngel : MonoBehaviour, IDamageable
 {
@@ -152,7 +138,7 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     private float baseLoopVolume = 1f;
     private float baseLoopPitch = 1f;
     private float shutdownUntil;
-    private float movingTime;       // seconds it's been moving; winds its speed up
+    private float movingTime;
     private float nextCatchTime;
     private float flashUntil;
     private float sparkTimer;
@@ -181,10 +167,8 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     private PlayerController playerController;
     private readonly System.Collections.Generic.List<RaycastHit2D> viewHits = new System.Collections.Generic.List<RaycastHit2D>();
 
-    // How fast it's going, whichever way it gets about.
     Vector2 Velocity => walkArea != null ? gridVelocity : (Vector2)agent.velocity;
 
-    // Bigger than its body, so sparks land around its edges.
     float BodyRadius => bodyCollider != null
         ? Mathf.Max(bodyCollider.bounds.extents.x, bodyCollider.bounds.extents.y) + 0.05f
         : 0.55f;
@@ -200,14 +184,11 @@ public class WeepingAngel : MonoBehaviour, IDamageable
 
     void Start()
     {
-        // On its own floor, the agent's not needed (and would complain about there being no NavMesh).
         if (walkArea != null) agent.enabled = false;
 
-        // A 2D navmesh agent walks the XY plane and never turns.
         agent.updateRotation = false;
         agent.updateUpAxis = false;
 
-        // Its own speed and acceleration, so it starts, turns, and stops sharply instead of gliding about.
         baseSpeed = chaseSpeed;
         agent.speed = chaseSpeed;
         agent.acceleration = acceleration;
@@ -263,7 +244,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         UpdateHeartbeat();
     }
 
-    // Now and then, its lights flare red for a moment: there, then gone.
     void UpdateFlash()
     {
         if (flashEvery.y <= 0f || state != State.Hunting) return;
@@ -273,8 +253,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         LightFlash.Spawn(transform.position, huntColor, flashRadius, flashIntensity, 0.35f);
         HitEffects.Sparks(transform.position, Vector2.up, 5, 2.5f, 360f, huntColor, Color.white);
     }
-
-    // --- Moving ---
 
     void Hunt()
     {
@@ -289,12 +267,10 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             return;
         }
 
-        // It works up to top speed the longer it goes without being shut down.
         movingTime += Time.deltaTime;
         float windUp = speedRampTime > 0f ? Mathf.Clamp01(movingTime / speedRampTime) : 1f;
         agent.speed = Mathf.Lerp(baseSpeed * startSpeedFraction, baseSpeed, windUp);
 
-        // Someone in a locker has vanished as far as it's concerned: it goes to where they were and waits there.
         bool hidden = Locker.IsPlayerHidden;
         if (!hidden) lastSeen = player.position;
 
@@ -312,9 +288,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             body.flipX = agent.velocity.x < 0f;
     }
 
-    // Over its walkArea: the shortest way to the player across the floor, found again every so often as they move. With
-    // stealth on, it has to notice them first (Sense), and until it does it prowls the room, or goes to look at what it
-    // half noticed.
     void HuntOnFloor()
     {
         if (player == null) return;
@@ -336,14 +309,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
 
         bool hidden = Locker.IsPlayerHidden;
         if (!hidden && !stealth) lastSeen = player.position;
-        // Where they are on its floor, or near enough; nowhere near it, they've left the room, and it waits.
         if (!NearestOnFloor(walkArea.CellAt(lastSeen), out Vector2Int goal) || (hidden && Vector2.Distance(at, lastSeen) <= ArriveDistance))
         {
             Brake();
             return;
         }
 
-        // Every so often it lurches off its line, so there's no telling where it'll come from.
         UpdateLurch(at);
         if (lurch == Lurch.Freeze)
         {
@@ -351,11 +322,9 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             return;
         }
         if (lurch != Lurch.None && NearestOnFloor(walkArea.CellAt(lurchTarget), out Vector2Int aside)) goal = aside;
-        // Down to its last cell, it goes straight for them (or wherever it's lurched to).
         MoveToward(at, goal, speed, lurch != Lurch.None ? walkArea.CenterOf(goal) : (Vector2)lastSeen);
     }
 
-    // Along the shortest way over the floor to the goal cell, then straight at finalPoint.
     void MoveToward(Vector2 at, Vector2Int goal, float speed, Vector2 finalPoint)
     {
         if (Time.time >= nextRepath)
@@ -375,11 +344,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             body.flipX = gridVelocity.x < 0f;
     }
 
-    // --- Stealth (on a walkArea) ---
-
-    // Notices the player as the robots do, from what it sees and hears of them, but never shows it (no ring round them,
-    // StealthMeter: the heartbeat's the only warning). Sure of them, it gives chase; chasing, it keeps them in view
-    // anywhere in sight, and gives up once it's lost them for long enough and got to where it last saw them.
     void Sense(Vector2 at)
     {
         Vector2 now = player.position;
@@ -408,15 +372,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
         else if (chasing && Time.time - lastPerceived > loseTrackAfter && Vector2.Distance(at, lastSeen) < 1f)
         {
-            // Lost them: it goes back to prowling, still on edge.
             chasing = false;
             detection = 0.5f;
             gridPath.Clear();
         }
-
     }
 
-    // How well it makes the player out right now: 1 clearly, less for only hearing them, 0 not at all.
     float Perceive(Vector2 at, bool tracking, bool moving)
     {
         if (Locker.IsPlayerHidden || (playerHealth != null && playerHealth.IsDead)) return 0f;
@@ -427,14 +388,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         if (distance <= range && (tracking || distance <= closeRange || Vector2.Angle(facing, to) <= fieldOfView * 0.5f)) seen = 1f;
         else if (!tracking && moving)
         {
-            // Footsteps: further off when they run, and quieter, not silent, crouched.
             float hearing = PlayerSprinting ? sprintHearingRange : hearingRange;
             if (distance <= hearing) seen = PlayerCrouching ? 0.5f * crouchDetectionMultiplier : 0.6f;
         }
         return seen > 0f && ClearView(at, player.position) ? seen : 0f;
     }
 
-    // Nothing solid between it and the point, apart from itself, the player, and the robots.
     bool ClearView(Vector2 from, Vector2 target)
     {
         var solidOnly = new ContactFilter2D { useTriggers = false };
@@ -448,8 +407,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         return true;
     }
 
-    // Not chasing: half sure of something, it goes to look; otherwise it prowls the room at a stalk, somewhere new each
-    // time, stopping now and then to look about.
     void Prowl(Vector2 at)
     {
         float speed = baseSpeed * prowlSpeedFraction;
@@ -480,7 +437,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         MoveToward(at, prowlGoal, speed, walkArea.CenterOf(prowlGoal));
     }
 
-    // Something set it off (an alarm): it knows where to go, and goes there flat out.
     public void Alarm(Vector2 at)
     {
         lastSeen = at;
@@ -493,7 +449,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
     bool PlayerCrouching => playerController != null && playerController.IsCrouching;
     bool PlayerSprinting => playerController != null && playerController.IsSprinting;
 
-    // Starts a lurch when it's due, and ends one when it's done (or when a swerve gets where it was going).
     void UpdateLurch(Vector2 at)
     {
         if (lurch != Lurch.None)
@@ -525,7 +480,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
         else
         {
-            // Off to one side of them, to come at them from an angle.
             Vector2 toward = (Vector2)lastSeen - at;
             Vector2 side = toward.sqrMagnitude > 0.01f ? new Vector2(-toward.y, toward.x).normalized : Random.insideUnitCircle.normalized;
             if (Random.value < 0.5f) side = -side;
@@ -535,7 +489,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
     }
 
-    // The walkable cell nearest this one, within a few cells.
     bool NearestOnFloor(Vector2Int cell, out Vector2Int found)
     {
         found = cell;
@@ -559,7 +512,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         transform.position += (Vector3)(gridVelocity * Time.deltaTime);
     }
 
-    // Stops it where it stands, instantly.
     void Hold()
     {
         gridVelocity = Vector2.zero;
@@ -578,14 +530,13 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             if (agent.isOnNavMesh) agent.ResetPath();
             gridPath.Clear();
             lurch = Lurch.None;
-            // Coming round, it's lost them: back to prowling, on edge.
             if (stealth)
             {
                 chasing = false;
                 detection = 0.5f;
             }
             Hold();
-            movingTime = 0f;   // back to its starting speed once it comes round
+            movingTime = 0f;
 
             HitEffects.Ring(transform.position, stunnedColor, 1.4f);
             HitEffects.Sparks(transform.position, Vector2.up, 14, 5f, 360f, stunnedColor, Color.white);
@@ -594,27 +545,21 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
         else if (previous == State.Stunned)
         {
-            // Servos catching as it comes back up.
             HitEffects.Sparks(transform.position, Vector2.up, 8, 3f, 360f, huntColor, Color.white);
         }
     }
 
-    // --- Being hit ---
-
-    // An EMP shutdown. Shutting it down again while it's already down extends it.
     public void Stun()
     {
         Stagger(stunDuration);
     }
 
-    // Holds it still for seconds, never cutting short a hold that already runs longer.
     public void Stagger(float seconds)
     {
         if (seconds <= 0f) return;
         shutdownUntil = Mathf.Max(shutdownUntil, Time.time + seconds);
     }
 
-    // Weapons can't destroy it: a hit knocks it back a step and staggers it.
     public void TakeDamage(DamageInfo info)
     {
         flashUntil = Time.time + HitFlashTime;
@@ -635,14 +580,11 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         Stagger(staggerDuration);
     }
 
-    // --- Catching the player ---
-
     void OnTriggerEnter2D(Collider2D other)
     {
         TryCatch(other);
     }
 
-    // Also while they stay inside it, so standing still in its arms still counts.
     void OnTriggerStay2D(Collider2D other)
     {
         TryCatch(other);
@@ -654,7 +596,7 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         if (other == null || !other.CompareTag("Player")) return;
 
         nextCatchTime = Time.time + catchCooldown;
-        movingTime = 0f;   // back to its starting speed afterwards
+        movingTime = 0f;
 
         Vector2 toPlayer = (Vector2)other.transform.position - (Vector2)transform.position;
         Vector2 direction = toPlayer.sqrMagnitude > 0.0001f ? toPlayer.normalized : Vector2.up;
@@ -681,7 +623,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
 
         SendPlayerBack(other);
-        // Thrown back, they're out of its sight again.
         if (stealth)
         {
             chasing = false;
@@ -694,8 +635,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         if (heartbeat != null) heartbeat.Stop();
     }
 
-    // The player's heart, pounding harder and faster the nearer it is: heard from heartbeatRange away, filling in as it
-    // closes. 2D, so it's the same in both ears; it's their own heart.
     void UpdateHeartbeat()
     {
         if (heartbeatRange <= 0f || player == null) return;
@@ -717,7 +656,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         else if (heartbeat.volume <= 0.001f && heartbeat.isPlaying) heartbeat.Stop();
     }
 
-    // Somewhere else to hunt: a new floor (another room's), standing here, after the player.
     public void Relocate(CrewWalkArea area, Vector2 at)
     {
         if (area != null) walkArea = area;
@@ -731,7 +669,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
 
     void SendPlayerBack(Collider2D playerCollider)
     {
-        // If that was the hit that killed them, they go down where they are; dying puts them back at the checkpoint.
         var dying = playerCollider.GetComponentInParent<PlayerHealthHandler>();
         if (dying != null && dying.IsDying) return;
         Vector3 destination;
@@ -741,14 +678,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
         else
         {
-            // No reset point set: put them back at their last checkpoint instead.
             if (dying == null) return;
             destination = dying.RespawnPoint;
         }
 
         if (dragBack && dying != null)
         {
-            // It hauls them there itself, out of sight, and stays put till they're up again.
             Stagger(AngelJumpscare.ToBlack + DraggedBack.Seconds);
             DraggedBack.AfterJumpscare(dying, destination, body != null ? new[] { body.sprite } : null);
             return;
@@ -764,8 +699,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         }
     }
 
-    // --- Look and sound ---
-
     void UpdateLook()
     {
         if (body == null) return;
@@ -776,7 +709,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         body.color = tint;
     }
 
-    // Electricity crawling over it while it's shut down.
     void ShowShutdownSparks()
     {
         sparkTimer -= Time.deltaTime;
@@ -799,8 +731,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         loop.pitch = Mathf.MoveTowards(loop.pitch, baseLoopPitch * pitch, Time.deltaTime * 2f);
     }
 
-    // Its own source for footsteps, so the looping hum's volume can't drag them down. Flat (2D), with the distance and
-    // the side worked out from the player each step, since the camera's too far above the floor for 3D sound to judge it.
     void CreateFootstepSource()
     {
         steps = gameObject.AddComponent<AudioSource>();
@@ -809,7 +739,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         steps.spatialBlend = 0f;
     }
 
-    // Steps land in time with how fast it's moving, and stop dead the moment an EMP puts it down.
     void UpdateFootsteps()
     {
         if (steps == null || state != State.Hunting || player == null) return;
@@ -837,14 +766,12 @@ public class WeepingAngel : MonoBehaviour, IDamageable
             SoundManager.PlayOneShot(steps, footstepSound, loudness);
         else
         {
-            // Nothing of its own yet: a person's footstep slowed into a heavy thud, and a clank of metal over it.
             SoundManager.PlayOneShot(steps, "Footsteps", loudness * 1.4f, Random.Range(0.5f, 0.6f));
             steps.pitch = Random.Range(0.9f, 1.1f);
             steps.PlayOneShot(Clank, loudness * 0.7f * GameSettings.EffectsVolume);
         }
     }
 
-    // A heavy metal foot coming down: a low thump and a short, dull ring.
     static AudioClip clank;
     static AudioClip Clank
     {
@@ -881,7 +808,6 @@ public class WeepingAngel : MonoBehaviour, IDamageable
         Debug.LogWarning($"{name}: off the NavMesh, so it has stopped chasing.", this);
     }
 
-    // Select it to see how close the player has to be for it to catch them (cyan), and where it sends them (magenta).
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;

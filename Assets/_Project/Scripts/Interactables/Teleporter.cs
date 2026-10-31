@@ -2,22 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
-// A way from one place to another: it takes the player to teleportTarget through a quick fade to black, with the camera
-// cut straight to the new spot, so going through never shows as a jump. Two kinds:
-//   Walk Through: the player walks into the trigger and is taken through, for hallways that carry on somewhere else.
-//   Interact: a closed door. Walk up to it and press E; a locked door (or one with nowhere to go) just says it's locked.
-//   A badge door (credential set) only opens for someone with access: the player, once they hold that credential
-//   (AccessCredentials, like the temp badge's), or anyone standing close to a crew member with a badge, who lets them
-//   through. Without either, it says so (badgeText), or that their badge is dead if they carry one (inactiveBadgeText).
-// Every door can be held shut for a while, whatever kind it is (HoldAll): Chapter 1 does it until the technician's
-// checked in with the greeter (ChapterOneDirector). A held door's lamp is red and it says heldText; trying it has the
-// technician say why they can't yet, and tells whoever's listening (HeldDoorTried).
-// Levels can draw the doorway in code: a door in the wall with a lamp (green if it opens, red if not), or darkness
-// deepening toward the wall, so a hallway seems to carry on out of sight. wallDirection says which side the wall is on.
-// FloorOneBuilder places these in pairs, each one's target just inside the other.
-// Setup: a trigger Collider2D over the doorway, and teleportTarget where the player comes out, clear of the trigger at
-// the other end (or the player walks straight back through).
+// door or opening that moves the player
 [RequireComponent(typeof(Collider2D))]
 public class Teleporter : MonoBehaviour
 {
@@ -25,9 +12,11 @@ public class Teleporter : MonoBehaviour
     public enum Look { None, Door, Opening }
 
     const float PixelsPerUnit = 32f;
-    const float DoorHeight = 2f;        // how far up the wall a door in the wall above reaches
-    const int SlabThickness = 10;       // pixels across a door seen edge-on, in a side or bottom wall
-    const float DarkMoment = 0.08f;     // seconds fully black before the picture comes back
+    const float DoorHeight = 2f;
+    const int SlabThickness = 10;
+    const float DarkMoment = 0.08f;
+    public const float SwingSeconds = 0.35f;
+    const float OpenScale = 0.1f;
     static readonly Color32 Frame = new Color32(30, 33, 38, 255);
     static readonly Color32 Metal = new Color32(74, 80, 88, 255);
     static readonly Color32 MetalLit = new Color32(104, 111, 120, 255);
@@ -65,22 +54,29 @@ public class Teleporter : MonoBehaviour
     public float fadeTime = 0.25f;
     [Tooltip("The scene's sound played as the screen goes dark. Empty for none.")]
     [SoundName] public string sound = "";
+    [Tooltip("Loads this scene instead, once the screen's black, with the player coming out at teleportTarget in it. Empty stays in this one.")]
+    public string nextScene = "";
 
     [Header("Look")]
     public Look look = Look.None;
     [Tooltip("Which side of the doorway the wall is on: up for a door in the wall above it.")]
     public Vector2 wallDirection = Vector2.up;
 
-    // True while anyone is going through a teleporter. Others ignore the player meanwhile.
     public static bool IsTravelling { get; private set; }
 
     static readonly List<Teleporter> all = new List<Teleporter>();
 
-    // While every door's held shut: what the technician says on trying one. Null when they aren't.
     public static string HeldLine { get; private set; }
     public static bool Held => HeldLine != null;
-    // Whenever the player tries a door while they're held.
     public static event System.Action HeldDoorTried;
+    static Vector2? arrival;
+    public static Vector2? TakeArrival()
+    {
+        Vector2? at = arrival;
+        arrival = null;
+        return at;
+    }
+
     public static void HoldAll(string line) => HeldLine = line ?? "";
     public static void ReleaseAll() => HeldLine = null;
     const float HeldTryCooldown = 1.5f;
@@ -91,6 +87,7 @@ public class Teleporter : MonoBehaviour
     {
         HeldLine = null;
         HeldDoorTried = null;
+        arrival = null;
         lastHeldTry = float.NegativeInfinity;
     }
 
@@ -102,15 +99,46 @@ public class Teleporter : MonoBehaviour
     private SpriteRenderer lamp;
     private Light2D lampLight;
     private bool travelling;
+    private Transform[] panels;
+    private bool panelsAcrossX;
+    private float openness;
+    private Coroutine swinging;
     private readonly List<Behaviour> frozen = new List<Behaviour>();
 
     bool CanOpen => !Held && !locked && teleportTarget != null && HasAccess;
-    // No credential needed, or the player has it, or someone with a badge is right there with them.
     public bool HasAccess => string.IsNullOrEmpty(credential) || AccessCredentials.Has(credential) || Escorted();
     public bool NeedsBadge => !locked && teleportTarget != null && !HasAccess;
     Vector2 WallDirection => PlayerController.SnapToFourWay(wallDirection.sqrMagnitude > 0f ? wallDirection : Vector2.up);
+    public Vector2 Wall => WallDirection;
+    public Vector2 Mouth => doorway != null ? (Vector2)doorway.bounds.center : (Vector2)transform.position;
 
-    // Above the door, or just above the doorway.
+    public void Swing(bool open)
+    {
+        if (panels == null || !isActiveAndEnabled) return;
+        if (swinging != null) StopCoroutine(swinging);
+        swinging = StartCoroutine(SwingTo(open ? 1f : 0f));
+    }
+
+    IEnumerator SwingTo(float to)
+    {
+        float from = openness;
+        for (float t = 0f; t < SwingSeconds; t += Time.deltaTime)
+        {
+            SetOpenness(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t / SwingSeconds)));
+            yield return null;
+        }
+        SetOpenness(to);
+        swinging = null;
+    }
+
+    void SetOpenness(float amount)
+    {
+        openness = amount;
+        float scale = Mathf.Lerp(1f, OpenScale, amount);
+        foreach (Transform panel in panels)
+            panel.localScale = panelsAcrossX ? new Vector3(scale, 1f, 1f) : new Vector3(1f, scale, 1f);
+    }
+
     Vector3 PromptPoint
     {
         get
@@ -138,7 +166,6 @@ public class Teleporter : MonoBehaviour
         all.Remove(this);
         InteractPrompt.Hide(this);
 
-        // Switched off partway through: give the player back and take the fade away rather than leave them stuck.
         if (travelling)
         {
             Unfreeze();
@@ -169,7 +196,6 @@ public class Teleporter : MonoBehaviour
         }
         if (mode != Mode.Interact) return;
 
-        // timeScale 0 means a menu paused the game.
         bool usable = player != null && !IsTravelling && !DialogueBox.Busy && Time.timeScale > 0f && !Locker.IsPlayerHidden && PlayerCanAct() && IsClosestInRange();
         if (!usable)
         {
@@ -216,18 +242,25 @@ public class Teleporter : MonoBehaviour
         fade.PlaySound(sound);
         yield return fade.FadeTo(1f, fadeTime);
 
-        Vector3 arrival = teleportTarget.position;
-        traveller.position = new Vector3(arrival.x, arrival.y, traveller.position.z);
+        Vector3 to = teleportTarget.position;
+        if (!string.IsNullOrEmpty(nextScene))
+        {
+            arrival = to;
+            travelling = false;
+            IsTravelling = false;
+            SceneManager.LoadScene(nextScene);
+            yield break;
+        }
+        traveller.position = new Vector3(to.x, to.y, traveller.position.z);
         if (traveller.TryGetComponent(out Rigidbody2D body))
         {
-            body.position = arrival;
+            body.position = to;
             body.linearVelocity = Vector2.zero;
         }
         Camera cam = Camera.main;
         if (cam != null && cam.TryGetComponent(out CameraFallow follow))
             follow.SnapToPlayer();
 
-        // A moment in the dark, then the player can move again while the picture comes back.
         for (float t = 0f; t < DarkMoment; t += Time.unscaledDeltaTime)
             yield return null;
         Unfreeze();
@@ -237,8 +270,6 @@ public class Teleporter : MonoBehaviour
         IsTravelling = false;
     }
 
-    // Stops the player's scripts for the trip, so no moving or attacking in the dark. Health, its handler, and lights
-    // stay on. Exactly what was turned off comes back, the same way Locker does it.
     void Freeze(Transform traveller)
     {
         foreach (MonoBehaviour behaviour in traveller.GetComponentsInChildren<MonoBehaviour>())
@@ -258,7 +289,6 @@ public class Teleporter : MonoBehaviour
         frozen.Clear();
     }
 
-    // A crew member (awake and about, not lying on the floor) near enough to the player to badge them through.
     bool Escorted()
     {
         if (player == null) return false;
@@ -267,7 +297,6 @@ public class Teleporter : MonoBehaviour
         return false;
     }
 
-    // Alive, not frozen by something else, and the nearest closed door in reach if several are.
     bool PlayerCanAct()
     {
         if (playerController != null && !playerController.enabled) return false;
@@ -287,7 +316,6 @@ public class Teleporter : MonoBehaviour
         return true;
     }
 
-    // Edge to edge, so it doesn't matter which side the player walks up from.
     float DistanceToPlayer()
     {
         if (playerCollider != null && playerCollider.enabled)
@@ -298,35 +326,59 @@ public class Teleporter : MonoBehaviour
         return Vector2.Distance(doorway.ClosestPoint(player.position), player.position);
     }
 
-    // --- Looks ---
-
     void BuildDoor()
     {
         Bounds bounds = doorway.bounds;
         Vector2 wall = WallDirection;
         float z = transform.position.z;
 
-        var art = new GameObject("Door").AddComponent<SpriteRenderer>();
-        art.transform.SetParent(transform, false);
-        art.sortingLayerName = "On the wall";
-
         Vector2 lampAt;
+        Texture2D texture;
+        Vector2 center;
+        Vector2 size;
         if (wall == Vector2.up)
         {
             int width = Mathf.Max(8, Mathf.RoundToInt(bounds.size.x * PixelsPerUnit));
-            art.sprite = PixelArt.ToSprite(FaceDoorTexture(width, Mathf.RoundToInt(DoorHeight * PixelsPerUnit)), PixelsPerUnit, new Vector2(0.5f, 0f));
-            art.transform.position = new Vector3(bounds.center.x, bounds.max.y, z);
+            texture = FaceDoorTexture(width, Mathf.RoundToInt(DoorHeight * PixelsPerUnit));
+            center = new Vector2(bounds.center.x, bounds.max.y + DoorHeight * 0.5f);
             lampAt = new Vector2(bounds.center.x, bounds.max.y + DoorHeight + 0.12f);
+            panelsAcrossX = true;
         }
         else
         {
-            // Seen edge-on, in the wall line just past the doorway.
             bool upright = wall.x != 0f;
             int length = Mathf.Max(8, Mathf.RoundToInt((upright ? bounds.size.y : bounds.size.x) * PixelsPerUnit));
-            art.sprite = PixelArt.ToSprite(SlabTexture(length, upright), PixelsPerUnit, new Vector2(0.5f, 0.5f));
-            Vector2 edge = (Vector2)bounds.center + Vector2.Scale(wall, bounds.extents) + wall * (SlabThickness / PixelsPerUnit * 0.5f);
-            art.transform.position = new Vector3(edge.x, edge.y, z);
-            lampAt = upright ? new Vector2(edge.x, bounds.max.y + 0.3f) : new Vector2(bounds.min.x - 0.3f, edge.y);
+            texture = SlabTexture(length, upright);
+            center = (Vector2)bounds.center + Vector2.Scale(wall, bounds.extents) + wall * (SlabThickness / PixelsPerUnit * 0.5f);
+            lampAt = upright ? new Vector2(center.x, bounds.max.y + 0.3f) : new Vector2(bounds.min.x - 0.3f, center.y);
+            panelsAcrossX = !upright;
+        }
+        size = new Vector2(texture.width, texture.height) / PixelsPerUnit;
+
+        var gap = new GameObject("Doorway Dark").AddComponent<SpriteRenderer>();
+        gap.transform.SetParent(transform, false);
+        gap.sprite = PixelArt.ToSprite(PixelArt.MakeTexture(1, 1, (x, y) => new Color32(6, 7, 9, 255)), 1f, new Vector2(0.5f, 0.5f));
+        gap.transform.position = new Vector3(center.x, center.y, z);
+        gap.transform.localScale = new Vector3(size.x * 0.9f, size.y * 0.9f, 1f);
+        gap.sortingLayerName = "On the wall";
+        gap.sortingOrder = -1;
+
+        int split = panelsAcrossX ? texture.width / 2 : texture.height / 2;
+        panels = new Transform[2];
+        for (int i = 0; i < 2; i++)
+        {
+            Rect part = panelsAcrossX
+                ? (i == 0 ? new Rect(0, 0, split, texture.height) : new Rect(split, 0, texture.width - split, texture.height))
+                : (i == 0 ? new Rect(0, 0, texture.width, split) : new Rect(0, split, texture.width, texture.height - split));
+            Vector2 pivot = panelsAcrossX ? new Vector2(i, 0.5f) : new Vector2(0.5f, i);
+            Vector2 hinge = panelsAcrossX ? new Vector2(center.x + (i == 0 ? -1 : 1) * size.x * 0.5f, center.y)
+                : new Vector2(center.x, center.y + (i == 0 ? -1 : 1) * size.y * 0.5f);
+            var art = new GameObject("Door").AddComponent<SpriteRenderer>();
+            art.transform.SetParent(transform, false);
+            art.sprite = Sprite.Create(texture, part, pivot, PixelsPerUnit);
+            art.transform.position = new Vector3(hinge.x, hinge.y, z);
+            art.sortingLayerName = "On the wall";
+            panels[i] = art.transform;
         }
 
         lamp = new GameObject("Lamp").AddComponent<SpriteRenderer>();
@@ -349,7 +401,6 @@ public class Teleporter : MonoBehaviour
         lampLight.color = CanOpen ? ReadyLamp : LockedLamp;
     }
 
-    // Darkness deepening toward the wall and a little past it, so a hallway seems to carry on out of sight.
     void BuildOpening()
     {
         Bounds bounds = doorway.bounds;
@@ -379,7 +430,6 @@ public class Teleporter : MonoBehaviour
         shade.transform.position = new Vector3(center.x, center.y, transform.position.z);
     }
 
-    // A door in the wall above: two panels meeting in the middle, a window in each, and hazard stripes along the sill.
     static Texture2D FaceDoorTexture(int width, int height)
     {
         int middle = width / 2;
@@ -395,7 +445,6 @@ public class Teleporter : MonoBehaviour
         });
     }
 
-    // A door seen edge-on: dark metal edged in hazard stripes, split where it opens.
     static Texture2D SlabTexture(int length, bool upright)
     {
         return PixelArt.MakeTexture(upright ? SlabThickness : length, upright ? length : SlabThickness, (x, y) =>
@@ -409,7 +458,6 @@ public class Teleporter : MonoBehaviour
         });
     }
 
-    // Select a teleporter to see where it sends the player.
     void OnDrawGizmosSelected()
     {
         if (teleportTarget == null) return;

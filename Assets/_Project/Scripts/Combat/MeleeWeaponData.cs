@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// Weapon angles for one facing direction, in degrees: 0 = pointing right, 90 = up, 180 = left, 270 = down.
 [System.Serializable]
 public class SwingAngles
 {
@@ -29,6 +28,7 @@ public class SwingAngles
     }
 }
 
+// settings for a weapon you swing
 [CreateAssetMenu(menuName = "Sonny/Weapons/Melee Weapon", fileName = "NewMeleeWeapon")]
 public class MeleeWeaponData : WeaponData
 {
@@ -37,9 +37,6 @@ public class MeleeWeaponData : WeaponData
     [Header("Holding (angles: 0 = right, 90 = up, 180 = left, 270 = down)")]
     [Tooltip("How far up from the weapon's bottom end the hand grips it, in world units.")]
     public float gripInset = 0.1f;
-    // Up and down sweep side to side across the way faced: facing down, from the right across in front of the player to
-    // the left; facing up, from the left across behind them to the right. arcHeight flattens the sweep so it lies along
-    // the floor instead of wheeling up over the player's head.
     public SwingAngles facingUp = new SwingAngles(70f, 175f, -5f, 1f, 0.55f);
     public SwingAngles facingDown = new SwingAngles(120f, 5f, -185f, 1f, 0.55f);
     public SwingAngles facingLeft = new SwingAngles(120f, 65f, 265f);

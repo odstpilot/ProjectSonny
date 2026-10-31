@@ -1,0 +1,211 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5913968601064181415
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3932071399352889928}
+  - component: {fileID: 768878124291815120}
+  m_Layer: 0
+  m_Name: PipManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3932071399352889928
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5913968601064181415}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &768878124291815120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5913968601064181415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed1d835467b6df546a3e9807f29da374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PipManager
+  hello:
+  - ^Bzzt! Pip online! I'm your suit's Personal Integrated Pal
+  - '!Control room''s pinned on your map, so hit [M] if you get lost!'
+  openMap:
+  - Press [M] to open your map!
+  onMap:
+  - ^Blinking dot's you and the control room's marked in orange... [W] [A] [S] [D] to look around, scroll to zoom
+  - '[M] again to close it'
+  afterMap: []
+  afterInstall:
+  - ~^Sonny's up and running! Nice work, tech!
+  restroomUrge:
+  - ^Restroom's off the lounge, I pinned it on your map!
+  shelfWobble:
+  - ~Tech? Something big's moving through the sta-
+  wakeUp:
+  - ~Tech? You were out for hours
+  - ~Something's wrong, get out of this room
+  doorJammed:
+  - ~It's jammed, take the vent on the floor
+  ventHowTo:
+  - '![W] crawls and [A] and [D] turn, hold [C] to go slow and quiet'
+  outOfVents: []
+  firstDark:
+  - ~Power's out ahead, so your suit light's all you've got
+  crewFound: []
+  botsRevealed:
+  - ~Stay out of their sight
+  - ~And don't count on the escape pods, every one launched hours ago and there's no way off
+  - ~So we go to Sonny, in the control room
+  bodyFound: []
+  crewRealizes: []
+  wallGrabFree:
+  - ~Keep moving, Tech, stairs!
+  firstScrap:
+  - ^Scrap! It goes in your pack, and the count's down in the corner
+  - Press [Tab] to open the pack and see everything you're carrying
+  enoughScrap:
+  - ^That's everything for the EMP, get it to the workbench!
+  empMade:
+  - '!^It works! One pulse shorts out any bot or camera in front of you for a few seconds'
+  - ~It needs a sec to recharge between pulses though, so make them count
+  - ~Okay so, the way down to the control room's through the reactor core, and the reactor's badge-only... and Sonny killed every badge on the station, yours too
+  - ~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that
+  crowbarMade:
+  - ~!A crowbar! If a bot gets too close, swing first, and the number keys switch what you're holding
+  blasterMade:
+  - '!^The blaster! Hold to charge it and let go when it''s full'
+  servoMade:
+  - ^Servo braces, you'll move way faster now
+  platingMade:
+  - ^Armor plating, so you can take a few more hits
+  benchUnlocked:
+  - ^Oh, and a unit's access opens the workbench's full plans too, so the blaster, all of it
+  badgeLockout:
+  - ~Sonny cut off every badge on the station, yours included
+  - ~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that
+  commsArrive:
+  - ~See that pillar with the red eye? That's Sonny's relay, it's how it checks on its units, and it talks to every badge aboard
+  - ~If it thinks you're one of them it'll switch your badge back on with a unit's access, and units get into the control room
+  - ~But it'll quiz you first... the comms nodes are carrying its broadcasts, so tune them in and listen to how the bots talk
+  commsBlackout:
+  - ~Tech, something's draining the suit and I'm gonna lose you
+  - ~!Use the EMP, its flash lights up whatever's in front of you
+  - ~Find the generator and get the power back on, then I can come b-
+  commsBack:
+  - ~...Tech? There you are! You got the power back on
+  commsIntercepted:
+  - ~Uh oh, it heard that... something's moving in the walls
+  - ~!One more, and remember what they said, 'cause that's what it'll ask
+  commsAllIntercepted:
+  - ~That's all of them, the relay's listening now
+  - ~!Answer like a bot would, not like you would, and don't hesitate 'cause it notices
+  commsVerified:
+  - ^Your badge is back on as a unit's, so the reactor and the control room will open for you
+  - ~Through the reactor and down its stairs, go!
+  commsAlarm:
+  - ~It knows! Get away from there, it'll let you try again in a bit.
+  hallwayCavedIn:
+  - ~Then we go over it, there's stairs at the top of the deck
+  upperDeck:
+  - ~A workbench! Bring me scrap and we'll build an EMP
+  - ~Scrap glows blue, so check between the racks
+  upperDeckNoBench:
+  - ~The reactor core's the way down but your badge is dead... the comms ring's relay might switch it back on though
+  surgeWarning:
+  - ~!The core's surging! Get behind one of those lead walls, now!
+  afterFirstSurge:
+  - ~And the bots just... bowed to it... okay that's creepy, but it's a breather, use it
+  lockdownStarts:
+  - ~It's locking you in back here, and the containment gates are opening... here they come!
+  lockdownNextWave:
+  - ~More coming out!
+  - ~!Another lot, watch the coil ones, they call down lightning
+  - ~Last of them, I think, hang in there
+  lastWords: ~Tech... that lightning got into the suit, I can't hold on, you'll have to do the rest without me
+  reactorArrival:
+  - ~Radiation's leaking out all over, and wading through that yellow stuff's gonna slow you right down
+  - ~Stairs down are round the back of the reactor... and uhh, there's a lot of bots in here
+  - ~And if the core starts flaring, get behind one of those lead walls
+  controlRoomLetIn:
+  - ~It thinks a unit just walked in, so don't give it a reason to look twice
+  stuckNudges:
+  - objective: Open your map
+    lines:
+    - ~Hit [M] to open your map!
+  - objective: Report to the control room
+    lines:
+    - '~The control room''s the one marked in orange on your map, [M]'
+    - ~Through the maintenance deck and keep going, the arrows on the floor will take you
+  - objective: Find the restroom
+    lines:
+    - ~Restroom's off the lounge, it's pinned on your map
+  - objective: Get the spare data chip from the storage room
+    lines:
+    - ~Storage room's right off the hallway outside the control room
+    - ~It's pinned on your map, [M], and the arrows point the way
+  - objective: Find the spare data chip
+    lines:
+    - ~Spares usually live in the tool crate, try that
+  - objective: Check under the shelf
+    lines:
+    - ~Something's shining under that shelf, get down and look
+  - objective: Get out of the storage room
+    lines:
+    - ~The door's not budging... what about that vent grate on the floor?
+    - ~Walk over to the vent grate and press [E] to crawl in
+  - objective: Crawl through the vent
+    lines:
+    - ~Find the grate that comes up in the restroom, that's our way out
+    - ~If it's getting loud in there, hold [C] and crawl carefully
+  - objective: Find the crew
+    lines:
+    - ~The door's right there, tech
+  - objective: Get to the control room
+    lines:
+    - ~Stay low with [C] and keep walls between you and anything that moves
+    - ~That thing with the eyes only sees down its beams, but it hears footsteps, so crouch past it
+    - ~If something spots you, break its line of sight or get in a locker
+    - '~The control room''s pinned on your map, [M]'
+  - objective: Go upstairs to the maintenance deck
+    lines:
+    - ~Stairs are at the top of the maintenance deck, follow the arrows
+  - objective: Find parts for an EMP
+    lines:
+    - ~Scrap glows blue, check the corners of the deck
+    - ~We need a battery, a circuit board, and some wire
+  - objective: Make an EMP at the workbench
+    lines:
+    - ~The workbench is on this deck, press [E] at it
+  - objective: Reactivate your badge in the comms ring
+    lines:
+    - '~The comms ring''s pinned on your map, [M]'
+  - objective: Intercept Sonny's broadcasts
+    lines:
+    - '~The comms nodes are the orange screens around the ring, walk up and press [E]'
+    - '~Line your wave up with the red dashed one: [A] [D] picks a knob, [W] [S] turns it'
+  - objective: Answer Sonny at its relay
+    lines:
+    - ~The relay's the pillar with the red eye, in the middle of the ring
+    - ~Think about what the units said in the broadcasts, and answer like them, not like you
+  - objective: Get into the control room
+    lines:
+    - ~The reactor's badge door should open for you now
+    - ~Down the reactor's stairs, the control room's at the bottom

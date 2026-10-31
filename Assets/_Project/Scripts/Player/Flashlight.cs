@@ -19,15 +19,15 @@ public class Flashlight : MonoBehaviour
     private Color defaultColor;
 
     [Header("Overheat Settings")]
-    public float maxOverheat = 5f;           
-    public float overheatCooldownRate = 2f;  
-    public float overheatDrainRate = 1f;     
+    public float maxOverheat = 5f;
+    public float overheatCooldownRate = 2f;
+    public float overheatDrainRate = 1f;
 
     private float overheatValue;
     private bool isFlashlightOn = false;
 
     [Header("Pulsing Settings")]
-    public float pulseThreshold = 0.25f; // % of overheat before pulsing
+    public float pulseThreshold = 0.25f;
     public float pulseSpeed = 4f;
     public float minIntensity = 0.8f;
     public float maxIntensity = 1.2f;
@@ -49,17 +49,15 @@ public class Flashlight : MonoBehaviour
             if (found != null) player = found.transform;
         }
 
-        UpdateFlashlightState(false); // Start with flashlight OFF
+        UpdateFlashlightState(false);
         defaultIntensity = light2D.intensity;
         defaultColor = light2D.color;
-
     }
 
     void Update()
     {
         if (player == null) return;
 
-        // Position & Rotation
         transform.position = player.position;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
@@ -69,27 +67,25 @@ public class Flashlight : MonoBehaviour
         Quaternion targetRotation = Quaternion.Euler(0f, 0f, targetAngle);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-        
         if (Input.GetKeyDown(KeyCode.F))
         {
             if (isFlashlightOn)
             {
                 UpdateFlashlightState(false);
             }
-            else if (overheatValue > 0f) // Only allow toggle ON if we have charge
+            else if (overheatValue > 0f)
             {
                 UpdateFlashlightState(true);
             }
         }
 
-        // Handle overheat logic
         if (isFlashlightOn)
         {
             overheatValue -= overheatDrainRate * Time.deltaTime;
             if (overheatValue <= 0f)
             {
                 overheatValue = 0f;
-                UpdateFlashlightState(false); // Auto turn off
+                UpdateFlashlightState(false);
             }
         }
         else
@@ -108,17 +104,14 @@ public class Flashlight : MonoBehaviour
             isPulsing = true;
             pulseTimer += Time.deltaTime * pulseSpeed;
 
-            // Intensity pulsing
             float pulse = Mathf.Lerp(minIntensity, maxIntensity, (Mathf.Sin(pulseTimer) + 1f) / 2f);
             light2D.intensity = pulse;
 
-            // Color pulsing between original and red
             Color pulseColor = Color.Lerp(defaultColor, Color.red, (Mathf.Sin(pulseTimer) + 1f) / 2f);
             light2D.color = pulseColor;
         }
         else if (isPulsing)
         {
-            // Stop pulsing and reset
             isPulsing = false;
             pulseTimer = 0f;
             light2D.intensity = defaultIntensity;
@@ -134,7 +127,6 @@ public class Flashlight : MonoBehaviour
 
         if (turnOn)
         {
-            // Reset light settings to default
             light2D.intensity = defaultIntensity;
             light2D.color = defaultColor;
         }

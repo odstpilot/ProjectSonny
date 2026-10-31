@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -23,10 +22,6 @@ public class Warden : MonoBehaviour
         Idle
     }
 
-    // =========================================================
-    // REFERENCES
-    // =========================================================
-
     [Header("References")]
     public Transform target;
     public Transform spriteTransform;
@@ -34,15 +29,8 @@ public class Warden : MonoBehaviour
     [SerializeField]
     private LightManager lightManager;
 
-    // Optional: assign a BoxCollider2D or PolygonCollider2D
-    // covering the playable area.
     [SerializeField]
     private Collider2D playableArea;
-
-
-    // =========================================================
-    // STARTING POSITION
-    // =========================================================
 
     [Header("Starting Position")]
 
@@ -57,11 +45,6 @@ public class Warden : MonoBehaviour
     [SerializeField]
     private bool teleportOnReset = false;
 
-
-    // =========================================================
-    // DETECTION
-    // =========================================================
-
     [Header("Detection")]
 
     public float detectionDistance = 5f;
@@ -69,20 +52,11 @@ public class Warden : MonoBehaviour
     [Range(0f, 360f)]
     public float coneAngle = 90f;
 
-    // Include the Player and walls/obstacles.
-    // The Warden's own colliders are ignored in code.
     public LayerMask visionMask = ~0;
 
-    // How frequently the Warden updates its chase path.
     public float chaseRepathInterval = 0.2f;
 
-    // Minimum player movement before recalculating a chase path.
     public float chaseRepathDistance = 0.25f;
-
-
-    // =========================================================
-    // RANDOM SEARCH
-    // =========================================================
 
     [Header("Random Search")]
 
@@ -92,20 +66,11 @@ public class Warden : MonoBehaviour
 
     public int maxSearchPointAttempts = 12;
 
-    // Maximum acceptable path length relative to search radius.
-    // Helps avoid destinations requiring enormous detours.
     public float maxSearchPathMultiplier = 3f;
 
-    // Maximum duration of an individual search destination.
     public float searchTimeout = 10f;
 
-    // Maximum duration of an investigation.
     public float investigationTimeout = 15f;
-
-
-    // =========================================================
-    // MEMORY
-    // =========================================================
 
     [Header("Memory")]
 
@@ -117,47 +82,23 @@ public class Warden : MonoBehaviour
 
     public float memoryPatrolTimeout = 20f;
 
-
-    // =========================================================
-    // NAVIGATION
-    // =========================================================
-
     [Header("Navigation")]
 
-    // How far a point can be projected onto the NavMesh.
     public float navMeshSnapDistance = 0.75f;
 
-    // Helps avoid selecting NavMesh points on another Z layer.
     public float maxNavMeshZDifference = 1f;
 
     public float arrivalDistance = 0.2f;
 
     public float returnTimeout = 20f;
 
-
-    // =========================================================
-    // ATTACK
-    // =========================================================
-
     [Header("Attack")]
 
     public float attackDuration = 1f;
 
-
-    // =========================================================
-    // SPRITE
-    // =========================================================
-
     [Header("Sprite")]
 
-    // Set false if the original sprite faces left at positive X scale.
     public bool spriteFacesRightAtPositiveScale = false;
-
-
-    // =========================================================
-    // RUNTIME STATE
-    // =========================================================
-
 
     public WardenState CurrentState { get; private set; }
         = WardenState.Inactive;
@@ -210,23 +151,13 @@ public class Warden : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // CACHED OBJECTS
-    // =========================================================
-
     private NavMeshPath calculatedPath;
 
     private ContactFilter2D visionFilter;
 
-    // Reuse this array instead of allocating RaycastAll results
-    // every frame.
     private readonly RaycastHit2D[] visionHits
         = new RaycastHit2D[64];
 
-
-    // =========================================================
-    // INITIALIZATION
-    // =========================================================
     private void Start()
     {
         agent.updateUpAxis = false;
@@ -304,8 +235,6 @@ public class Warden : MonoBehaviour
         Flip(facingRight);
     }
 
-
-
     public void ActivitedByCam()
     {
         Debug.Log(
@@ -325,15 +254,8 @@ public class Warden : MonoBehaviour
         active = true;
     }
 
-
-    // =========================================================
-    // MAIN UPDATE
-    // =========================================================
-
     private void Update()
     {
-        // Reset can leave the agent returning to its spawn
-        // while the AI itself is inactive.
         if (!active)
         {
             if (CurrentState == WardenState.Returning)
@@ -352,8 +274,6 @@ public class Warden : MonoBehaviour
             return;
         }
 
-        // Attacking takes priority over normal detection
-        // and navigation.
         if (CurrentState == WardenState.Attacking)
         {
             UpdateAttacking();
@@ -363,10 +283,6 @@ public class Warden : MonoBehaviour
         }
 
         playerInSight = CheckForPlayer();
-
-        // -----------------------------------------------------
-        // PLAYER VISIBLE
-        // -----------------------------------------------------
 
         if (playerInSight)
         {
@@ -378,13 +294,8 @@ public class Warden : MonoBehaviour
             UpdateChase();
         }
 
-        // -----------------------------------------------------
-        // PLAYER NOT VISIBLE
-        // -----------------------------------------------------
-
         else
         {
-            // The player has just escaped detection.
             if (CurrentState == WardenState.Chasing)
             {
                 BeginInvestigation();
@@ -409,20 +320,12 @@ public class Warden : MonoBehaviour
 
                 case WardenState.Idle:
 
-                    // Remain idle until the player is detected
-                    // or an external event supplies a target.
                     break;
             }
         }
-     
 
         UpdateFacingDirection();
     }
-
-
-    // =========================================================
-    // PLAYER DETECTION
-    // =========================================================
 
     private bool CheckForPlayer()
     {
@@ -439,13 +342,11 @@ public class Warden : MonoBehaviour
 
         float distance = toPlayer.magnitude;
 
-        // Player is outside detection range.
         if (distance > detectionDistance)
         {
             return false;
         }
 
-        // Handle the player being at the same position.
         if (distance <= 0.001f)
         {
             lastKnownPosition = target.position;
@@ -455,8 +356,6 @@ public class Warden : MonoBehaviour
         Vector2 directionToPlayer =
             toPlayer / distance;
 
-        // Vision is based on the Warden's actual
-        // facing direction, not the player's position.
         Vector2 facingDirection =
             facingRight
                 ? Vector2.right
@@ -471,11 +370,6 @@ public class Warden : MonoBehaviour
         {
             return false;
         }
-
-        // Cast toward the player to check line of sight.
-        //
-        // Multiple hits allow us to ignore the Warden's
-        // own colliders without ignoring actual obstacles.
 
         int hitCount = Physics2D.Raycast(
             origin,
@@ -500,8 +394,6 @@ public class Warden : MonoBehaviour
                 continue;
             }
 
-            // Ignore this Warden's own colliders,
-            // including colliders on child objects.
             if (hitCollider.transform.IsChildOf(transform))
             {
                 continue;
@@ -521,8 +413,6 @@ public class Warden : MonoBehaviour
             return false;
         }
         Debug.Log("check 2");
-        // Support a collider on the Player object
-        // or on one of its children.
         bool hitPlayer =
             closestCollider.transform == target ||
             closestCollider.transform.IsChildOf(target);
@@ -537,11 +427,6 @@ public class Warden : MonoBehaviour
         return true;
     }
 
-
-    // =========================================================
-    // CHASING
-    // =========================================================
-
     private void EnterChase()
     {
         CurrentState = WardenState.Chasing;
@@ -551,12 +436,10 @@ public class Warden : MonoBehaviour
 
         lastKnownPosition = target.position;
 
-        // Force a destination update when chasing starts.
         nextChaseRepathTime = 0f;
 
         TriggerAlert();
     }
-
 
     private void UpdateChase()
     {
@@ -572,7 +455,6 @@ public class Warden : MonoBehaviour
         nextChaseRepathTime =
             Time.time + Mathf.Max(0.02f, chaseRepathInterval);
 
-        // Do not recalculate an unchanged destination.
         if (hasDestination &&
             agent.hasPath &&
             Vector2.Distance(
@@ -591,11 +473,6 @@ public class Warden : MonoBehaviour
             lastChaseDestination = destination;
         }
     }
-
-
-    // =========================================================
-    // INVESTIGATING
-    // =========================================================
 
     private void BeginInvestigation()
     {
@@ -635,7 +512,6 @@ public class Warden : MonoBehaviour
             $"Investigation destination successfully assigned: {destination}"
         );
     }
-
 
     private float nextDebugMovementLog;
 
@@ -680,18 +556,12 @@ public class Warden : MonoBehaviour
         }
     }
 
-
-    // =========================================================
-    // RANDOM SEARCH
-    // =========================================================
-
     private void BeginSearch()
     {
         CurrentState = WardenState.Searching;
 
         BeginNextRandomSearch();
     }
-
 
     private void UpdateSearching()
     {
@@ -703,11 +573,9 @@ public class Warden : MonoBehaviour
 
         if (HasMovementFailed(searchTimeout))
         {
-            // Skip the failed or timed-out destination.
             BeginNextRandomSearch();
         }
     }
-
 
     private void BeginNextRandomSearch()
     {
@@ -719,12 +587,9 @@ public class Warden : MonoBehaviour
 
         if (!TrySearchRandomlyNearLastKnown())
         {
-            // No valid search points could be generated.
-            // Do not get stuck attempting an invalid location.
             EnterMemoryPatrol();
         }
     }
-
 
     private bool TrySearchRandomlyNearLastKnown()
     {
@@ -768,8 +633,6 @@ public class Warden : MonoBehaviour
                 continue;
             }
 
-            // Reject sampled points outside the
-            // intended search area.
             if (Vector2.Distance(
                 validPoint,
                 lastKnownPosition
@@ -778,7 +641,6 @@ public class Warden : MonoBehaviour
                 continue;
             }
 
-            // Avoid selecting the current location.
             if (Vector2.Distance(
                 validPoint,
                 transform.position
@@ -787,7 +649,6 @@ public class Warden : MonoBehaviour
                 continue;
             }
 
-            // A valid search has been started.
             randomSearchesRemaining--;
 
             return true;
@@ -795,11 +656,6 @@ public class Warden : MonoBehaviour
 
         return false;
     }
-
-
-    // =========================================================
-    // MEMORY SYSTEM
-    // =========================================================
 
     private void TrySaveMemoryPoint()
     {
@@ -834,9 +690,6 @@ public class Warden : MonoBehaviour
             return;
         }
 
-       
-
-        // Prevent duplicate or nearly identical memories.
         foreach (Vector3 point in memoryPoints)
         {
             if (Vector2.Distance(
@@ -850,27 +703,18 @@ public class Warden : MonoBehaviour
 
         memoryPoints.Add(newPoint);
 
-        // Discard the oldest memory at capacity.
         while (memoryPoints.Count > maxMemoryPoints)
         {
             memoryPoints.RemoveAt(0);
         }
     }
 
-
-    // =========================================================
-    // MEMORY PATROL
-    // =========================================================
-
     private void EnterMemoryPatrol()
     {
         CurrentState = WardenState.MemoryPatrol;
 
-        // Allow a new alert to trigger when the player
-        // is detected during a future patrol.
         alertTriggered = false;
 
-        // Start with the most recently stored memory.
         memoryIndex = memoryPoints.Count;
 
         if (!BeginNextMemoryPoint())
@@ -878,7 +722,6 @@ public class Warden : MonoBehaviour
             EnterIdle();
         }
     }
-
 
     private void UpdateMemoryPatrol()
     {
@@ -901,7 +744,6 @@ public class Warden : MonoBehaviour
         }
     }
 
-
     private bool BeginNextMemoryPoint()
     {
         if (memoryPoints.Count == 0)
@@ -909,8 +751,6 @@ public class Warden : MonoBehaviour
             return false;
         }
 
-        // Try each memory at most once when choosing
-        // the next destination.
         for (
             int attempt = 0;
             attempt < memoryPoints.Count;
@@ -928,8 +768,6 @@ public class Warden : MonoBehaviour
             Vector3 point =
                 memoryPoints[memoryIndex];
 
-            // Don't repeatedly assign a location
-            // where the Warden is already standing.
             if (Vector2.Distance(
                 transform.position,
                 point
@@ -947,14 +785,8 @@ public class Warden : MonoBehaviour
             }
         }
 
-        // No usable or distinct destinations remain.
         return false;
     }
-
-
-    // =========================================================
-    // NAVIGATION HELPERS
-    // =========================================================
 
     private bool TrySetDestination(
     Vector3 requestedPosition,
@@ -973,10 +805,8 @@ public class Warden : MonoBehaviour
             return false;
         }
 
-        // Find the closest valid NavMesh point.
         Vector3 navPosition = requestedPosition;
 
-        // In our 2D XY game, Z is not part of navigation.
         navPosition.z = transform.position.z;
 
         if (!NavMesh.SamplePosition(
@@ -1017,7 +847,6 @@ public class Warden : MonoBehaviour
             return false;
         }
 
-        // Optional random-search detour restriction.
         if (maxPathLength >= 0f)
         {
             float pathLength = 0f;
@@ -1054,8 +883,6 @@ public class Warden : MonoBehaviour
         return true;
     }
 
-
-
     private float GetArrivalDistance()
     {
         return Mathf.Max(
@@ -1063,7 +890,6 @@ public class Warden : MonoBehaviour
             arrivalDistance
         );
     }
-
 
     private bool HasReachedDestination()
     {
@@ -1082,8 +908,6 @@ public class Warden : MonoBehaviour
             currentDestination
         );
 
-        // Handles destinations at the current position,
-        // where the agent may not create a path.
         if (distance <= GetArrivalDistance())
         {
             return true;
@@ -1106,7 +930,6 @@ public class Warden : MonoBehaviour
             agent.velocity.sqrMagnitude <= 0.04f;
     }
 
-
     private bool HasMovementFailed(float timeout)
     {
         if (!agent.isOnNavMesh)
@@ -1122,13 +945,11 @@ public class Warden : MonoBehaviour
         float elapsed =
             Time.time - destinationAssignedTime;
 
-        // Every assigned destination has a time limit.
         if (elapsed > timeout)
         {
             return true;
         }
 
-        // Allow Unity time to calculate the path.
         if (agent.pathPending || elapsed < 0.2f)
         {
             return false;
@@ -1148,11 +969,6 @@ public class Warden : MonoBehaviour
 
         return false;
     }
-
-
-    // =========================================================
-    // ACTIVATION
-    // =========================================================
 
     public void ActivateRobot()
     {
@@ -1177,10 +993,6 @@ public class Warden : MonoBehaviour
 
         BeginInvestigation();
     }
-
-    // =========================================================
-    // EXTERNAL TARGET NOTIFICATION
-    // =========================================================
 
     public void NewTarget()
     {
@@ -1248,7 +1060,6 @@ public class Warden : MonoBehaviour
 
         active = true;
 
-        // Only X/Y matter for our 2D navigation.
         reportedPosition.z = transform.position.z;
 
         lastKnownPosition = reportedPosition;
@@ -1260,11 +1071,6 @@ public class Warden : MonoBehaviour
 
         BeginInvestigation();
     }
-
-
-    // =========================================================
-    // ATTACKING
-    // =========================================================
 
     private void OnCollisionEnter2D(
         Collision2D collision)
@@ -1291,7 +1097,6 @@ public class Warden : MonoBehaviour
         BeginAttack();
     }
 
-
     private void BeginAttack()
     {
         CurrentState = WardenState.Attacking;
@@ -1313,11 +1118,7 @@ public class Warden : MonoBehaviour
         agent.isStopped = true;
 
         TriggerAlert();
-
-        // Add your player damage / game-over /
-        // attack animation logic here.
     }
-
 
     private void UpdateAttacking()
     {
@@ -1328,16 +1129,8 @@ public class Warden : MonoBehaviour
 
         agent.isStopped = false;
 
-        // Investigate where the player was at contact.
-        // On the following frame, normal detection can
-        // immediately switch back to chasing.
         BeginInvestigation();
     }
-
-
-    // =========================================================
-    // IDLE
-    // =========================================================
 
     private void EnterIdle()
     {
@@ -1355,11 +1148,6 @@ public class Warden : MonoBehaviour
             agent.isStopped = false;
         }
     }
-
-
-    // =========================================================
-    // RESET
-    // =========================================================
 
     public void ResetWarden()
     {
@@ -1401,7 +1189,6 @@ public class Warden : MonoBehaviour
             return;
         }
 
-        // Return normally if a complete path exists.
         if (TrySetDestination(
             StartingPos,
             navMeshSnapDistance,
@@ -1410,13 +1197,11 @@ public class Warden : MonoBehaviour
             CurrentState = WardenState.Returning;
         }
 
-        // Otherwise use a teleport as a fallback.
         else
         {
             TeleportToStart();
         }
     }
-
 
     private void UpdateReturning()
     {
@@ -1432,7 +1217,6 @@ public class Warden : MonoBehaviour
         }
     }
 
-
     private void FinishReturning()
     {
         if (agent.isOnNavMesh)
@@ -1444,7 +1228,6 @@ public class Warden : MonoBehaviour
 
         CurrentState = WardenState.Inactive;
     }
-
 
     private void TeleportToStart()
     {
@@ -1482,11 +1265,6 @@ public class Warden : MonoBehaviour
         CurrentState = WardenState.Inactive;
     }
 
-
-    // =========================================================
-    // LIGHT / ALERT
-    // =========================================================
-
     private void TriggerAlert()
     {
         if (alertTriggered)
@@ -1502,11 +1280,6 @@ public class Warden : MonoBehaviour
         }
     }
 
-
-    // =========================================================
-    // FACING DIRECTION
-    // =========================================================
-
     private void UpdateFacingDirection()
     {
         if (spriteTransform == null)
@@ -1519,8 +1292,6 @@ public class Warden : MonoBehaviour
             return;
         }
 
-        // Use actual velocity rather than steering target.
-        // This avoids flipping toward stale path corners.
         float horizontalVelocity =
             agent.velocity.x;
 
@@ -1537,7 +1308,6 @@ public class Warden : MonoBehaviour
             Flip(shouldFaceRight);
         }
     }
-
 
     private void Flip(bool faceRight)
     {
@@ -1568,11 +1338,6 @@ public class Warden : MonoBehaviour
 
         spriteTransform.localScale = scale;
     }
-
-
-    // =========================================================
-    // INSPECTOR VALIDATION
-    // =========================================================
 
     private void OnValidate()
     {

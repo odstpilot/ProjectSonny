@@ -4,10 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// The sounds the game's scripts play, by the names they play them by, with the clips and volumes they started with.
-// The level builders fill each scene's SoundManager from these (Fill), and the SoundManager inspector's Add Defaults
-// menu does the same for any scene. Only sounds the scene doesn't list yet are added, so nothing already tuned there is
-// touched. Sounds with no clips are made in code for now (or silent, for Stairs) until someone finds audio for them.
+// the sounds every scene starts with
 public static class SoundDefaults
 {
     const string Sfx = "Assets/_Project/Audio/SFX";
@@ -40,7 +37,6 @@ public static class SoundDefaults
 
     const string MadeInCode = " Made in code until it has a clip.";
 
-    // The player, in every level.
     public static readonly Entry[] Player =
     {
         new Entry("Footsteps", SoundCategory.SoundEffect, 0.3f, "The player's footsteps, one clip a step. Quieter and lower while crouching, higher while sprinting.",
@@ -68,7 +64,6 @@ public static class SoundDefaults
         new Entry("Ending Tone", SoundCategory.SoundEffect, 0.9f, "One deep tone ringing out over the cut to black at the end. Heard over the silence." + MadeInCode),
     };
 
-    // Sonny's processing box, in the Tutorial and Chapter 1.
     public static readonly Entry[] Sonny =
     {
         new Entry("Sonny Hum", SoundCategory.SoundEffect, 0.3f, "Sonny's box humming, looping while it's powered. Its pitch rises as it wakes.",
@@ -76,7 +71,6 @@ public static class SoundDefaults
         new Entry("Sonny Awaken", SoundCategory.SoundEffect, 0.6f, "Sonny's box powering on and waking.", Magnetic + "/Magnetic bass tone 01.wav"),
     };
 
-    // Floors built by FloorOneBuilder (Floor 1, Floor 2, Chapter 1).
     public static readonly Entry[] Floor =
     {
         new Entry("Door", SoundCategory.SoundEffect, 0.7f, "Going through a door to another room, as the screen fades to black.", Magnetic + "/Magnetic industrial layer02_1.wav"),
@@ -121,7 +115,6 @@ public static class SoundDefaults
         new Entry("Radiation Burst", SoundCategory.SoundEffect, 0.8f, "A vent in the reactor core's floor bursting: a hiss and a roar of hot air." + MadeInSfx),
     };
 
-    // The air ducts (VentNetwork), in Chapter 2. The ones without clips are made in code (VentSounds).
     public static readonly Entry[] Vents =
     {
         new Entry("Vent Ambience", SoundCategory.Ambience, 0.5f, "Inside the air ducts: a low machine hum, looping the whole time the player's in them.",
@@ -154,19 +147,17 @@ public static class SoundDefaults
         new Entry("Drone Caught", SoundCategory.SoundEffect, 1f, "The vent drone reaching the player.", Magnetic + "/Magnetic hit 07.wav"),
     };
 
-    // Fighting, the robots, and the set pieces where they come through the walls, in every level with them. All played
-    // by Sfx, at a point in the level; the ones without clips are made in code there (Sfx.Placeholder).
     const string MadeInSfx = " Made in code (Sfx) until it has a clip.";
     public static readonly Entry[] Combat =
     {
         new Entry("Melee Swing", SoundCategory.SoundEffect, 0.5f, "A melee weapon (crowbar, wrench) swinging through the air: a whoosh. Lower for a charged swing." + MadeInSfx),
         new Entry("Melee Hit", SoundCategory.SoundEffect, 0.8f, "A melee swing landing on something: a heavy metal clang.",
             Magnetic + "/Magnetic hit 03.wav", Magnetic + "/Magnetic hit 05.wav"),
-        new Entry("Gun Shot", SoundCategory.SoundEffect, 0.6f, "The scrap gun firing: a crack and a thump." + MadeInSfx),
+        new Entry("Gun Shot", SoundCategory.SoundEffect, 0.6f, "A gun firing: a crack and a thump." + MadeInSfx),
         new Entry("Blaster Charge", SoundCategory.SoundEffect, 0.5f, "The blaster starting to charge: a rising whine." + MadeInSfx),
         new Entry("Blaster Fire", SoundCategory.SoundEffect, 0.7f, "The blaster letting go a charged shot: a falling zap." + MadeInSfx),
         new Entry("Blaster Blast", SoundCategory.SoundEffect, 0.8f, "A blaster shot blowing up where it lands." + MadeInSfx),
-        new Entry("Projectile Impact", SoundCategory.SoundEffect, 0.5f, "A bit of scrap from the scrap gun hitting a wall: a small clank.", Magnetic + "/Magnetic hit 06.wav"),
+        new Entry("Projectile Impact", SoundCategory.SoundEffect, 0.5f, "A shot hitting a wall: a small clank.", Magnetic + "/Magnetic hit 06.wav"),
         new Entry("EMP Fire", SoundCategory.SoundEffect, 0.8f, "The EMP going off: a buzzing pulse that sweeps out and crackles away.", Magnetic + "/Magnetic wave once 01.wav"),
         new Entry("EMP Ready", SoundCategory.SoundEffect, 0.5f, "The EMP recharged and ready to fire again: two rising blips." + MadeInSfx),
         new Entry("Robot Hit", SoundCategory.SoundEffect, 0.7f, "A robot taking a hit that doesn't kill it: crunching metal and a crackle.",
@@ -188,8 +179,6 @@ public static class SoundDefaults
         new Entry("Break Free", SoundCategory.SoundEffect, 0.9f, "Tearing free of the wall grab: a heavy clang.", Magnetic + "/Magnetic hit 05.wav"),
     };
 
-    // Chapter 2's station, now Sonny's: the camera spiders (CameraSpider), its TVs (StationTV), the dead crew on the PA
-    // (CrewEchoes), being dragged back (DraggedBack), and the sounds with nothing there to make them (Unexplained).
     public static readonly Entry[] Haunting =
     {
         new Entry("Spider Step", SoundCategory.SoundEffect, 0.35f, "A camera spider's metal foot set down on the deck: a small clank. Panned to its side and louder the closer it is.",
@@ -213,20 +202,18 @@ public static class SoundDefaults
         new Entry("PA Click", SoundCategory.SoundEffect, 0.6f, "The speakers closing." + MadeInCode),
     };
 
-    // The sets offered by the inspector's Add Defaults menu.
     public static readonly (string label, Entry[][] sets)[] Menu =
     {
         ("Tutorial", new[] { Player, Tutorial, Sonny, Combat }),
         ("Chapter 1", new[] { Player, Floor, Sonny, ChapterOne, Combat }),
         ("Chapter 2", new[] { Player, Floor, Sonny, ChapterOne, Vents, Combat, Haunting }),
+        ("Chapter 3", new[] { Player, Floor, Sonny, ChapterOne, Vents, Combat, Haunting }),
         ("Combat", new[] { Combat }),
         ("Vents", new[] { Vents }),
         ("Floor (1 or 2)", new[] { Player, Floor }),
         ("Player Only", new[] { Player }),
     };
 
-    // The scene's SoundManager (made if it has none), with every sound in the sets it doesn't list yet added.
-    // Returns how many were added.
     public static int Fill(Scene scene, params Entry[][] sets)
     {
         SoundManager manager = scene.GetRootGameObjects()

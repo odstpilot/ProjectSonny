@@ -3,11 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Menu: Sonny > Checkpoint Tester
-//
-// A button for every stage of every chapter (CheckpointJump.Stages). Out of Play mode, a button opens that chapter's
-// scene and presses Play, and the chapter sets itself up at that stage: everything before it done, its cutscenes
-// skipped, the player standing where it happens. In Play mode it jumps straight there. F9 in the game does the same.
+// window with a button for every checkpoint
 public class CheckpointTesterWindow : EditorWindow
 {
     private Vector2 scroll;

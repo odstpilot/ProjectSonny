@@ -1,13 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Chapter 2, a way on that turns out to be shut: the hallway to the control room, caved in. Or, the same way, somewhere the player gets
-// to (arriveInRoom): the top of the stairs on the upper maintenance deck. The first time the player comes near it
-// (while the objective is afterObjective, if there is one), the technician says what they see, Pip says what it means,
-// and the objective moves on to objective, pinned on the map, with a respawn point of its own for the stage it starts.
-// Either can be left empty: a blocked way with no objective is just something to remark on.
-// What actually blocks it (the locked door, the rubble) is put there by ChapterOneBuilder, which builds these for
-// ChapterTwoBuilder. ChapterTwoDirector picks up from one on a save (ResumePassed), or jumps to it by stage.
+// a way that turns out to be shut, or a room reached
 public class BlockedWay : MonoBehaviour
 {
     public PlayerController player;
@@ -21,8 +15,8 @@ public class BlockedWay : MonoBehaviour
 
     [Tooltip("The technician, finding it.")]
     [TextArea] public string[] technicianLines = new string[0];
-    [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily; [C] shows a key.")]
-    [TextArea] public string[] pipLines = new string[0];
+    [Tooltip("What Pip says after that: its lines for this moment, in the Pip Manager (PipManager). None for nothing.")]
+    public PipManager.Moment pip = PipManager.Moment.None;
     [Tooltip("The objective after. Empty leaves it as it is.")]
     public string objective = "";
     [Tooltip("The room pinned on the map for it, by its marker in the layout, and what the pin says.")]
@@ -46,6 +40,7 @@ public class BlockedWay : MonoBehaviour
         TechnicianVoice.Hush();
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
         yield return TechnicianVoice.Think(technicianLines);
+        string[] pipLines = PipManager.Lines.For(pip);
         if (SuitHelper.Exists && pipLines.Length > 0) yield return SuitHelper.Get().Say(pipLines);
         SetObjective();
     }
@@ -64,7 +59,6 @@ public class BlockedWay : MonoBehaviour
         return false;
     }
 
-    // Picking up from a save after it's been found (ChapterTwoDirector): no waiting, just where to go.
     public void ResumePassed()
     {
         StopAllCoroutines();

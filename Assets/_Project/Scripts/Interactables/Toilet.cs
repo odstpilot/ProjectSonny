@@ -1,14 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// One of the stalls in the common grounds restroom, against the wall with a toilet in it. Walk up and press E to use it.
-// What happens then is up to whoever's listening (RestroomBreak, in Chapter 1): Used is raised, and the toilet stays in
-// use until they call Done. With nobody listening it does nothing.
-// A stall can be occupied: its door's shut, with a pair of feet showing under it, and E knocks instead ("Occupied!",
-// from inside). Whoever's in there comes out when Vacate is called, and the door swings open.
-// Once it's broken (Break), it rattles, gurgles, and leaks a puddle onto the floor in front of it.
-// Like the furniture, the object sits at its sorting point, DepthSort.FeetToCenter above the base of the stall, and its
-// art is placed down from there. The art is made in code until it has its own. Built by ChapterOneBuilder.
+// restroom stall
 public class Toilet : Terminal
 {
     const float PixelsPerUnit = 16f;
@@ -74,20 +67,16 @@ public class Toilet : Terminal
         Used.Invoke();
     }
 
-    // Lets go of it, for whoever took it on Used.
     public void Done() => inUse = false;
 
-    // Takes it as if it had been used, without raising Used, for a script that's using it (until Done).
     public void Occupy() => inUse = true;
 
-    // A line from whoever's inside, over the stall.
     public void SayFromInside(string line, float seconds = 2f)
     {
         if (speech == null) speech = CrewSpeech.Create(transform);
         speech.Show(line, seconds);
     }
 
-    // Whoever was in there comes out: the door swings open.
     public void Vacate()
     {
         occupied = false;
@@ -101,7 +90,6 @@ public class Toilet : Terminal
         SayFromInside(occupantReplies[Mathf.Min(knocks++, occupantReplies.Length - 1)]);
     }
 
-    // It gives up: a rattle, a gurgle, and water on the floor. Done when it's finished rattling.
     public IEnumerator Break()
     {
         IsBroken = true;
@@ -118,7 +106,6 @@ public class Toilet : Terminal
         art.transform.localPosition = home;
     }
 
-    // Already given out, the puddle there, for a scene picking up after it did.
     public void BreakNow()
     {
         if (IsBroken) return;
@@ -126,11 +113,9 @@ public class Toilet : Terminal
         StartCoroutine(Leak(0f));
     }
 
-    // The puddle spreading out over this many seconds (none: there already).
     IEnumerator Leak(float seconds)
     {
         puddle = new GameObject("Puddle").AddComponent<SpriteRenderer>();
-        // Not under the stall's sorting group, so it lies on the floor with the stains, under everyone.
         puddle.transform.SetParent(transform.parent, false);
         puddle.transform.position =transform.position + new Vector3(0f, -DepthSort.FeetToCenter - 0.3f, 0f);
         puddle.sprite = MakePuddle();
@@ -146,15 +131,11 @@ public class Toilet : Terminal
         puddle.transform.localScale = new Vector3(full, full, 1f);
     }
 
-    // --- Art ---
-
     static AudioClip knockTone;
     static AudioClip KnockTone => knockTone != null ? knockTone : (knockTone = TitleUI.Tone("Knock", 180f, 0.12f, 0.6f));
     static AudioClip gurgleTone;
     static AudioClip GurgleTone => gurgleTone != null ? gurgleTone : (gurgleTone = TitleUI.Tone("Toilet Gurgle", 62f, 1.1f, 0.8f));
 
-    // A pale stall: grey side panels with the toilet between them, bowl and tank against the back wall. Shut, a door
-    // fills the front, with a red light over the latch and someone's feet showing in the gap underneath.
     static Sprite MakeStall(bool shut)
     {
         var panel = new Color32(118, 128, 140, 255);
@@ -171,11 +152,9 @@ public class Toilet : Terminal
 
         Texture2D texture = PixelArt.MakeTexture(Width, Height, (x, y) =>
         {
-            // The side panels, full height, with a darker edge.
             if (x <= 2 || x >= Width - 3) return x == 2 || x == Width - 3 ? panelEdge : panel;
             if (shut)
             {
-                // A gap along the floor, with their shoes in it.
                 if (y < 3) return (x >= 10 && x <= 13 || x >= 18 && x <= 21) && y <= 1 ? shoe : default;
                 if (y > 32) return default;
                 if (x == 3 || x == Width - 4 || y == 3 || y == 32) return doorEdge;
@@ -183,14 +162,12 @@ public class Toilet : Terminal
                 if (y >= 17 && y <= 18 && x >= 23 && x <= 25) return handle;
                 return door;
             }
-            // The tank: a box high up against the back.
             if (y >= 20 && y <= 30 && x >= 9 && x <= 22)
             {
                 if (y == 20 || y == 30 || x == 9 || x == 22) return outline;
                 if (y == 27 && x >= 18 && x <= 20) return handle;
                 return y <= 22 ? shade : porcelain;
             }
-            // The bowl, seen from the front: an oval rim with water in it, on a narrow foot.
             float bowlX = (x - 15.5f) / 7.5f, bowlY = (y - 14f) / 5.5f;
             float bowl = bowlX * bowlX + bowlY * bowlY;
             if (bowl <= 1f)

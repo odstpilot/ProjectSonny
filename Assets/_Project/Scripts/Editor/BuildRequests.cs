@@ -8,23 +8,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Lets the level builders be run from outside the editor while it's open. Unity won't open a project a second time in
-// batch mode, so -executeMethod can't be used then; instead, write one of the names below to Temp/SonnyBuild.request
-// and the open editor picks it up within a second or so, runs it, and writes how it went, with everything it logged,
-// to Temp/SonnyBuild.result. "Refresh" imports changed files (and recompiles scripts) without anyone switching to Unity.
-// "Capture <scene> <x> <y> [size]" renders what the scene's camera sees from there (world units; size is the camera's
-// half height, left out for the camera's own) to Temp/SonnyCapture.png, for checking a build without pressing Play.
-// Nothing runs in a capture, so it shows the scene as it's saved, before any script has started.
-// A capture or play request with the word "colliders" in it draws every solid collider over the picture, in green (the
-// player's in yellow), for checking what blocks what.
-// "Play <scene> <seconds> [x y [size]]" is the same, but plays the scene for that many seconds first, so the capture
-// shows the game as it runs; the camera stays where the game put it unless given a point. It comes back out of Play
-// mode afterwards, and the result lists every warning and error logged while it played. Ending it with
-// "player <x> <y>" puts the player there a second before the capture, to see them somewhere in particular, and
-// "player <x> <y> walk <dx> <dy>" has them walk that way from there until the capture, and "... for <t>" puts them there
-// t seconds before it. "jump <stage>" in a play request starts the scene at that stage, as the Checkpoint Tester would.
-//
-// It won't build over unsaved scene changes, or while playing or compiling, and it puts back the scene that was open.
+// runs builders and captures from outside the editor
 [InitializeOnLoad]
 static class BuildRequests
 {
@@ -34,12 +18,12 @@ static class BuildRequests
     const string CapturePath = "Temp/SonnyCapture.png";
     static readonly Vector2Int CaptureSize = new Vector2Int(1600, 900);
 
-    // The scenes a capture can be asked for by name. Anything else is taken as a path.
     static readonly Dictionary<string, string> Scenes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         { "Tutorial", "Assets/_Project/Scenes/Levels/Tutorial.unity" },
         { "Chapter1", "Assets/_Project/Scenes/Levels/Chapter1.unity" },
         { "Chapter2", "Assets/_Project/Scenes/Levels/Chapter2.unity" },
+        { "Chapter3", "Assets/_Project/Scenes/Levels/Chapter3.unity" },
         { "Blueprint", "Assets/_Project/Scenes/Levels/StationBlueprint.unity" },
     };
 
@@ -48,10 +32,10 @@ static class BuildRequests
         { "Tutorial", TutorialLevelBuilder.Build },
         { "Chapter1", ChapterOneBuilder.Build },
         { "Chapter2", ChapterTwoBuilder.Build },
+        { "Chapter3", ChapterThreeBuilder.Build },
         { "Blueprint", StationBlueprintBuilder.Build },
     };
 
-    // A play capture in progress. It's kept in SessionState, since going in and out of Play mode reloads the scripts.
     const string PlayKey = "Sonny.PlayCapture.";
     const double PlayStartTimeout = 60.0;
 
@@ -128,7 +112,6 @@ static class BuildRequests
             Application.logMessageReceived -= Record;
         }
 
-        // A capture always leaves its scene changed, so it's always put back, even over the same scene.
         if (!string.IsNullOrEmpty(previous) && (capture || SceneManager.GetActiveScene().path != previous))
             EditorSceneManager.OpenScene(previous, OpenSceneMode.Single);
         else if (capture)
@@ -136,14 +119,11 @@ static class BuildRequests
         Finish(ok, log.ToString());
     }
 
-    // For batch mode, with Unity closed: Unity -batchmode -projectPath <project> -executeMethod BuildRequests.CaptureFromCommandLine
-    // -sonnyCapture "Chapter1 12 30 [size]" renders the same as a Capture request to Temp/SonnyCapture.png.
     public static void CaptureFromCommandLine()
     {
         string[] args = Environment.GetCommandLineArgs();
         int at = Array.IndexOf(args, "-sonnyCapture");
         bool ok = at >= 0 && at + 1 < args.Length && Capture(("Capture " + args[at + 1]).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
-        // Unity empties Temp on the way out, so -sonnyCaptureOut <path> keeps a copy somewhere else.
         int outAt = Array.IndexOf(args, "-sonnyCaptureOut");
         if (ok && outAt >= 0 && outAt + 1 < args.Length) File.Copy(CapturePath, args[outAt + 1], true);
         EditorApplication.Exit(ok ? 0 : 1);
@@ -169,12 +149,9 @@ static class BuildRequests
         if (words.Length > 4 && float.TryParse(words[4], out float size)) cam.orthographicSize = size;
         RenderToFile(cam, words.Any(w => w.Equals("colliders", StringComparison.OrdinalIgnoreCase)));
 
-        // Moving the camera marked the scene changed; the scene put back afterwards replaces it without saving.
         return true;
     }
 
-    // The camera's view, with the on-screen UI (overlay canvases: the HUD, prompts, dialogue) drawn over it too: for the
-    // shot, each is put in front of the camera and laid out again for the capture's size.
     static void RenderToFile(Camera cam, bool showColliders = false)
     {
         List<GameObject> outlines = showColliders ? DrawColliders() : new List<GameObject>();
@@ -186,7 +163,7 @@ static class BuildRequests
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = cam;
             canvas.planeDistance = cam.nearClipPlane + 0.1f;
-            canvas.sortingLayerName = "UI";     // over the level, as it is on screen
+            canvas.sortingLayerName = "UI";
         }
         Canvas.ForceUpdateCanvases();
         foreach (Canvas canvas in overlays) canvas.gameObject.SendMessage("LateUpdate", SendMessageOptions.DontRequireReceiver);
@@ -210,7 +187,6 @@ static class BuildRequests
         target.Release();
     }
 
-    // An outline over every solid box and circle collider in the scene (tilemap walls left out: they're plain to see).
     static List<GameObject> DrawColliders()
     {
         var made = new List<GameObject>();
@@ -248,11 +224,6 @@ static class BuildRequests
         return made;
     }
 
-    // --- Play captures ---
-
-    // For batch mode, with Unity closed: Unity -batchmode -projectPath <project> -executeMethod BuildRequests.PlayFromCommandLine
-    // -sonnyPlay "Chapter1 8" [-sonnyJump <stage>] -sonnyCaptureOut <path.png>. Plays the scene (from that stage, as the
-    // Checkpoint Tester would), captures as a Play request does, writes what was logged to <path.png>.txt, and quits.
     const string CommandLineKey = "Sonny.PlayCapture.CommandLineOut";
 
     public static void PlayFromCommandLine()
@@ -278,7 +249,6 @@ static class BuildRequests
 
     static void StartPlayCapture(string[] words, string previous)
     {
-        // "jump <stage>" anywhere in it starts the scene at that stage, as the Checkpoint Tester would (CheckpointJump).
         int jumpAt = Array.FindIndex(words, w => w.Equals("jump", StringComparison.OrdinalIgnoreCase));
         if (jumpAt >= 1 && jumpAt + 1 < words.Length)
         {
@@ -306,7 +276,6 @@ static class BuildRequests
         EditorApplication.EnterPlaymode();
     }
 
-    // Waits for Play mode, plays for the time asked, captures, leaves Play mode, and reports.
     static void UpdatePlayCapture()
     {
         List<string> words = SessionState.GetString(PlayKey + "Words", "").Split(' ').ToList();
@@ -327,14 +296,10 @@ static class BuildRequests
                 SessionState.SetFloat(PlayKey + "Started", (float)now);
                 return;
             }
-            // Timed in the game's own seconds: an editor in the background may run the game slowly.
             float seconds = float.Parse(words[2]);
             float played = Time.timeSinceLevelLoad;
-            // "for <t>" after the walk puts them there that many seconds before the capture, rather than one.
             int forAt = extras.FindIndex(w => w.Equals("for", StringComparison.OrdinalIgnoreCase));
             float lead = forAt >= 0 && forAt + 1 < extras.Count && float.TryParse(extras[forAt + 1], out float given) ? given : 1f;
-            // "call <Type>.<Method>" calls that method (no arguments) on the scene's first <Type> at the same moment, to
-            // set something up for the capture: TutorialDirector.SkipAhead, say.
             int callAt = extras.FindIndex(w => w.Equals("call", StringComparison.OrdinalIgnoreCase));
             if (callAt >= 0 && callAt + 1 < extras.Count && !SessionState.GetBool(PlayKey + "Called", false) && played >= seconds - lead)
             {
@@ -353,7 +318,6 @@ static class BuildRequests
                 {
                     player.transform.position = new Vector3(placeAt.Value.x, placeAt.Value.y, player.transform.position.z);
                     if (player.TryGetComponent(out Rigidbody2D body)) body.position = placeAt.Value;
-                    // "walk <dx> <dy>" after the point has them walk that way until the capture.
                     int walkAt = extras.FindIndex(w => w.Equals("walk", StringComparison.OrdinalIgnoreCase));
                     if (walkAt >= 0 && walkAt + 2 < extras.Count && float.TryParse(extras[walkAt + 1], out float wx) && float.TryParse(extras[walkAt + 2], out float wy)
                         && player.TryGetComponent(out PlayerController controller))
@@ -380,7 +344,6 @@ static class BuildRequests
             return;
         }
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) return;
-        // Not playing yet: keep waiting, unless it's plainly never going to start (a compile error stops Play mode).
         if (!taken && started < 0f && now - SessionState.GetFloat(PlayKey + "Requested", 0f) < PlayStartTimeout) return;
 
         string log = SessionState.GetString(PlayKey + "Log", "");
@@ -398,7 +361,6 @@ static class BuildRequests
         Finish(taken, taken ? log : "Play mode never started.\n" + log);
     }
 
-    // Warnings and errors while a play capture runs, with where an exception came from.
     static void RecordPlayLog(string message, string stack, LogType type)
     {
         if (type == LogType.Log) return;

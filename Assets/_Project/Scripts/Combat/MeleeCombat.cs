@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The melee half of combat. Swings left or right, whichever side the player faces, never up, down, or at the mouse:
-// facing up or down, they turn to the side they last faced. Click to swing; hold to charge a heavier swing.
-// PlayerCombat turns this on while a melee weapon is in hand.
+// swinging the held weapon
 [RequireComponent(typeof(PlayerCombat))]
 public class MeleeCombat : MonoBehaviour
 {
@@ -38,7 +36,6 @@ public class MeleeCombat : MonoBehaviour
 
     void Update()
     {
-        // timeScale 0 means a menu paused the game; clicking its buttons shouldn't attack.
         if (Weapon == null || Time.timeScale == 0f) return;
 
         cooldownTimer -= Time.deltaTime;
@@ -80,18 +77,15 @@ public class MeleeCombat : MonoBehaviour
     {
         PlayerController controller = combat.Controller;
         controller.sideFacingOnly = charging;
-        // Straining as it winds up: a light tremble at first, a hard shake once it's fully charged.
         controller.chargeShake = chargeVisible ? (ChargePercent >= 1f ? 1f : Mathf.Lerp(0.25f, 0.7f, ChargePercent)) : 0f;
 
         if (lockTimer > 0f)
         {
-            // Mid-swing: stand still and keep facing the swing.
             controller.combatSpeedMultiplier = 0f;
             controller.SetFacingOverride(attackDirection);
         }
         else
         {
-            // Otherwise the player turns by walking, even while charging, and the swing goes that way.
             controller.combatSpeedMultiplier = chargeVisible ? Weapon.chargeMoveSpeedMultiplier : 1f;
             controller.ClearFacingOverride();
         }
@@ -116,7 +110,6 @@ public class MeleeCombat : MonoBehaviour
         combat.Visual.PlaySwing(duration, charged);
         Sfx.At("Melee Swing", transform.position, charged ? 1f : 0.8f, charged ? 0.85f : 1f);
 
-        // Land the hit partway through the swing, when the weapon is crossing in front of the player.
         StartCoroutine(DealDamage(Weapon, charged, attackDirection, duration * 0.4f));
     }
 
@@ -140,7 +133,6 @@ public class MeleeCombat : MonoBehaviour
             IDamageable target = Damageable.FromCollider(col);
             if (target == null || hitThisSwing.Contains(target)) continue;
 
-            // Aim at the nearest edge so big targets that stick into the arc still get hit.
             Vector2 closest = col.ClosestPoint(origin);
             Vector2 toTarget = closest - origin;
             bool overlapping = toTarget.sqrMagnitude < 0.0001f;
@@ -173,7 +165,7 @@ public class MeleeCombat : MonoBehaviour
         {
             if (hit.collider == target) return false;
             if (hit.collider.isTrigger || IsOwnCollider(hit.collider)) continue;
-            if (Damageable.FromCollider(hit.collider) != null) continue; // other enemies don't shield each other
+            if (Damageable.FromCollider(hit.collider) != null) continue;
             return true;
         }
         return false;
@@ -200,13 +192,11 @@ public class MeleeCombat : MonoBehaviour
         combat.Controller.SetAnimBool(PlayerAnimParams.Charging, false);
     }
 
-    // Select the player in the Scene view to see reach: yellow = quick swing, orange = charged.
     void OnDrawGizmosSelected()
     {
         var playerCombat = GetComponent<PlayerCombat>();
         if (playerCombat == null) return;
 
-        // Outside Play mode nothing is in hand, so preview the starting weapon or the hotbar's first melee weapon.
         MeleeWeaponData weapon = Application.isPlaying ? Weapon : playerCombat.startingWeapon as MeleeWeaponData;
         var hotbar = GetComponent<WeaponHotbar>();
         if (weapon == null && !Application.isPlaying && hotbar != null)

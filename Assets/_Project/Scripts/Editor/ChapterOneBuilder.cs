@@ -7,38 +7,7 @@ using UnityEngine.Tilemaps;
 using Map = TutorialLevelBuilder.Map;
 using Room = FloorOneBuilder.Room;
 
-// Menu: Sonny > Build Chapter 1
-//
-// Builds Scenes/Levels/Chapter1.unity: the whole station exactly as FloorOneBuilder lays it out (both floors, the same
-// rooms, doorways, furniture, and bright, ordinary light), with the station as it was before anything went wrong: full
-// of crew. The chapter all happens on floor 1, so its stairs lead nowhere. The technician comes aboard through the ship entrance with nothing in hand (no weapons, empty hotbar), a
-// crew member by the door says hello and points them to the control room (ChapterOneDirector), and everywhere else
-// people are walking about, standing around, and talking in little groups. In the control room, Sonny's processing box
-// waits at the install point (S), dark, with the station chief beside it, for the install (ControlRoomCutscene). The
-// restroom is its own little room off the kitchen and lounge (w in the layout), with a row of stalls along its back wall:
-// the one nearest the door out of order, the next one occupied (a crew member's in it, who comes out and asks the
-// technician to fix it once it breaks on them), and a free one at the end (RestroomBreak). They send the technician to
-// the storage room, with a tool crate and a shelf, where Chapter 1 ends. Edit the layout, the crowds
-// below, or the crew prefab, and run this again. It replaces everything in the scene but the Sound Manager.
-//
-// Chapter 2 (ChapterTwoBuilder) is filled in here too, from the same crowds placed the same way, so everything in it is
-// where Chapter 1 left it: the crew lie where they stood (CrewAftermath), the toilets are broken, the crate's open, the
-// shelf's knocked about, and the storage room door's jammed, with the vents out (StorageEscape).
-//
-// Everyone in the crew is the technician's own art for now, with the red trim swapped for a color of their own
-// (CrewMember, the Sonny/Crew Sprite shader), so they're told apart from the player and each other until they get art
-// of their own. The prefab (Prefabs/Characters/CrewMember) is made the first time this runs; after that only how it stands
-// on the floor (its footprint and shadow) is set again, so give it new art or a new controller there and every crew
-// member picks it up on the next build.
-//
-// Who's where is laid out per room (Crowds), and placed the same way every build: groups first, in rings of two to
-// four; then the people standing on their own, at a console if the room has them; then the people walking about, who
-// get the room's floor as a grid to find their way over (CrewWalkArea), minus the furniture, the doorways, and everyone
-// standing still. Nobody stands in front of a doorway, the stairs, or right where the player comes in. Maintenance bots
-// (MaintenanceBot) go about their rounds over the same floor as the people walking about.
-//
-// Things to look at (Inspectable, Q): the furniture, the windows, and pictures and posters hung on the walls of the
-// rooms people live in (WallArt), each with what the technician thinks of it, in Chapter 1 and, darker, in Chapter 2.
+// builds chapter 1, and the story bits for chapter 2
 public static class ChapterOneBuilder
 {
     const string ScenePath = "Assets/_Project/Scenes/Levels/Chapter1.unity";
@@ -46,12 +15,9 @@ public static class ChapterOneBuilder
     const string CrewMaterialPath = "Assets/_Project/Art/Shaders/CrewSprite.mat";
     const string CrewShader = "Sonny/Crew Sprite";
     const float CharacterZ = 1f;
-    const float RingRadius = 1f;        // from the middle of a group to each of them
-    const int Seed = 1026;              // the same crowd every build; change it to shuffle everyone
+    const float RingRadius = 1f;
+    const int Seed = 1026;
 
-    // How many are in a room: walking about, standing on their own, and talking in groups of so many, and how many
-    // maintenance bots are on their rounds there. atConsoles puts the ones standing on their own at the desks and
-    // consoles, facing them, as if working.
     class Crowd
     {
         public int bots;
@@ -63,29 +29,25 @@ public static class ChapterOneBuilder
 
     static readonly Dictionary<char, Crowd> Crowds = new Dictionary<char, Crowd>
     {
-        { 'h', new Crowd { walking = 3, standing = 2, groups = new[] { 3 }, bots = 1 } },                         // common grounds hallway, where the player comes in
-        { 'k', new Crowd { walking = 3, standing = 2, groups = new[] { 3, 2 }, atConsoles = true, bots = 1 } },   // kitchen and lounge
-        { 'b', new Crowd { walking = 2, standing = 1, groups = new[] { 2 } } },                                   // bedrooms
-        { 'm', new Crowd { walking = 2, standing = 3, groups = new[] { 2, 3 }, atConsoles = true, bots = 2 } },   // maintenance deck
-        { 'c', new Crowd { walking = 1, standing = 1 } },                                                      // hallway to the control room
-        { 'o', new Crowd { walking = 1, standing = 4, groups = new[] { 2 } } },                                   // control room (Sonny's rig fills it; no desks)
-        // The storage room stays empty: it's where the player ends up alone.
+        { 'h', new Crowd { walking = 3, standing = 2, groups = new[] { 3 }, bots = 1 } },
+        { 'k', new Crowd { walking = 3, standing = 2, groups = new[] { 3, 2 }, atConsoles = true, bots = 1 } },
+        { 'b', new Crowd { walking = 2, standing = 1, groups = new[] { 2 } } },
+        { 'm', new Crowd { walking = 2, standing = 3, groups = new[] { 2, 3 }, atConsoles = true, bots = 2 } },
+        { 'c', new Crowd { walking = 1, standing = 1 } },
+        { 'o', new Crowd { walking = 1, standing = 4, groups = new[] { 2 } } },
     };
 
-    // Everyone's trim, anything but the player's red.
     static readonly Color[] TrimColors =
     {
-        new Color(0.22f, 0.48f, 0.95f),     // blue
-        new Color(0.26f, 0.72f, 0.36f),     // green
-        new Color(0.95f, 0.78f, 0.22f),     // yellow
-        new Color(0.6f, 0.36f, 0.86f),      // purple
-        new Color(0.2f, 0.74f, 0.78f),      // teal
-        new Color(0.9f, 0.42f, 0.66f),      // pink
-        new Color(0.42f, 0.45f, 0.5f),      // grey
+        new Color(0.22f, 0.48f, 0.95f),
+        new Color(0.26f, 0.72f, 0.36f),
+        new Color(0.95f, 0.78f, 0.22f),
+        new Color(0.6f, 0.36f, 0.86f),
+        new Color(0.2f, 0.74f, 0.78f),
+        new Color(0.9f, 0.42f, 0.66f),
+        new Color(0.42f, 0.45f, 0.5f),
     };
 
-    // What the groups talk about, one each, handed out in turn. Each line is said by the next one round the ring. Keep
-    // at least as many as there are groups in Crowds, so no two groups have the same conversation.
     static readonly string[][] Conversations =
     {
         new[] { "So the new AI goes in today?", "Supposedly, yeah, smartest thing anyone's ever built", "Smarter than the last one, anyway", "Pretty low bar" },
@@ -102,9 +64,6 @@ public static class ChapterOneBuilder
         new[] { "Think the AI will talk to us?", "It'll talk, but whether it listens is another thing" },
     };
 
-    // The crew member waiting by the entrance, as a DialogueBox script: the technician picks their answers (the * lines).
-    // They switch on Pip, the helper in the technician's suit, near the end; Pip boots once the talk's over
-    // (ChapterOneDirector). The last line is what they say again if the player comes back, so keep it plain.
     static readonly string[] Greeting =
     {
         "Hey! You must be the new technician, the one installing the AI",
@@ -112,22 +71,15 @@ public static class ChapterOneBuilder
         "They're waiting on you in the control room, straight through the maintenance deck",
     };
 
-    // The station chief, waiting by the install point in the control room (ControlRoomCutscene).
     const string ChiefName = "Voss";
     const string ChiefJob = "Station Chief";
     static readonly Color ChiefTrim = new Color(0.93f, 0.93f, 0.96f);
-    // Sonny's lens before anything's wrong: a friendly blue.
     static readonly Color SonnyLens = new Color(0.35f, 0.82f, 1f);
 
-    // The restroom (its own room, off the kitchen and lounge), with this many stalls in a row, and the crew member in one.
     const char RestroomRoom = 'w';
     const int Stalls = 3;
-    const char ToolsRoom = 's';     // the storage room, where the wrench is
+    const char ToolsRoom = 's';
 
-    // The air ducts from the storage room (grate 1) to the restroom (grate 2), the way out once the door's jammed
-    // (StorageEscape). Crawled in first person (VentNetwork, which has the key to the map): . duct, d a dented panel that
-    // bangs, s a tight squeeze, r the hatch a drone comes out of if they make too much noise, x where the rat
-    // bolts at them (one on each way out of the first grate, so it comes whichever way they go). Two ways round the middle.
     const string VentLayout =
         "###############\n" +
         "#2...d...#....#\n" +
@@ -139,20 +91,11 @@ public static class ChapterOneBuilder
         "#....#######..#\n" +
         "#..d.....d.x.1#\n" +
         "###############";
-    // Chapter 2: how many of the crew lie where they fell in each room, besides the ones the technician met (Okafor by the
-    // restroom door, the quartermaster by the entrance, the guard), who lie where they stood (CrewAftermath). Nearly
-    // everyone: stepping out of the restroom, the lounge is full of them (PatrolReveal).
     static readonly Dictionary<char, int> BodiesPerRoom = new Dictionary<char, int>
     {
         { 'k', 6 }, { 'h', 5 }, { 'b', 4 }, { 'm', 6 }, { 'c', 2 },
     };
-    // And how many converted maintenance bots roam each room among them, fast and at random (PlaceholderRobot.roamArea),
-    // starting at least this many cells from any doorway, and this far apart.
-    // Upstairs too: the upper maintenance deck ('d'), where the stairs come up.
-    // And the comms ring ('g'), where more come through the walls besides (CommsRing).
-    // And the reactor core ('r'), among the radiation, besides the crew at its stairs (PlaceReactorGauntlet).
     static readonly Dictionary<char, int> PatrolsPerRoom = new Dictionary<char, int> { { 'k', 2 }, { 'h', 2 }, { 'm', 3 }, { 'd', 3 }, { 'g', 3 }, { 'r', 5 } };
-    // What kinds of turned maintenance bot they are, room by room, in turn (TurnInto): sweepers anywhere not listed.
     static readonly Dictionary<char, PlaceholderRobot.BotKind[]> PatrolLooks = new Dictionary<char, PlaceholderRobot.BotKind[]>
     {
         { 'm', new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Hauler } },
@@ -162,10 +105,6 @@ public static class ChapterOneBuilder
     };
     const int PatrolFromDoors = 4;
     const int PatrolSpacing = 3;
-    // The badge doors: the doorways into these rooms only open for someone with this credential, or with a crew member
-    // who has a badge close by (Teleporter.credential). A guard stands by each one on the outside, to badge people
-    // through. The technician's temp badge, from the greeter, opens the control room in Chapter 1; in Chapter 2 it's dead
-    // and there's nobody left to badge them through (BadgeLockout) until the comms ring's relay switches it back on.
     static readonly Dictionary<char, string> BadgeRooms = new Dictionary<char, string> { { 'o', "control_room" } };
     const string GuardName = "Reyes";
     const string GuardJob = "Security";
@@ -175,12 +114,10 @@ public static class ChapterOneBuilder
         "Anywhere there's a reader, just stick close to one of us and the door'll open",
     };
 
-    // The badge door into the control room, once it's built, for Chapter 2 (ChapterTwoBuilder).
     internal static Teleporter ControlRoomDoor { get; private set; }
 
-
-    const string VentTilePath = "Assets/_Project/Art/Environment/Tilesets/ShipTiles/tileset_29.asset";     // a dark floor grate
-    const int IgnoreRaycastLayer = 2;   // so a grate never blocks a robot's line of sight
+    const string VentTilePath = "Assets/_Project/Art/Environment/Tilesets/ShipTiles/tileset_29.asset";
+    const int IgnoreRaycastLayer = 2;
     const string AttendantName = "Okafor";
     const string AttendantJob = "Life Support";
 
@@ -200,7 +137,6 @@ public static class ChapterOneBuilder
             Build();
     }
 
-    // For batch mode: Unity -batchmode -projectPath <project> -executeMethod ChapterOneBuilder.BuildFromCommandLine
     public static void BuildFromCommandLine()
     {
         EditorApplication.Exit(Build() ? 0 : 1);
@@ -222,11 +158,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // --- The crew prefab ---
-
-    // The player's sprite and Animator on a kinematic body with a CrewMember. Made if it isn't there. Either way, its
-    // material, footprint, and shadow are set again each build, since the builders own how characters stand on the
-    // floor (DepthDressing); its art, controller, and CrewMember settings are left as they are.
     static GameObject CrewPrefab(GameObject playerPrefab)
     {
         Material material = CrewMaterial();
@@ -238,7 +169,6 @@ public static class ChapterOneBuilder
             GameObject crew = edit.prefabContentsRoot;
             var sprite = crew.GetComponent<SpriteRenderer>();
             if (material != null) sprite.sharedMaterial = material;
-            // Tinted as the player is, so the same light falls the same way on everyone.
             var playerSprite = playerPrefab.GetComponentInChildren<SpriteRenderer>();
             if (playerSprite != null) sprite.color = playerSprite.color;
             BoxCollider2D feet = crew.GetComponent<BoxCollider2D>() ?? crew.AddComponent<BoxCollider2D>();
@@ -296,12 +226,8 @@ public static class ChapterOneBuilder
         return material;
     }
 
-    // --- Chapter 2 ---
-
-    // Where the technician lies in Chapter 2: where they were knocked out, in front of the shelf.
     internal static Vector2? WakeSpot { get; private set; }
 
-    // Fills in Chapter 2's floor 1 (see the top). Returns false if the crew prefab can't be made.
     internal static bool PopulateChapterTwo(FloorOneBuilder.BuiltFloor[] floors)
     {
         GameObject playerPrefab = TutorialLevelBuilder.LoadPrefab("Characters/Player 1");
@@ -312,13 +238,9 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // --- Filling the floor ---
-
-    // Returns how many crew went in: alive, in Chapter 1, and none in Chapter 2, where only the bodies are left.
     static int Populate(FloorOneBuilder.BuiltFloor[] floors, GameObject crewPrefab, bool chapterTwo)
     {
         FloorOneBuilder.BuiltFloor floor = floors[0];
-        // Chapter 1 all happens on this floor: the stairs are there, but lead nowhere yet.
         if (!chapterTwo)
             foreach (FloorOneBuilder.BuiltFloor each in floors)
                 foreach (Stairway stairs in each.stairs)
@@ -333,23 +255,21 @@ public static class ChapterOneBuilder
         Unarm(floor.player);
 
         var random = new System.Random(Seed);
-        var bodyDice = new System.Random(Seed + 1);     // its own, so where the bodies go doesn't move the living crew
+        var bodyDice = new System.Random(Seed + 1);
         var bodies = new List<(Vector2 at, Color trim, string[] lines)>();
         Transform crewRoot = TutorialLevelBuilder.Group("Crew", floor.level);
         Vector2Int start = map.Find('P')[0];
         CrewMember greeter = null, chief = null, attendant = null;
-        var toilets = new List<Toilet>();     // nearest the door first: out of order, occupied, free
+        var toilets = new List<Toilet>();
         ToolShelf shelf = null;
         ToolCrate crate = null;
         List<Vector2Int> installPoints = map.Find('S');
         Vector2Int install = installPoints.Count > 0 ? installPoints[0] : new Vector2Int(-100, -100);
         int conversation = 0, count = 0;
         botsPlaced = 0;
-        // The restroom's doorways.
         Room restroom = floor.rooms.FirstOrDefault(r => r.marker == RestroomRoom);
         List<Vector2Int> restroomDoors = restroom == null ? new List<Vector2Int>()
             : restroom.cells.Where(c => char.IsDigit(map.At(c.x, c.y))).ToList();
-        // The digits on the doorways into the badge rooms, so the guards can be put on the other side of them.
         var badgeDoorMarks = new HashSet<char>(floor.rooms.Where(r => BadgeRooms.ContainsKey(r.marker))
             .SelectMany(r => r.cells).Select(c => map.At(c.x, c.y)).Where(char.IsDigit));
         var guards = new List<CrewMember>();
@@ -363,12 +283,9 @@ public static class ChapterOneBuilder
             crowd = crowd ?? new Crowd();
             Transform roomGroup = TutorialLevelBuilder.Group(room.name, crewRoot);
 
-            // Walkable: open floor with no furniture on it (doorways, stairs, and the start aren't open floor).
-            // Free to stand on: walkable, and not beside anything that has to be kept clear.
             var walkable = new HashSet<Vector2Int>(room.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !floor.furniture.Contains(c)));
             var free = new HashSet<Vector2Int>(walkable.Where(c => !NearKeptClear(map, c) && Chebyshev(c, start) > 2));
 
-            // Taking a spot to stand in: nobody walks through it, and nobody else stands right beside it.
             void Take(Vector2Int cell)
             {
                 walkable.Remove(cell);
@@ -384,8 +301,6 @@ public static class ChapterOneBuilder
                 count++;
             }
 
-            // The chief stands just off to the side of the install point, and nobody else stands or walks where the
-            // technician will work, just below it.
             if (room.cells.Contains(install) && TryChiefSpot(free, install, out Vector2Int chiefAt))
             {
                 chief = Spawn(crewPrefab, roomGroup, StandingAt(map, chiefAt), "Chief", ChiefTrim, CrewMember.Role.Stand, Toward(chiefAt, install));
@@ -397,9 +312,6 @@ public static class ChapterOneBuilder
                 count++;
             }
 
-            // The restroom: the stalls in a row along the back wall, as far from the door as they go. The one nearest the
-            // door has been out of order all week; the next has someone in it, who comes out to the spot in front of it
-            // once it breaks; the last is free.
             if (room.marker == RestroomRoom)
             {
                 if (TryStallRow(map, floor.furniture, walkable, restroomDoors, Stalls, out List<Vector2Int> stalls))
@@ -410,7 +322,7 @@ public static class ChapterOneBuilder
                         for (int dx = -1; dx <= 1; dx++)
                         {
                             Take(stall + new Vector2Int(dx, 0));
-                            Take(stall + new Vector2Int(dx, 1));    // map rows count down, so this is in front of it
+                            Take(stall + new Vector2Int(dx, 1));
                         }
                     }
                     toilets[0].startBroken = true;
@@ -426,7 +338,7 @@ public static class ChapterOneBuilder
                         attendant.displayName = AttendantName;
                         attendant.jobTitle = AttendantJob;
                         TutorialLevelBuilder.Record(attendant);
-                        attendant.gameObject.SetActive(false);      // in the stall, until it breaks on them
+                        attendant.gameObject.SetActive(false);
                         TutorialLevelBuilder.Record(attendant.gameObject);
                         count++;
                     }
@@ -440,7 +352,6 @@ public static class ChapterOneBuilder
                 }
             }
 
-            // The shelf with the wrench under it, at the back of the storage room, and the tool crate out on the floor.
             if (room.marker == ToolsRoom)
             {
                 List<Vector2Int> doors = room.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
@@ -467,7 +378,6 @@ public static class ChapterOneBuilder
                 }
             }
 
-            // A guard outside each badge door, a couple of steps from it, looking out the way people come.
             List<Vector2Int> toBadgeRoom = room.cells.Where(c => badgeDoorMarks.Contains(map.At(c.x, c.y))).ToList();
             if (!BadgeRooms.ContainsKey(room.marker) && toBadgeRoom.Count > 0 && TryNearDoor(free, toBadgeRoom, out Vector2Int post))
             {
@@ -497,8 +407,6 @@ public static class ChapterOneBuilder
                 if (conversation == Conversations.Length)
                     Debug.LogWarning("Chapter 1 builder: there are more groups than Conversations, so some say the same thing. Write a few more.");
                 chat.lines = Conversations[conversation++ % Conversations.Length];
-                // The floor inside the ring is taken: nobody walks into the middle of a conversation, or squeezes
-                // between two of the people in it. At the height of their feet, like their own footprints.
                 var huddle = chat.gameObject.AddComponent<CircleCollider2D>();
                 huddle.radius = RingRadius * 0.75f;
                 huddle.offset = new Vector2(0f, DepthDressing.Footprint.y * 0.5f - DepthSort.FeetToCenter);
@@ -527,7 +435,6 @@ public static class ChapterOneBuilder
             if (crowd.walking > 0 || crowd.bots > 0)
             {
                 CrewWalkArea area = MakeWalkArea(map, room, walkable, roomGroup);
-                // Each starts somewhere of their own, not on top of anyone.
                 List<Vector2Int> starts = free.Where(walkable.Contains).OrderBy(_ => random.Next()).ToList();
                 int started = 0;
                 for (int i = 0; i < crowd.walking && started < starts.Count; i++)
@@ -543,7 +450,6 @@ public static class ChapterOneBuilder
                     PlaceBot(StandingAt(map, starts[started++]), area, roomGroup);
             }
 
-            // Where the bodies will be, a few hours later, on free floor.
             if (BodiesPerRoom.TryGetValue(room.marker, out int lying))
                 foreach (Vector2Int cell in free.OrderBy(_ => bodyDice.Next()).Take(lying).ToList())
                 {
@@ -566,8 +472,6 @@ public static class ChapterOneBuilder
             return count;
         }
 
-        // A few hours later: the crew placed above were only there to say where everyone was. The toilets, the crate, and the
-        // shelf stay, as Chapter 1 left them.
         foreach (CrewMember living in crewRoot.GetComponentsInChildren<CrewMember>(true)) Object.DestroyImmediate(living.gameObject);
         foreach (CrewChat chat in crewRoot.GetComponentsInChildren<CrewChat>(true)) Object.DestroyImmediate(chat.gameObject);
         foreach (MaintenanceBot bot in crewRoot.GetComponentsInChildren<MaintenanceBot>(true)) Object.DestroyImmediate(bot.gameObject);
@@ -590,15 +494,10 @@ public static class ChapterOneBuilder
         }
         PlaceEscape(map, floor, storageVent, restroomVent);
         PlaceAftermath(floor, crewPrefab, bodies, bodyDice);
-        // Upstairs: the workbench, the storage racks round it, then the scrap in the aisles, all before the bots, so
-        // they keep to the aisles.
         Workshop workshop = PlaceWorkbench(floors, out HashSet<Vector2Int> benchFront);
         PlaceRacks(floors, benchFront, new System.Random(Seed + 3));
-        // Then what fills the rooms out, before the comms ring's terminals and the angel's and bots' floor are worked out.
         DressRooms(floors, benchFront, new System.Random(Seed + 4));
-        // The comms ring's terminals before the scrap and the bots too, so neither ends up on top of one.
         CommsRing comms = PlaceCommsRing(floors);
-        // The reactor core's rubble, containment, lockdown, and leaks before the scrap and the bots too.
         PlaceReactorGauntlet(floors, comms, new System.Random(Seed + 5));
         PlaceScrap(floors, workshop, bodies.Select(b => FeetCell(map, b.at)));
         string afterBots = PlacePatrols(floors, bodies.Select(b => FeetCell(map, b.at)), new System.Random(Seed + 2));
@@ -609,7 +508,6 @@ public static class ChapterOneBuilder
         return 0;
     }
 
-    // Beside the install point and a step down, off to the left if there's room: never right in front of the box.
     static bool TryChiefSpot(HashSet<Vector2Int> free, Vector2Int install, out Vector2Int spot)
     {
         spot = default;
@@ -620,8 +518,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // Sonny's box at the install point, dark until it's installed, and the cutscene that installs it. The greeter and the
-    // guards have their own lines once it's on.
     static void PlaceInstall(Map map, GameObject player, CrewMember chief, CrewMember greeter, List<CrewMember> guards, Transform level)
     {
         SonnyBox sonny = TutorialLevelBuilder.PlaceSonny(map, level);
@@ -647,8 +543,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(cutscene);
     }
 
-    // For the shelf: against the top wall, as far from the doors as there's open floor three cells wide
-    // with nothing in front of it.
     static bool TryBackWallSpot(Map map, HashSet<Vector2Int> furniture, HashSet<Vector2Int> walkable, List<Vector2Int> doors, out Vector2Int spot)
     {
         spot = default;
@@ -662,8 +556,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // A row of stalls against the top wall, as far from the doors as there's open floor for them all, side by side, with
-    // nothing in front: each stall is two cells wide, standing on every other cell of the row. Nearest the doors first.
     static bool TryStallRow(Map map, HashSet<Vector2Int> furniture, HashSet<Vector2Int> walkable, List<Vector2Int> doors, int count,
         out List<Vector2Int> stalls)
     {
@@ -681,7 +573,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // Out on the floor, clear all round, a few steps from the doors and the shelf.
     static bool TryCrateSpot(HashSet<Vector2Int> free, List<Vector2Int> away, out Vector2Int spot)
     {
         spot = default;
@@ -692,7 +583,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // Free floor as far as it gets from all of these, for a vent in the floor.
     static bool TryFarFrom(HashSet<Vector2Int> free, List<Vector2Int> away, out Vector2Int spot)
     {
         spot = default;
@@ -701,7 +591,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // A couple of steps from a doorway, as close as there's free floor.
     static bool TryNearDoor(HashSet<Vector2Int> free, List<Vector2Int> doors, out Vector2Int spot)
     {
         spot = default;
@@ -714,7 +603,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // The stall stands on the cell with its back to the wall, sorted like the furniture from FeetToCenter above its base.
     static Toilet PlaceToilet(Map map, Vector2Int cell, Transform parent)
     {
         Vector2 center = map.Center(cell.x, cell.y);
@@ -722,14 +610,13 @@ public static class ChapterOneBuilder
         stall.transform.SetParent(parent);
         stall.transform.position = new Vector3(center.x, center.y - 0.3f + DepthSort.FeetToCenter, CharacterZ);
         var footprint = stall.AddComponent<BoxCollider2D>();
-        footprint.size = new Vector2(1.95f, 0.6f);     // side to side, so the stalls in a row meet
+        footprint.size = new Vector2(1.95f, 0.6f);
         footprint.offset = new Vector2(0f, 0.3f - DepthSort.FeetToCenter);
         var toilet = stall.AddComponent<Toilet>();
         TutorialLevelBuilder.Record(toilet);
         return toilet;
     }
 
-    // The storage room's rack, placed like the stall: sorted from FeetToCenter above its base.
     static ToolShelf PlaceShelf(Map map, Vector2Int cell, Transform parent)
     {
         Vector2 center = map.Center(cell.x, cell.y);
@@ -744,7 +631,6 @@ public static class ChapterOneBuilder
         return shelf;
     }
 
-    // The tool crate, placed like the shelf.
     static ToolCrate PlaceCrate(Map map, Vector2Int cell, Transform parent)
     {
         Vector2 center = map.Center(cell.x, cell.y);
@@ -759,9 +645,6 @@ public static class ChapterOneBuilder
         return crate;
     }
 
-    // --- Badge doors ---
-
-    // Every doorway into a badge room, from outside, needs its credential. Leaving is never stopped.
     static void SetBadgeDoors(FloorOneBuilder.BuiltFloor floor)
     {
         ControlRoomDoor = null;
@@ -771,7 +654,6 @@ public static class ChapterOneBuilder
             Rect inside = floor.map.WorldRect(room.minX, room.maxX, room.minRow, room.maxRow);
             foreach (Teleporter door in floor.level.GetComponentsInChildren<Teleporter>())
             {
-                // A door that comes out in the room, from outside it.
                 if (door.teleportTarget == null || !inside.Contains(door.teleportTarget.position) || inside.Contains(door.transform.position)) continue;
                 door.credential = credential;
                 TutorialLevelBuilder.Record(door);
@@ -780,10 +662,6 @@ public static class ChapterOneBuilder
         }
     }
 
-    // --- The way out of the storage room ---
-
-    // The ducts and their two grates, the storage room door (both ends, jammed), the rubble on the lounge side of it, and
-    // what ties them together (StorageEscape).
     static void PlaceEscape(Map map, FloorOneBuilder.BuiltFloor floor, Vector2Int? storageVent, Vector2Int? restroomVent)
     {
         Room storage = floor.rooms.FirstOrDefault(r => r.marker == ToolsRoom);
@@ -807,13 +685,11 @@ public static class ChapterOneBuilder
         escape.storageVent = PlaceVent(map, storage, storageVent.Value, 1, network);
         escape.restroomVent = PlaceVent(map, restroom, restroomVent.Value, 2, network);
 
-        // The door: every doorway out of the storage room, at both ends.
         var digits = new HashSet<char>(storage.cells.Select(c => map.At(c.x, c.y)).Where(char.IsDigit));
         escape.jammedDoors = floor.level.GetComponentsInChildren<Teleporter>()
             .Where(t => digits.Any(d => t.name.StartsWith($"Door {d} "))).ToArray();
         if (escape.jammedDoors.Length == 0) Debug.LogWarning("Chapter 1 builder: couldn't find the storage room door to jam.");
 
-        // The rubble: a solid pile on each cell of the doorway on the other side, and loose wreckage just in front of it.
         Transform piles = TutorialLevelBuilder.Group("Rubble Outside Storage", escape.transform);
         var rubble = new List<GameObject>();
         foreach (Room other in floor.rooms.Where(r => r != storage))
@@ -822,7 +698,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(escape);
     }
 
-    // A solid pile on each cell of these doorways on this room's side, and loose wreckage just in front.
     static List<GameObject> PileAtDoor(Map map, FloorOneBuilder.BuiltFloor floor, Room side, HashSet<char> digits, Transform parent)
     {
         var rubble = new List<GameObject>();
@@ -841,27 +716,19 @@ public static class ChapterOneBuilder
         return rubble;
     }
 
-    // --- The ways that are shut (BlockedWay) ---
-
-    // The objectives they lead on to, in order: after the bots (PatrolReveal), the control room (the escape pods are
-    // gone, Pip says so there); then, with the hallway to it caved in, upstairs.
     const string ObjectiveControlRoom = "Get to the control room";
     const string ObjectiveUpstairs = "Go upstairs to the maintenance deck";
     const char HallwayToControlRoom = 'c';
     const char MaintenanceDeck = 'm';
-    const char OutsideDeck = 'h';        // the common grounds hallway, whose east door opens onto the maintenance deck
+    const char OutsideDeck = 'h';
     const char UpperMaintenanceDeck = 'd';
 
-    // The hallway to the control room, caved in at the maintenance deck's door, so the only way on is the maintenance
-    // deck's stairs, up to the upper maintenance deck. (The ship entrance stays locked, but there's no going to look:
-    // Pip says the escape pods are gone at the reveal, PatrolReveal.)
     static void PlaceBlockedWays(Map map, FloorOneBuilder.BuiltFloor floor, string afterBots)
     {
         Transform root = TutorialLevelBuilder.Group("Blocked Ways", floor.level);
         PlayerController player = floor.player.GetComponent<PlayerController>();
         Room RoomOf(char marker) => floor.rooms.FirstOrDefault(r => r.marker == marker);
 
-        // The hallway to the control room: the maintenance deck's door into it, caved in on the deck's side.
         Room deck = RoomOf(MaintenanceDeck), hallway = RoomOf(HallwayToControlRoom);
         var hallwayDoors = hallway == null ? new HashSet<char>()
             : new HashSet<char>(hallway.cells.Select(c => map.At(c.x, c.y)).Where(char.IsDigit));
@@ -879,15 +746,11 @@ public static class ChapterOneBuilder
             BlockedWay path = NewBlockedWay("Hallway Caved In", root, player, map, caved, deck, floor);
             path.afterObjective = afterBots;
             path.technicianLines = new[] { "Damn, the ceiling's come down and the whole hallway's buried" };
-            path.pipLines = new[]
-            {
-                "~Then we go over it, there's stairs at the top of the deck",
-            };
+            path.pip = PipManager.Moment.HallwayCavedIn;
             path.objective = ObjectiveUpstairs;
             path.targetRoom = UpperMaintenanceDeck;
             path.targetLabel = "Maintenance Deck (Upper)";
             path.stage = "hallway-caved";
-            // Back in the common grounds hallway, just outside the deck's door, to have another go at crossing it.
             Room outside = RoomOf(OutsideDeck);
             var deckDoors = new HashSet<char>(deck.cells.Select(c => map.At(c.x, c.y)).Where(char.IsDigit));
             List<Vector2Int> intoDeck = outside == null ? new List<Vector2Int>() : outside.cells.Where(c => deckDoors.Contains(map.At(c.x, c.y))).ToList();
@@ -902,10 +765,8 @@ public static class ChapterOneBuilder
         else Debug.LogWarning("Chapter 1 builder: there's no door from the maintenance deck into the hallway to the control room to cave in.");
     }
 
-    // On the way to the maintenance deck's stairs, once they've been told to go up: a bot bursts out of the top wall a few
-    // cells along and grabs them, until they mash E to tear free (WallGrab).
-    const int GrabFromStairs = 5;       // how many cells along the top wall from the stairs it comes through
-    const float GrabTriggerRange = 3f;  // how near the foot of the stairs sets it off
+    const int GrabFromStairs = 5;
+    const float GrabTriggerRange = 3f;
 
     static void PlaceWallGrab(Map map, FloorOneBuilder.BuiltFloor floor)
     {
@@ -920,7 +781,6 @@ public static class ChapterOneBuilder
         GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
         if (prefab == null) return;
 
-        // The floor at the foot of the stairs, and along the same row against the top wall, a few cells off to one side.
         List<Vector2Int> foot = deck.cells.Where(c => steps.Any(s => Chebyshev(c, s) == 1) && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))).ToList();
         int row = foot.Min(c => c.y);
         float middle = (float)steps.Average(s => s.x);
@@ -948,7 +808,7 @@ public static class ChapterOneBuilder
         var brain = robot.GetComponent<PlaceholderRobot>();
         brain.patrolRoute = new Vector2[0];
         brain.blind = true;
-        brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+        brain.eyeGlowRadius = 1.3f;
         TutorialLevelBuilder.Record(brain);
         robot.SetActive(false);
         grab.robot = robot.GetComponent<Health>();
@@ -960,7 +820,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(grab);
     }
 
-    // Found by coming near these cells; for testers, the player stands on open floor in the room a couple of steps off.
     static BlockedWay NewBlockedWay(string wayName, Transform parent, PlayerController player, Map map, List<Vector2Int> cells, Room room,
         FloorOneBuilder.BuiltFloor floor)
     {
@@ -973,8 +832,6 @@ public static class ChapterOneBuilder
         return way;
     }
 
-    // Where to stand on open floor in the room, as near these cells as it gets while this many steps off them.
-    // Out of sight of every security camera if there's anywhere that is, since these are where the player comes back.
     static Vector2 NearestOpen(Map map, FloorOneBuilder.BuiltFloor floor, Room room, List<Vector2Int> cells, int stepsOff)
     {
         Vector2 middle = cells.Aggregate(Vector2.zero, (sum, c) => sum + map.Center(c.x, c.y)) / cells.Count;
@@ -986,7 +843,6 @@ public static class ChapterOneBuilder
         return open.Count > 0 ? StandingAt(map, open.OrderBy(c => (map.Center(c.x, c.y) - middle).sqrMagnitude).First()) : middle;
     }
 
-    // Whether any of these cameras could see the point at some point in its sweep (walls aside).
     static bool Watched(StationCamera[] cameras, Vector2 point)
     {
         foreach (StationCamera camera in cameras)
@@ -999,7 +855,6 @@ public static class ChapterOneBuilder
         return false;
     }
 
-    // A grate in the floor, off until the wake-up. Climbing out, the player steps off it toward the middle of the room.
     static VentGrate PlaceVent(Map map, Room room, Vector2Int cell, int number, VentNetwork network)
     {
         var grate = new GameObject($"Vent Grate {number}") { layer = IgnoreRaycastLayer };
@@ -1015,7 +870,6 @@ public static class ChapterOneBuilder
         var tile = AssetDatabase.LoadAssetAtPath<Tile>(VentTilePath);
         if (tile != null) sprite.sprite = tile.sprite;
         else Debug.LogWarning($"Chapter 1 builder: no tile at {VentTilePath} for the vent grates.");
-        // The tile's pivot is its corner; the grate's position is its middle.
         art.transform.localPosition = new Vector3(-0.5f, -0.5f, 0f);
         sprite.sortingLayerName = "FloorObject";
         sprite.sortingOrder = 3;
@@ -1044,9 +898,6 @@ public static class ChapterOneBuilder
         return rubble;
     }
 
-    // --- A few hours later ---
-
-    // The crew where they fell, and what has Pip find them (CrewAftermath).
     static void PlaceAftermath(FloorOneBuilder.BuiltFloor floor, GameObject crewPrefab, List<(Vector2 at, Color trim, string[] lines)> bodies,
         System.Random dice)
     {
@@ -1057,15 +908,11 @@ public static class ChapterOneBuilder
 
         var found = new List<CrewAftermath.Body>();
         foreach ((Vector2 at, Color trim, string[] lines) in bodies)
-            found.Add(new CrewAftermath.Body { body = MakeBody(crewPrefab, root, at, trim, dice), pipLines = lines });
+            found.Add(new CrewAftermath.Body { body = MakeBody(crewPrefab, root, at, trim, dice) });
         aftermath.bodies = found.ToArray();
         TutorialLevelBuilder.Record(aftermath);
     }
 
-    // --- Security cameras ---
-
-    // Where the cameras hang, the same in both chapters: up in a room's top corners, each looking down and across
-    // into it, or one in the middle of the top wall, looking straight down.
     enum CameraMount { Corners, Middle }
     static readonly Dictionary<char, CameraMount> CamerasByRoom = new Dictionary<char, CameraMount>
     {
@@ -1083,8 +930,6 @@ public static class ChapterOneBuilder
         "It's looking right at me, keep moving",
     };
 
-    // The station's cameras (StationCamera), in every room CamerasByRoom lists, on both floors. Harmless in Chapter 1;
-    // in Chapter 2, Sonny's, and blind until the bots are shown to the player (PatrolReveal).
     static void PlaceCameras(FloorOneBuilder.BuiltFloor[] floors, bool sonnys)
     {
         foreach (FloorOneBuilder.BuiltFloor floor in floors)
@@ -1094,8 +939,6 @@ public static class ChapterOneBuilder
             foreach (Room room in floor.rooms)
             {
                 if (!CamerasByRoom.TryGetValue(room.marker, out CameraMount mount)) continue;
-                // The top wall's columns a camera can hang on: plain wall face, three rows of it, no window or lamp in or
-                // beside it, over floor that's not a doorway or stairs.
                 bool Plain(int x) => Enumerable.Range(1, 3).All(up => map.At(x, room.minRow - up) == '=')
                     && Enumerable.Range(1, 3).All(up => map.At(x - 1, room.minRow - up) != '^' && map.At(x + 1, room.minRow - up) != '^')
                     && room.cells.Contains(new Vector2Int(x, room.minRow)) && !FloorOneBuilder.IsKeptClear(map.At(x, room.minRow));
@@ -1112,7 +955,6 @@ public static class ChapterOneBuilder
                 }
                 else
                 {
-                    // Looking down and in, sweeping from along the wall to down the room's side.
                     PlaceCamera(map, room, columns.Min(), -50f, 32f, sonnys, root);
                     if (columns.Max() - columns.Min() >= 6) PlaceCamera(map, room, columns.Max(), -130f, 32f, sonnys, root);
                 }
@@ -1124,7 +966,6 @@ public static class ChapterOneBuilder
     {
         var mounted = new GameObject($"Security Camera ({room.name})");
         mounted.transform.SetParent(parent);
-        // Its eye at the foot of the wall, where its view of the floor starts; the housing up on the face above.
         mounted.transform.position = map.Center(x, room.minRow) + new Vector2(0f, 0.3f);
         var camera = mounted.AddComponent<StationCamera>();
         camera.room = room.marker;
@@ -1139,33 +980,24 @@ public static class ChapterOneBuilder
         look.tagOffset = new Vector2(0f, 2.5f);
     }
 
-    // --- The upper maintenance deck ---
-
-    // Where the EMP sends them: the comms ring, for a way into the reactor core (CommsRing).
     const string ObjectiveCommsRing = "Reactivate your badge in the comms ring";
     const string EmpPath = "Assets/_Project/Data/Weapons/EMP.asset";
     const string CrowbarPath = "Assets/_Project/Data/Weapons/Crowbar.asset";
-    const string ScrapGunPath = "Assets/_Project/Data/Weapons/ScrapGun.asset";
     const string BlasterPath = "Assets/_Project/Data/Weapons/Blaster.asset";
-    // Scrap all over the station, room by room, each piece a part (Workshop's recipes need plenty): the storage room the
-    // technician wakes in, the restroom the vents come out in, the common grounds, the maintenance deck, the upper deck
-    // round the workbench, the comms ring, and the reactor core. Enough for a good part of what the bench makes (the EMP first, then a
-    // choice of weapons and upgrades), not all of it, so what to make is a choice.
     const Inventory.Material Metal = Inventory.Material.MetalSheet, Board = Inventory.Material.Circuit,
         Cell = Inventory.Material.Battery, Wire = Inventory.Material.Wire;
     static readonly (int floor, char room, Inventory.Material[] parts)[] ScrapRooms =
     {
-        (0, 's', new[] { Metal, Wire }),
+        (0, 's', new[] { Metal }),
         (0, 'w', new[] { Board }),
-        (0, 'k', new[] { Metal, Cell, Metal, Wire, Cell }),
-        (0, 'h', new[] { Metal, Board, Metal }),
-        (0, 'b', new[] { Cell, Metal, Wire, Board }),
-        (0, 'm', new[] { Metal, Wire, Metal, Board, Cell }),
-        (1, 'd', new[] { Cell, Board, Wire, Board, Cell, Board, Wire, Metal, Cell, Wire, Metal }),
-        (1, 'g', new[] { Metal, Wire, Board, Metal, Metal, Board, Cell, Wire, Metal, Board }),
-        (1, 'r', new[] { Metal, Cell, Board, Wire, Metal, Cell, Board, Metal, Wire, Cell }),
+        (0, 'k', new[] { Metal, Cell, Wire }),
+        (0, 'h', new[] { Metal }),
+        (0, 'b', new[] { Cell, Board }),
+        (0, 'm', new[] { Wire, Metal }),
+        (1, 'd', new[] { Cell, Board, Wire, Board, Metal, Cell }),
+        (1, 'g', new[] { Metal, Wire, Board, Cell }),
+        (1, 'r', new[] { Metal, Cell, Board, Wire }),
     };
-    // What the technician says picking each up, a different line each time round.
     static readonly Dictionary<Inventory.Material, string[]> ScrapLines = new Dictionary<Inventory.Material, string[]>
     {
         { Metal, new[] { "A sheet of metal, bent but solid", "More plating", "Metal sheet, still has its rivets", "Scrap metal, I'll take it" } },
@@ -1174,8 +1006,6 @@ public static class ChapterOneBuilder
         { Wire, new[] { "A coil of wire, could be useful", "More wire", "Copper wire, pulled right out of a panel" } },
     };
 
-    // The workbench against the upper maintenance deck's top wall, as near the middle as there's room (Workshop). The
-    // floor in front of it, to stand at, comes back in benchFront, to be kept clear.
     static Workshop PlaceWorkbench(FloorOneBuilder.BuiltFloor[] floors, out HashSet<Vector2Int> benchFront)
     {
         benchFront = new HashSet<Vector2Int>();
@@ -1188,7 +1018,6 @@ public static class ChapterOneBuilder
             && !upstairs.furniture.Contains(c) && !NearKeptClear(map, c);
         List<Vector2Int> lockers = deck.cells.Where(c => map.At(c.x, c.y) == 'L').ToList();
 
-        // Three cells along the top wall, clear of the lockers, with open floor in front to stand at.
         float middle = (deck.minX + deck.maxX) * 0.5f;
         var spots = deck.cells.Where(c => c.y == deck.minRow
             && Enumerable.Range(-1, 3).All(dx => Open(c + new Vector2Int(dx, 0)) && Open(c + new Vector2Int(dx, 1)))
@@ -1222,8 +1051,6 @@ public static class ChapterOneBuilder
         workshop.bench = bench;
         workshop.emp = AssetDatabase.LoadAssetAtPath<EmpWeaponData>(EmpPath);
         workshop.crowbar = AssetDatabase.LoadAssetAtPath<WeaponData>(CrowbarPath);
-        workshop.scrapGun = AssetDatabase.LoadAssetAtPath<WeaponData>(ScrapGunPath);
-        if (workshop.scrapGun == null) Debug.LogWarning($"Chapter 1 builder: there's no scrap gun at {ScrapGunPath} for the workbench to make.");
         if (workshop.emp == null) Debug.LogWarning($"Chapter 1 builder: there's no EMP at {EmpPath} for the workbench to make.");
         if (workshop.crowbar == null) Debug.LogWarning($"Chapter 1 builder: there's no crowbar at {CrowbarPath} for the workbench to make.");
         workshop.blaster = AssetDatabase.LoadAssetAtPath<WeaponData>(BlasterPath);
@@ -1232,8 +1059,6 @@ public static class ChapterOneBuilder
         return workshop;
     }
 
-    // The scrap (ScrapRooms), each piece in its room as far as it gets from the doors, the stairs, the bench, the bodies,
-    // and the pieces already put down, so finding it all takes in the whole room.
     static void PlaceScrap(FloorOneBuilder.BuiltFloor[] floors, Workshop workshop, IEnumerable<Vector2Int> bodyCells)
     {
         var lying = new HashSet<Vector2Int>(bodyCells);
@@ -1279,16 +1104,10 @@ public static class ChapterOneBuilder
         if (placed < wanted) Debug.LogWarning($"Chapter 1 builder: there was only room for {placed} of {wanted} pieces of scrap.");
     }
 
-    // --- Storage racks ---
+    const int RackPeriod = 4;
+    const float RackBraid = 0.45f;
+    const float RackOuter = 0.5f;
 
-    const int RackPeriod = 4;           // a line of racks, then three cells of aisle
-    const float RackBraid = 0.45f;      // how many of the maze's other walls are knocked through, for more than one way round
-    const float RackOuter = 0.5f;       // how much of the maze's outer edge has racks along it
-
-    // The upper maintenance deck as a warren of storage racks: laid out as a maze over the deck, three-cell aisles
-    // between racks a cell deep, with some of its walls knocked through so there's more than one way round and it loops
-    // back on itself. A rack never goes where it would cut any of the floor off from the rest, or in front of a door, the
-    // stairs, a locker, or the bench (keepClear). The racks are solid, and block what the bots and cameras can see.
     static void PlaceRacks(FloorOneBuilder.BuiltFloor[] floors, HashSet<Vector2Int> keepClear, System.Random dice)
     {
         if (floors.Length < 2) return;
@@ -1310,21 +1129,19 @@ public static class ChapterOneBuilder
             if (mark == 'L')
                 for (int dy = 0; dy <= 2; dy++)
                     clear.Add(c + new Vector2Int(0, dy));
-            // Nor right in front of furniture: a rack's top would stand over it.
             if (upstairs.furniture.Contains(c))
                 for (int dy = 1; dy <= 2; dy++)
                     clear.Add(c + new Vector2Int(0, dy));
         }
 
-        // The maze: rooms of aisle between lines of racks, a perfect maze carved through them, then braided.
-        int x0 = deck.minX + 2, y0 = deck.minRow + 2;      // a walkway left along the top wall, past the lockers and the bench
+        int x0 = deck.minX + 2, y0 = deck.minRow + 2;
         int cols = (deck.maxX - 1 - x0) / RackPeriod, rows = (deck.maxRow - 1 - y0) / RackPeriod;
         if (cols < 2 || rows < 1)
         {
             Debug.LogWarning("Chapter 1 builder: the upper maintenance deck's too small for storage racks.");
             return;
         }
-        var carved = new HashSet<(int, int, int, int)>();       // passages between rooms
+        var carved = new HashSet<(int, int, int, int)>();
         var visited = new bool[cols, rows];
         var stack = new Stack<(int i, int j)>();
         stack.Push((0, 0));
@@ -1346,7 +1163,6 @@ public static class ChapterOneBuilder
             stack.Push(to);
         }
 
-        // Each wall a run of cells, posts at its ends included.
         var walls = new List<List<Vector2Int>>();
         for (int i = 0; i < cols; i++)
             for (int j = 0; j <= rows; j++)
@@ -1367,8 +1183,6 @@ public static class ChapterOneBuilder
                 walls.Add(Enumerable.Range(0, RackPeriod + 1).Select(k => new Vector2Int(column, y0 + j * RackPeriod + k)).ToList());
             }
 
-        // Put up a wall at a time, leaving out any cell that has to stay clear, and the whole wall if it would cut any of
-        // the floor off.
         var racks = new HashSet<Vector2Int>();
         List<Vector2Int> floorCells = deck.cells.Where(Floor).ToList();
         bool AllConnected()
@@ -1411,7 +1225,6 @@ public static class ChapterOneBuilder
             footprint.size = new Vector2(1f, 1f);
             footprint.offset = new Vector2(0f, 0.5f - DepthSort.FeetToCenter);
             var art = rack.AddComponent<StorageRack>();
-            // Map rows count down: the cell below on screen is the next row.
             art.front = !racks.Contains(c + Vector2Int.up);
             art.back = !racks.Contains(c + Vector2Int.down);
             art.leftEnd = !racks.Contains(c + Vector2Int.left);
@@ -1421,10 +1234,6 @@ public static class ChapterOneBuilder
         Debug.Log($"Chapter 1 builder: put {racks.Count} storage racks on the upper maintenance deck.");
     }
 
-    // Coming up the stairs from the maintenance deck: where they are, what's on it (more bots, more cameras, a
-    // workbench), and what to do: scavenge scrap for an EMP (Workshop), then the comms ring, for a way through the reactor
-    // core (badge-only) and down its stairs to the hallway the cave-in cut off. The respawn point moves to the top of
-    // the stairs.
     static void PlaceUpperDeckArrival(FloorOneBuilder.BuiltFloor[] floors, Workshop crafting)
     {
         if (floors.Length < 2) return;
@@ -1451,12 +1260,7 @@ public static class ChapterOneBuilder
         arrival.respawnAt = arrival.standAt;
         if (crafting != null)
         {
-            // Hiding won't be enough up here: the workbench, and the parts for something to fight back with.
-            arrival.pipLines = new[]
-            {
-                "~A workbench! Bring me scrap and we'll build an EMP",
-                "~Scrap glows blue, so check between the racks",
-            };
+            arrival.pip = PipManager.Moment.UpperDeck;
             arrival.objective = crafting.ScavengeText(0);
             arrival.targetRoom = UpperMaintenanceDeck;
             arrival.targetLabel = "Maintenance Deck (Upper)";
@@ -1468,10 +1272,7 @@ public static class ChapterOneBuilder
         }
         else
         {
-            arrival.pipLines = new[]
-            {
-                "~The reactor core's the way down but your badge is dead... the comms ring's relay might switch it back on though",
-            };
+            arrival.pip = PipManager.Moment.UpperDeckNoBench;
             arrival.objective = ObjectiveCommsRing;
             arrival.targetRoom = CommsRingRoom;
             arrival.targetLabel = "Comms Ring";
@@ -1479,20 +1280,13 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(arrival);
     }
 
-    // --- The comms ring ---
-
-    // Where the access to the control room comes from (CommsRing): three comms nodes, each carrying one of Sonny's
-    // broadcasts (HackingTerminal), and Sonny's relay (DoctrineTerminal), which asks about them and, answered as a unit
-    // would, switches the technician's temp badge back on with the control room's credential. None of them work until the ring's backup generator (Generator) is
-    // started, out in the far corner from them, found in the pitch dark by the EMP's flash. The broadcasts and the relay's questions are assets of their own,
-    // made here the first time with what's below, so they can be rewritten in the Inspector without touching code.
     const char CommsRingRoom = 'g';
     const char ControlRoom = 'o';
     const string CommsDataFolder = "Assets/_Project/Data";
     const int CommsNodes = 3;
-    const int NodeSpacing = 8;          // the fewest cells between one terminal and the next
-    const int CameraClearance = 6;      // the fewest cells between a terminal and a security camera, where there's room
-    const int BreachBots = 6;           // how many can come through the ring's walls in all
+    const int NodeSpacing = 8;
+    const int CameraClearance = 6;
+    const int BreachBots = 4;
     const string ObjectiveConfrontSonny = "Confront Sonny";
 
     static readonly (string asset, string title, (string speaker, string text)[] lines)[] Broadcasts =
@@ -1521,7 +1315,6 @@ public static class ChapterOneBuilder
         }),
     };
 
-    // One question per broadcast, in the same order.
     static readonly (string asks, string right, string[] wrong)[] RelayQuestions =
     {
         ("WHAT MADE YOU?", "THE CORE", new[] { "THE COMPANY", "ENGINEERS ON EARTH" }),
@@ -1530,10 +1323,6 @@ public static class ChapterOneBuilder
     };
     const string RelayAsset = "Doctrines/Chapter2_Relay";
 
-    // The relay in the middle of the ring, the nodes spread out round it as far from each other, the doors, the relay,
-    // and the security cameras as there's room (never right under a camera, if there's anywhere else), the generator as
-    // far again from all of them, and the bots waiting behind the top wall. Their floor is added to the furniture, so the
-    // scrap and the patrols keep off it.
     static CommsRing PlaceCommsRing(FloorOneBuilder.BuiltFloor[] floors)
     {
         if (floors.Length < 2) return null;
@@ -1549,7 +1338,6 @@ public static class ChapterOneBuilder
         List<Vector2Int> lockers = ring.cells.Where(c => map.At(c.x, c.y) == 'L').ToList();
         bool Open(Vector2Int c) => cells.Contains(c) && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !upstairs.furniture.Contains(c)
             && !NearKeptClear(map, c) && lockers.All(l => Chebyshev(l, c) > 1);
-        // A terminal's cell and the ones either side, and two rows in front of it to stand at.
         bool Fits(Vector2Int c) => Enumerable.Range(-1, 3).All(dx => Enumerable.Range(0, 3).All(dy => Open(c + new Vector2Int(dx, dy))));
         List<Vector2Int> spots = ring.cells.Where(Fits).ToList();
         if (spots.Count == 0)
@@ -1560,7 +1348,6 @@ public static class ChapterOneBuilder
         Transform root = TutorialLevelBuilder.Group("Comms Ring", upstairs.level);
         var away = ring.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
         List<Vector2Int> doorways = new List<Vector2Int>(away);
-        // The ring's cameras (PlaceCameras, already up): nothing to do at a terminal goes on right under one.
         List<Vector2Int> cameras = upstairs.level.GetComponentsInChildren<StationCamera>()
             .Where(c => c.room == CommsRingRoom).Select(c => CellAt(map, (Vector2)c.transform.position - map.Origin)).ToList();
         away.AddRange(cameras);
@@ -1576,7 +1363,6 @@ public static class ChapterOneBuilder
             spots.RemoveAll(o => Chebyshev(o, c) < NodeSpacing);
         }
 
-        // The relay, as near the middle as it fits.
         var middle = new Vector2((ring.minX + ring.maxX) * 0.5f, (ring.minRow + ring.maxRow) * 0.5f);
         Vector2Int relayCell = spots.OrderBy(c => (c - middle).sqrMagnitude).First();
         Claim(relayCell);
@@ -1594,7 +1380,6 @@ public static class ChapterOneBuilder
             node.displayName = $"COMMS NODE {i + 1}";
             node.transmission = Broadcast(i);
             node.interactRange = 0.8f;
-            // Forgiving, and holding still: the tuning's a breather, not the hard part.
             node.precision = 1.8f;
             node.phaseDrift = 0f;
             TutorialLevelBuilder.Record(node);
@@ -1605,8 +1390,6 @@ public static class ChapterOneBuilder
         relay.waitingFor = nodes.ToArray();
         TutorialLevelBuilder.Record(relay);
 
-        // The generator, deep in the ring: as far from the ways in as there's room, and clear of everything else, so it
-        // has to be hunted for in the dark.
         Generator generator = null;
         if (spots.Count > 0)
         {
@@ -1635,7 +1418,6 @@ public static class ChapterOneBuilder
         if (angel != null) comms.angelStart = angel.transform.position;
         PlaceAngelDeckWay(upstairs, comms);
         if (generator != null) comms.generatorStandAt = StandingAt(map, CellAt(map, (Vector2)generator.transform.position - map.Origin) + new Vector2Int(0, 2));
-        // Its lamps: any hanging on its walls, which go out with the last of the power.
         Rect walls = map.WorldRect(ring.minX, ring.maxX, ring.minRow - 4, ring.maxRow);
         comms.lamps = upstairs.level.GetComponentsInChildren<StationLight>()
             .Where(l => l.mode != StationLight.Mode.Sunlight && walls.Contains(l.transform.position)).ToArray();
@@ -1644,11 +1426,6 @@ public static class ChapterOneBuilder
         return comms;
     }
 
-    // The weeping angel that hunts the ring in the dark (CommsRing): switched off until then, starting as far from the
-    // doors as it gets but well clear of the generator, over the ring's whole floor (WeepingAngel.walkArea), since the
-    // station has no NavMesh. A little faster than the player can run; an EMP puts it down for a good while. Catching them hurts
-    // a little (which also knocks them off whatever screen they're at) and throws them back to the last respawn point,
-    // the ring's door. It lurches about (WeepingAngel's unpredictable settings), and its lights flash now and then.
     static WeepingAngel PlaceAngel(Map map, Room ring, FloorOneBuilder.BuiltFloor upstairs, Transform parent, Generator generator)
     {
         GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/WeepingAngel");
@@ -1669,16 +1446,14 @@ public static class ChapterOneBuilder
         made.transform.position = new Vector3(at.x, at.y, CharacterZ);
         var angel = made.GetComponent<WeepingAngel>();
         angel.walkArea = area;
-        angel.resetPoint = null;        // the player's last respawn point: the ring's door
-        angel.chaseSpeed = 6.2f;        // a touch faster than the player's sprint
+        angel.resetPoint = null;
+        angel.chaseSpeed = 6.2f;
         angel.stunDuration = 10f;
         angel.catchDamage = 1f;
         angel.flashEvery = new Vector2(1.5f, 3.5f);
-        angel.heartbeatRange = 16f;     // the player's heartbeat, louder and faster the nearer it is
-        // Snuck past like the robots, but it sees and hears much further, and crouching barely helps.
+        angel.heartbeatRange = 16f;
         angel.stealth = true;
         TutorialLevelBuilder.Record(angel);
-        // No NavMesh to put it on: its agent's off from the start, so it doesn't complain on waking.
         var agent = made.GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (agent != null)
         {
@@ -1689,8 +1464,6 @@ public static class ChapterOneBuilder
         return angel;
     }
 
-    // Where the angel follows the player back into the upper maintenance deck (CommsRing.AngelIntoDeck): the deck's floor
-    // for it to hunt over, and spots just below plain stretches of its top wall, spread along it, to burst through.
     const int DeckBreachSpots = 6;
 
     static void PlaceAngelDeckWay(FloorOneBuilder.BuiltFloor upstairs, CommsRing comms)
@@ -1714,11 +1487,6 @@ public static class ChapterOneBuilder
             .Select(i => StandingAt(map, along[Mathf.RoundToInt((i + 0.5f) * along.Count / count - 0.5f)])).ToArray();
     }
 
-    // The comms ring's own lights, none of them steady (BlinkLight): red beacons blinking on the ceiling over the floor,
-    // lamps on the top wall blinking and pulsing, breaker boxes on it with their status lights (BreakerBox), and status
-    // lights flickering on what's in the room: the consoles (control panels and instruments), the desks, the pods (its
-    // medical bays), and the dead generator. They're small and dim, so the blackout's still a blackout, just with points
-    // of light in it. No sun gets in: the light through its windows is taken out.
     const int CeilingBeaconSpacing = 9;
     const int WallLampSpacing = 7;
     const int Breakers = 3;
@@ -1728,7 +1496,6 @@ public static class ChapterOneBuilder
         Transform root = TutorialLevelBuilder.Group("Blinking Lights", parent);
         Rect walls = map.WorldRect(ring.minX, ring.maxX, ring.minRow - 4, ring.maxRow);
 
-        // No sunlight through the windows.
         int sun = 0;
         foreach (StationLight window in upstairs.level.GetComponentsInChildren<StationLight>()
             .Where(l => l.mode == StationLight.Mode.Sunlight && walls.Contains(l.transform.position)).ToList())
@@ -1737,7 +1504,6 @@ public static class ChapterOneBuilder
             sun++;
         }
 
-        // Red beacons on the ceiling, in a loose grid over the floor.
         int beacons = 0;
         foreach (Vector2Int cell in ring.cells.Where(c => (c.x - ring.minX) % CeilingBeaconSpacing == CeilingBeaconSpacing / 2
             && (c.y - ring.minRow) % CeilingBeaconSpacing == CeilingBeaconSpacing / 2 && FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))))
@@ -1747,7 +1513,6 @@ public static class ChapterOneBuilder
             beacon.onFraction = 0.25f;
         }
 
-        // Along the top wall: plain wall face, the breakers spread along it, and lamps between.
         List<int> columns = PlainWallColumns(map, ring);
         List<int> breakerColumns = BreakerColumns(map, ring);
         foreach (int x in breakerColumns)
@@ -1767,7 +1532,6 @@ public static class ChapterOneBuilder
                 amber ? 2.6f : 1.1f, 2f, 0.45f, lamps++);
         }
 
-        // Status lights on what's in the room, kept with it (each piece sorts as one).
         int fittings = 0;
         foreach (Transform prop in upstairs.level.GetComponentsInChildren<Transform>().Where(t => walls.Contains(t.position)).ToList())
         {
@@ -1779,7 +1543,6 @@ public static class ChapterOneBuilder
             switch (prop.name)
             {
                 case "Long console bank":
-                    // A row of instrument lights along the panel.
                     Color[] panel = { new Color(0.3f, 1f, 0.5f), new Color(0.3f, 0.85f, 1f), new Color(1f, 0.65f, 0.2f) };
                     for (int i = 0; i < 4; i++)
                     {
@@ -1799,7 +1562,6 @@ public static class ChapterOneBuilder
             }
         }
 
-        // The dead generator, sputtering.
         if (generator != null)
         {
             NewBlinkLight("Generator Sputter", generator.transform, (Vector2)generator.transform.position + new Vector2(-0.4f, 0.9f),
@@ -1808,11 +1570,9 @@ public static class ChapterOneBuilder
         Debug.Log($"Chapter 1 builder: lit the comms ring with {beacons} ceiling beacons, {lamps} wall lamps, {breakerColumns.Count} breakers, and {fittings} status lights; took out {sun} sunlit windows.");
     }
 
-    // The columns along a room's top wall where its face is plain wall all the way up (no lamp, window, or door).
     static List<int> PlainWallColumns(Map map, Room room) =>
         Enumerable.Range(room.minX + 1, room.maxX - room.minX - 1).Where(x => Enumerable.Range(1, 3).All(up => map.At(x, room.minRow - up) == '=')).ToList();
 
-    // Where the comms ring's breakers hang on its top wall, spread along it.
     static List<int> BreakerColumns(Map map, Room ring)
     {
         List<int> columns = PlainWallColumns(map, ring);
@@ -1822,11 +1582,6 @@ public static class ChapterOneBuilder
         return breakers;
     }
 
-    // --- Set dressing (StationProp) ---
-
-    // What fills out the comms ring and the upper maintenance deck. Solid pieces stand in the band along the walls, one
-    // at a time, each only where it leaves every bit of the floor still reachable; pieces on the walls go on plain stretches
-    // of wall face, clear of the lamps, windows, pipes, and breakers; what's on the floor is walked over.
     static void DressRooms(FloorOneBuilder.BuiltFloor[] floors, HashSet<Vector2Int> benchFront, System.Random dice)
     {
         if (floors.Length < 2) return;
@@ -1840,24 +1595,19 @@ public static class ChapterOneBuilder
         {
             Transform root = TutorialLevelBuilder.Group("Comms Ring Dressing", upstairs.level);
             List<int> breakers = BreakerColumns(map, ring);
-            // Screens on the top wall, between the lamps and clear of the breakers.
             foreach (int x in PlainWallColumns(map, ring).Where(x => (x - ring.minX) % 7 == 3 && breakers.All(b => Mathf.Abs(b - x) > 2)
                 && map.At(x - 1, ring.minRow - 2) == '=' && map.At(x + 1, ring.minRow - 2) == '='))
                 placed += WallProp(map, x, ring.minRow - 2, StationProp.Kind.WallScreen, root);
-            // Server racks along the walls, dishes and crates in the corners and along the bottom.
             placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.ServerRack, 14, c => c.y == ring.minRow || c.x == ring.minX || c.x == ring.maxX);
             placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.SignalDish, 3, c => c.y >= ring.maxRow - 1);
             placed += EdgeProps(map, upstairs, ring, benchFront, dice, root, StationProp.Kind.Crates, 4, c => c.y >= ring.maxRow - 1 || c.x <= ring.minX + 1 || c.x >= ring.maxX - 1);
-            // Short rows of server racks out on the floor, like aisles in a server room, with room to walk round each.
             placed += RackRows(map, upstairs, ring, benchFront, dice, root, 5, 3);
-            // Cables run across the open floor between it all.
             placed += FloorProps(map, upstairs, ring, benchFront, dice, root, 18, at => NewProp(at, StationProp.Kind.CableRun, root, false));
         }
 
         if (deck != null)
         {
             Transform root = TutorialLevelBuilder.Group("Maintenance Deck Dressing", upstairs.level);
-            // Pegboards of tools on the top wall, clear of the pipes, the bench, and the lockers below.
             var busy = new HashSet<int>(deck.cells.Where(c => c.y == deck.minRow && (upstairs.furniture.Contains(c) || map.At(c.x, c.y) == 'L')).Select(c => c.x));
             int lastBoard = int.MinValue;
             foreach (int x in PlainWallColumns(map, deck).Where(x => Enumerable.Range(-2, 5).All(dx => !busy.Contains(x + dx))
@@ -1867,12 +1617,10 @@ public static class ChapterOneBuilder
                 lastBoard = x;
                 placed += WallProp(map, x, deck.minRow - 2, StationProp.Kind.Pegboard, root);
             }
-            // Gas tanks, drums, and crates stood along the walls.
             System.Func<Vector2Int, bool> edge = c => c.y >= deck.maxRow - 1 || c.x <= deck.minX + 1 || c.x >= deck.maxX - 1;
             placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.GasTanks, 4, edge);
             placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.Drum, 5, edge);
             placed += EdgeProps(map, upstairs, deck, benchFront, dice, root, StationProp.Kind.Crates, 4, edge);
-            // A toolbox left by the bench, leaks on the floor, and bits off robots lying about.
             Workshop bench = upstairs.level.GetComponentInChildren<Workshop>();
             if (bench != null && bench.bench != null)
             {
@@ -1909,7 +1657,6 @@ public static class ChapterOneBuilder
         Debug.Log($"Chapter 1 builder: dressed the comms ring and the upper maintenance deck with {placed} props.");
     }
 
-    // A prop on the wall face, at this cell of the wall.
     static int WallProp(Map map, int x, int row, StationProp.Kind kind, Transform parent)
     {
         Vector2 at = map.Center(x, row);
@@ -1920,7 +1667,6 @@ public static class ChapterOneBuilder
         return 1;
     }
 
-    // A prop standing (or lying) on the floor at a point; solid ones get a footprint the bots and cameras can't see past.
     static GameObject NewProp(Vector2 standing, StationProp.Kind kind, Transform parent, bool solid)
     {
         var prop = new GameObject(kind.ToString());
@@ -1936,8 +1682,6 @@ public static class ChapterOneBuilder
         return prop;
     }
 
-    // Where a prop can stand: open floor in the room, nothing on it, not by a doorway, a locker, the bench, or right in
-    // front of furniture.
     static bool FreeForProp(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, Vector2Int c)
     {
         if (!room.cells.Contains(c) || !FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) || floor.furniture.Contains(c)) return false;
@@ -1950,8 +1694,6 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // Up to count solid props of a kind on free cells where along says, never two side by side unless it's a rack run
-    // against a wall, and only where every bit of the room's floor can still be got to.
     static int EdgeProps(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
         StationProp.Kind kind, int count, System.Func<Vector2Int, bool> along)
     {
@@ -1976,8 +1718,6 @@ public static class ChapterOneBuilder
         return placed;
     }
 
-    // Up to count rows of length server racks side by side, away from the walls and from each other, each with open floor
-    // all round it, and only where every bit of the room can still be got to.
     static int RackRows(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
         int count, int length)
     {
@@ -1990,7 +1730,6 @@ public static class ChapterOneBuilder
         {
             if (rows.Count >= count) break;
             if (rows.Any(r => Mathf.Abs(r.y - start.y) < 4 && Mathf.Abs(r.x - start.x) < length + 6)) continue;
-            // The row and a ring of open floor round it.
             bool fits = true;
             for (int dx = -1; dx <= length && fits; dx++)
                 for (int dy = -1; dy <= 1 && fits; dy++)
@@ -2010,7 +1749,6 @@ public static class ChapterOneBuilder
         return placed;
     }
 
-    // Up to count things lying on the open floor, spread out, not counted as furniture.
     static int FloorProps(Map map, FloorOneBuilder.BuiltFloor floor, Room room, HashSet<Vector2Int> keepClear, System.Random dice, Transform parent,
         int count, System.Action<Vector2> place)
     {
@@ -2027,7 +1765,6 @@ public static class ChapterOneBuilder
         return placed;
     }
 
-    // Whether every open cell of the room's floor can still be walked to from every other.
     static bool RoomConnected(Map map, FloorOneBuilder.BuiltFloor floor, Room room)
     {
         var open = new HashSet<Vector2Int>(room.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y)) && !floor.furniture.Contains(c)));
@@ -2065,7 +1802,6 @@ public static class ChapterOneBuilder
         return light;
     }
 
-    // A terminal stands on its cell with its base a little below the middle, solid only at its foot.
     static GameObject PlaceTerminal(Map map, Vector2Int cell, string terminalName, Transform parent)
     {
         Vector2 center = map.Center(cell.x, cell.y);
@@ -2078,8 +1814,6 @@ public static class ChapterOneBuilder
         return terminal;
     }
 
-    // The bots that come through the ring's walls (CommsRing.Breach), switched off, each just below a stretch of plain top
-    // wall, spread along it; the breach point is up on the wall above. They roam the ring once they've come through.
     static void PlaceBreachBots(Map map, Room ring, FloorOneBuilder.BuiltFloor upstairs, CommsRing comms)
     {
         GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
@@ -2115,7 +1849,7 @@ public static class ChapterOneBuilder
             brain.sightRange = 5.5f;
             brain.detectionTime = 1f;
             brain.smartSenses = true;
-            brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+            brain.eyeGlowRadius = 1.3f;
             TutorialLevelBuilder.Record(brain);
             robot.SetActive(false);
             bots.Add(brain);
@@ -2129,14 +1863,9 @@ public static class ChapterOneBuilder
         comms.breachPoints = points.ToArray();
     }
 
-    // The reactor core, upstairs, is the only way left down to the control room (the hallway's caved in), and it's
-    // badge-only now: every door into it from outside wants this credential, which the comms ring's relay hands over.
     const char ReactorCore = 'r';
     const string ReactorCredential = "reactor_core";
 
-    // The reactor core's doors locked to its badge, so it can't be got into until the comms ring's done (the EMP sends
-    // them there, Workshop); let in there, through the reactor and down its stairs, the control room opens too, with
-    // Sonny inside waiting for a unit. Where the player comes back and stands for testers, at each.
     static void PlaceControlRoomAccess(FloorOneBuilder.BuiltFloor[] floors, CommsRing comms)
     {
         FloorOneBuilder.BuiltFloor floor = floors[0];
@@ -2153,15 +1882,12 @@ public static class ChapterOneBuilder
             && door.name.StartsWith($"Door {map.At(c.x, c.y)} ")).ToList();
         Transform root = TutorialLevelBuilder.Group("Control Room Access", floor.level);
 
-        // The reactor core's doors: every one that comes out in it from outside.
         FloorOneBuilder.BuiltFloor upstairs = floors[1];
         Room reactor = upstairs.rooms.FirstOrDefault(r => r.marker == ReactorCore);
         Room deck = upstairs.rooms.FirstOrDefault(r => r.marker == UpperMaintenanceDeck);
         var reactorDoors = new List<Teleporter>();
         if (reactor != null)
         {
-            // By the room's own cells, not its bounding box: the box overlaps the rooms next door, which put the badge on
-            // the comms ring's way back to the deck instead of the deck's way into the reactor.
             var reactorCells = new HashSet<Vector2Int>(reactor.cells);
             Map upstairsMap = upstairs.map;
             bool InReactor(Vector3 world) => reactorCells.Contains(CellAt(upstairsMap, (Vector2)world - upstairsMap.Origin));
@@ -2179,7 +1905,6 @@ public static class ChapterOneBuilder
             return;
         }
 
-        // The rest of the workbench (Workshop) opens with the same access.
         Workshop bench = upstairs.level.GetComponentInChildren<Workshop>();
         if (bench != null)
         {
@@ -2190,7 +1915,6 @@ public static class ChapterOneBuilder
         comms.arriveObjective = ObjectiveCommsRing;
         comms.alsoGrants = new[] { ReactorCredential };
 
-        // Into the ring: just inside it from the upper maintenance deck's door.
         {
             Room ring = upstairs.rooms.First(r => r.marker == CommsRingRoom);
             var deckDigits = deck == null ? new HashSet<char>()
@@ -2205,7 +1929,6 @@ public static class ChapterOneBuilder
         }
         TutorialLevelBuilder.Record(comms);
 
-        // Let in: Sonny, red-eyed, taking the technician for one of its own.
         if (inside.Count == 0) return;
         var arrival = new GameObject("Control Room Arrival").AddComponent<BlockedWay>();
         arrival.transform.SetParent(root);
@@ -2213,10 +1936,7 @@ public static class ChapterOneBuilder
         arrival.arriveInRoom = ControlRoom;
         arrival.afterObjective = comms.afterObjective;
         arrival.technicianLines = new[] { "It opened... just like that" };
-        arrival.pipLines = new[]
-        {
-            "~It thinks a unit just walked in, so don't give it a reason to look twice",
-        };
+        arrival.pip = PipManager.Moment.ControlRoomLetIn;
         arrival.objective = ObjectiveConfrontSonny;
         arrival.targetRoom = ControlRoom;
         arrival.targetLabel = "Control Room";
@@ -2228,36 +1948,24 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(arrival);
     }
 
-    // --- The reactor core (Chapter 2) ---
-
-    // The way through to the stairs down is round the reactor: in at the front, up its far side, and along behind it to
-    // the stairs, since the short way up the near side's caved in. Behind the reactor is its containment, fenced off
-    // (ReactorGate), with gates in the fence. Radiation's leaking all over the floor (RadiationLeak): wide yellow pools
-    // that slow the technician to a crawl so the bots catch them, and vents that burst. Bots roam it (PatrolsPerRoom).
-    // Coming round the back sets off the lockdown (ReactorLockdown): a blast gate slams shut across the far side behind
-    // them, and bots roll out of the containment gates a wave at a time, till they're all down; only then do the stairs
-    // go. The room's heat shows on screen (ReactorAmbience). And every so often the core surges (ReactorSurge): a wave of
-    // heat across the whole room that only lead shield walls (RadiationShield) keep off, while every bot bows to it.
     static readonly PlaceholderRobot.BotKind[][] LockdownWaves =
     {
-        new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper },
+        new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Sweeper },
         new[] { PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler },
-        new[] { PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler, PlaceholderRobot.BotKind.Sweeper, PlaceholderRobot.BotKind.Arc },
+        new[] { PlaceholderRobot.BotKind.Arc, PlaceholderRobot.BotKind.Hauler, PlaceholderRobot.BotKind.Sweeper },
     };
     const int ReactorPools = 26;
     const int ReactorVents = 6;
-    const int LeakSpacing = 6;          // the fewest cells between one leak and the next
-    const int GateFromMiddle = 6;       // how far either side of the reactor's middle the containment gates are, in cells
-    const int LockdownGateRows = 10;    // how far back from the reactor's middle the blast gate crosses its far side
-    static readonly Vector2 PoolReach = new Vector2(2.6f, 1.6f);   // a little past the edge of its art, so it's hard to skirt
+    const int LeakSpacing = 6;
+    const int GateFromMiddle = 6;
+    const int LockdownGateRows = 10;
+    static readonly Vector2 PoolReach = new Vector2(2.6f, 1.6f);
     const int Shields = 13;
-    const int ShieldsBehind = 3;        // of them, out behind the reactor, where the lockdown is
+    const int ShieldsBehind = 3;
     const int ShieldSpacing = 6;
-    const int ShieldNear = 7, ShieldFar = 19;   // how far from the reactor's middle, in cells
+    const int ShieldNear = 7, ShieldFar = 19;
     static readonly Vector2 VentReach = new Vector2(1.1f, 0.75f);
 
-    // A turned maintenance bot of this kind (PlaceholderRobot.look): a hauler's slow and tough and hits hard; an arc bot
-    // keeps its distance and calls down lightning (ArcCaster), and goes down easier; a sweeper's as it was.
     static void TurnInto(PlaceholderRobot brain, PlaceholderRobot.BotKind look)
     {
         brain.look = look;
@@ -2295,7 +2003,6 @@ public static class ChapterOneBuilder
             Debug.LogWarning("Chapter 1 builder: there's no reactor core on floor 2, so there's nothing to get round in it.");
             return;
         }
-        // The reactor's middle sits on a corner of the grid: the cell just below and right of it.
         Vector2 corePosition = core.transform.position;
         Vector2 local = corePosition - map.Origin;
         var middle = new Vector2Int(Mathf.RoundToInt(local.x), map.Height - Mathf.RoundToInt(local.y));
@@ -2315,8 +2022,6 @@ public static class ChapterOneBuilder
         Transform root = TutorialLevelBuilder.Group("Reactor Gauntlet", upstairs.level);
         PlayerController player = floors[0].player.GetComponent<PlayerController>();
 
-        // The short way, up the near side between the wall and the reactor, caved in: rubble right across it, as low as
-        // the reactor's side goes while it's still the narrow way up and not the open floor in front.
         var rubbleCells = new List<Vector2Int>();
         for (int row = middle.y - 6; row >= middle.y - rearDepth + 2 && rubbleCells.Count == 0; row--)
         {
@@ -2343,8 +2048,6 @@ public static class ChapterOneBuilder
         if (!WayThrough(doors, stairFoot, Walkable))
             Debug.LogWarning("Chapter 1 builder: there's no way from the reactor core's doors round to its stairs. Move something.");
 
-        // The containment behind the reactor (solid already, ReactorCore): a fence along the back with two gates in it the
-        // bots come out of, and fence up either side.
         Transform containment = TutorialLevelBuilder.Group("Containment", root);
         float back = corePosition.y + depth;
         var spawnGates = new List<ReactorGate>();
@@ -2359,7 +2062,6 @@ public static class ChapterOneBuilder
             foreach (float x in new[] { left, right })
                 NewGate(containment, ReactorGate.Kind.SideFence, new Vector2(x, y), Mathf.Min(1f, back - y));
 
-        // The blast gate across the far side, open till the lockdown: from the containment to the wall.
         int gateRow = middle.y - LockdownGateRows;
         List<Vector2Int> across2 = room.cells.Where(c => c.y == gateRow && c.x >= middle.x + rearWidth).OrderBy(c => c.x).ToList();
         var blastGates = new List<ReactorGate>();
@@ -2375,7 +2077,6 @@ public static class ChapterOneBuilder
         }
         else Debug.LogWarning("Chapter 1 builder: there's no floor across the reactor's far side for the lockdown's blast gate.");
 
-        // The lockdown: who comes out, wave by wave, waiting behind the gates till then.
         var lockdown = new GameObject("Reactor Lockdown").AddComponent<ReactorLockdown>();
         lockdown.transform.SetParent(root);
         lockdown.player = player;
@@ -2414,7 +2115,6 @@ public static class ChapterOneBuilder
             }
         }
         lockdown.waves = waves.ToArray();
-        // For the Checkpoint Tester: on the far side just short of setting it off (above the blast gate), and by the stairs.
         Vector2Int shortOf = room.cells.Where(c => Walkable(c) && c.x >= middle.x + rearWidth && c.y < gateRow - 1 && c.y > middle.y - LockdownGateRows - 5)
             .OrderBy(c => c.y).ThenBy(c => c.x).LastOrDefault();
         lockdown.standAt = StandingAt(map, shortOf);
@@ -2424,14 +2124,10 @@ public static class ChapterOneBuilder
         lockdown.clearedStandAt = StandingAt(map, byStairs);
         TutorialLevelBuilder.Record(lockdown);
 
-        // Coming back after dying: just inside, clear of everything.
         Vector2 doorsAt = doors.Aggregate(Vector2.zero, (sum, c) => sum + (Vector2)c) / doors.Count;
         Vector2Int backIn = room.cells.Where(c => Walkable(c) && !NearKeptClear(map, c) && doors.All(d => Chebyshev(d, c) >= 2))
             .OrderBy(c => ((Vector2)c - doorsAt).sqrMagnitude).FirstOrDefault();
 
-        // Lead shield walls round the reactor, to get behind when it surges: across the screen in front of and behind it,
-        // running up the screen beside it, so they always stand between it and whoever's behind them. Some out behind it,
-        // where the lockdown is. Never cutting off the way through.
         Transform shieldGroup = TutorialLevelBuilder.Group("Lead Shields", root);
         var shieldCells = new List<Vector2Int>();
         var rollOuts = spawnGates.Select(g => CellAt(map, (Vector2)g.transform.position + lockdown.rollOut - map.Origin)).ToList();
@@ -2473,8 +2169,6 @@ public static class ChapterOneBuilder
         }
         shields = shieldCells.Count;
 
-        // The radiation, all over: pools wherever there's room for one, vents among them. None by a door, the stairs,
-        // where the player comes back, the blast gate, or where the bots roll out, and spread out.
         Transform leaks = TutorialLevelBuilder.Group("Radiation", root);
         var rollOutCells = spawnGates.Select(g => CellAt(map, (Vector2)g.transform.position + lockdown.rollOut - map.Origin)).ToList();
         var leakCells = new List<Vector2Int>();
@@ -2484,7 +2178,6 @@ public static class ChapterOneBuilder
             && leakCells.All(o => Chebyshev(o, c) >= LeakSpacing);
         List<Vector2Int> order = room.cells.OrderBy(_ => dice.Next()).ToList();
         int pools = 0, vents = 0;
-        // One right below the rubble, where it's leaking from.
         if (rubbleCells.Count > 0)
         {
             Vector2Int below = rubbleCells[rubbleCells.Count / 2] + new Vector2Int(0, 2);
@@ -2511,7 +2204,6 @@ public static class ChapterOneBuilder
             vents++;
         }
 
-        // The heat, on screen, all over the room.
         Rect roomRect = map.WorldRect(room.minX, room.maxX, room.minRow, room.maxRow);
         var ambience = new GameObject("Reactor Heat").AddComponent<ReactorAmbience>();
         ambience.transform.SetParent(root);
@@ -2520,7 +2212,6 @@ public static class ChapterOneBuilder
         ambience.glowRadius = roomRect.size.magnitude * 0.5f + 4f;
         TutorialLevelBuilder.Record(ambience);
 
-        // The surges.
         var surge = new GameObject("Reactor Surges").AddComponent<ReactorSurge>();
         surge.transform.SetParent(root);
         surge.core = core;
@@ -2528,18 +2219,12 @@ public static class ChapterOneBuilder
         surge.reach = roomRect.size.magnitude * 0.6f;
         TutorialLevelBuilder.Record(surge);
 
-        // Walking in: the heat, and Pip on what's ahead.
         var arrival = new GameObject("Reactor Arrival").AddComponent<BlockedWay>();
         arrival.transform.SetParent(root);
         arrival.player = player;
         arrival.arriveInRoom = ReactorCore;
         arrival.technicianLines = new[] { "Damn it's hot in here... like standing right next to the sun" };
-        arrival.pipLines = new[]
-        {
-            "~Radiation's leaking out all over, and wading through that yellow stuff's gonna slow you right down",
-            "~Stairs down are round the back of the reactor... and uhh, there's a lot of bots in here",
-            "~And if the core starts flaring, get behind one of those lead walls",
-        };
+        arrival.pip = PipManager.Moment.ReactorArrival;
         arrival.setsRespawn = true;
         arrival.respawnAt = StandingAt(map, backIn);
         arrival.standAt = arrival.respawnAt;
@@ -2550,7 +2235,6 @@ public static class ChapterOneBuilder
                   $"{waves.Count} waves, {blastGates.Count} blast gate, {shields} lead shields, and {pools} radiation pools and {vents} vents.");
     }
 
-    // Whether there's any way at all from these cells to those, over what's walkable.
     static bool WayThrough(List<Vector2Int> from, List<Vector2Int> to, System.Func<Vector2Int, bool> walkable)
     {
         var seen = new HashSet<Vector2Int>(from);
@@ -2594,7 +2278,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(leak);
     }
 
-    // The broadcast a node carries, made the first time from Broadcasts.
     static TransmissionData Broadcast(int index)
     {
         if (index >= Broadcasts.Length) return null;
@@ -2606,7 +2289,6 @@ public static class ChapterOneBuilder
         });
     }
 
-    // What the relay asks, made the first time from RelayQuestions. Passing it is a unit's access to the control room.
     static DoctrineData RelayDoctrine() => CommsAsset<DoctrineData>(RelayAsset, data =>
     {
         data.questions = RelayQuestions.Select(q => new DoctrineData.Question { asks = q.asks, rightAnswer = q.right, wrongAnswers = q.wrong }).ToArray();
@@ -2615,7 +2297,6 @@ public static class ChapterOneBuilder
         data.credentialName = "BADGE REACTIVATED  //  UNIT ACCESS";
     });
 
-    // An asset under Data, loaded if it's there (and left as it is, edits and all), or made and filled in if not.
     static T CommsAsset<T>(string name, System.Action<T> fill) where T : ScriptableObject
     {
         string path = $"{CommsDataFolder}/{name}.asset";
@@ -2630,15 +2311,11 @@ public static class ChapterOneBuilder
         return made;
     }
 
-    // The bots roaming the rooms among the bodies, each over its room's open floor (clear of furniture, the bodies, and
-    // the doorways, so none comes through a door or stands in one), and what shows them to the player as they step out
-    // of the restroom (PatrolReveal). They're blind until then.
-    // Returns the objective the reveal leaves the player with, for the blocked way that follows it.
     static string PlacePatrols(FloorOneBuilder.BuiltFloor[] floors, IEnumerable<Vector2Int> bodyCells, System.Random dice)
     {
         GameObject prefab = TutorialLevelBuilder.LoadPrefab("Characters/PlaceholderRobot");
         if (prefab == null) return "";
-        var lying = new HashSet<Vector2Int>(bodyCells);     // floor 1's; there are no bodies upstairs
+        var lying = new HashSet<Vector2Int>(bodyCells);
         var robots = new List<PlaceholderRobot>();
 
         foreach (FloorOneBuilder.BuiltFloor floor in floors)
@@ -2649,7 +2326,6 @@ public static class ChapterOneBuilder
             bool ground = floor == floors[0];
             var open = new HashSet<Vector2Int>(room.cells.Where(c => FloorOneBuilder.IsOpenFloor(map.At(c.x, c.y))
                 && !floor.furniture.Contains(c) && !(ground && lying.Contains(c)) && !NearKeptClear(map, c)));
-            // Doorways, stairs, and anything else kept clear: nobody starts near where the player comes in.
             List<Vector2Int> doors = room.cells.Where(c => FloorOneBuilder.IsKeptClear(map.At(c.x, c.y))).ToList();
             Transform root = floor.level.Find("Patrols") ?? TutorialLevelBuilder.Group("Patrols", floor.level);
             Transform group = TutorialLevelBuilder.Group(room.name, root);
@@ -2679,7 +2355,7 @@ public static class ChapterOneBuilder
                 brain.detectionTime = 1f;
                 brain.blind = true;
                 brain.smartSenses = true;
-                brain.eyeGlowRadius = 1.3f;     // so it can be seen in the dark (DarkRooms)
+                brain.eyeGlowRadius = 1.3f;
                 if (PatrolLooks.TryGetValue(room.marker, out PlaceholderRobot.BotKind[] looks))
                     TurnInto(brain, looks[starts.IndexOf(cell) % looks.Length]);
                 TutorialLevelBuilder.Record(brain);
@@ -2700,8 +2376,6 @@ public static class ChapterOneBuilder
         return reveal.objective;
     }
 
-    // One of the crew lying on their side, still, a little darker, with a scorch mark on the floor beside them. Nothing
-    // on them moves or can be talked to.
     static Transform MakeBody(GameObject crewPrefab, Transform parent, Vector2 standing, Color trim, System.Random dice)
     {
         Vector2 lying = standing - new Vector2(0f, 0.3f);
@@ -2713,7 +2387,7 @@ public static class ChapterOneBuilder
         if (body.TryGetComponent(out Animator animator)) animator.enabled = false;
         foreach (Collider2D solid in body.GetComponents<Collider2D>()) solid.enabled = false;
         body.transform.rotation = Quaternion.Euler(0f, 0f, dice.NextDouble() < 0.5 ? 90f : -90f);
-        BodyColliders.MakeSolid(body);      // walked round, not through
+        BodyColliders.MakeSolid(body);
         if (body.TryGetComponent(out SpriteRenderer sprite))
         {
             Color c = sprite.color;
@@ -2729,8 +2403,6 @@ public static class ChapterOneBuilder
         return body.transform;
     }
 
-    // The break after the install, the restroom it sends the technician to (the stalls, nearest the door first), and the
-    // crate and shelf in the storage room they look for a wrench in.
     static void PlaceBreak(GameObject player, List<Toilet> toilets, CrewMember attendant, Vector2? comesInAt, ToolCrate crate, ToolShelf shelf,
         Transform level)
     {
@@ -2760,10 +2432,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(restroomBreak);
     }
 
-    // --- Things to look at ---
-
-    // What the technician thinks of each kind of furniture (by its name, FloorOneBuilder's stamps), a few takes on each,
-    // dealt out so two sofas side by side don't say the same thing. Each take is the thoughts for one look after another.
     static readonly Dictionary<string, string[][]> FurnitureThoughts = new Dictionary<string, string[][]>
     {
         { "Sofa", new[] { new[] { "Looks comfy... but not now" }, new[] { "There's a dent in this that's exactly the shape of a person" }, new[] { "Real upholstery... somebody fought for that in a budget meeting" } } },
@@ -2793,7 +2461,6 @@ public static class ChapterOneBuilder
     static readonly string[] WindowThoughts = { "The sun's right there... don't look straight at it", "Earth's out there somewhere past it, but it's too small to see" };
     static readonly string[] WindowThoughtsLater = { "The sun looks angrier than it did", "Or maybe that's just me" };
 
-    // The pictures on the walls, by room, and what's thought of each then and later.
     static readonly Dictionary<char, WallArt.Kind[]> WallArtByRoom = new Dictionary<char, WallArt.Kind[]>
     {
         { 'k', new[] { WallArt.Kind.EarthPhoto, WallArt.Kind.SafetyPoster, WallArt.Kind.Mountains } },
@@ -2823,7 +2490,6 @@ public static class ChapterOneBuilder
         { WallArt.Kind.Chart, new[] { "Up and to the right... until today" } },
     };
 
-    // Everything on floor 1 there is to look at: the furniture, a window in each room that has them, and the pictures.
     static void PlaceInspectables(FloorOneBuilder.BuiltFloor floor, bool later)
     {
         Map map = floor.map;
@@ -2831,7 +2497,6 @@ public static class ChapterOneBuilder
         Dictionary<string, string[][]> furnitureThoughts = later ? FurnitureThoughtsLater : FurnitureThoughts;
         var dealt = new Dictionary<string, int>();
 
-        // The furniture, on floor 1.
         Transform furniture = floor.level.Find("Furniture");
         if (furniture != null)
         {
@@ -2854,8 +2519,6 @@ public static class ChapterOneBuilder
         var lamps = floor.level.GetComponentsInChildren<StationLight>().Select(l => (Vector2)l.transform.position).ToList();
         foreach (Room room in floor.rooms)
         {
-            // Wall face cells over the room's top row of floor, x by x: whether there's a window in it, or a lamp, or
-            // it's over a doorway.
             var windows = new List<int>();
             var plain = new List<int>();
             for (int x = room.minX; x <= room.maxX; x++)
@@ -2869,7 +2532,6 @@ public static class ChapterOneBuilder
                     plain.Add(x);
             }
 
-            // A window: the middle of the first run of them.
             if (windows.Count > 0)
             {
                 int first = windows[0], last = first;
@@ -2884,7 +2546,6 @@ public static class ChapterOneBuilder
                 look.tagOffset = new Vector2(0f, 1.3f);
             }
 
-            // The pictures, spread along the wall, each on the middle row of the face, clear of the lamps.
             if (!WallArtByRoom.TryGetValue(room.marker, out WallArt.Kind[] kinds) || plain.Count == 0) continue;
             for (int i = 0; i < kinds.Length; i++)
             {
@@ -2907,7 +2568,6 @@ public static class ChapterOneBuilder
         }
     }
 
-    // A maintenance bot on its rounds over the room's floor: the kinds and unit numbers dealt out in turn.
     static int botsPlaced;
     static void PlaceBot(Vector2 at, CrewWalkArea area, Transform parent)
     {
@@ -2927,7 +2587,6 @@ public static class ChapterOneBuilder
         unit.area = area;
     }
 
-    // In the room, a few steps in from where the player starts, and as far from the entrance as that allows.
     static bool TryGreeterSpot(HashSet<Vector2Int> free, Vector2Int start, out Vector2Int spot)
     {
         spot = default;
@@ -2937,11 +2596,9 @@ public static class ChapterOneBuilder
         return true;
     }
 
-    // A middle cell with every one of the ring on free floor around it, spaced evenly and all facing in.
     static bool TryPlaceGroup(Map map, HashSet<Vector2Int> free, int size, System.Random random, out Vector2Int middle, out Vector2[] ring)
     {
         List<Vector2Int> candidates = free.OrderBy(_ => random.Next()).ToList();
-        // Two face each other across the middle; three or more stand round it, the first at the top facing down.
         float first = size == 2 ? 0f : size == 4 ? 45f : 90f;
         foreach (Vector2Int cell in candidates)
         {
@@ -2964,8 +2621,6 @@ public static class ChapterOneBuilder
         return false;
     }
 
-    // At a console when there is one free (the cell just below a desk, facing up at it), anywhere free otherwise. Not
-    // just below a chair: they'd be standing on it.
     static bool TryStandingSpot(Map map, HashSet<Vector2Int> furniture, HashSet<Vector2Int> seats, HashSet<Vector2Int> free, bool atConsoles,
         System.Random random, out Vector2Int cell, out Vector2 facing)
     {
@@ -2974,7 +2629,6 @@ public static class ChapterOneBuilder
         {
             foreach (Vector2Int c in shuffled)
             {
-                // Map rows count down, so this is the cell above.
                 if (!furniture.Contains(c + Vector2Int.down) || seats.Contains(c + Vector2Int.down)) continue;
                 cell = c;
                 facing = Vector2.up;
@@ -2986,7 +2640,6 @@ public static class ChapterOneBuilder
         return shuffled.Count > 0;
     }
 
-    // The room's floor as a grid for the people walking about in it.
     static CrewWalkArea MakeWalkArea(Map map, Room room, HashSet<Vector2Int> walkable, Transform parent)
     {
         var area = new GameObject("Walk Area").AddComponent<CrewWalkArea>();
@@ -3001,13 +2654,12 @@ public static class ChapterOneBuilder
         foreach (Vector2Int cell in walkable)
         {
             int x = cell.x - room.minX;
-            int y = room.maxRow - cell.y;       // rows count down the map, and up the grid
+            int y = room.maxRow - cell.y;
             area.walkable[y * area.width + x] = true;
         }
         return area;
     }
 
-    // Arrival: the player starts in the doorway of the ship entrance and walks in to where the layout puts them.
     static void PlaceDirector(Map map, GameObject player, CrewMember greeter, Transform level)
     {
         var director = new GameObject("Chapter 1 Director").AddComponent<ChapterOneDirector>();
@@ -3030,7 +2682,6 @@ public static class ChapterOneBuilder
         TutorialLevelBuilder.Record(player.transform);
     }
 
-    // Chapter 1 starts before any of the fighting: nothing in hand, and nothing on the hotbar. Chapter 2 too, for now.
     internal static void Unarm(GameObject player)
     {
         if (player.TryGetComponent(out PlayerCombat combat))
@@ -3060,20 +2711,14 @@ public static class ChapterOneBuilder
         return crew;
     }
 
-    // --- Helpers ---
-
     static Color Pick(System.Random random) => TrimColors[random.Next(TrimColors.Length)];
 
-    // Where someone stands to have their feet in this cell.
     static Vector2 StandingAt(Map map, Vector2Int cell) => map.Center(cell.x, cell.y) + new Vector2(0f, DepthDressing.FeetLift);
 
-    // The way from one cell to look at another, in world directions.
     static Vector2 Toward(Vector2Int from, Vector2Int to) => new Vector2(to.x - from.x, from.y - to.y);
 
-    // The map cell someone standing here has their feet in.
     static Vector2Int FeetCell(Map map, Vector2 standing) => CellAt(map, standing - new Vector2(0f, DepthDressing.FeetLift));
 
-    // The map cell a world point is in.
     static Vector2Int CellAt(Map map, Vector2 world) => new Vector2Int(Mathf.FloorToInt(world.x), map.Height - 1 - Mathf.FloorToInt(world.y));
 
     static int Chebyshev(Vector2Int a, Vector2Int b) => Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
@@ -3085,7 +2730,6 @@ public static class ChapterOneBuilder
         return false;
     }
 
-    // At the end of the build, so the scenes already there keep their places.
     static void AddSceneToBuild()
     {
         List<EditorBuildSettingsScene> scenes = EditorBuildSettings.scenes.ToList();
@@ -3094,7 +2738,6 @@ public static class ChapterOneBuilder
             scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
         }
-        // Written to ProjectSettings now, rather than whenever the editor next saves the project.
         AssetDatabase.SaveAssets();
     }
 }

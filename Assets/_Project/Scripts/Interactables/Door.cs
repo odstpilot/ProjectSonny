@@ -4,8 +4,8 @@ using System.Collections;
 public class Door : MonoBehaviour
 {
     private bool isOpen = false;
-    public GameObject noKeycardText; // Drag the UI text object in the Inspector
-    public GameObject objectToDisable; // Drag the GameObject to disable when the door opens
+    public GameObject noKeycardText;
+    public GameObject objectToDisable;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -31,9 +31,7 @@ public class Door : MonoBehaviour
             Debug.Log("Door opened.");
             GetComponent<BoxCollider2D>().enabled = false;
 
-          
             objectToDisable.SetActive(false);
-            
         }
     }
 

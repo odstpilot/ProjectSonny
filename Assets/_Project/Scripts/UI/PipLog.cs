@@ -1,32 +1,44 @@
-using System.Text;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Everything Pip's said (SuitHelper.History), to read back, with every tip card that's come up (TipCard) kept among it. Once Pip's on, a little icon sits in the top right corner,
-// under where Pip pops up: a speech bubble on Pip's green screen, with an amber dot when there's something new since it
-// was last opened. Click it, or press L, and the log opens over the game, paused: Pip's lines oldest first, scrolled to
-// the newest, with the mouse wheel, W/S, or the arrow keys to go back through them. L, Tab, Esc, or a click outside it
-// closes it.
-// Built from code the first time Pip asks for it (SuitHelper.Get). Runs on unscaled time, since it pauses the game.
+// read back what pip said
 public class PipLog : MonoBehaviour
 {
     public const KeyCode LogKey = KeyCode.L;
-    const int SortingOrder = 111;               // over Pip (109) and the map (108)
+    const int SortingOrder = 111;
     const float Margin = 40f;
-    const float PipCorner = 150f + 16f;         // Pip's portrait, and a gap, above the icon
+    const float PipCorner = 150f + 16f;
     const float IconSize = 72f;
     const float PanelWidth = 1100f, PanelHeight = 780f;
-    const float ScrollSpeed = 900f;
+    const float CardGap = 14f;
+    const float TypeSpeed = 70f;
     const float FadeTime = 0.15f;
     static readonly Color PanelColor = new Color(0.03f, 0.08f, 0.075f, 0.97f);
     static readonly Color ScreenTop = new Color(0.06f, 0.24f, 0.2f);
-    const string PipTag = "<color=#73FFC7><b>PIP</b></color>   ";
-    const string TipTag = "<color=#FFAE52><b>TIP</b></color>   ";
+    static readonly Color CardColor = new Color(0.05f, 0.13f, 0.115f, 0.95f);
+    static readonly Color CardPicked = new Color(0.1f, 0.27f, 0.22f, 1f);
+    static readonly string[] Filters = { "ALL", "PIP", "TIPS" };
+
+    class Entry
+    {
+        public int number;
+        public bool tip, fresh;
+        public string text;
+    }
+
+    class Card
+    {
+        public Entry entry;
+        public RectTransform rect;
+        public Image back, accent;
+        public TextMeshProUGUI head, body, badge;
+        public float y, height;
+    }
 
     static PipLog instance;
 
-    // The pointer's over the icon, so a click there is for it, not for swinging or firing whatever's in hand.
     public static bool MouseOverIcon { get; private set; }
     public static bool IsOpen => instance != null && instance.open;
 
@@ -35,7 +47,7 @@ public class PipLog : MonoBehaviour
     private float savedTimeScale = 1f;
     private bool heldPlayer;
     private PlayerController player;
-    private int seen;                           // how many lines there were when it was last opened
+    private int seen;
 
     private CanvasGroup iconGroup;
     private RectTransform icon;
@@ -45,9 +57,15 @@ public class PipLog : MonoBehaviour
     private RectTransform panel;
     private RectTransform viewport;
     private RectTransform content;
-    private TextMeshProUGUI lines;
-    private TextMeshProUGUI empty;
-    private float scroll;
+    private TextMeshProUGUI empty, stats;
+    private float scroll, scrollTarget;
+    private readonly List<Entry> entries = new List<Entry>();
+    private readonly List<Card> cards = new List<Card>();
+    private readonly HashSet<int> typed = new HashSet<int>();
+    private readonly Image[] tabs = new Image[3];
+    private readonly TextMeshProUGUI[] tabLabels = new TextMeshProUGUI[3];
+    private int filter, picked = -1, shownLetters;
+    private float typeStart;
 
     public static void Ensure()
     {
@@ -70,7 +88,6 @@ public class PipLog : MonoBehaviour
 
     void Update()
     {
-        // Whenever there's anything to read back, even with Pip itself offline (the comms ring's blackout).
         bool pipOn = (SuitHelper.Exists || SuitHelper.History.Count > 0) && !TutorialHud.ScreenCovered;
         iconGroup.alpha = Mathf.MoveTowards(iconGroup.alpha, pipOn && !open ? 1f : 0f, Time.unscaledDeltaTime / FadeTime);
         unread.enabled = SuitHelper.History.Count > seen;
@@ -90,13 +107,23 @@ public class PipLog : MonoBehaviour
             return;
         }
 
-        float move = -Input.mouseScrollDelta.y * 90f;
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) move -= ScrollSpeed * Time.unscaledDeltaTime;
-        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) move += ScrollSpeed * Time.unscaledDeltaTime;
-        if (move != 0f) ScrollTo(scroll - move);
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow) || Input.mouseScrollDelta.y > 0f) Pick(picked - 1);
+        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow) || Input.mouseScrollDelta.y < 0f) Pick(picked + 1);
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) SetFilter(filter + Filters.Length - 1);
+        if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) SetFilter(filter + 1);
+        if (Input.GetMouseButtonDown(0))
+        {
+            for (int i = 0; i < tabs.Length; i++)
+                if (RectTransformUtility.RectangleContainsScreenPoint(tabs[i].rectTransform, Input.mousePosition, null)) SetFilter(i);
+            for (int i = 0; i < cards.Count; i++)
+                if (RectTransformUtility.RectangleContainsScreenPoint(viewport, Input.mousePosition, null)
+                    && RectTransformUtility.RectangleContainsScreenPoint(cards[i].rect, Input.mousePosition, null)) Pick(i);
+        }
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E)) FinishTyping();
+        TypeOut();
+        scroll = Mathf.Lerp(scroll, scrollTarget, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 14f));
+        content.anchoredPosition = new Vector2(0f, scroll);
     }
-
-    // --- Opening and closing ---
 
     bool CanOpen()
     {
@@ -117,8 +144,8 @@ public class PipLog : MonoBehaviour
         Time.timeScale = 0f;
         heldPlayer = player != null && !player.IsScripted;
         if (heldPlayer) player.SetScriptedInput(Vector2.zero, false);
-        seen = SuitHelper.History.Count;
         Fill();
+        seen = SuitHelper.History.Count;
         StopAllCoroutines();
         StartCoroutine(FadePanel(1f));
     }
@@ -153,31 +180,145 @@ public class PipLog : MonoBehaviour
         panel.localScale = Vector3.one;
     }
 
-    // The lines, oldest first, scrolled to the newest.
     void Fill()
     {
-        var text = new StringBuilder();
-        foreach (string line in SuitHelper.History)
+        int before = seen;
+        entries.Clear();
+        for (int i = 0; i < SuitHelper.History.Count; i++)
         {
-            if (text.Length > 0) text.Append("\n\n");
-            if (line.Length > 0 && line[0] == SuitHelper.TipMarker) text.Append(TipTag).Append(line, 1, line.Length - 1);
-            else text.Append(PipTag).Append(line);
+            string line = SuitHelper.History[i];
+            bool tip = line.Length > 0 && line[0] == SuitHelper.TipMarker;
+            entries.Add(new Entry { number = i + 1, tip = tip, text = tip ? line.Substring(1) : line, fresh = i >= before });
         }
-        lines.text = text.ToString();
-        empty.enabled = SuitHelper.History.Count == 0;
-        lines.ForceMeshUpdate();
-        content.sizeDelta = new Vector2(0f, lines.preferredHeight + 20f);
-        ScrollTo(float.MaxValue);
+        int tips = entries.FindAll(e => e.tip).Count, fresh = entries.FindAll(e => e.fresh).Count;
+        tabLabels[0].text = $"ALL  {entries.Count}";
+        tabLabels[1].text = $"PIP  {entries.Count - tips}";
+        tabLabels[2].text = $"TIPS  {tips}";
+        stats.text = fresh > 0 ? $"<color=#FFAE52>{fresh} NEW</color>" : "ALL CAUGHT UP";
+        Lay();
+        int first = cards.FindIndex(c => c.entry.fresh);
+        Pick(first >= 0 ? first : cards.Count - 1, true);
     }
 
-    void ScrollTo(float y)
+    void SetFilter(int to)
     {
-        float most = Mathf.Max(0f, content.sizeDelta.y - viewport.rect.height);
-        scroll = Mathf.Clamp(y, 0f, most);
-        content.anchoredPosition = new Vector2(0f, scroll);
+        to %= Filters.Length;
+        if (to == filter) return;
+        filter = to;
+        Sfx.Play("Dialogue Tick", 0.8f, 0.8f);
+        Lay();
+        Pick(cards.Count - 1, true);
     }
 
-    // --- Building ---
+    void Lay()
+    {
+        foreach (Card card in cards) Destroy(card.rect.gameObject);
+        cards.Clear();
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            tabs[i].color = i == filter ? (i == 2 ? GameUI.Amber : SuitHelper.PipColor) : new Color(0.12f, 0.2f, 0.18f);
+            tabLabels[i].color = i == filter ? GameUI.Ink : GameUI.Dim;
+        }
+        Canvas.ForceUpdateCanvases();
+        float width = viewport.rect.width > 1f ? viewport.rect.width : PanelWidth - 96f;
+        float y = 0f;
+        foreach (Entry entry in entries)
+        {
+            if ((filter == 1 && entry.tip) || (filter == 2 && !entry.tip)) continue;
+            Card card = MakeCard(entry);
+            float textHeight = card.body.GetPreferredValues(entry.text, width - 64f, 0f).y;
+            card.height = 52f + textHeight + 20f;
+            card.y = y;
+            card.rect.anchoredPosition = new Vector2(0f, -y);
+            card.rect.sizeDelta = new Vector2(0f, card.height);
+            y += card.height + CardGap;
+            cards.Add(card);
+        }
+        content.sizeDelta = new Vector2(0f, Mathf.Max(0f, y - CardGap));
+        empty.enabled = cards.Count == 0;
+        picked = -1;
+    }
+
+    Card MakeCard(Entry entry)
+    {
+        Color tone = entry.tip ? GameUI.Amber : SuitHelper.PipColor;
+        var card = new Card { entry = entry };
+        card.back = GameUI.Sliced("Card", content, GameUI.SoftPanelSprite, CardColor);
+        card.back.pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
+        card.rect = card.back.rectTransform;
+        card.rect.anchorMin = new Vector2(0f, 1f);
+        card.rect.anchorMax = new Vector2(1f, 1f);
+        card.rect.pivot = new Vector2(0.5f, 1f);
+        card.accent = GameUI.NewRect("Accent", card.rect).gameObject.AddComponent<Image>();
+        card.accent.raycastTarget = false;
+        card.accent.color = tone;
+        GameUI.Anchor(card.accent.rectTransform, 0f, 0f, 0f, 1f, 10f, 10f, 0f, 10f);
+        card.accent.rectTransform.sizeDelta = new Vector2(8f, card.accent.rectTransform.sizeDelta.y);
+        card.head = GameUI.Label("Head", card.rect, $"#{entry.number:00}   {(entry.tip ? "TIP" : "PIP")}", 26f, tone, TextAlignmentOptions.TopLeft, GameUI.Readout);
+        GameUI.Anchor(card.head.rectTransform, 0f, 1f, 1f, 1f, 40f, -46f, 24f, 12f);
+        card.badge = GameUI.Label("New", card.rect, entry.fresh ? "NEW" : "", 26f, GameUI.Amber, TextAlignmentOptions.TopRight, GameUI.Readout);
+        GameUI.Anchor(card.badge.rectTransform, 0f, 1f, 1f, 1f, 40f, -46f, 24f, 12f);
+        card.body = GameUI.Label("Text", card.rect, entry.text, 28f, GameUI.Text, TextAlignmentOptions.TopLeft);
+        card.body.textWrappingMode = TextWrappingModes.Normal;
+        card.body.lineSpacing = 6f;
+        GameUI.Anchor(card.body.rectTransform, 0f, 0f, 1f, 1f, 40f, 20f, 24f, 52f);
+        Style(card, false);
+        return card;
+    }
+
+    static void Style(Card card, bool on)
+    {
+        card.back.color = on ? CardPicked : CardColor;
+        Color tone = card.entry.tip ? GameUI.Amber : SuitHelper.PipColor;
+        card.accent.color = on ? tone : TitleUI.Fade(tone, 0.35f);
+        card.body.color = on ? GameUI.Text : TitleUI.Fade(GameUI.Text, 0.55f);
+        card.head.color = on ? tone : TitleUI.Fade(tone, 0.6f);
+        card.rect.localScale = on ? new Vector3(1.01f, 1.01f, 1f) : Vector3.one;
+    }
+
+    void Pick(int index, bool snap = false)
+    {
+        if (cards.Count == 0) return;
+        index = Mathf.Clamp(index, 0, cards.Count - 1);
+        if (index == picked) return;
+        FinishTyping();
+        if (picked >= 0 && picked < cards.Count) Style(cards[picked], false);
+        picked = index;
+        Card card = cards[picked];
+        Style(card, true);
+        if (!snap) Sfx.Play("Dialogue Tick", 0.7f, 1.1f);
+        if (card.entry.fresh && typed.Add(card.entry.number))
+        {
+            typeStart = Time.unscaledTime;
+            shownLetters = 0;
+            card.body.maxVisibleCharacters = 0;
+        }
+        card.entry.fresh = false;
+        card.badge.text = "";
+
+        float view = viewport.rect.height;
+        float most = Mathf.Max(0f, content.sizeDelta.y - view);
+        if (card.y < scrollTarget) scrollTarget = card.y;
+        else if (card.y + card.height > scrollTarget + view) scrollTarget = card.y + card.height - view;
+        scrollTarget = Mathf.Clamp(scrollTarget, 0f, most);
+        if (snap) scroll = scrollTarget;
+    }
+
+    void TypeOut()
+    {
+        if (picked < 0 || picked >= cards.Count) return;
+        TextMeshProUGUI body = cards[picked].body;
+        if (body.maxVisibleCharacters >= body.text.Length) return;
+        int letters = Mathf.FloorToInt((Time.unscaledTime - typeStart) * TypeSpeed);
+        if (letters > shownLetters && letters % 3 == 0) Sfx.Play("Dialogue Blip", 0.5f, 1.25f);
+        shownLetters = letters;
+        body.maxVisibleCharacters = letters;
+    }
+
+    void FinishTyping()
+    {
+        if (picked >= 0 && picked < cards.Count) cards[picked].body.maxVisibleCharacters = 99999;
+    }
 
     void Build()
     {
@@ -187,7 +328,6 @@ public class PipLog : MonoBehaviour
         var rootRect = (RectTransform)transform;
         GameUI.Fill(rootRect);
 
-        // The icon: a speech bubble on Pip's screen, its key under it.
         icon = GameUI.NewRect("Icon", transform);
         icon.anchorMin = icon.anchorMax = icon.pivot = new Vector2(1f, 1f);
         icon.anchoredPosition = new Vector2(-Margin, -(Margin + PipCorner));
@@ -217,7 +357,6 @@ public class PipLog : MonoBehaviour
         unread.rectTransform.sizeDelta = new Vector2(22f, 22f);
         unread.rectTransform.anchoredPosition = new Vector2(-4f, -4f);
 
-        // The log itself.
         RectTransform screen = GameUI.Fill(GameUI.NewRect("Log", transform));
         panelGroup = screen.gameObject.AddComponent<CanvasGroup>();
         panelGroup.alpha = 0f;
@@ -240,10 +379,23 @@ public class PipLog : MonoBehaviour
         title.characterSpacing = 6f;
         TextMeshProUGUI close = GameUI.Label("Close", panel, $"{LogKey} / ESC  CLOSE", 30f, GameUI.Text, TextAlignmentOptions.TopRight);
         GameUI.Anchor(close.rectTransform, 0f, 1f, 1f, 1f, 48f, -66f, 48f, 36f);
-        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "SCROLL / W S  TO READ BACK", 30f, GameUI.Text, TextAlignmentOptions.BottomRight);
+        TextMeshProUGUI hint = GameUI.Label("Hint", panel, "W S  PICK      A D  FILTER      SPACE  SKIP", 28f, GameUI.Dim, TextAlignmentOptions.BottomRight);
         GameUI.Anchor(hint.rectTransform, 0f, 0f, 1f, 0f, 48f, 24f, 48f, -56f);
+        stats = GameUI.Label("Stats", panel, "", 30f, GameUI.Dim, TextAlignmentOptions.BottomLeft, GameUI.Readout);
+        GameUI.Anchor(stats.rectTransform, 0f, 0f, 1f, 0f, 48f, 24f, 48f, -56f);
+        for (int i = 0; i < Filters.Length; i++)
+        {
+            tabs[i] = GameUI.Sliced("Tab", panel, GameUI.SoftKeyCapSprite, Color.white);
+            tabs[i].pixelsPerUnitMultiplier = 1f / GameUI.SoftPixelSize;
+            RectTransform tab = tabs[i].rectTransform;
+            tab.anchorMin = tab.anchorMax = tab.pivot = new Vector2(0f, 1f);
+            tab.anchoredPosition = new Vector2(48f + i * 190f, -100f);
+            tab.sizeDelta = new Vector2(176f, 46f);
+            tabLabels[i] = GameUI.Label("Label", tab, Filters[i], 26f, GameUI.Dim, TextAlignmentOptions.Center, GameUI.Heading);
+            GameUI.Fill(tabLabels[i].rectTransform);
+        }
 
-        viewport = GameUI.Anchor(GameUI.NewRect("Viewport", panel), 0f, 0f, 1f, 1f, 48f, 76f, 48f, 100f);
+        viewport = GameUI.Anchor(GameUI.NewRect("Viewport", panel), 0f, 0f, 1f, 1f, 48f, 76f, 48f, 166f);
         viewport.gameObject.AddComponent<RectMask2D>();
         content = GameUI.NewRect("Content", viewport);
         content.anchorMin = new Vector2(0f, 1f);
@@ -251,16 +403,10 @@ public class PipLog : MonoBehaviour
         content.pivot = new Vector2(0.5f, 1f);
         content.anchoredPosition = Vector2.zero;
         content.sizeDelta = Vector2.zero;
-        lines = GameUI.Label("Lines", content, "", 28f, GameUI.Text, TextAlignmentOptions.TopLeft);
-        lines.textWrappingMode = TextWrappingModes.Normal;
-        lines.richText = true;
-        lines.lineSpacing = 6f;
-        GameUI.Fill(lines.rectTransform);
         empty = GameUI.Label("Empty", viewport, "Nothing yet.", 28f, GameUI.Dim, TextAlignmentOptions.Center);
         GameUI.Fill(empty.rectTransform);
     }
 
-    // A pixel speech bubble with three lines of text in it.
     static Sprite bubbleGlyph;
     static Sprite BubbleGlyph => bubbleGlyph != null ? bubbleGlyph : (bubbleGlyph = PixelArt.FromText(new[]
     {

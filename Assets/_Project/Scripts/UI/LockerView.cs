@@ -3,44 +3,35 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The screen while hiding in a Locker: the inside of the locker door fills the screen, dark metal with a vent of
-// horizontal slats at eye level. Through the gaps is a first-person view of the room outside (FirstPersonView),
-// built from the level itself and lit by its own lights, with whatever's moving about in it: robots, crew, the camera
-// spiders. Moving the mouse peeks around a little.
-// Also draws the fade through black. (The "[E] Hide" tag over a locker is the shared one, InteractPrompt.)
-// Built from code the first time a locker needs it, so there is no canvas to set up. Every locker shares it.
+// view from inside a locker
 public class LockerView : MonoBehaviour
 {
-    const int SortingOrder = 100; // above the HUD
+    const int SortingOrder = 100;
     static readonly Vector2 ReferenceResolution = new Vector2(1920f, 1080f);
 
-    // The vent as fractions of the screen: left, bottom, right, top. A little above center, at eye level.
     static readonly Rect Vent = Rect.MinMaxRect(0.2f, 0.4f, 0.8f, 0.74f);
     const int SlatCount = 6;
-    const float GapFraction = 0.55f;    // how much of each slat's row is open to see through
-    const float DoorOverhang = 200f;    // the door runs this far past the screen edges, so peeking never shows its end
-    const float PeekParallax = 28f;     // pixels the slats shift when peeking
+    const float GapFraction = 0.55f;
+    const float DoorOverhang = 200f;
+    const float PeekParallax = 28f;
     const float PeekSmoothing = 6f;
     const float BreathPixels = 5f;
     const float BreathSeconds = 3.6f;
     const float VignetteAlpha = 0.8f;
 
-    // The view outside.
-    const float EyeLevel = 0.69f;               // as a fraction of screen height: a little under the top of the vent, so heads and the floor both show
-    const float FocalPerScreenHeight = 0.65f;   // a wide view, about 110 degrees across a 16:9 screen
-    const float LookPixels = 120f;              // how far the view outside pans with the mouse at the screen edge
-    const float LookMargin = 150f;              // the view outside runs this far past the screen edges, more than it pans
+    const float EyeLevel = 0.69f;
+    const float FocalPerScreenHeight = 0.65f;
+    const float LookPixels = 120f;
+    const float LookMargin = 150f;
 
     static readonly Color Metal = new Color32(27, 31, 36, 255);
     static readonly Color PanelLine = new Color32(16, 18, 21, 255);
     static readonly Color VentRim = new Color32(44, 50, 57, 255);
     static readonly Color SlatBody = new Color32(35, 40, 46, 255);
-    static readonly Color SlatLit = new Color32(72, 80, 90, 255);     // top lip of a slat, catching light from outside
+    static readonly Color SlatLit = new Color32(72, 80, 90, 255);
     static readonly Color SlatShadow = new Color32(10, 11, 13, 255);
     static readonly Color Rivet = new Color32(58, 65, 74, 255);
 
-    // Being pulled out (PullOut): a robot's head blocks the vent, the door shakes, then it's torn away and the robot
-    // lunges in, claws out. Seconds for each part, and how hard the screen shakes.
     const float LoomSeconds = 0.75f;
     const float YankSeconds = 0.14f;
     const float LungeSeconds = 0.45f;
@@ -56,8 +47,8 @@ public class LockerView : MonoBehaviour
 
     private Locker openLocker;
     private bool beingPulled;
-    private RawImage looming;       // behind the door, seen through the slats
-    private RawImage lunging;       // in front of everything once the door's gone
+    private RawImage looming;
+    private RawImage lunging;
     private Image flash;
     private GameObject inside;
     private RectTransform door;
@@ -77,7 +68,6 @@ public class LockerView : MonoBehaviour
         return instance;
     }
 
-    // For a locker switched off with the player inside: back to the normal view right away.
     public static void ForceClose()
     {
         if (instance == null) return;
@@ -85,7 +75,6 @@ public class LockerView : MonoBehaviour
         instance.SetFade(0f);
     }
 
-    // Switches to the view from inside.
     public void Open(Locker locker)
     {
         openLocker = locker;
@@ -94,7 +83,6 @@ public class LockerView : MonoBehaviour
         outsideRect.anchoredPosition = Vector2.zero;
         inside.SetActive(true);
 
-        // The view outside is sized from the screen, so make sure the layout is current first.
         Canvas.ForceUpdateCanvases();
         float screenHeight = ((RectTransform)transform).rect.height;
         float eyeLevel = (EyeLevel * screenHeight + LookMargin) / (screenHeight + 2f * LookMargin);
@@ -102,13 +90,11 @@ public class LockerView : MonoBehaviour
         outside.Show(locker.EyePoint, locker.DoorDirection, eyeLevel, FocalPerScreenHeight * screenHeight, standingLayer, locker.transform);
     }
 
-    // Back to the normal view.
     public void Close()
     {
         if (openLocker == null) return;
         openLocker = null;
 
-        // Cut off mid-pull (the locker switched off, say): everything back as it was.
         beingPulled = false;
         looming.gameObject.SetActive(false);
         lunging.gameObject.SetActive(false);
@@ -119,7 +105,6 @@ public class LockerView : MonoBehaviour
         inside.SetActive(false);
     }
 
-    // Unscaled time, so hit stop can't stall it.
     public IEnumerator FadeTo(float alpha, float duration)
     {
         float start = fade.color.a;
@@ -136,16 +121,12 @@ public class LockerView : MonoBehaviour
         if (openLocker != null && !beingPulled) UpdateInside();
     }
 
-    // The jumpscare, from inside the locker, while a robot pulls the player out. The Locker puts them outside after.
-    // Unscaled time, so a hit stop elsewhere can't stall it.
     public IEnumerator PullOut()
     {
         beingPulled = true;
         Vector2 doorRest = door.anchoredPosition;
         Sfx.Play("Robot Alert", 1f, 0.8f);
 
-        // Something steps in front of the door: the light through the slats goes, a red eye glows in the gaps, and the
-        // door starts to shake as it gets a grip.
         looming.gameObject.SetActive(true);
         for (float t = 0f; t < LoomSeconds; t += Time.unscaledDeltaTime)
         {
@@ -157,7 +138,6 @@ public class LockerView : MonoBehaviour
             yield return null;
         }
 
-        // Torn open: the door's gone in a blink, and there it is.
         Sfx.Play("Wall Breach", 1f, 1.15f);
         Sfx.Play("Grab Squeeze", 1f, 0.9f);
         for (float t = 0f; t < YankSeconds; t += Time.unscaledDeltaTime)
@@ -170,7 +150,6 @@ public class LockerView : MonoBehaviour
         door.gameObject.SetActive(false);
         looming.gameObject.SetActive(false);
 
-        // It lunges in, filling the screen, claws first, with a red flash and the whole view shaking.
         lunging.gameObject.SetActive(true);
         flash.enabled = true;
         RectTransform lungeRect = lunging.rectTransform;
@@ -183,7 +162,6 @@ public class LockerView : MonoBehaviour
             yield return null;
         }
 
-        // Put back for next time.
         lunging.gameObject.SetActive(false);
         flash.enabled = false;
         door.gameObject.SetActive(true);
@@ -194,13 +172,11 @@ public class LockerView : MonoBehaviour
 
     void UpdateInside()
     {
-        // Mouse from the middle of the screen, -1 to 1 on each axis, eased so the view drifts instead of snapping.
         Vector2 mouse = new Vector2(
             Mathf.Clamp(Input.mousePosition.x / Screen.width * 2f - 1f, -1f, 1f),
             Mathf.Clamp(Input.mousePosition.y / Screen.height * 2f - 1f, -1f, 1f));
         peek = Vector2.Lerp(peek, mouse, 1f - Mathf.Exp(-PeekSmoothing * Time.unscaledDeltaTime));
 
-        // Slow breathing: the door rises and falls a few pixels and the dark closes in a little on each breath.
         float breath = Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f / BreathSeconds);
         door.anchoredPosition = -peek * PeekParallax + new Vector2(0f, breath * BreathPixels);
         outsideRect.anchoredPosition = -peek * LookPixels;
@@ -223,11 +199,9 @@ public class LockerView : MonoBehaviour
         scaler.referenceResolution = ReferenceResolution;
         scaler.matchWidthOrHeight = 0.5f;
 
-        // --- Inside the locker ---
         RectTransform insideRect = Fill(NewRect("Inside", transform));
         inside = insideRect.gameObject;
 
-        // Solid black under everything, so the level never shows around the edges whatever the screen size.
         Block("Backing", insideRect, 0f, 0f, 1f, 1f, Color.black);
 
         outsideRect = Fill(NewRect("Outside", insideRect));
@@ -235,7 +209,6 @@ public class LockerView : MonoBehaviour
         outsideRect.offsetMax = new Vector2(LookMargin, LookMargin);
         outside = outsideRect.gameObject.AddComponent<FirstPersonView>();
 
-        // A robot's head right up against the door, behind the slats: only there while it pulls the player out.
         looming = PixelArt("Looming", insideRect, LoomingTexture());
         RectTransform loomRect = looming.rectTransform;
         loomRect.anchorMin = new Vector2(Vent.xMin - 0.08f, Vent.yMin - 0.22f);
@@ -243,22 +216,18 @@ public class LockerView : MonoBehaviour
         loomRect.offsetMin = loomRect.offsetMax = Vector2.zero;
         looming.gameObject.SetActive(false);
 
-        // Everything on the door moves together when peeking and breathing.
         door = Fill(NewRect("Door", insideRect));
 
-        // The door around the vent, in four pieces so the vent itself stays open.
         Overhang(Block("Above", door, 0f, Vent.yMax, 1f, 1f, Metal), -DoorOverhang, 0f, DoorOverhang, DoorOverhang);
         Overhang(Block("Below", door, 0f, 0f, 1f, Vent.yMin, Metal), -DoorOverhang, -DoorOverhang, DoorOverhang, 0f);
         Overhang(Block("Left", door, 0f, Vent.yMin, Vent.xMin, Vent.yMax, Metal), -DoorOverhang, 0f, 0f, 0f);
         Overhang(Block("Right", door, Vent.xMax, Vent.yMin, 1f, Vent.yMax, Metal), 0f, 0f, DoorOverhang, 0f);
 
-        // A pressed panel outline, like the inside of a real locker door.
         Line(door, 0.07f, 0.06f, 0.93f, 0.06f, 4f, PanelLine);
         Line(door, 0.07f, 0.94f, 0.93f, 0.94f, 4f, PanelLine);
         Line(door, 0.07f, 0.06f, 0.07f, 0.94f, 4f, PanelLine);
         Line(door, 0.93f, 0.06f, 0.93f, 0.94f, 4f, PanelLine);
 
-        // Slats fill the vent from the bottom up, each with a gap above it to see through.
         float row = Vent.height / SlatCount;
         for (int i = 0; i < SlatCount; i++)
         {
@@ -268,7 +237,6 @@ public class LockerView : MonoBehaviour
             Block("Shadow", slat.transform, 0f, 0f, 1f, 0.2f, SlatShadow);
         }
 
-        // A rim around the vent and a rivet at each corner.
         Line(door, Vent.xMin, Vent.yMin, Vent.xMax, Vent.yMin, 10f, VentRim);
         Line(door, Vent.xMin, Vent.yMax, Vent.xMax, Vent.yMax, 10f, VentRim);
         Line(door, Vent.xMin, Vent.yMin, Vent.xMin, Vent.yMax, 10f, VentRim);
@@ -282,19 +250,16 @@ public class LockerView : MonoBehaviour
             }
         }
 
-        // The vignette stays put while the door moves.
         vignette = Fill(NewRect("Vignette", insideRect)).gameObject.AddComponent<RawImage>();
         vignette.texture = CombatSprites.VignetteTexture;
         vignette.color = new Color(0f, 0f, 0f, VignetteAlpha);
         vignette.raycastTarget = false;
 
-        // Letters and spaces only: the game's HUD font has no punctuation.
         TextMeshProUGUI hint = Label("Hint", insideRect, $"Press {Locker.InteractKey} to step out", 30f, font);
         hint.color = new Color(0.8f, 0.84f, 0.9f, 0.55f);
         hint.rectTransform.anchorMin = hint.rectTransform.anchorMax = new Vector2(0.5f, 0.1f);
         hint.rectTransform.sizeDelta = new Vector2(600f, 50f);
 
-        // The robot lunging in once the door's torn away, over all of it, and the red flash with it.
         lunging = PixelArt("Lunging", insideRect, LungingTexture());
         Fill(lunging.rectTransform);
         lunging.rectTransform.offsetMin = new Vector2(-DoorOverhang, -DoorOverhang);
@@ -304,15 +269,12 @@ public class LockerView : MonoBehaviour
         flash.raycastTarget = false;
         flash.enabled = false;
 
-        // --- Fade, on top of everything ---
         fade = Fill(NewRect("Fade", transform)).gameObject.AddComponent<Image>();
         fade.raycastTarget = false;
         SetFade(0f);
 
         inside.SetActive(false);
     }
-
-    // --- The robot, drawn as chunky pixel art so it matches the game ---
 
     static RawImage PixelArt(string name, Transform parent, Texture2D texture)
     {
@@ -329,7 +291,6 @@ public class LockerView : MonoBehaviour
         return texture;
     }
 
-    // A box with its corners cut off by `corner` pixels. Rows count up from the bottom.
     static void Box(Texture2D texture, int x0, int y0, int x1, int y1, int corner, Color32 color)
     {
         for (int y = y0; y <= y1; y++)
@@ -343,7 +304,6 @@ public class LockerView : MonoBehaviour
         }
     }
 
-    // A thick line, for arms and claws.
     static void Limb(Texture2D texture, Vector2 from, Vector2 to, float thickness, Color32 color)
     {
         int steps = Mathf.CeilToInt(Vector2.Distance(from, to) * 2f);
@@ -355,7 +315,6 @@ public class LockerView : MonoBehaviour
         }
     }
 
-    // The visor: a red slot with a hot white middle, like the bots' own.
     static void Visor(Texture2D texture, int x0, int y0, int x1, int y1)
     {
         Box(texture, x0, y0, x1, y1, 1, EyeRed);
@@ -363,26 +322,22 @@ public class LockerView : MonoBehaviour
         Box(texture, midX - half, midY - 1, midX + half, midY + 1, 0, EyeHot);
     }
 
-    // Up against the door: a bot's head filling the vent, its visor at slat height so the red shows through the gaps.
     static Texture2D LoomingTexture()
     {
         Texture2D t = NewCanvas(64, 44);
         Box(t, 2, 0, 61, 41, 6, ShadowEdge);
         Box(t, 3, 0, 60, 40, 6, Shadow);
-        Box(t, 29, 40, 34, 43, 0, Shadow);          // antenna
+        Box(t, 29, 40, 34, 43, 0, Shadow);
         Visor(t, 12, 22, 51, 28);
         t.Apply();
         return t;
     }
 
-    // Lunging in: the head over the top of the view, visor blazing, both arms reaching out at the viewer from under it,
-    // thickening as they come closer, claws spread wide at the bottom corners.
     static Texture2D LungingTexture()
     {
         Texture2D t = NewCanvas(96, 54);
         foreach (int side in new[] { -1, 1 })
         {
-            // Shoulder to hand in steps, each a little thicker: nearer the eye, bigger.
             Vector2 shoulder = new Vector2(48 + side * 20, 30);
             Vector2 hand = new Vector2(48 + side * 36, 9);
             const int Segments = 6;
@@ -394,11 +349,10 @@ public class LockerView : MonoBehaviour
                 Limb(t, a, b, thickness + 2f, ShadowEdge);
                 Limb(t, a, b, thickness, Shadow);
             }
-            // The hand, and four long hooked claws splayed toward the middle and down past the edge.
             Box(t, Mathf.RoundToInt(hand.x) - 7, Mathf.RoundToInt(hand.y) - 6, Mathf.RoundToInt(hand.x) + 7, Mathf.RoundToInt(hand.y) + 6, 3, Shadow);
             for (int c = 0; c < 4; c++)
             {
-                float spread = Mathf.Lerp(-0.35f, 1.1f, c / 3f);       // radians from straight in toward the middle
+                float spread = Mathf.Lerp(-0.35f, 1.1f, c / 3f);
                 Vector2 toward = new Vector2(-side * Mathf.Cos(spread), -Mathf.Sin(spread));
                 Vector2 knuckle = hand + toward * 6f;
                 Vector2 tip = knuckle + toward * 9f + new Vector2(0f, -3f);
@@ -407,7 +361,6 @@ public class LockerView : MonoBehaviour
                 t.SetPixel(Mathf.RoundToInt(tip.x), Mathf.RoundToInt(tip.y), ShadowEdge);
             }
         }
-        // The head over the shoulders, a lit rim along its top so it stands off the dark.
         Box(t, 22, 27, 73, 58, 7, ShadowEdge);
         Box(t, 23, 28, 72, 56, 7, Shadow);
         Visor(t, 29, 38, 66, 45);
@@ -430,7 +383,6 @@ public class LockerView : MonoBehaviour
         return rect;
     }
 
-    // A solid block covering part of its parent, given as fractions of the parent.
     static Image Block(string name, Transform parent, float xMin, float yMin, float xMax, float yMax, Color color)
     {
         RectTransform rect = NewRect(name, parent);
@@ -443,14 +395,12 @@ public class LockerView : MonoBehaviour
         return image;
     }
 
-    // Grows a block past its anchors by this many pixels on each side.
     static void Overhang(Image block, float left, float bottom, float right, float top)
     {
         block.rectTransform.offsetMin = new Vector2(left, bottom);
         block.rectTransform.offsetMax = new Vector2(right, top);
     }
 
-    // A straight line a fixed number of pixels thick. Horizontal when y0 == y1, vertical when x0 == x1.
     static void Line(Transform parent, float x0, float y0, float x1, float y1, float thickness, Color color)
     {
         RectTransform rect = Block("Line", parent, x0, y0, x1, y1, color).rectTransform;

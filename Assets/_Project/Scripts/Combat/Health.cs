@@ -4,11 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
 
-// Hit points for anything that can be hurt: the player, robots, breakable props.
-// Also handles how a hit looks and feels: a solid flash in the sprite's shape, knockback that stops at walls,
-// and optional invincibility time with blinking. Needs a Collider2D on this object or a child so attacks can find it.
-// Particles for hits and deaths come from DamageEffects.
-// Attacks prefer Health over any other damage script on the same object (see Damageable.FromCollider).
+// hit points for anything that can get hurt
 public class Health : MonoBehaviour, IDamageable
 {
     const float BlinkRate = 12f;
@@ -41,12 +37,9 @@ public class Health : MonoBehaviour, IDamageable
     public UnityEvent onDamaged = new UnityEvent();
     public UnityEvent onDied = new UnityEvent();
 
-    // For code: the hit that just landed.
     public event System.Action<DamageInfo> Damaged;
     public event System.Action Died;
-    // (current, max). Fires on damage, healing, and revive, for health bars.
     public event System.Action<float, float> HealthChanged;
-    // The same for every Health at once, for whatever reacts to any hit or death (the robots' sounds, Sfx; the camera, CameraZoom).
     public static event System.Action<Health, DamageInfo> AnyDamaged;
     public static event System.Action<Health> AnyDied;
 
@@ -55,7 +48,7 @@ public class Health : MonoBehaviour, IDamageable
     public bool IsInvincible => Time.time < invincibleUntil;
 
     private SpriteRenderer[] renderers;
-    private SpriteRenderer[] flashOverlays;   // same order as renderers; null where the flash shader isn't available
+    private SpriteRenderer[] flashOverlays;
     private Color[] baseColors;
     private NavMeshAgent agent;
     private Rigidbody2D rb;
@@ -77,7 +70,6 @@ public class Health : MonoBehaviour, IDamageable
         for (int i = 0; i < renderers.Length; i++)
             baseColors[i] = renderers[i].color;
 
-        // A tint can only darken a sprite, so the flash is a silhouette drawn on top in a child renderer.
         flashOverlays = new SpriteRenderer[renderers.Length];
         Material flashMaterial = CombatSprites.FlashMaterial;
         if (flashMaterial == null) return;
@@ -125,7 +117,6 @@ public class Health : MonoBehaviour, IDamageable
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
     }
 
-    // Back to full health, for respawning. Turns back on any colliders that death turned off.
     public void Revive()
     {
         CurrentHealth = maxHealth;
@@ -136,7 +127,6 @@ public class Health : MonoBehaviour, IDamageable
         HealthChanged?.Invoke(CurrentHealth, maxHealth);
     }
 
-    // Dead at once, whatever health is left and even while invincible: for being caught, crushed, and so on.
     public void Kill(GameObject source = null)
     {
         if (IsDead || cannotDie) return;
@@ -144,7 +134,6 @@ public class Health : MonoBehaviour, IDamageable
         TakeDamage(new DamageInfo(CurrentHealth, Vector2.zero, 0f, source));
     }
 
-    // Ignores damage for a while, blinking if blinkWhileInvincible, without the hit flash. For coming back after dying.
     public void MakeInvincible(float seconds)
     {
         invincibleUntil = Mathf.Max(invincibleUntil, Time.time + seconds);
@@ -173,7 +162,6 @@ public class Health : MonoBehaviour, IDamageable
             Destroy(gameObject, hitFlashDuration);
     }
 
-    // A solid flash in the sprite's shape, then blinking for as long as invincibility lasts.
     private IEnumerator HitFeedback(bool withFlash)
     {
         float flashStart = withFlash ? Time.time : Time.time - hitFlashDuration;
@@ -197,7 +185,6 @@ public class Health : MonoBehaviour, IDamageable
                     if (flashing)
                     {
                         CopySprite(sprite, overlay);
-                        // Solid for most of the flash, fading over the last 40%.
                         Color flash = hitFlashColor;
                         flash.a *= Mathf.Clamp01((1f - flashProgress) / 0.4f);
                         overlay.color = flash;
@@ -205,7 +192,7 @@ public class Health : MonoBehaviour, IDamageable
                 }
                 else if (flashing)
                 {
-                    color = hitFlashColor; // no flash shader, so fall back to tinting
+                    color = hitFlashColor;
                 }
 
                 if (faded) color.a *= BlinkAlpha;
@@ -240,7 +227,7 @@ public class Health : MonoBehaviour, IDamageable
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / knockbackDuration);
-            Vector2 target = offset * (1f - (1f - t) * (1f - t)); // ease out
+            Vector2 target = offset * (1f - (1f - t) * (1f - t));
             Push(target - moved);
             moved = target;
             yield return null;
@@ -248,10 +235,8 @@ public class Health : MonoBehaviour, IDamageable
         knockbackRoutine = null;
     }
 
-    // Moves by step without going through walls.
     private void Push(Vector2 step)
     {
-        // NavMeshAgent.Move keeps navmesh robots on the navmesh.
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
             agent.Move(step);
@@ -264,7 +249,6 @@ public class Health : MonoBehaviour, IDamageable
 
         if (rb != null && rb.simulated)
         {
-            // Stop just short of anything solid in the way.
             var solidOnly = new ContactFilter2D { useTriggers = false };
             if (rb.Cast(direction, solidOnly, castHits, distance + SkinWidth) > 0)
             {

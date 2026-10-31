@@ -1,11 +1,8 @@
 using UnityEngine;
 
-// Pooled particle effects for combat: sparks, impact rings, debris, and smoke.
-// One particle system per kind handles every burst in the scene; they're created the first time an effect plays.
-// Call the static methods from any script, e.g. HitEffects.Sparks(point, direction, ...).
+// pooled hit particles
 public class HitEffects : MonoBehaviour
 {
-    // Drawn over the characters.
     const string SortingLayerName = "Player";
     const int SortingOrder = 50;
 
@@ -29,7 +26,6 @@ public class HitEffects : MonoBehaviour
         }
     }
 
-    // Short bright streaks spraying out along direction, spread across spreadAngle degrees.
     public static void Sparks(Vector2 point, Vector2 direction, int count, float speed, float spreadAngle, Color colorA, Color colorB)
     {
         HitEffects effects = Instance;
@@ -48,7 +44,6 @@ public class HitEffects : MonoBehaviour
         }
     }
 
-    // A ring that pops outward and fades where a hit landed.
     public static void Ring(Vector2 point, Color color, float size)
     {
         HitEffects effects = Instance;
@@ -65,7 +60,6 @@ public class HitEffects : MonoBehaviour
         effects.rings.Emit(particle, 1);
     }
 
-    // Something mechanical coming apart: a big ring, sparks in every direction, tumbling debris, and smoke.
     public static void Explosion(Vector2 point, Vector2 pushDirection, Color debrisColor, int debrisCount)
     {
         HitEffects effects = Instance;
@@ -78,7 +72,6 @@ public class HitEffects : MonoBehaviour
         var particle = new ParticleSystem.EmitParams();
         for (int i = 0; i < debrisCount; i++)
         {
-            // Flung mostly the way the final hit pushed, with plenty of scatter.
             Vector2 direction = (pushDirection * 0.8f + Random.insideUnitCircle).normalized;
             particle.position = point + Random.insideUnitCircle * 0.2f;
             particle.velocity = direction * Random.Range(1.5f, 5f);
@@ -103,7 +96,6 @@ public class HitEffects : MonoBehaviour
         }
     }
 
-    // A single fleck of grit drifting along velocity, for trickles of dust.
     public static void Speck(Vector2 position, Vector2 velocity, float lifetime, float size, Color color)
     {
         HitEffects effects = Instance;
@@ -120,7 +112,6 @@ public class HitEffects : MonoBehaviour
         effects.debris.Emit(particle, 1);
     }
 
-    // Something heavy landing: chips of it thrown out along the floor and a slow puff of dust. size 1 is about a tile.
     public static void Dust(Vector2 point, Color chipColor, float size)
     {
         HitEffects effects = Instance;
@@ -156,15 +147,12 @@ public class HitEffects : MonoBehaviour
 
     void Build()
     {
-        // Sparks stretch along their velocity so they read as streaks.
         sparks = CreateSystem("Sparks", CombatSprites.Square.texture, ParticleSystemRenderMode.Stretch,
             AnimationCurve.Linear(0f, 1f, 1f, 0.3f), 1f, drag: 4f);
-        // Rings grow fast, then ease to full size.
         rings = CreateSystem("Rings", CombatSprites.RingTexture, ParticleSystemRenderMode.Billboard,
             new AnimationCurve(new Keyframe(0f, 0.2f, 3f, 3f), new Keyframe(1f, 1f, 0f, 0f)), 1f, drag: 0f);
         debris = CreateSystem("Debris", CombatSprites.Square.texture, ParticleSystemRenderMode.Billboard,
             AnimationCurve.Linear(0f, 1f, 1f, 0.6f), 1f, drag: 3f);
-        // Smoke swells as it fades.
         smoke = CreateSystem("Smoke", CombatSprites.SoftCircleTexture, ParticleSystemRenderMode.Billboard,
             AnimationCurve.Linear(0f, 0.45f, 1f, 1f), 1.4f, drag: 2f);
     }
@@ -178,7 +166,6 @@ public class HitEffects : MonoBehaviour
         var system = child.AddComponent<ParticleSystem>();
         system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
-        // Particles only come from Emit calls, so the system just needs to keep running.
         ParticleSystem.MainModule main = system.main;
         main.duration = 1f;
         main.loop = true;
@@ -195,7 +182,6 @@ public class HitEffects : MonoBehaviour
         ParticleSystem.ShapeModule shape = system.shape;
         shape.enabled = false;
 
-        // Everything fades out over the second half of its life.
         var fade = new Gradient();
         fade.SetKeys(
             new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
@@ -212,7 +198,7 @@ public class HitEffects : MonoBehaviour
         {
             ParticleSystem.LimitVelocityOverLifetimeModule slowDown = system.limitVelocityOverLifetime;
             slowDown.enabled = true;
-            slowDown.limit = 1000f; // no speed cap, just drag
+            slowDown.limit = 1000f;
             slowDown.drag = drag;
         }
 

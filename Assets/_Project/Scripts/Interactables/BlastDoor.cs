@@ -1,15 +1,12 @@
 using UnityEngine;
 
-// A heavy shutter across a corridor. Closed, it's solid and its lamp is red. Opening, it grinds up into the ceiling
-// (or aside, for a door wider than it is tall) and the lamp turns green. Levels call Open and Close; a door can also
-// open by itself when the player comes near. It never closes on anyone: it waits until the doorway is clear.
-// Setup: a solid BoxCollider2D on this object, sized to the doorway. The shutter art is made in code unless one is set.
+// heavy door that opens and shuts
 [RequireComponent(typeof(BoxCollider2D))]
 public class BlastDoor : MonoBehaviour
 {
     const float PixelsPerUnit = 20f;
-    const int Thickness = 12;           // pixels across the shutter
-    const float OpenLip = 0.08f;        // how much of the shutter still shows when fully open
+    const int Thickness = 12;
+    const float OpenLip = 0.08f;
     static readonly Color32 Frame = new Color32(30, 33, 38, 255);
     static readonly Color32 Metal = new Color32(74, 80, 88, 255);
     static readonly Color32 MetalLit = new Color32(104, 111, 120, 255);
@@ -44,7 +41,7 @@ public class BlastDoor : MonoBehaviour
     private Transform player;
     private bool vertical;
     private bool wantOpen;
-    private float progress;     // 0 closed, 1 open
+    private float progress;
 
     void Awake()
     {
@@ -113,7 +110,6 @@ public class BlastDoor : MonoBehaviour
         lamp.color = wantOpen ? OpenLamp : ClosedLamp;
     }
 
-    // Someone (the player or a robot) standing in the doorway.
     bool DoorwayOccupied()
     {
         Vector2 center = transform.TransformPoint(doorway.offset);
@@ -142,7 +138,6 @@ public class BlastDoor : MonoBehaviour
         var shutterRenderer = new GameObject("Shutter").AddComponent<SpriteRenderer>();
         shutter = shutterRenderer.transform;
         shutter.SetParent(transform, false);
-        // The pivot sits on the edge it retracts into: the top of a tall door, the left of a wide one.
         shutter.localPosition = doorway.offset + (vertical ? new Vector2(0f, size.y * 0.5f) : new Vector2(-size.x * 0.5f, 0f));
         shutterRenderer.sortingLayerName = "Collision";
         shutterRenderer.sortingOrder = 5;
@@ -169,7 +164,6 @@ public class BlastDoor : MonoBehaviour
         lamp.sortingLayerName = "Top";
     }
 
-    // Dark metal edged in hazard stripes down the middle, lit a little on one side.
     Sprite MakeShutter(float lengthInUnits)
     {
         int length = Mathf.Max(8, Mathf.RoundToInt(lengthInUnits * PixelsPerUnit));

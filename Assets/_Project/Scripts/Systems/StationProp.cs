@@ -1,13 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Set dressing for the working rooms, drawn in code at the tileset's pixel size until it has art of its own: what fills
-// out the comms ring (server racks with their lights blinking, signal dishes, screens on the walls running readouts,
-// cable runs across the floor, supply crates) and the upper maintenance deck (tool pegboards on the walls, gas tanks,
-// drums, crates, a toolbox left out). Placed by ChapterOneBuilder (DressRooms).
-// What stands on the floor sorts like the furniture, from DepthSort.FeetToCenter above its base, and the builder gives
-// it a solid footprint; what's on the walls hangs on them, and what's on the floor lies flat under everything.
-// Every piece is drawn the same each time from its position, so a level looks the same every time it's played.
+// room props drawn in code
 public class StationProp : MonoBehaviour
 {
     public enum Kind { ServerRack, SignalDish, Crates, GasTanks, Drum, Toolbox, CableRun, WallScreen, Pegboard }
@@ -16,7 +10,6 @@ public class StationProp : MonoBehaviour
 
     public Kind kind;
 
-    // Lights on it that blink on their own: the renderer, its colour, how long a cycle is, and where in it it starts.
     private readonly List<(SpriteRenderer lamp, Color color, float period, float phase, float onFraction)> lamps =
         new List<(SpriteRenderer, Color, float, float, float)>();
     private SpriteRenderer screen;
@@ -72,8 +65,6 @@ public class StationProp : MonoBehaviour
         screen.sprite = screenFrames[frame];
     }
 
-    // --- Putting it together ---
-
     SpriteRenderer Standing(Sprite sprite)
     {
         DepthSort.Group(gameObject);
@@ -101,7 +92,6 @@ public class StationProp : MonoBehaviour
         art.sortingOrder = 3;
     }
 
-    // A light the size of a pixel or two, glowing (unlit), blinking on its own.
     void Lamp(Transform parent, Vector2 pixelAt, Color color, float period, float onFraction, int width = 1, string layer = null, int order = 1)
     {
         var lamp = new GameObject("Lamp").AddComponent<SpriteRenderer>();
@@ -120,7 +110,6 @@ public class StationProp : MonoBehaviour
         lamps.Add((lamp, color, period, Random.value, onFraction));
     }
 
-    // A soft glow off it, so it shows in the dark.
     void Glow(Vector2 pixelAt, Color color, float radius, float intensity, BlinkLight.Pattern pattern, float period)
     {
         var holder = new GameObject("Glow");
@@ -137,14 +126,13 @@ public class StationProp : MonoBehaviour
         holder.SetActive(true);
     }
 
-    // A tall cabinet of servers: rows of drive bays, vents, and a column of status lights flickering away.
     void BuildServerRack(System.Random dice)
     {
         SpriteRenderer art = Standing(Cached($"server{dice.Next(3)}", () => DrawServerRack(dice)));
         Color[] colors = { new Color(0.35f, 1f, 0.45f), new Color(0.35f, 1f, 0.45f), new Color(1f, 0.7f, 0.2f), new Color(0.35f, 0.85f, 1f) };
         for (int row = 0; row < 7; row++)
         {
-            float y = 4 + row * 3;      // on a bay, not the slot between
+            float y = 4 + row * 3;
             Lamp(art.transform, new Vector2(10f - 7f, y), colors[dice.Next(colors.Length)], 0.2f + (float)dice.NextDouble() * 1.4f, 0.3f + (float)dice.NextDouble() * 0.5f);
             if (dice.NextDouble() < 0.6)
                 Lamp(art.transform, new Vector2(8f - 7f, y), colors[dice.Next(colors.Length)], 0.3f + (float)dice.NextDouble() * 2f, 0.5f);
@@ -152,7 +140,6 @@ public class StationProp : MonoBehaviour
         Glow(new Vector2(0f, 10f - DepthSort.FeetToCenter * PixelsPerUnit), new Color(0.35f, 1f, 0.55f), 1.1f, 0.25f, BlinkLight.Pattern.Flicker, 1.2f);
     }
 
-    // A dish on a tripod, turned up at the sky, a red light blinking on its feed.
     void BuildSignalDish(System.Random dice)
     {
         SpriteRenderer art = Standing(Cached($"dish{dice.Next(2)}", () => DrawSignalDish(dice)));
@@ -160,7 +147,6 @@ public class StationProp : MonoBehaviour
         Glow(new Vector2(3f, 20f - DepthSort.FeetToCenter * PixelsPerUnit), new Color(1f, 0.2f, 0.15f), 0.9f, 0.35f, BlinkLight.Pattern.Blink, 1.6f);
     }
 
-    // A screen on the wall running a readout: a signal trace scrolling across, frame by frame.
     void BuildWallScreen(System.Random dice)
     {
         int style = dice.Next(3);
@@ -175,8 +161,6 @@ public class StationProp : MonoBehaviour
         Color tint = style == 0 ? new Color(0.35f, 1f, 0.55f) : style == 1 ? new Color(0.35f, 0.85f, 1f) : new Color(1f, 0.7f, 0.25f);
         Glow(Vector2.zero, tint, 1.4f, 0.35f, BlinkLight.Pattern.Flicker, 2f);
     }
-
-    // --- Drawing ---
 
     static Sprite Pixel => pixel != null ? pixel
         : (pixel = PixelArt.ToSprite(PixelArt.MakeTexture(1, 1, (x, y) => new Color32(255, 255, 255, 255)), PixelsPerUnit, new Vector2(0.5f, 0.5f)));
@@ -198,7 +182,6 @@ public class StationProp : MonoBehaviour
             if (x == 0 || x == W - 1 || y == H - 1 || y == 0) return Outline;
             if (y == H - 2) return CabinetLit;
             if (x == 1) return CabinetLit;
-            // A vent grille up top, drive bays below, the status column on the right.
             if (y >= H - 6 && y <= H - 4) return (x + vents) % 2 == 0 ? Slot : Cabinet;
             if (x >= 2 && x <= 7 && y >= 3 && y <= H - 8)
             {
@@ -218,10 +201,8 @@ public class StationProp : MonoBehaviour
         bool tilted = dice.Next(2) == 0;
         return Standing(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // The tripod: three legs down to the floor from under the dish.
             bool Leg(float x0, float x1) { float t = y / 9f; return y <= 9 && Mathf.Abs(x - Mathf.Lerp(x0, x1, t)) < 0.7f; }
             if (Leg(3f, 9f) || Leg(15f, 9f) || (x == 9 && y <= 10)) return x == 9 ? Steel : SteelDark;
-            // The dish: a wide ellipse, lit on its rim, shadowed toward the bottom.
             float dx = (x - dish.x) / 8.5f, dy = (y - dish.y) / (tilted ? 5.5f : 4.5f);
             float d = dx * dx + dy * dy;
             if (d <= 1f)
@@ -229,7 +210,6 @@ public class StationProp : MonoBehaviour
                 if (d > 0.72f) return y > dish.y ? SteelLit : Steel;
                 return y > dish.y + 1 ? new Color32(196, 202, 210, 255) : new Color32(160, 166, 176, 255);
             }
-            // The feed arm, up and across to the receiver over the dish.
             if (Mathf.Abs((y - 15f) - (x - 9f) * 1.2f) < 0.8f && x >= 9 && x <= 13 && y >= 15) return SteelDark;
             if (x >= 12 && x <= 14 && y >= 19 && y <= 21) return Outline;
             return default;
@@ -244,7 +224,6 @@ public class StationProp : MonoBehaviour
         bool third = dice.Next(2) == 0;
         return Standing(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // A big crate on the floor, a smaller one stacked on it, and sometimes a box beside.
             if (y <= 9 && x >= 1 && x <= 11) return Box(x - 1, y, 11, 10, a);
             if (y >= 10 && y <= 16 && x >= 3 && x <= 9) return Box(x - 3, y - 10, 7, 7, b);
             if (third && y <= 5 && x >= 12 && x <= 15) return Box(x - 12, y, 4, 6, b);
@@ -252,7 +231,6 @@ public class StationProp : MonoBehaviour
         }));
     }
 
-    // A crate's face: an outline, a lid line, and slats across.
     static Color32 Box(int x, int y, int w, int h, Color32 color)
     {
         if (x == 0 || x == w - 1 || y == 0 || y == h - 1) return Outline;
@@ -270,7 +248,6 @@ public class StationProp : MonoBehaviour
         for (int i = 0; i < count; i++) tanks.Add((1 + i * 5 - (count == 3 ? 0 : -2), 14 + dice.Next(6), colors[dice.Next(colors.Length)]));
         return Standing(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // Tall cylinders, back to front, each with a valve on top and a hazard band.
             for (int i = tanks.Count - 1; i >= 0; i--)
             {
                 var (left, height, color) = tanks[i];
@@ -295,8 +272,8 @@ public class StationProp : MonoBehaviour
         return Standing(PixelArt.MakeTexture(W, H, (x, y) =>
         {
             if (x == 0 || x == W - 1 || y == 0) return Outline;
-            if (y >= H - 3) return y == H - 1 ? Outline : (x % 4 == 1 ? Outline : Darker(color, 0.7f));     // the lid, from above
-            if (y == 4 || y == 9) return Darker(color, 0.6f);                                                   // the ribs
+            if (y >= H - 3) return y == H - 1 ? Outline : (x % 4 == 1 ? Outline : Darker(color, 0.7f));
+            if (y == 4 || y == 9) return Darker(color, 0.6f);
             return x <= 2 ? Lighter(color) : x >= W - 3 ? Darker(color, 0.75f) : color;
         }));
     }
@@ -307,9 +284,9 @@ public class StationProp : MonoBehaviour
         var red = new Color32(176, 52, 44, 255);
         return Standing(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            if (y >= 7) return x >= 4 && x <= 7 ? (y == 8 ? Outline : (x == 4 || x == 7 ? Outline : default)) : default;   // the handle
+            if (y >= 7) return x >= 4 && x <= 7 ? (y == 8 ? Outline : (x == 4 || x == 7 ? Outline : default)) : default;
             if (x == 0 || x == W - 1 || y == 0 || y == 6) return Outline;
-            if (y == 4) return SteelLit;                // the latch line
+            if (y == 4) return SteelLit;
             return y == 5 ? Lighter(red) : red;
         }));
     }
@@ -324,12 +301,11 @@ public class StationProp : MonoBehaviour
             cables.Add((5f + i * 3f + (float)dice.NextDouble(), 1.5f + (float)dice.NextDouble() * 2f, (float)dice.NextDouble() * 6f, colors[dice.Next(colors.Length)]));
         return PixelArt.ToSprite(PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // Lengths of cable snaking across the floor, a clip holding them down halfway.
             foreach (var (baseY, wave, phase, color) in cables)
             {
                 float at = baseY + Mathf.Sin(x * 0.28f + phase) * wave;
                 if (Mathf.Abs(y - at) < 0.75f) return color;
-                if (Mathf.Abs(y - at + 1f) < 0.5f) return new Color32(0, 0, 0, 90);     // its shadow
+                if (Mathf.Abs(y - at + 1f) < 0.5f) return new Color32(0, 0, 0, 90);
             }
             if (x >= 15 && x <= 16 && y >= 3 && y <= 13) return SteelDark;
             return default;
@@ -346,23 +322,23 @@ public class StationProp : MonoBehaviour
             if (x == 0 || x == W - 1 || y == 0 || y == H - 1) return Outline;
             if (x == 1 || x == W - 2 || y == 1 || y == H - 2) return SteelDark;
             int sx = x - 2, sy = y - 2;
-            if (sy % 4 == 0 && sx % 2 == 0) return dim;                         // the grid
+            if (sy % 4 == 0 && sx % 2 == 0) return dim;
             switch (style)
             {
-                case 0:     // a signal trace scrolling across
+                case 0:
                 {
                     float at = 5f + Mathf.Sin((sx + frame * 3) * 0.6f) * 3f * Mathf.Sin((sx + frame * 3) * 0.13f);
                     if (Mathf.Abs(sy - at) < 0.8f) return trace;
                     break;
                 }
-                case 1:     // a spectrum, its bars jumping
+                case 1:
                 {
                     int bar = sx / 2;
                     int height = 1 + Mathf.Abs((bar * 7 + frame * 5 + bar * bar) % 9);
                     if (sx % 2 == 0 && sy < height) return sy == height - 1 ? trace : new Color32((byte)(trace.r * 0.6f), (byte)(trace.g * 0.6f), (byte)(trace.b * 0.6f), 255);
                     break;
                 }
-                default:    // a radar sweep
+                default:
                 {
                     var middle = new Vector2(8.5f, 4.5f);
                     Vector2 d = new Vector2(sx, sy) - middle;
@@ -386,18 +362,17 @@ public class StationProp : MonoBehaviour
         return PixelArt.ToSprite(PixelArt.MakeTexture(W, H, (x, y) =>
         {
             if (x == 0 || x == W - 1 || y == 0 || y == H - 1) return Outline;
-            // Tools hung on it: a wrench, a hammer, a screwdriver, a coil of wire, laid out a few ways.
             int t = (x + layout * 7) % W;
-            if (t >= 2 && t <= 3 && y >= 3 && y <= 12) return y >= 10 ? SteelLit : Steel;                       // wrench shaft and head
+            if (t >= 2 && t <= 3 && y >= 3 && y <= 12) return y >= 10 ? SteelLit : Steel;
             if (t >= 1 && t <= 4 && y >= 11 && y <= 12) return SteelLit;
-            if (t >= 8 && t <= 9 && y >= 3 && y <= 10) return new Color32(150, 90, 50, 255);                      // hammer handle
-            if (t >= 6 && t <= 11 && y >= 10 && y <= 12) return SteelDark;                                       // hammer head
-            if (t >= 15 && t <= 15 && y >= 3 && y <= 8) return Steel;                                            // screwdriver shaft
-            if (t >= 14 && t <= 16 && y >= 8 && y <= 12) return new Color32(200, 160, 50, 255);                   // and handle
+            if (t >= 8 && t <= 9 && y >= 3 && y <= 10) return new Color32(150, 90, 50, 255);
+            if (t >= 6 && t <= 11 && y >= 10 && y <= 12) return SteelDark;
+            if (t >= 15 && t <= 15 && y >= 3 && y <= 8) return Steel;
+            if (t >= 14 && t <= 16 && y >= 8 && y <= 12) return new Color32(200, 160, 50, 255);
             float dx = t - 21f, dy = y - 8f;
             float r = Mathf.Sqrt(dx * dx + dy * dy);
-            if (r > 2f && r < 3.6f) return new Color32(180, 100, 50, 255);                                         // a coil of wire
-            return x % 3 == 1 && y % 3 == 1 ? Darker(board, 0.55f) : board;                                      // the holes
+            if (r > 2f && r < 3.6f) return new Color32(180, 100, 50, 255);
+            return x % 3 == 1 && y % 3 == 1 ? Darker(board, 0.55f) : board;
         }), PixelsPerUnit, new Vector2(0.5f, 0.5f));
     }
 

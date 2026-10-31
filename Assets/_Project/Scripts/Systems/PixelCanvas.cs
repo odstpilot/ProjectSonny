@@ -1,9 +1,6 @@
 using UnityEngine;
 
-// A small drawing surface for building pixel art in code: fill shapes, draw lines, then finish it the way pixel art is
-// finished by hand, with light catching the top-left edges, shadow on the bottom-right, and a dark outline around it all.
-// Coordinates are pixels with (0, 0) at the bottom left, the same as a texture. ToSprite turns it into a sprite.
-// At DetailPixelsPerUnit its pixels match the ship tileset's, so code-drawn art sits in the level without looking chunky.
+// draw pixel art in code
 public class PixelCanvas
 {
     public const float DetailPixelsPerUnit = 32f;
@@ -28,7 +25,6 @@ public class PixelCanvas
         if (Inside(x, y)) pixels[y * Width + x] = color;
     }
 
-    // Only over what's already drawn.
     public void Paint(int x, int y, Color32 color)
     {
         if (Filled(x, y)) pixels[y * Width + x] = color;
@@ -43,7 +39,6 @@ public class PixelCanvas
                 Set(x, y, color);
     }
 
-    // Any polygon, filled by the even-odd rule. color gives each pixel's colour from its position.
     public void FillPolygon(Vector2[] points, System.Func<int, int, Color32> color)
     {
         for (int y = 0; y < Height; y++)
@@ -79,7 +74,6 @@ public class PixelCanvas
         }
     }
 
-    // A straight line, thickness pixels wide.
     public void Line(float x0, float y0, float x1, float y1, Color32 color, int thickness = 1)
     {
         int steps = Mathf.CeilToInt(Mathf.Max(Mathf.Abs(x1 - x0), Mathf.Abs(y1 - y0))) + 1;
@@ -95,7 +89,6 @@ public class PixelCanvas
         }
     }
 
-    // Copies another canvas on top of this one, with its bottom left at (atX, atY). Clear pixels are skipped.
     public void Stamp(PixelCanvas other, int atX, int atY)
     {
         for (int y = 0; y < other.Height; y++)
@@ -103,7 +96,6 @@ public class PixelCanvas
                 if (other.Filled(x, y)) Set(atX + x, atY + y, other.Get(x, y));
     }
 
-    // A little unevenness in everything drawn, so flat colour reads as a worn surface.
     public void Grain(System.Random dice, float amount)
     {
         for (int i = 0; i < pixels.Length; i++)
@@ -114,7 +106,6 @@ public class PixelCanvas
         }
     }
 
-    // Light from the top left: edge pixels facing up or left are lit, those facing down or right fall into shadow.
     public void Bevel(float light = 1.25f, float shadow = 0.7f)
     {
         var result = (Color32[])pixels.Clone();
@@ -132,7 +123,6 @@ public class PixelCanvas
         System.Array.Copy(result, pixels, pixels.Length);
     }
 
-    // A one-pixel line around everything drawn, on the clear pixels touching it. Leave a pixel of margin for it.
     public void Outline(Color32 color)
     {
         var edge = new bool[pixels.Length];
@@ -160,7 +150,6 @@ public class PixelCanvas
         return Sprite.Create(texture, new Rect(0f, 0f, Width, Height), pivot, pixelsPerUnit, 0, SpriteMeshType.FullRect);
     }
 
-    // Lighter above 1, darker below it.
     public static Color32 Scale(Color32 color, float amount)
     {
         return new Color32(
@@ -172,7 +161,6 @@ public class PixelCanvas
 
     public static Color32 Mix(Color32 a, Color32 b, float t) => Color32.Lerp(a, b, t);
 
-    // A made sprite owns its texture, which nothing else will clean up.
     public static void Destroy(Sprite sprite)
     {
         if (sprite == null) return;

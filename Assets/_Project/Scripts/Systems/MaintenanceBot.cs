@@ -2,16 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// One of the station's maintenance robots, on its rounds in Chapter 1, before anything's gone wrong: a little machine
-// trundling about the room among the crew (over the same floor grid they walk, CrewWalkArea), stopping here and there to
-// work (sweeping, hauling, scanning, a busy blink and a whirr), and now and then pulling up beside one of the crew, who
-// has a word for it. Walk up and press E to talk to it (DialogueBox): it answers in capitals.
-// Once Sonny's on (CrewMember.SonnyOnline), every bot aboard stops where it is, turns north, toward the reactor, its eye
-// gone red, for a few seconds, all at once. Then it carries on as if nothing happened, with new things to say, and
-// every so often it stops to look at the technician a little too long. (Sonny ran diagnostics on all of them.)
-// Nobody walks into anyone: the crew step round the bots (CrewMember.AddWalker) and the bots round everyone.
-// The art is made in code until it has its own. Built by ChapterOneBuilder, which puts a few in the rooms with the most
-// going on.
+// friendly maintenance bot in chapter 1
 [RequireComponent(typeof(Rigidbody2D))]
 public class MaintenanceBot : MonoBehaviour
 {
@@ -37,7 +28,6 @@ public class MaintenanceBot : MonoBehaviour
     [TextArea] public string[] talkLines = new string[0];
     [TextArea] public string[] talkLinesAfter = new string[0];
 
-    // Over its head as it works, and to the crew.
     static readonly string[] Beeps = { "BWEEP!", "Blip blip.", "*whirr*", "BWOOP.", "Beep?" };
     static readonly string[] CrewToBot = { "Morning, little guy", "Watch the feet!", "Not now, buddy", "Good bot", "Thanks, pal", "Missed a spot" };
     static readonly string[] CrewToBotAfter = { "You okay, buddy?", "Why'd it stop like that?", "Huh, it's never done that before", "...Hello?" };
@@ -123,17 +113,14 @@ public class MaintenanceBot : MonoBehaviour
         }
         if (talking && player != null) Face((Vector2)player.position - Position);
 
-        // A two-frame bob, faster on the move and at work.
         frameTime += Time.deltaTime * (moving ? 7f : working ? 10f : 2.5f);
         art.sprite = frames[(int)frameTime % frames.Length];
         art.flipX = look.x < -0.1f;
         eye.transform.localPosition = EyeOffset(kind, look, art.flipX);
-        eye.enabled = look.y <= 0.5f;       // facing away, its eye's round the other side
+        eye.enabled = look.y <= 0.5f;
 
         UpdateTalk();
     }
-
-    // --- Rounds ---
 
     IEnumerator Rounds()
     {
@@ -154,8 +141,6 @@ public class MaintenanceBot : MonoBehaviour
         }
     }
 
-    // Along the path, stopping for anyone in the way, and staying stopped a moment before trying again so it doesn't
-    // jitter; if they're still there, it goes somewhere else.
     IEnumerator Roll()
     {
         const float Pause = 0.4f;
@@ -203,7 +188,6 @@ public class MaintenanceBot : MonoBehaviour
         moving = false;
     }
 
-    // At a spot: a look about, a beep, and a busy few seconds.
     IEnumerator Work()
     {
         Face(Quaternion.Euler(0f, 0f, Random.Range(0, 4) * 90f) * Vector2.down);
@@ -213,7 +197,6 @@ public class MaintenanceBot : MonoBehaviour
         working = false;
     }
 
-    // Up beside one of the crew: a beep for them, and a word back.
     IEnumerator Greet(CrewMember crew)
     {
         Face(crew.Position - Position);
@@ -228,7 +211,6 @@ public class MaintenanceBot : MonoBehaviour
         yield return new WaitForSeconds(2.2f);
     }
 
-    // Stopped dead, looking at the technician, a moment longer than it should.
     IEnumerator Stare()
     {
         staring = true;
@@ -240,7 +222,6 @@ public class MaintenanceBot : MonoBehaviour
         staring = false;
     }
 
-    // Sonny's diagnostics going through: every bot at once, stopped, facing the reactor, eye red.
     IEnumerator Synchronize()
     {
         staring = true;
@@ -253,8 +234,6 @@ public class MaintenanceBot : MonoBehaviour
         eye.color = EyeColor;
         staring = false;
     }
-
-    // --- Talking ---
 
     void UpdateTalk()
     {
@@ -345,7 +324,6 @@ public class MaintenanceBot : MonoBehaviour
         "* Sonny talked to you? = THE CENTRAL SYSTEM ASKED WHO BUILT ME. I SAID THE CREW. = IT DID NOT RESPOND.",
     };
 
-    // A beep over its head, and a chirp to go with it.
     void Beep(string line)
     {
         if (speech == null) speech = CrewSpeech.Create(transform);
@@ -353,8 +331,6 @@ public class MaintenanceBot : MonoBehaviour
         voice.pitch = voicePitch * Random.Range(0.9f, 1.1f);
         voice.PlayOneShot(BeepClip);
     }
-
-    // --- Getting about ---
 
     void Face(Vector2 direction)
     {
@@ -368,7 +344,6 @@ public class MaintenanceBot : MonoBehaviour
         return null;
     }
 
-    // Whether a step here would bring it into anyone's personal space; stepping away is always allowed.
     bool InTheWay(Vector2 step)
     {
         bool Blocks(Vector2 other, float room)
@@ -376,7 +351,6 @@ public class MaintenanceBot : MonoBehaviour
             float after = Crowding(other - step);
             return after < room && after < Crowding(other - Position);
         }
-        // People have right of way: it gives them a wide berth.
         if (player != null && Blocks(player.position, 1.3f)) return true;
         foreach (CrewMember crew in CrewMember.Everyone)
             if (Blocks(crew.Position, 1.3f)) return true;
@@ -386,8 +360,6 @@ public class MaintenanceBot : MonoBehaviour
     }
 
     static float Crowding(Vector2 apart) => new Vector2(apart.x / PersonalSpace.x, apart.y / PersonalSpace.y).magnitude;
-
-    // --- Art ---
 
     static AudioClip beepClip;
     static AudioClip BeepClip => beepClip != null ? beepClip : (beepClip = TitleUI.Tone("Bot Beep", 1200f, 0.08f, 0.5f));
@@ -402,7 +374,6 @@ public class MaintenanceBot : MonoBehaviour
             return dx * dx + dy * dy <= 1f ? new Color32(0, 0, 0, 90) : default;
         }), PixelsPerUnit, new Vector2(0.5f, 0.5f)));
 
-    // Where the eye sits on the art (pivot at the bottom middle), in world units, by which way it's looking.
     static Vector3 EyeOffset(Kind kind, Vector2 look, bool flipped)
     {
         float height = kind == Kind.Scanner ? 12.5f : kind == Kind.Hauler ? 6.5f : 6f;
@@ -410,7 +381,6 @@ public class MaintenanceBot : MonoBehaviour
         return new Vector3(across / PixelsPerUnit, height / PixelsPerUnit, 0f);
     }
 
-    // Two frames each, the second a pixel lower (a bob on its wheels).
     static readonly Dictionary<Kind, Sprite[]> framesMade = new Dictionary<Kind, Sprite[]>();
 
     static Sprite[] MakeFrames(Kind kind)
@@ -423,7 +393,7 @@ public class MaintenanceBot : MonoBehaviour
 
     static Sprite MakeBot(Kind kind, int bob)
     {
-        var shell = new Color32(214, 170, 60, 255);       // hazard yellow
+        var shell = new Color32(214, 170, 60, 255);
         var shellDark = new Color32(160, 120, 40, 255);
         var metal = new Color32(96, 104, 116, 255);
         var dark = new Color32(34, 38, 46, 255);
@@ -435,13 +405,11 @@ public class MaintenanceBot : MonoBehaviour
 
         Texture2D texture = PixelArt.MakeTexture(W, H, (x, y) =>
         {
-            // Wheels along the bottom, still; the body bobs above them.
             if (y <= 1) return (x >= 2 && x <= 4) || (x >= 11 && x <= 13) ? dark : default;
             int by = y + bob;
             switch (kind)
             {
                 case Kind.Sweeper:
-                    // A low dome with a brush skirt.
                     if (by >= 2 && by <= 3) return x >= 1 && x <= 14 && (x + by) % 2 == 0 ? bristle : x >= 1 && x <= 14 ? dark : default;
                     if (by >= 4 && by <= 9)
                     {
@@ -452,7 +420,6 @@ public class MaintenanceBot : MonoBehaviour
                     }
                     return default;
                 case Kind.Hauler:
-                    // A flat-bed with a crate strapped on.
                     if (by >= 2 && by <= 8 && x >= 1 && x <= 14)
                     {
                         if (by >= 5 && by <= 7 && x >= 3 && x <= 8) return face;
@@ -462,7 +429,6 @@ public class MaintenanceBot : MonoBehaviour
                         return x == 3 || x == 12 || by == 14 || by == 11 ? crateDark : crate;
                     return default;
                 default:
-                    // A tall post on a base, with a head and an antenna.
                     if (by >= 2 && by <= 4 && x >= 3 && x <= 12) return by == 2 ? shellDark : shell;
                     if (by >= 5 && by <= 9 && x >= 6 && x <= 9) return metal;
                     if (by >= 10 && by <= 14 && x >= 4 && x <= 11)

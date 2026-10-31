@@ -1,27 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The ranged half of combat. While the gun is put away, the player faces wherever they walk.
-// Clicking turns the player toward the mouse, draws the gun, and fires; the gun goes away again shortly after.
-// Blasters have to charge first: hold to build a ball of energy, and let go once it's full to fire. Letting go early fizzles.
-// EMPs fire a pulse that stuns weeping angels instead of projectiles.
-// Every weapon recharges on its own, even while put away, so swapping never shares or pauses a cooldown.
-// PlayerCombat turns this on while a ranged weapon is in hand.
+// aiming and shooting the held gun
 [RequireComponent(typeof(PlayerCombat))]
 public class RangedCombat : MonoBehaviour
 {
-    // How long the gun stays out after the stand-still time ends, so quick repeated clicks don't flicker it.
     const float HolsterDelay = 0.15f;
-    // While the gun is already out, a new shot only turns the body if it's this many degrees past a diagonal,
-    // so rapid fire near a diagonal doesn't flip the player back and forth.
     const float TurnHysteresis = 10f;
 
     public RangedWeaponData Weapon { get; set; }
     public bool IsBusy => charging || lockTimer > 0f;
     public bool IsDrawn => charging || Time.time < drawnUntil;
-    // How full a blaster's charge is, 0 to 1. For the HUD.
     public float ChargePercent { get; private set; }
-    // Each time a shot goes off.
     public event System.Action Fired;
 
     private PlayerCombat combat;
@@ -31,14 +21,11 @@ public class RangedCombat : MonoBehaviour
     private bool charging;
     private float chargeStartTime;
     private Vector2 bodyFacing = Vector2.down;
-    // The Time.time each weapon can fire again.
     private readonly Dictionary<RangedWeaponData, float> readyTimes = new Dictionary<RangedWeaponData, float>();
-    // An EMP in hand that's recharging; it crackles once it's ready.
     private EmpWeaponData recharging;
 
     private bool IsReady => !readyTimes.TryGetValue(Weapon, out float readyTime) || Time.time >= readyTime;
 
-    // How far this weapon's recharged, 0 just fired to 1 ready (the hotbar shows it, InventoryHud).
     public float Readiness(RangedWeaponData weapon)
     {
         if (weapon == null || weapon.cooldown <= 0f || !readyTimes.TryGetValue(weapon, out float readyTime)) return 1f;
@@ -52,7 +39,6 @@ public class RangedCombat : MonoBehaviour
 
     void Update()
     {
-        // timeScale 0 means a menu paused the game; clicking its buttons shouldn't shoot.
         if (Weapon == null || Time.timeScale == 0f) return;
 
         lockTimer -= Time.deltaTime;
@@ -81,21 +67,18 @@ public class RangedCombat : MonoBehaviour
         else
             controller.combatSpeedMultiplier = charging && blaster != null ? blaster.chargeMoveSpeedMultiplier : 1f;
 
-        // Face the shot only while the gun is out; otherwise face where you walk.
         if (IsDrawn)
             controller.SetFacingOverride(bodyFacing);
         else
             controller.ClearFacingOverride();
     }
 
-    // Hold to charge, let go at full charge to fire. Letting go early fizzles and nothing comes out.
     void UpdateCharge(BlasterWeaponData blaster)
     {
         if (!charging)
         {
             if (!Input.GetMouseButton(0) || !IsReady) return;
 
-            // Turn before charging counts as drawn, so the first turn toward the mouse isn't held back.
             AimAtMouse();
             charging = true;
             chargeStartTime = Time.time;
@@ -115,7 +98,6 @@ public class RangedCombat : MonoBehaviour
             return;
         }
 
-        // Keep aiming while charging, so the shot goes wherever the mouse is when it's let go.
         AimAtMouse();
         combat.Visual.ShowRangedCharge(ChargePercent);
     }
@@ -148,7 +130,6 @@ public class RangedCombat : MonoBehaviour
         int count = Mathf.Max(1, Weapon.projectilesPerShot);
         for (int i = 0; i < count; i++)
         {
-            // A single shot lands randomly inside the spread; several shots fan out evenly across it.
             float t = count == 1 ? Random.value : i / (float)(count - 1);
             float angle = (t - 0.5f) * Weapon.spreadAngle;
             Vector2 direction = Quaternion.Euler(0f, 0f, angle) * attackDirection;
@@ -157,7 +138,6 @@ public class RangedCombat : MonoBehaviour
 
         if (Weapon is BlasterWeaponData blaster)
         {
-            // A blaster shot has weight: the view jolts back from it and the muzzle lights up the room.
             CameraShake.Shake(blaster.fireShake);
             CameraShake.Kick(-attackDirection, blaster.recoilDistance * 0.5f);
             HitEffects.Ring(muzzle, blaster.coreColor, blaster.ballSize * 3f);
@@ -172,13 +152,11 @@ public class RangedCombat : MonoBehaviour
         combat.Visual.PlayFizzle(HolsterDelay);
     }
 
-    // Turns the body toward the mouse and points the gun at it. Returns the way shots should go.
     Vector2 AimAtMouse()
     {
         PlayerController controller = combat.Controller;
         Vector2 mouseDirection = MouseDirection(controller.Facing);
 
-        // Turn toward the shot. The gun then points within 45 degrees of the way the body faces, never behind it.
         if (!IsDrawn || Vector2.Angle(mouseDirection, bodyFacing) > 45f + TurnHysteresis)
             bodyFacing = PlayerController.SnapToFourWay(mouseDirection);
 

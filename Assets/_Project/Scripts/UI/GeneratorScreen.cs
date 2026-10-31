@@ -4,19 +4,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Starting a Generator: bring its coils up one at a time. A needle sweeps back and forth across the rotor gauge, and
-// there's a green sync window somewhere along it; engage (Space, E, Enter, or a click) while the needle's in the window
-// and that coil comes up, the generator's hum climbing. Each coil after is quicker and its window narrower. Engage out of
-// sync and it backfires (Generator.Backfire): a bang the bots hear, and the last coil up drops again. Every coil up, and
-// it starts. Esc leaves, keeping the coils that are up. The world keeps running meanwhile, and getting hurt knocks the
-// player off it.
-// Built from code the first time a generator needs it; every generator shares it.
+// generator minigame
 public class GeneratorScreen : MonoBehaviour
 {
-    const int SortingOrder = 110;           // over the HUD and prompts, under the death screen
+    const int SortingOrder = 110;
     const float GaugeWidth = 900f;
     const float GaugeHeight = 70f;
-    const float ArmTime = 0.6f;             // seconds before the needle moves, on opening and after each coil
+    const float ArmTime = 0.6f;
     const float AfterBackfire = 0.9f;
     const float IgnitionHold = 1.4f;
     const int SampleRate = 44100;
@@ -39,7 +33,6 @@ public class GeneratorScreen : MonoBehaviour
 
     public bool IsOpen { get; private set; }
     public Generator Generator { get; private set; }
-    // Where the needle is, 0 to 1 across the gauge, and the sync window's middle. For tests and debugging.
     public float Needle => needle;
     public float WindowCenter => windowCenter;
 
@@ -119,7 +112,6 @@ public class GeneratorScreen : MonoBehaviour
 
     void OnPlayerHurt(DamageInfo damage) => Close();
 
-    // Engages now, wherever the needle is. The player normally presses Space; this is for scripts and tests.
     public void Engage()
     {
         if (phase != Phase.Sweeping) return;
@@ -157,7 +149,6 @@ public class GeneratorScreen : MonoBehaviour
         UpdateCoils();
     }
 
-    // Back and forth across the gauge, ticking at each end.
     void Sweep()
     {
         needle += needleDirection * Generator.SpeedFor(Generator.CoilsLit) * Time.deltaTime;
@@ -169,7 +160,6 @@ public class GeneratorScreen : MonoBehaviour
         }
     }
 
-    // A fresh sync window for the coil coming up, somewhere the needle isn't, and a moment before it moves.
     void Arm()
     {
         int coil = Generator.CoilsLit;
@@ -254,8 +244,6 @@ public class GeneratorScreen : MonoBehaviour
         }
     }
 
-    // --- Building ---
-
     void Build(Font screenFont)
     {
         if (built) return;
@@ -292,7 +280,6 @@ public class GeneratorScreen : MonoBehaviour
         status = Label("Status", panel, "", 34f, GameUI.Amber, TextAlignmentOptions.Center);
         At(status.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -130f), new Vector2(1000f, 50f));
 
-        // The rotor gauge: tick marks, the sync window, and the needle.
         Image gauge = Block("Gauge", panel, GaugeColor);
         At(gauge.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(GaugeWidth, GaugeHeight));
         var gaugeEdge = gauge.gameObject.AddComponent<Outline>();
@@ -333,7 +320,6 @@ public class GeneratorScreen : MonoBehaviour
         ignitionClip = Tone("Ignition", 0.6f, 330f, 990f);
     }
 
-    // A box per coil, in a row, made again when a generator with a different number opens it.
     void BuildCoils(int count)
     {
         if (coilImages.Length == count) return;
@@ -374,13 +360,10 @@ public class GeneratorScreen : MonoBehaviour
         return label;
     }
 
-    // --- Sounds, made in code ---
-
-    // A low, buzzing drone, looped; its pitch rises as the coils come up.
     static AudioClip Hum()
     {
         const float frequency = 55f;
-        int samples = Mathf.RoundToInt(SampleRate / frequency) * 40;    // a whole number of cycles, so it loops cleanly
+        int samples = Mathf.RoundToInt(SampleRate / frequency) * 40;
         var data = new float[samples];
         for (int i = 0; i < samples; i++)
         {
@@ -401,7 +384,7 @@ public class GeneratorScreen : MonoBehaviour
         for (int i = 0; i < samples; i++)
         {
             float fade = 1f - i / (float)samples;
-            low = Mathf.Lerp(low, Random.value * 2f - 1f, 0.25f);      // a little muffled, so it booms
+            low = Mathf.Lerp(low, Random.value * 2f - 1f, 0.25f);
             data[i] = low * loudness * fade * fade;
         }
         AudioClip clip = AudioClip.Create(clipName, samples, 1, SampleRate, false);
@@ -409,7 +392,6 @@ public class GeneratorScreen : MonoBehaviour
         return clip;
     }
 
-    // A tone sliding from one pitch to another.
     static AudioClip Tone(string clipName, float seconds, float from, float to)
     {
         int samples = Mathf.CeilToInt(seconds * SampleRate);

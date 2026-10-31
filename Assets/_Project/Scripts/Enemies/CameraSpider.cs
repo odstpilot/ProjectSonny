@@ -3,36 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Something Sonny built out of the station's security cameras: a squat round hub on eight long thin legs, with a ring of
-// camera eyes round its rim, each on its own swivel. It walks a room's floor (walkArea, a CrewWalkArea), and goes from
-// room to room through the doors (SpiderRoutes): folding itself up small and squeezing through, the door heard going on
-// both sides, so a door in the technician's room going on its own means it's coming in. It keeps to the rooms it
-// searches (roams), passing through others to get between them (passesThrough), never into the ones left safe.
-//   Searching, it's slow. It picks its way somewhere, one leg at a time, and stops there a long while, while its eyes
-//   turn this way and that on their own, each one's narrow beam of light sweeping the room. Out of every beam, it can't
-//   see the player; caught in one, it starts to make them out (the ring on the floor, StealthMeter).
-//   It hears, too: running footsteps from across the room, walking close by, a fight. Crouching makes no sound.
-//   Then it changes. It freezes, every eye snaps round to the noise at once with a whine of servos, and it goes to see,
-//   not walking but skittering: bursts too fast to follow, dead stops, a shiver of its legs, off at an angle, again.
-//   Finding nothing, its eyes jerk about wildly a while before it settles and goes slow again.
-//   Sure of them, it shrieks and comes for them the same way, only faster, and catching them is the end of them.
-//   Out of sight long enough, it goes to where it last saw them. A locker or the ducts hide them from it. Running out
-//   through a door doesn't: right behind them, it follows them through.
-// An EMP (Emp) shorts it out: its eyes go dark and its legs fold up under it for a while.
-// Made in code, art and all (no prefab): its body's lit by the station's light like anything else, so in the dark
-// there's little to see of it but its eyes. Its sounds are the scene's own when it has them (SoundManager: "Spider Step",
-// "Spider Crawl", "Spider Twitch", "Spider Shriek"); until then they're made in code. Placed by StationOccupants.
+// spider bot made of security cameras
 public class CameraSpider : MonoBehaviour
 {
     const int LegCount = 8;
-    const int Pixels = 32;                  // pixels to a world unit, as the tileset's drawn
+    const int Pixels = 32;
     const float HipRadius = 0.28f;
     const float LegReach = 1.05f;
-    const float Squash = 0.62f;             // the floor's seen at an angle: round things on it are flatter top to bottom
+    const float Squash = 0.62f;
     const float KneeLift = 0.32f;
     const float LegThickness = 0.06f;
     const float EyeRimX = 0.4f, EyeRimY = 0.26f, EyeLift = 0.12f;
-    const float HearFrom = 16f;             // as far off as it can be heard
+    const float HearFrom = 16f;
 
     public static readonly List<CameraSpider> All = new List<CameraSpider>();
 
@@ -89,6 +71,12 @@ public class CameraSpider : MonoBehaviour
     [Tooltip("Seconds its eyes jerk about where it lost them, or where the noise was, before it settles.")]
     public float franticSeconds = 3.5f;
 
+    [Header("Doors")]
+    [Tooltip("It won't settle this close to a door, so it can't wait on the player coming back through.")]
+    public float doorClearance = 3f;
+    [Tooltip("Seconds after the player comes through a door that it can't see, hear or catch them.")]
+    public float arrivalGrace = 1.5f;
+
     [Header("Sounds")]
     [SoundName] public string stepSound = "Spider Step";
     [Tooltip("Its legs going all at once: with each burst when it's skittering, and now and then, quietly, as it creeps.")]
@@ -101,8 +89,6 @@ public class CameraSpider : MonoBehaviour
 
     public bool IsHunting => state == State.Hunt;
 
-    // In the round, for the view from inside a locker (FirstPersonView): x and y on the floor, z the height off it.
-    // Whether it's there to be seen (not squeezing through a door), its hub, each leg's joints, and each eye.
     public bool Shown => !hidden && isActiveAndEnabled;
     public Vector3 Hub => new Vector3(Ground.x, Ground.y, HubHeight);
     public int LegTotal => LegCount;
@@ -126,7 +112,6 @@ public class CameraSpider : MonoBehaviour
     public float BeamHalfAngle => eyeHalfAngle;
     public Color CoreColor => core != null ? core.color : Color.black;
 
-    // Where it stands on the floor (its position is where it's drawn from, a little above), and how high its hub rides.
     Vector2 Ground => (Vector2)transform.position - Vector2.up * (walkArea != null ? walkArea.standHeight : 0.24f);
     float HubHeight => (state == State.Stunned ? 0.18f : 0.42f) * (1f - folded * 0.5f) + (bodyArt != null ? bodyArt.localPosition.y - EyeLift : 0f);
 
@@ -134,12 +119,12 @@ public class CameraSpider : MonoBehaviour
 
     class Leg
     {
-        public Vector2 mount;               // the direction it's set off the hub at
-        public Vector2 foot, from, to;      // where the foot is, and stepping, from where to where
-        public float step = -1f;            // 0 to 1 through a step, -1 standing
-        public float twitch;                // seconds left lifted in a twitch
+        public Vector2 mount;
+        public Vector2 foot, from, to;
+        public float step = -1f;
+        public float twitch;
         public SpriteRenderer upper, lower;
-        public Vector3 hip, knee, sole;     // in the round, for the view from a locker (LegAt)
+        public Vector3 hip, knee, sole;
     }
 
     class Eye
@@ -169,10 +154,13 @@ public class CameraSpider : MonoBehaviour
     private AudioClip crawlClip, twitchClip, shriekClip;
     private float nextCrawl;
     private readonly List<RaycastHit2D> sightHits = new List<RaycastHit2D>();
-    private SpiderRoutes.Door door;             // the door it's making for, if it's leaving the room
+    private SpiderRoutes.Door door;
     private bool travelling, hidden;
-    private float folded;                       // 0 standing, 1 folded up small to squeeze through a door
+    private float folded;
     private char cameFrom;
+    private float dim, graceUntil;
+    private bool playerWasTravelling;
+    private readonly List<(SpriteRenderer part, Color color)> tinted = new List<(SpriteRenderer, Color)>();
 
     string Allowed => roams + passesThrough;
 
@@ -212,7 +200,6 @@ public class CameraSpider : MonoBehaviour
 
     void Start()
     {
-        // Somewhere in its room as far as it can be from the player, so it isn't on top of them to begin with.
         if (walkArea != null)
         {
             Vector2 from = player != null ? (Vector2)player.transform.position : (Vector2)transform.position;
@@ -236,9 +223,6 @@ public class CameraSpider : MonoBehaviour
         pauseUntil = Time.time + Random.Range(pauseSeconds.x, pauseSeconds.y);
     }
 
-    // --- Being dealt with ---
-
-    // Shorted out by an EMP: eyes dark, legs folded, for seconds.
     public void Emp(float seconds)
     {
         Enter(State.Stunned);
@@ -248,8 +232,6 @@ public class CameraSpider : MonoBehaviour
         HitEffects.Sparks(transform.position, Vector2.up, 14, 4f, 360f, new Color(0.5f, 0.85f, 1f), Color.white);
     }
 
-    // Something told it there was a noise there (the station's speakers hearing them, CrewEchoes, or a camera's alarm,
-    // StationCamera): it goes to see. Told again on the way, it keeps going, to the new place.
     public void Hear(Vector2 at)
     {
         if (blind || state == State.Stunned || state == State.Hunt) return;
@@ -264,7 +246,6 @@ public class CameraSpider : MonoBehaviour
         else if (state != State.Investigate) Notice(at);
     }
 
-    // Forgets the player and goes back to searching, slowly: after they've been caught and come back.
     public void CalmDown()
     {
         awareness = 0f;
@@ -274,12 +255,12 @@ public class CameraSpider : MonoBehaviour
         StealthMeter.Clear(this);
     }
 
-    // --- Every frame ---
-
     void Update()
     {
         float dt = Time.deltaTime;
         if (dt <= 0f) return;
+        if (playerWasTravelling && !Teleporter.IsTravelling) PlayerArrived();
+        playerWasTravelling = Teleporter.IsTravelling;
         if (travelling)
         {
             StealthMeter.Clear(this);
@@ -306,9 +287,24 @@ public class CameraSpider : MonoBehaviour
         UpdateEyes(dt);
         UpdateLegs(dt);
         UpdateBody();
+        ApplyDim();
     }
 
-    // --- Senses ---
+    void PlayerArrived()
+    {
+        graceUntil = Time.time + arrivalGrace;
+        if (player == null || travelling || state == State.Hunt || state == State.Stunned) return;
+        if (Vector2.Distance(transform.position, player.transform.position) > doorClearance + 1.5f) return;
+        CalmDown();
+        pauseUntil = Time.time;
+    }
+
+    bool NearDoor(Vector2 point)
+    {
+        foreach (SpiderRoutes.Door way in SpiderRoutes.In(room))
+            if (Vector2.Distance(point, way.at) < doorClearance) return true;
+        return false;
+    }
 
     bool PlayerAvailable =>
         player != null && player.isActiveAndEnabled && !blind && !Locker.IsPlayerHidden && !VentNetwork.IsPlayerInside
@@ -318,14 +314,13 @@ public class CameraSpider : MonoBehaviour
 
     void Perceive(float dt)
     {
-        // Through a door with it after them: it knows where they've gone, and keeps after them (Think takes it through).
         if (state == State.Hunt && Teleporter.IsTravelling && player != null && !blind)
         {
             lastSeen = PlayerPoint;
             lastSeenAt = Time.time;
             return;
         }
-        if (!PlayerAvailable)
+        if (!PlayerAvailable || Time.time < graceUntil)
         {
             awareness = Mathf.MoveTowards(awareness, 0f, dt * 0.3f);
             if (state == State.Hunt) Lose();
@@ -352,7 +347,6 @@ public class CameraSpider : MonoBehaviour
         }
 
         if (awareness >= 1f && state != State.Hunt) Enter(State.Hunt);
-        // Gone through a door with it right behind them: it knows which, and follows them through.
         if (state == State.Hunt && Time.time - lastSeenAt < loseAfter * 0.5f)
         {
             char theirs = SpiderRoutes.RoomAt(at);
@@ -364,7 +358,6 @@ public class CameraSpider : MonoBehaviour
         else StealthMeter.Clear(this);
     }
 
-    // How fast it's making them out (0, not at all): caught in an eye's beam, or close by while it's after them.
     float Seeing(Vector2 at)
     {
         Vector2 from = transform.position;
@@ -388,6 +381,7 @@ public class CameraSpider : MonoBehaviour
 
     bool Hearing(Vector2 at)
     {
+        if (SpiderRoutes.RoomAt(at) != room) return false;
         float distance = Vector2.Distance(transform.position, at);
         if (player.IsSprinting && distance <= sprintHearing) return true;
         bool moving = playerBody != null && playerBody.linearVelocity.sqrMagnitude > 0.05f;
@@ -395,7 +389,6 @@ public class CameraSpider : MonoBehaviour
         return combat != null && combat.IsBusy && distance <= fightHearing;
     }
 
-    // Nothing solid between, but for the player, the robots, and the crew, standing or fallen.
     bool LineOfSight(Vector2 from, Vector2 to)
     {
         var solidOnly = new ContactFilter2D { useTriggers = false };
@@ -411,7 +404,6 @@ public class CameraSpider : MonoBehaviour
         return true;
     }
 
-    // Something caught its attention: it freezes, and every eye snaps round to it.
     void Notice(Vector2 at)
     {
         target = at;
@@ -441,7 +433,7 @@ public class CameraSpider : MonoBehaviour
                 Play(twitchSound, twitchClip, 1f, Random.Range(0.9f, 1.15f));
                 break;
             case State.Frantic:
-                stateUntil = Time.time + franticSeconds;
+                stateUntil = Time.time + franticSeconds * (NearDoor(transform.position) ? 0.4f : 1f);
                 break;
             case State.Hunt:
                 if (was != State.Hunt) Play(shriekSound, shriekClip, 1f, Random.Range(0.9f, 1.05f));
@@ -453,11 +445,8 @@ public class CameraSpider : MonoBehaviour
         }
     }
 
-    // --- Deciding where to go ---
-
     void Think()
     {
-        // At the door it was making for: through it.
         if (door != null && path.Count == 0)
         {
             StartCoroutine(GoThrough());
@@ -491,19 +480,21 @@ public class CameraSpider : MonoBehaviour
                 }
                 break;
             case State.Search:
+                if (path.Count == 0 && door == null && NearDoor(transform.position)) pauseUntil = Mathf.Min(pauseUntil, Time.time + 0.5f);
                 if (path.Count > 0 || Time.time < pauseUntil || walkArea == null) break;
-                // Only passing through, sharing the room with the other one, or now and then anyway: off through a door
-                // into another room.
                 bool passing = passesThrough.IndexOf(room) >= 0 || Taken(room);
                 if ((passing || Random.value < wanderChance) && HeadThroughADoor()) break;
-                if (walkArea.TryPickDestination(walkArea.CellAt(transform.position), 4f, out Vector2Int cell))
+                for (int tries = 0; tries < 8; tries++)
+                {
+                    if (!walkArea.TryPickDestination(walkArea.CellAt(transform.position), 4f, out Vector2Int cell)) break;
+                    if (NearDoor(walkArea.CenterOf(cell)) && tries < 7) continue;
                     walkArea.FindPath(walkArea.CellAt(transform.position), cell, path);
+                    break;
+                }
                 break;
         }
     }
 
-    // Off to one of the doors out of here into a room it's allowed in, and that no other spider's in or making for (they
-    // search apart): not straight back where it came from, if there's anywhere else.
     bool HeadThroughADoor()
     {
         List<SpiderRoutes.Door> ways = SpiderRoutes.From(room, Allowed).FindAll(way => !Taken(way.to));
@@ -513,8 +504,6 @@ public class CameraSpider : MonoBehaviour
         return HeadFor(pick[Random.Range(0, pick.Count)]);
     }
 
-    // Another spider's in that room, or on its way there. Only searching keeps them apart: after the player, they'll
-    // both come.
     bool Taken(char where)
     {
         foreach (CameraSpider other in All)
@@ -537,11 +526,9 @@ public class CameraSpider : MonoBehaviour
         path.Clear();
         door = null;
         if (walkArea == null) return false;
-        // Somewhere in another room: the way there, a door at a time.
         char goal = SpiderRoutes.RoomAt(point);
         if (goal != '\0' && goal != room)
         {
-            // Next door: the one that comes out nearest there, so it's out right behind them.
             SpiderRoutes.Door way = null;
             foreach (SpiderRoutes.Door next in SpiderRoutes.From(room, Allowed))
                 if (next.to == goal && (way == null || Vector2.Distance(next.exit, point) < Vector2.Distance(way.exit, point))) way = next;
@@ -553,7 +540,6 @@ public class CameraSpider : MonoBehaviour
         return walkArea.FindPath(from, to, path) && path.Count > 0;
     }
 
-    // The nearest cell of its floor to this one: the player's often just off it, in a doorway.
     bool Nearest(Vector2Int cell, out Vector2Int found)
     {
         found = cell;
@@ -571,18 +557,14 @@ public class CameraSpider : MonoBehaviour
         return false;
     }
 
-    // --- Moving ---
-
     bool Erratic => state == State.Investigate || state == State.Hunt || state == State.Frantic;
 
     void Move(float dt)
     {
         float speed = 0f;
-        // Only passing through, it doesn't dawdle: it scuttles across to the next door.
         if (state == State.Search) speed = passesThrough.IndexOf(room) >= 0 ? searchSpeed * transitPace : searchSpeed;
         else if (state == State.Investigate || state == State.Hunt)
         {
-            // Bursts too fast to follow, and dead stops.
             bool hunting = state == State.Hunt;
             if (burstLeft > 0f)
             {
@@ -605,7 +587,6 @@ public class CameraSpider : MonoBehaviour
 
         velocity = Vector2.zero;
         if (speed <= 0f || path.Count == 0) return;
-        // Creeping, its legs scrape and tick together now and then, low and quiet.
         if (state == State.Search && Time.time >= nextCrawl)
         {
             nextCrawl = Time.time + Random.Range(2.5f, 5f);
@@ -623,15 +604,12 @@ public class CameraSpider : MonoBehaviour
             return;
         }
         Vector2 direction = toNext.normalized;
-        // Skittering, it goes off at an angle, where there's floor to.
         if (Erratic && walkArea != null)
         {
             Vector2 skew = Quaternion.Euler(0f, 0f, jitterAngle) * direction;
             if (OnFloor(at + skew * Mathf.Max(step, 0.3f))) direction = skew;
         }
         Vector2 next = at + direction * step;
-        // Never into a wall or through furniture: knocked off its line (skittering), the straight way on to the next turn
-        // can clip a corner, so it gets back to the middle of the cell it's in and finds its way again from there.
         if (walkArea != null && !OnFloor(next))
         {
             Vector2Int cell = walkArea.CellAt(at);
@@ -646,8 +624,6 @@ public class CameraSpider : MonoBehaviour
 
     bool OnFloor(Vector2 point) => walkArea == null || walkArea.IsWalkable(walkArea.CellAt(point));
 
-    // Through the door: it folds itself up small and squeezes into the doorway as the door's heard going, and a moment
-    // later unfolds out of the door on the other side, heard there too. Quicker when it's after someone.
     IEnumerator GoThrough()
     {
         SpiderRoutes.Door way = door;
@@ -656,21 +632,81 @@ public class CameraSpider : MonoBehaviour
         travelling = true;
         velocity = Vector2.zero;
         StealthMeter.Clear(this);
-        DoorSound(way.door);
-        yield return Fold(1f);
+        bool rushing = state == State.Hunt;
+        float pace = rushing ? burstSpeed * 0.6f : searchSpeed * 2.5f;
+
+        Teleporter near = way.door, far = way.back;
+        if (near != null)
+        {
+            yield return Walk(near.Mouth, pace, 0f, 0f);
+            DoorSound(near);
+            near.Swing(true);
+            yield return new WaitForSeconds(Teleporter.SwingSeconds);
+            yield return Walk(near.Mouth + near.Wall * 0.9f, pace, 1f, 0.6f);
+        }
         SetHidden(true);
-        yield return new WaitForSeconds(state == State.Hunt ? Random.Range(0.3f, 0.6f) : Random.Range(0.8f, 1.8f));
+        if (near != null) near.Swing(false);
+        yield return new WaitForSeconds(rushing ? Random.Range(0.3f, 0.6f) : Random.Range(0.8f, 1.8f));
 
         cameFrom = room;
         room = way.to;
         walkArea = way.toFloor;
-        transform.position = way.exit;
+        transform.position = far != null ? far.Mouth + far.Wall * 0.9f : way.exit;
+        dim = far != null ? 1f : 0f;
+        folded = far != null ? 0.6f : 1f;
         foreach (Leg leg in legs) leg.foot = Rest(leg);
-        DoorSound(way.door);
+        if (far != null)
+        {
+            DoorSound(far);
+            far.Swing(true);
+            yield return new WaitForSeconds(Teleporter.SwingSeconds);
+        }
         SetHidden(false);
-        yield return Fold(0f);
+        if (far != null)
+        {
+            yield return Walk(far.Mouth, pace, 0.2f, 0.3f);
+            yield return Walk(way.exit, pace, 0f, 0f);
+            far.Swing(false);
+        }
+        else yield return Fold(0f);
         travelling = false;
         if (state == State.Search) pauseUntil = Time.time + Random.Range(0.5f, 2f);
+    }
+
+    IEnumerator Walk(Vector2 to, float pace, float dimTo, float foldTo)
+    {
+        Vector2 from = transform.position;
+        float dimFrom = dim, foldFrom = folded;
+        float time = Mathf.Max(0.2f, Vector2.Distance(from, to) / Mathf.Max(0.1f, pace));
+        for (float t = 0f; t < time; t += Time.deltaTime)
+        {
+            float k = t / time;
+            transform.position = Vector2.Lerp(from, to, k);
+            velocity = (to - from) / time;
+            dim = Mathf.Lerp(dimFrom, dimTo, k);
+            folded = Mathf.Lerp(foldFrom, foldTo, k);
+            yield return null;
+        }
+        transform.position = to;
+        velocity = Vector2.zero;
+        dim = dimTo;
+        folded = foldTo;
+    }
+
+    void ApplyDim()
+    {
+        float lit = 1f - dim;
+        foreach ((SpriteRenderer part, Color color) in tinted)
+            part.color = new Color(color.r * lit, color.g * lit, color.b * lit, color.a);
+        if (dim <= 0f) return;
+        if (eyes != null)
+            foreach (Eye eye in eyes)
+            {
+                Color c = eye.pupil.color;
+                eye.pupil.color = new Color(c.r * lit, c.g * lit, c.b * lit, c.a);
+                eye.beam.intensity *= lit;
+            }
+        if (core != null) core.color = new Color(core.color.r * lit, core.color.g * lit, core.color.b * lit, core.color.a);
     }
 
     IEnumerator Fold(float to)
@@ -690,7 +726,6 @@ public class CameraSpider : MonoBehaviour
         foreach (SpriteRenderer part in GetComponentsInChildren<SpriteRenderer>(true)) part.enabled = !hide;
     }
 
-    // The door it's going through: its own sound if it has one, otherwise the clank of it squeezing past.
     void DoorSound(Teleporter through)
     {
         if (through != null && !string.IsNullOrEmpty(through.sound)) Sfx.At(through.sound, transform.position, 0.8f);
@@ -699,7 +734,7 @@ public class CameraSpider : MonoBehaviour
 
     void TryCatch()
     {
-        if (!(state == State.Hunt || state == State.Investigate) || Time.time < catchCooldownUntil || !PlayerAvailable) return;
+        if (!(state == State.Hunt || state == State.Investigate) || Time.time < catchCooldownUntil || Time.time < graceUntil || !PlayerAvailable) return;
         Vector2 at = PlayerPoint;
         Vector2 to = at - (Vector2)transform.position;
         if (to.magnitude > catchRadius) return;
@@ -711,8 +746,6 @@ public class CameraSpider : MonoBehaviour
         awareness = 0f;
         Enter(State.Frantic);
     }
-
-    // --- Eyes ---
 
     Vector2 EyePosition(Eye eye)
     {
@@ -736,7 +769,6 @@ public class CameraSpider : MonoBehaviour
     {
         if (eyes == null) return;
         float now = Time.time;
-        // Frantic, every so often its eyes all jerk somewhere new at once; between times, now and then one on its own.
         bool jerk = state == State.Frantic && now >= nextFrantic;
         if (jerk) nextFrantic = now + Random.Range(0.12f, 0.4f);
         Color color = state == State.Hunt ? huntColor : state == State.Search ? searchColor : alertColor;
@@ -747,19 +779,16 @@ public class CameraSpider : MonoBehaviour
             switch (state)
             {
                 case State.Search:
-                    // Each on its own slow sweep either way of where it's mounted.
                     eye.aim = eye.mountAngle + Mathf.Sin(now * sweepSpeed * eye.rate + eye.phase) * sweepDegrees;
                     eye.angle = Mathf.MoveTowardsAngle(eye.angle, eye.aim, dt * 45f);
                     break;
                 case State.Frantic:
-                    // Jerking about, each its own way, snapping straight to where it's looking.
                     if (jerk || Random.value < dt * 3f) eye.aim = Random.Range(0f, 360f);
                     eye.angle = Mathf.MoveTowardsAngle(eye.angle, eye.aim, dt * 1400f);
                     break;
                 case State.Stunned:
                     break;
                 default:
-                    // On the noise, or on them.
                     Vector2 look = state == State.Hunt && player != null ? PlayerPoint : target;
                     Vector2 to = look - EyePosition(eye);
                     eye.aim = Mathf.Atan2(to.y, to.x) * Mathf.Rad2Deg;
@@ -780,21 +809,16 @@ public class CameraSpider : MonoBehaviour
             core.color = dark ? new Color(0.12f, 0.12f, 0.14f) : Color.Lerp(new Color(0.4f, 0.05f, 0.05f), color, 0.35f + 0.25f * Mathf.Sin(now * (state == State.Search ? 2f : 9f)));
     }
 
-    // --- Legs ---
-
     Vector2 Rest(Leg leg)
     {
         float reach = (state == State.Stunned ? LegReach * 0.5f : LegReach) * (1f - folded * 0.75f);
         Vector2 center = transform.position;
         Vector2 foot = center + new Vector2(leg.mount.x * reach, leg.mount.y * reach * Squash);
-        // Up against a wall or something solid, the leg draws in and sets its foot down short of it.
         for (int i = 0; i < 3 && !FootRoom(foot); i++)
             foot = Vector2.Lerp(center, foot, 0.6f);
         return foot;
     }
 
-    // Floor a foot can go on: its own floor, or under something it walks over (SpiderRoutes leaves only the walls and
-    // furniture out of it).
     bool FootRoom(Vector2 foot) => walkArea == null || walkArea.IsWalkable(walkArea.CellAt(foot + Vector2.up * walkArea.standHeight));
 
     void TwitchLegs(int count)
@@ -811,7 +835,6 @@ public class CameraSpider : MonoBehaviour
         bool quick = Erratic;
         float stepTime = quick ? 0.07f : 0.34f;
         float threshold = quick ? 0.16f : 0.3f;
-        // Shivering in place, while it's frantic or stopped dead.
         if (state == State.Frantic || state == State.Listen) TwitchLegs(Random.value < dt * 8f ? 1 : 0);
 
         for (int i = 0; i < LegCount; i++)
@@ -857,7 +880,6 @@ public class CameraSpider : MonoBehaviour
         Segment(leg.upper, hip, knee);
         Segment(leg.lower, knee, foot);
 
-        // The same in the round: the floor's not squashed, and the lifts are heights.
         Vector2 ground = Ground;
         Vector2 offFoot = leg.foot - center;
         Vector2 flatOut = leg.mount;
@@ -875,12 +897,9 @@ public class CameraSpider : MonoBehaviour
         part.transform.localScale = new Vector3(along.magnitude, LegThickness, 1f);
     }
 
-    // --- Body ---
-
     void UpdateBody()
     {
         if (bodyArt == null) return;
-        // A slow bob as it walks; a shiver while it's stopped dead and listening, or frantic.
         float bob = state == State.Search && velocity.sqrMagnitude > 0f ? Mathf.Sin(Time.time * 7f) * 0.015f : 0f;
         bool shiver = state == State.Listen || state == State.Frantic || (Erratic && burstLeft <= 0f);
         Vector2 shake = shiver ? Random.insideUnitCircle * 0.025f : Vector2.zero;
@@ -889,9 +908,6 @@ public class CameraSpider : MonoBehaviour
         bodyArt.localScale = Vector3.one * (1f - folded * 0.45f);
     }
 
-    // --- Sound ---
-
-    // Louder the nearer the player, and from the side it's on.
     void Play(string soundName, AudioClip fallback, float volume, float pitch)
     {
         if (player == null) return;
@@ -902,14 +918,10 @@ public class CameraSpider : MonoBehaviour
         SoundManager.PlayOneShot(voice, soundName, volume * near * near, pitch, fallback);
     }
 
-    // How a struck piece of steel rings: a handful of modes, not in tune with each other, each dying away at its own rate.
-    // A thin plate's, roughly, as the deck plating is.
     static readonly float[] PlateModes = { 1f, 2.32f, 4.25f, 6.63f, 9.38f };
     static readonly float[] PlateLoudness = { 1f, 0.6f, 0.42f, 0.28f, 0.18f };
     static readonly float[] PlateDecay = { 26f, 38f, 52f, 68f, 90f };
 
-    // A metal hit added into data at a moment: a short scratchy contact, the plate ringing out at about this pitch, and
-    // under it the dull thump of the weight landing.
     static void Strike(float[] data, float at, float pitch, float loud, float ring, System.Random random)
     {
         int start = Mathf.FloorToInt(at * TitleUI.SampleRate);
@@ -921,7 +933,7 @@ public class CameraSpider : MonoBehaviour
         {
             float t = i / (float)TitleUI.SampleRate;
             float noise = (float)random.NextDouble() * 2f - 1f;
-            float contact = (noise - last) * Mathf.Exp(-t * 900f);      // noise with its lows taken out: a scrape-click
+            float contact = (noise - last) * Mathf.Exp(-t * 900f);
             last = noise;
             float plate = 0f;
             for (int m = 0; m < PlateModes.Length; m++)
@@ -931,7 +943,6 @@ public class CameraSpider : MonoBehaviour
         }
     }
 
-    // A metal foot set down on the deck plating: six of them, none quite like another.
     static AudioClip[] Taps()
     {
         var taps = new AudioClip[6];
@@ -940,14 +951,12 @@ public class CameraSpider : MonoBehaviour
             var random = new System.Random(40 + i);
             var data = new float[Mathf.CeilToInt(0.3f * TitleUI.SampleRate)];
             Strike(data, 0f, 800f + 110f * i, 0.8f, 0.8f, random);
-            // Now and then the foot skids a little and taps twice.
             if (i % 3 == 2) Strike(data, 0.018f, 900f + 90f * i, 0.4f, 0.5f, random);
             taps[i] = Clip("Spider Step", data);
         }
         return taps;
     }
 
-    // Skittering: a clatter of feet one on top of another, too fast to count, with a dry scrape of metal under them.
     static AudioClip Crawl()
     {
         var random = new System.Random(77);
@@ -969,7 +978,6 @@ public class CameraSpider : MonoBehaviour
         return Clip("Spider Crawl", data);
     }
 
-    // Its eyes snapping round: a geared motor whining up and stopping hard, a clunk as it starts and as it stops.
     static AudioClip Servo()
     {
         var random = new System.Random(9);
@@ -985,7 +993,7 @@ public class CameraSpider : MonoBehaviour
             phase += f / TitleUI.SampleRate;
             float saw = (phase % 1f) * 2f - 1f;
             float square = (phase * 2f) % 1f < 0.5f ? 0.4f : -0.4f;
-            float teeth = Mathf.Sqrt(Mathf.Abs(Mathf.Sin(2f * Mathf.PI * f * 0.18f * t)));   // the gear train's teeth, chattering
+            float teeth = Mathf.Sqrt(Mathf.Abs(Mathf.Sin(2f * Mathf.PI * f * 0.18f * t)));
             float envelope = Mathf.Clamp01(t / 0.01f) * Mathf.Clamp01((run - t) / 0.015f);
             data[i] = (saw * 0.5f + square) * teeth * envelope * 0.22f;
         }
@@ -994,7 +1002,6 @@ public class CameraSpider : MonoBehaviour
         return Clip("Spider Twitch", data);
     }
 
-    // Sure of them: metal on metal, grinding and squealing, the servos straining behind it, falling away.
     static AudioClip Screech()
     {
         var random = new System.Random(13);
@@ -1006,7 +1013,6 @@ public class CameraSpider : MonoBehaviour
         {
             float p = i / (float)data.Length;
             float t = i / (float)TitleUI.SampleRate;
-            // A bowed edge: its pitch catching and slipping, jittering all the while.
             drift = Mathf.Lerp(drift, ((float)random.NextDouble() - 0.5f) * 0.12f, 0.01f);
             float f = Mathf.Lerp(1500f, 820f, p) * (1f + drift + 0.015f * Mathf.Sin(t * 260f));
             float squeal = 0f;
@@ -1029,8 +1035,6 @@ public class CameraSpider : MonoBehaviour
         return clip;
     }
 
-    // --- Building ---
-
     void BuildArt()
     {
         Material lit = null;
@@ -1050,6 +1054,8 @@ public class CameraSpider : MonoBehaviour
             var leg = new Leg { mount = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) };
             leg.upper = Part("Leg", pixel, lit, -2, new Color(0.2f, 0.22f, 0.26f));
             leg.lower = Part("Leg", pixel, lit, -2, new Color(0.15f, 0.16f, 0.19f));
+            tinted.Add((leg.upper, leg.upper.color));
+            tinted.Add((leg.lower, leg.lower.color));
             legs[i] = leg;
         }
 
@@ -1059,6 +1065,7 @@ public class CameraSpider : MonoBehaviour
         var shell = bodyArt.gameObject.AddComponent<SpriteRenderer>();
         shell.sprite = bodySprite;
         if (lit != null) shell.sharedMaterial = lit;
+        tinted.Add((shell, shell.color));
         core = Part("Core", PixelSprite(3), glow, 1, new Color(0.4f, 0.05f, 0.05f), bodyArt);
         core.transform.localPosition = new Vector3(0f, 0.02f, 0f);
 
@@ -1076,6 +1083,7 @@ public class CameraSpider : MonoBehaviour
             var mount = new Vector3(Mathf.Cos(a) * EyeRimX, Mathf.Sin(a) * EyeRimY, 0f);
             eye.housing = Part("Eye", housingSprite, lit, 2, Color.white, bodyArt);
             eye.housing.transform.localPosition = mount;
+            tinted.Add((eye.housing, eye.housing.color));
             eye.pupil = Part("Lens", PixelSprite(2), glow, 3, searchColor, eye.housing.transform);
             eye.beam = new GameObject("Beam").AddComponent<Light2D>();
             eye.beam.transform.SetParent(eye.housing.transform, false);
@@ -1105,7 +1113,6 @@ public class CameraSpider : MonoBehaviour
 
     static readonly Dictionary<int, Sprite> squares = new Dictionary<int, Sprite>();
 
-    // A square of so many pixels, centred, for a lens or the core.
     static Sprite PixelSprite(int size)
     {
         if (squares.TryGetValue(size, out Sprite sprite)) return sprite;
@@ -1116,8 +1123,6 @@ public class CameraSpider : MonoBehaviour
         return sprite;
     }
 
-    // The hub, seen from a little above: a dark domed shell, lit from the top left, with plating lines round it and a
-    // thick dark underside below.
     static Sprite BodySprite()
     {
         const int w = 28, h = 22;
@@ -1147,7 +1152,6 @@ public class CameraSpider : MonoBehaviour
         return Sprite.Create(texture, new Rect(0, 0, w, h), new Vector2(0.5f, 0.55f), Pixels);
     }
 
-    // A camera eye's housing: a dark ring round dark glass, the lens drawn over it.
     static Sprite HousingSprite()
     {
         const int size = 6;

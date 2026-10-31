@@ -1,10 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Something the player walks up to and presses E to use, like a terminal. While the player is close enough and free to
-// act, it shows a prompt over itself (InteractPrompt), and pressing E uses it. Only one terminal can be in use at a time.
-// Subclasses say what the prompt says, whether E does anything right now, and what using it opens.
-// Setup: a solid Collider2D on this object for its footprint.
+// something to use with e
 [RequireComponent(typeof(Collider2D))]
 public abstract class Terminal : MonoBehaviour
 {
@@ -17,12 +14,9 @@ public abstract class Terminal : MonoBehaviour
 
     static readonly List<Terminal> all = new List<Terminal>();
 
-    // True while its screen is up.
     public abstract bool InUse { get; }
-    // What the prompt says after the key, like "TUNE IN".
     protected abstract string PromptText { get; }
     protected abstract Vector3 PromptPoint { get; }
-    // False keeps the prompt up but ignores E, for something like a lockout.
     protected virtual bool Available => true;
 
     protected Transform Player { get; private set; }
@@ -75,7 +69,6 @@ public abstract class Terminal : MonoBehaviour
         }
     }
 
-    // Uses it now, wherever the player is standing. The player normally presses E; this is for scripts and tests.
     public void Interact()
     {
         if (Player == null) FindPlayer();
@@ -103,7 +96,6 @@ public abstract class Terminal : MonoBehaviour
         playerHealth = found.GetComponent<Health>();
     }
 
-    // Edge to edge, so it doesn't matter which side the player walks up from.
     float DistanceToPlayer()
     {
         if (playerCollider != null && playerCollider.enabled)

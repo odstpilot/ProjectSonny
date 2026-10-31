@@ -1,13 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// A converted bot waiting switched off behind a wall that bursts out and grabs the player as they come near (Chapter 2,
-// by the maintenance deck's stairs). It pins them where they stand, squeezing (a point of damage every so often while
-// they don't fight it), until E has been pressed enough times to tear free. Torn free, it's flung back against the wall
-// and the ceiling over the breach comes down on it. Once only, and only while the objective is afterObjective (if set).
-// While it has hold, the view closes in on them (CameraZoom), tighter as they fight, and the prompt to mash E fills the
-// screen (MashPrompt).
-// The same grab as the tutorial's (TutorialDirector.Grab), on its own. Built by ChapterOneBuilder for ChapterTwoBuilder.
+// bot bursts out of the wall and grabs the player
 public class WallGrab : MonoBehaviour
 {
     public PlayerController player;
@@ -29,9 +23,7 @@ public class WallGrab : MonoBehaviour
     public Vector2 grabZoom = new Vector2(0.72f, 0.6f);
     [TextArea] public string[] technicianGrabbed = { "Get OFF me!" };
     [TextArea] public string[] technicianFree = { "...They're in the damn walls" };
-    [TextArea] public string[] pipFree = { "~Keep moving, Tech, stairs!" };
 
-    // While it has hold of them, for anything that shouldn't happen meanwhile.
     public static bool Holding { get; private set; }
 
     private bool sprung;
@@ -67,7 +59,6 @@ public class WallGrab : MonoBehaviour
         HitStop.Hold(0.3f, 0.25f);
         CameraZoom.Hold(this, grabZoom.x);
 
-        // A leap, onto them.
         Vector2 from = robot.transform.position;
         const float Leap = 0.3f;
         for (float t = 0f; t < Leap; t += Time.deltaTime)
@@ -85,7 +76,7 @@ public class WallGrab : MonoBehaviour
         if (technicianGrabbed.Length > 0) TechnicianVoice.Say(technicianGrabbed[0], 1.4f);
 
         MashPrompt.Show("MASH TO BREAK FREE", "E");
-        yield return null;      // the press that got here doesn't count
+        yield return null;
         int presses = 0;
         float lastPress = Time.time;
         while (presses < breakFreePresses)
@@ -103,7 +94,6 @@ public class WallGrab : MonoBehaviour
                 MashPrompt.Press(presses / (float)breakFreePresses);
                 CameraZoom.Hold(this, Mathf.Lerp(grabZoom.x, grabZoom.y, presses / (float)breakFreePresses));
             }
-            // It squeezes while they don't fight it.
             if (Time.time - lastPress > squeezeEvery)
             {
                 lastPress = Time.time;
@@ -121,7 +111,6 @@ public class WallGrab : MonoBehaviour
         MashPrompt.Hide();
         CameraZoom.Release(this);
 
-        // Torn free: flung back against the wall, and the ceiling comes down on it.
         Sfx.Play("Break Free");
         CameraZoom.Punch(0.12f);
         CameraShake.Kick(Vector2.left, 0.35f);
@@ -141,7 +130,7 @@ public class WallGrab : MonoBehaviour
         if (robot != null && !robot.IsDead) robot.Kill(gameObject);
 
         yield return TechnicianVoice.Think(technicianFree);
-        if (SuitHelper.Exists && pipFree.Length > 0) SuitHelper.Get().Tell(pipFree);
+        if (SuitHelper.Exists && PipManager.Lines.wallGrabFree.Length > 0) SuitHelper.Get().Tell(PipManager.Lines.wallGrabFree);
     }
 
     void Move(Vector2 at)

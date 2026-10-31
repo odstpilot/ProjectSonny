@@ -4,19 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The pack: everything the technician's carrying, laid out like a diagnostic on the suit's own screen, so it's plain
-// what goes where. Tab (or I) opens it once the first scrap's been picked up (SuitFeatures.Inventory, InventoryHud);
-// Tab, I, Esc, or a click outside it closes it. The game's paused while it's up. Three columns, each its own color,
-// the same colors as the wrist readout in the corner (InventoryHud):
-//  - SUIT (Pip's green): the technician as a hologram, marked where each kind of thing goes: weapons on the tool rack
-//    at the hip, parts in the pack on the back.
-//  - TOOL RACK (amber): the hotbar (WeaponHotbar), a row for each thing they can hold: its number key, its picture,
-//    its name, how it's used, and whether it's in hand. Click one to hold it (or put it away). Drag one onto another,
-//    or point at one and press a number key, to swap them round.
-//  - PACK (cyan): the parts (Inventory), a row each with how many there are.
-// What the parts make is the workbench's business (CraftingScreen); this only says what's carried.
-// yield return InventoryScreen.Show(hotbar) waits until it's closed. Built from code each time it opens, like the
-// crafting screen. Runs on unscaled time.
+// the pack screen
 public class InventoryScreen : MonoBehaviour
 {
     public const KeyCode Key = KeyCode.Tab;
@@ -25,7 +13,7 @@ public class InventoryScreen : MonoBehaviour
     const float Width = 1680f, Height = 840f;
     const float FadeTime = 0.16f;
     const int MaxRack = 6;
-    const float DragDistance = 12f;         // screen pixels the mouse moves, holding a row, before it's a drag
+    const float DragDistance = 12f;
     static readonly Color PanelColor = new Color(0.04f, 0.05f, 0.07f, 0.97f);
     static readonly Color RowColor = new Color(1f, 1f, 1f, 0.9f);
     static readonly Color Edge = new Color(0.45f, 0.6f, 0.7f, 0.5f);
@@ -69,7 +57,6 @@ public class InventoryScreen : MonoBehaviour
     private readonly List<PartRow> parts = new List<PartRow>();
     private Marker rackMarker, packMarker;
 
-    // The mouse: which row it's over, and a row held down on, maybe being dragged.
     private int overRow = -1, pressedRow = -1;
     private PartRow overPart;
     private bool dragging;
@@ -97,7 +84,6 @@ public class InventoryScreen : MonoBehaviour
 
         CanvasGroup group = Build(player);
         Refresh();
-        // Switches on like the suit's screen: a bright line, out to full height.
         for (float t = 0f; t < FadeTime; t += Time.unscaledDeltaTime)
         {
             group.alpha = t / FadeTime;
@@ -106,7 +92,7 @@ public class InventoryScreen : MonoBehaviour
         }
         group.alpha = 1f;
         panel.localScale = Vector3.one * fit;
-        yield return null;      // so the Tab that opened it doesn't close it
+        yield return null;
 
         while (!TutorialHud.ScreenCovered)
         {
@@ -130,8 +116,6 @@ public class InventoryScreen : MonoBehaviour
 
     void OnDestroy() => IsOpen = false;
 
-    // --- The mouse and the number keys ---
-
     void Point()
     {
         Vector3 mouse = Input.mousePosition;
@@ -139,7 +123,6 @@ public class InventoryScreen : MonoBehaviour
         overPart = parts.Find(row => RectangleHas(row.rect, mouse));
         int count = Mathf.Min(hotbar != null ? hotbar.slots.Count : 0, MaxRack);
 
-        // Held down on a row: a click holds it, a drag moves it.
         if (Input.GetMouseButtonDown(0) && overRow >= 0 && overRow < count)
         {
             pressedRow = overRow;
@@ -156,7 +139,6 @@ public class InventoryScreen : MonoBehaviour
             if (ghost != null) Destroy(ghost.gameObject);
         }
 
-        // A number key: pointing at a row, it moves that row there; otherwise it holds what's there, as in the game.
         for (int i = 0; i < count && i < 9; i++)
         {
             if (!Input.GetKeyDown(KeyCode.Alpha1 + i) && !Input.GetKeyDown(KeyCode.Keypad1 + i)) continue;
@@ -185,7 +167,6 @@ public class InventoryScreen : MonoBehaviour
         rack[from].flash = rack[to].flash = 1f;
     }
 
-    // Holds what's in that slot, or puts it away if it's in hand already.
     void Hold(int slot)
     {
         if (combat == null || hotbar == null || slot >= hotbar.slots.Count) return;
@@ -195,14 +176,11 @@ public class InventoryScreen : MonoBehaviour
         rack[slot].flash = 1f;
     }
 
-    // --- Every frame ---
-
     void Refresh()
     {
         float dt = Time.unscaledDeltaTime;
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
 
-        // The tool rack.
         int count = hotbar != null ? hotbar.slots.Count : 0;
         WeaponData inHand = combat != null ? combat.CurrentWeapon : null;
         for (int i = 0; i < rack.Count; i++)
@@ -238,7 +216,6 @@ public class InventoryScreen : MonoBehaviour
             row.brackets.color = row == overPart ? PackColor : Edge;
         }
 
-        // The markers on the hologram light up for whichever column the mouse is in.
         LightUp(rackMarker, RectangleHas(rackColumn, Input.mousePosition), pulse);
         LightUp(packMarker, RectangleHas(packColumn, Input.mousePosition), pulse);
         scanlines.uvRect = new Rect(0f, Time.unscaledTime * 0.2f, 1f, scanlines.rectTransform.rect.height / 6f);
@@ -262,8 +239,6 @@ public class InventoryScreen : MonoBehaviour
         MeleeWeaponData _ => "Swing, up close",
         _ => "",
     };
-
-    // --- Building ---
 
     CanvasGroup Build(PlayerController player)
     {
@@ -308,7 +283,6 @@ public class InventoryScreen : MonoBehaviour
         return group;
     }
 
-    // A column: a diamond, its name in its color, and what it is under that, dimmer.
     RectTransform Column(string columnName, float x, float width, string heading, string about, Color color)
     {
         RectTransform column = Place(GameUI.NewRect(columnName, panel), x, 120f, width, Height - 120f - 80f);
@@ -329,7 +303,6 @@ public class InventoryScreen : MonoBehaviour
         const float x = 60f, width = 380f;
         RectTransform suitColumn = Column("Suit", x, width, "SUIT", "Where everything goes", SuitColor);
 
-        // The technician, as a hologram on the suit's screen.
         Image box = Row("Hologram", suitColumn, 0f, 70f, width, 400f);
         var mask = box.gameObject.AddComponent<RectMask2D>();
         mask.padding = new Vector4(4f, 4f, 4f, 4f);
@@ -347,12 +320,10 @@ public class InventoryScreen : MonoBehaviour
         scanlines.raycastTarget = false;
         GameUI.Fill(scanlines.rectTransform);
 
-        // Where each kind of thing goes, marked on the body: the pack on the back, the rack at the hip.
         packMarker = Mark(box.rectTransform, figure.rectTransform, new Vector2(0.4f, 0.66f), "PACK", PackColor);
         rackMarker = Mark(box.rectTransform, figure.rectTransform, new Vector2(0.6f, 0.46f), "RACK", RackColor);
     }
 
-    // A dot on the figure, a line out to the right edge, and a name there.
     Marker Mark(RectTransform box, RectTransform figure, Vector2 onFigure, string name, Color color)
     {
         var marker = new Marker { color = color };
@@ -360,7 +331,7 @@ public class InventoryScreen : MonoBehaviour
         spot.anchorMin = spot.anchorMax = onFigure;
         spot.sizeDelta = Vector2.zero;
         Vector3 local = box.InverseTransformPoint(spot.position);
-        float y = local.y - box.rect.yMax;     // from the top of the box, negative
+        float y = local.y - box.rect.yMax;
         float startX = local.x - box.rect.xMin;
         const float labelWidth = 86f;
         float endX = box.rect.width - labelWidth - 10f;
@@ -415,7 +386,6 @@ public class InventoryScreen : MonoBehaviour
             row.inHand.characterSpacing = 4f;
             Place(row.inHand.rectTransform, width - 136f, 18f, 120f, 24f);
 
-            // How far it's recharged, along the bottom, for the weapons that recharge.
             Image track = GameUI.NewRect("Charge", row.rect).gameObject.AddComponent<Image>();
             track.color = new Color(0f, 0f, 0f, 0.5f);
             track.raycastTarget = false;
@@ -456,9 +426,6 @@ public class InventoryScreen : MonoBehaviour
         }
     }
 
-    // --- Pieces ---
-
-    // Positioned from the top left of its parent, in canvas units, x across and y down.
     static RectTransform Place(RectTransform rect, float x, float y, float width, float height)
     {
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
@@ -467,7 +434,6 @@ public class InventoryScreen : MonoBehaviour
         return rect;
     }
 
-    // A slim glass row to put things on.
     static Image Row(string rowName, RectTransform parent, float x, float y, float width, float height)
     {
         Image back = GameUI.Sliced(rowName, parent, GameUI.SoftPanelSprite, RowColor);
@@ -476,7 +442,6 @@ public class InventoryScreen : MonoBehaviour
         return back;
     }
 
-    // The suit display's corner brackets round it, the same as the slots in the corner of the screen (InventoryHud).
     static Image Brackets(RectTransform parent)
     {
         Image brackets = GameUI.Sliced("Brackets", parent, InventoryHud.BracketSprite, Edge);

@@ -1,36 +1,27 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// The suit's own light: a soft glow all round the technician, so they can see a little way around them where the
-// power's out. It comes up as the room goes dark (DarkRooms sets Level) and fades away again in the light, and it's out
-// while they're hidden in a locker or crawling through the ducts.
-// In a blacked-out room (DarkRooms.SetBlackout) the suit's power is gone, all but a trickle: the glow shrinks to a faint
-// halo right round them, and a faint rim of light traces their outline, so they can always tell where they are.
-// It shows how the technician's doing, too, the way the suit's vitals would: as they're hurt it warms toward red, and
-// near the end it sputters, dimming and catching. So even with the screens dead, a glance at the glow tells them.
-// Added to the player by DarkRooms.
+// soft light around the player
 [RequireComponent(typeof(PlayerController))]
 public class SuitLight : MonoBehaviour
 {
     [Tooltip("How far the glow reaches: fully lit inside the first, fading out to the second.")]
     public float innerRadius = 0.8f;
     public float radius = 4.5f;
-    public float intensity = 0.9f;
+    public float intensity = 0.6f;
     public Color color = new Color(1f, 0.94f, 0.82f);
 
     [Header("Blacked out")]
     [Tooltip("What's left of the glow in a blacked-out room.")]
     public float blackoutRadius = 2.6f;
-    public float blackoutIntensity = 0.3f;
+    public float blackoutIntensity = 0.22f;
     public Color blackoutColor = new Color(0.6f, 0.8f, 1f);
     [Tooltip("The rim of light round the technician's outline there.")]
     public Color outlineColor = new Color(0.55f, 0.85f, 1f, 0.4f);
 
     public static SuitLight Current { get; private set; }
 
-    // How much of the glow is showing, 0 to 1: up in the dark, down in the light (DarkRooms).
     public float Level { get; set; }
-    // In a blacked-out room (DarkRooms): the faint halo and outline instead.
     public bool Blackout { get; set; }
 
     [Header("Hurt")]
@@ -64,10 +55,8 @@ public class SuitLight : MonoBehaviour
         BuildOutline();
     }
 
-    // How hurt they are, 0 untouched to 1 at nothing left.
     float Hurt => health == null || health.maxHealth <= 0f ? 0f : 1f - Mathf.Clamp01(health.CurrentHealth / health.maxHealth);
 
-    // How much of the glow is getting through this moment (sputter), 0 to 1: all of it until they're badly hurt.
     void Sputter(float hurt)
     {
         float share = 1f - hurt;
@@ -76,7 +65,6 @@ public class SuitLight : MonoBehaviour
             sputter = 1f;
             return;
         }
-        // Dips and catches, held a moment each, more often the closer to nothing.
         if (Time.time < nextSputter) return;
         nextSputter = Time.time + Random.Range(0.05f, 0.25f);
         sputter = Random.value < Mathf.Lerp(0.15f, 0.45f, Mathf.InverseLerp(sputterBelow, 0f, share)) ? Random.Range(0.15f, 0.5f) : 1f;
@@ -92,7 +80,6 @@ public class SuitLight : MonoBehaviour
         bool hidden = Locker.IsPlayerHidden;
         float hurt = Hurt;
         if (health != null) Sputter(hurt);
-        // Warming only past the first knock, so a scratch doesn't tint it.
         float warm = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.15f, 0.85f, hurt));
         if (Blackout)
         {
@@ -113,7 +100,6 @@ public class SuitLight : MonoBehaviour
         }
     }
 
-    // The outline keeps to whatever frame the technician's sprite is showing.
     void LateUpdate()
     {
         if (outline == null) return;
@@ -133,7 +119,6 @@ public class SuitLight : MonoBehaviour
         }
     }
 
-    // Four copies of the body, unlit, a pixel out each way and behind it, so only their edges show.
     void BuildOutline()
     {
         body = GetComponent<SpriteRenderer>();

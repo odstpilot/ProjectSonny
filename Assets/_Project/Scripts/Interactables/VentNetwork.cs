@@ -3,64 +3,21 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-// What's in each cell of a VentNetwork's map.
 public enum VentCell : byte { Solid, Duct, Dent, Squeeze, Grate, Hatch }
 
-// A network of air ducts the player crawls through in first person, from one VentGrate to another.
-// The ducts aren't built in the level: they're a map painted in this component's inspector (VentNetworkEditor), so
-// they can wind about as much as they like. Climbing in at a grate takes the player out of the world the way a Locker does (enemies treat
-// them as hidden) and puts them on the map at that grate's number; climbing out at another number puts them at the
-// VentGrate with that number.
-//
-// In the ducts:
-//   W crawls forward a cell, S backs up one, A and D turn. Hold C or Ctrl to crawl carefully (slow and quiet), or
-//   Shift to hurry (fast and loud). E climbs out over a grate.
-//   The flashlight only reaches a couple of cells (VentView). Past that it's black, though light from a grate shows further.
-//   Noise is what gives the player away. Every cell crawled makes a little (none crawling carefully), a dented panel
-//   bangs when crawled over (it only creaks if careful), hurrying is loud on any panel, and crawling head first into a
-//   wall is a hollow bang that rings down the ducts. It fades again if they keep quiet.
-//   A tight squeeze takes one key at a time: a letter from anywhere on the keyboard comes up (SqueezeLetters: every
-//   letter but the ones the game already uses everywhere, like M for the map) and has to be pressed before its time
-//   runs out. There's a good while to find it. The right key inches the player through; the wrong one, or being too
-//   slow, scrapes loudly and slips them back.
-//   There's no room to turn inside a squeeze. Before one, the technician says what it is (squeezeIntro the first time,
-//   squeezeAgain after), and they're held still until it's been read (or Space skips it).
-//
-// The drone:
-//   When the noise fills up, eyes stare out of the dark for a moment, and then a drone drops out of the nearest hatch
-//   that isn't right on top of the player. It doesn't chase. It hangs there and looks around, turning its red
-//   searchlight down one duct and then another (toward any real noise first), and after a while it rises back into its
-//   hatch. If its light finds the player straight down a duct, or they're right under it, it locks on with a shriek;
-//   still in its sight when the lock's done, and it's on them: caught, the usual death, back at the last checkpoint.
-//   Out of its sight before then, and it goes back to looking. Its hum is louder the nearer it is along the ducts, and
-//   comes from whichever side it's on.
-//
-// The dark:
-//   The whole time they're in, the ducts make noises from one side or the other (scareSounds): groans,
-//   knocking, something skittering, something breathing. A deeper loop sits under the ambience, and their heartbeat
-//   gets louder as the noise fills and while the drone is out.
-//   On an x cell, the first time, facing down a duct, a rat bolts out of the dark straight at them, squealing: a
-//   jump scare, and a lot of noise.
-//
-// The map is kept as text, one character per cell, top row first:
-//   # or space  solid        .  duct        d  dented panel        s  tight squeeze (keep them to straight runs)
-//   r           a drone hatch in the ceiling. With none, the drone comes from somewhere a few cells away.
-//   x           a duct where the rat comes at them
-//   1 - 9       a grate, where the VentGrate with that number opens into the ducts
+// the vent map and crawling through it
 public class VentNetwork : MonoBehaviour
 {
     public const KeyCode ClimbOutKey = KeyCode.E;
     const float BumpTime = 0.28f;
-    const float SqueezeWedgeTime = 0.4f;    // a moment to get wedged in before the first key counts
-    const float SqueezeInchSpeed = 3f;      // how fast the view catches up with the keys pressed, in squeezes per second
+    const float SqueezeWedgeTime = 0.4f;
+    const float SqueezeInchSpeed = 3f;
     const float FinishSqueezeTime = 0.2f;
-    const float CatchDistance = 0.55f;      // cells between the drone and the player's eyes that count as caught
+    const float CatchDistance = 0.55f;
     const float CaughtTime = 0.6f;
-    const int DroneAudibleCells = 12;       // its hum fades out this many cells away along the ducts
+    const int DroneAudibleCells = 12;
 
-    // Up, right, down, left the map, clockwise, so a direction times 90 is the angle the view faces.
     static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
-    // Every letter but M (the map), L (Pip's log), P (pause), Q (looking at things), and F.
     const string SqueezeLetters = "ABCDEGHIJKNORSTUVWXYZ";
     static readonly KeyCode[] SqueezeKeys = MakeSqueezeKeys();
 
@@ -71,7 +28,6 @@ public class VentNetwork : MonoBehaviour
         return keys;
     }
 
-    // What a new network starts with, and what the inspector's Example button puts back.
     public const string ExampleLayout =
         "###########\n" +
         "#1..d.....#\n" +
@@ -195,12 +151,9 @@ public class VentNetwork : MonoBehaviour
     [Tooltip("Cells a second the rat runs.")]
     public float ratSpeed = 7f;
 
-    // True from climbing in at a grate until standing outside again. Locker.IsPlayerHidden counts this too.
     public static bool IsPlayerInside { get; private set; }
-    static VentNetwork occupied;        // the ducts they're in, while they are
+    static VentNetwork occupied;
 
-    // A line said in the ducts, where the technician's over their head can't be seen: big across the bottom of the view
-    // (TechnicianVoice sends it here). False if they're not in the ducts.
     public static bool SayInside(string line, float seconds)
     {
         if (!IsPlayerInside || occupied == null || occupied.view == null) return false;
@@ -236,7 +189,7 @@ public class VentNetwork : MonoBehaviour
     private Vector2 eye;
     private float angle;
     private float bob;
-    private bool waitForRelease;            // ignore W A S D until they're let go, so a held key doesn't carry on by itself
+    private bool waitForRelease;
     private float noise;
     private float quietTime;
     private Coroutine alarm;
@@ -250,13 +203,13 @@ public class VentNetwork : MonoBehaviour
     private float squeezeGrace;
 
     private Drone drone;
-    private Vector2Int droneCell;           // its hatch, where it hangs
-    private int droneFacing;                // which way it's looking, as an index into Directions
-    private float droneAngle;               // and the angle its light is at, turning toward that
-    private float droneLookTimer;           // until it goes back up
-    private float droneTurnTimer;           // until it looks somewhere else
-    private float droneLock;                // seconds into locking on
-    private float droneRise;                // 0 up in its hatch, 1 hanging in the duct
+    private Vector2Int droneCell;
+    private int droneFacing;
+    private float droneAngle;
+    private float droneLookTimer;
+    private float droneTurnTimer;
+    private float droneLock;
+    private float droneRise;
     private Vector2 dronePosition;
 
     private AudioSource scareAudio;
@@ -266,8 +219,8 @@ public class VentNetwork : MonoBehaviour
     private string lastScare;
     private readonly HashSet<Vector2Int> ratSpots = new HashSet<Vector2Int>();
     private bool ratDone;
-    private int[,] playerDistances;         // cells along the ducts from the player to everywhere
-    private int[,] pathDistances;           // and from wherever the drone is heading
+    private int[,] playerDistances;
+    private int[,] pathDistances;
     private readonly Queue<Vector2Int> floodQueue = new Queue<Vector2Int>();
     private readonly List<Vector2Int> choices = new List<Vector2Int>();
 
@@ -282,7 +235,6 @@ public class VentNetwork : MonoBehaviour
         heartAudio = NewAudioSource(true);
     }
 
-    // Edits to the map while playing take effect the next time the player climbs in.
     void OnValidate()
     {
         if (Application.isPlaying && state == State.Outside) ReadLayout();
@@ -299,12 +251,10 @@ public class VentNetwork : MonoBehaviour
         playerHealthHandler = found.GetComponent<PlayerHealthHandler>();
     }
 
-
     void OnDisable()
     {
         if (state == State.Outside) return;
 
-        // Switched off or unloaded with the player inside: put everything back at once instead of trapping them.
         StopAllCoroutines();
         alarm = null;
         RemoveDrone();
@@ -323,7 +273,6 @@ public class VentNetwork : MonoBehaviour
         state = State.Outside;
     }
 
-    // Called by a VentGrate when the player uses it.
     public void Enter(VentGrate grate)
     {
         if (state != State.Outside || IsPlayerInside || player == null || grate == null) return;
@@ -338,7 +287,6 @@ public class VentNetwork : MonoBehaviour
 
     void Update()
     {
-        // timeScale 0 means a menu paused the game.
         if (state == State.Outside || Time.timeScale <= 0f) return;
 
         bool crawling = state == State.Idle || state == State.Moving || state == State.Squeezing;
@@ -373,8 +321,6 @@ public class VentNetwork : MonoBehaviour
         UpdateDroneAudio();
         UpdateHeartbeat();
     }
-
-    // --- Getting in and out ---
 
     IEnumerator ClimbIn(VentGrate grate, Vector2Int start)
     {
@@ -411,7 +357,6 @@ public class VentNetwork : MonoBehaviour
         VentGrate grate = VentGrate.Find(this, grateNumbers[cell.x, cell.y]);
         if (grate == null)
         {
-            // A number on the map with no grate in the level.
             view.FlashHint("Bolted shut", 1.5f);
             Play(dentSound, 0.25f, 1.3f);
             return;
@@ -424,7 +369,6 @@ public class VentNetwork : MonoBehaviour
         state = State.Climbing;
         yield return view.FadeTo(1f, fadeTime);
 
-        // Out of its reach. Whatever was after them stays in the ducts.
         StopAlarm();
         RemoveDrone();
         StopDark();
@@ -439,8 +383,6 @@ public class VentNetwork : MonoBehaviour
         state = State.Outside;
     }
 
-    // Takes the player out of the world like a Locker does: no controls, no sprite, no physics, so nothing out there
-    // can see, touch, or hit them. Whatever gets turned off is remembered so exactly that comes back.
     void HidePlayer(Vector2 at)
     {
         frozen = PlayerControls.Freeze(player);
@@ -480,8 +422,6 @@ public class VentNetwork : MonoBehaviour
         PlayerControls.Release(frozen);
     }
 
-    // --- Crawling ---
-
     void ReadInput()
     {
         bool anyHeld = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
@@ -517,7 +457,6 @@ public class VentNetwork : MonoBehaviour
         }
     }
 
-    // One cell forward or back, if there's duct there. Into a squeeze, it takes the keys.
     void Move(int way, bool backwards, bool careful, bool hurried, bool pressedNow)
     {
         Vector2Int to = cell + Directions[way];
@@ -525,7 +464,6 @@ public class VentNetwork : MonoBehaviour
 
         if (next == VentCell.Solid)
         {
-            // Once per press, so holding W at a dead end doesn't keep banging the player's head.
             if (pressedNow) StartCoroutine(Bump(way));
             return;
         }
@@ -554,7 +492,6 @@ public class VentNetwork : MonoBehaviour
         {
             float progress = t / time;
             eye = Vector2.Lerp(from, target, Ease(progress));
-            // A hand comes down at the start and again halfway, and the head dips between.
             bob = -Mathf.Abs(Mathf.Sin(progress * Mathf.PI * 2f)) * (hurried ? 0.06f : 0.035f);
 
             if (!arrived && progress >= 0.5f)
@@ -564,7 +501,7 @@ public class VentNetwork : MonoBehaviour
                 Arrive(to, careful, hurried);
             }
             yield return null;
-            if (state != State.Moving) yield break;     // caught on the way
+            if (state != State.Moving) yield break;
         }
 
         if (!arrived) Arrive(to, careful, hurried);
@@ -573,7 +510,6 @@ public class VentNetwork : MonoBehaviour
         state = State.Idle;
     }
 
-    // The player's weight comes down on the new cell.
     void Arrive(Vector2Int to, bool careful, bool hurried)
     {
         cell = to;
@@ -619,7 +555,6 @@ public class VentNetwork : MonoBehaviour
         state = State.Idle;
     }
 
-    // Crawling into a wall in the dark: the head knocks against it.
     IEnumerator Bump(int way)
     {
         state = State.Moving;
@@ -644,11 +579,8 @@ public class VentNetwork : MonoBehaviour
         state = State.Idle;
     }
 
-    // --- Tight squeezes ---
-
     private bool toldSqueeze;
 
-    // What's ahead, said before they wedge themselves in: held still while it's up, Space to move it on.
     IEnumerator IntroduceSqueeze(Vector2Int to)
     {
         state = State.Moving;
@@ -659,10 +591,10 @@ public class VentNetwork : MonoBehaviour
             if (string.IsNullOrEmpty(line)) continue;
             float hold = TechnicianVoice.HoldFor(line) + 0.6f;
             view.FlashHint(line, hold + 1f);
-            yield return null;      // the press that got here doesn't count
+            yield return null;
             for (float t = 0f; t < hold; t += Time.deltaTime)
             {
-                if (state != State.Moving) yield break;     // caught while it was up
+                if (state != State.Moving) yield break;
                 if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) break;
                 yield return null;
             }
@@ -688,10 +620,9 @@ public class VentNetwork : MonoBehaviour
 
     void UpdateSqueeze()
     {
-        // Inch through as the keys go in.
         squeezeShown = Mathf.MoveTowards(squeezeShown, (float)squeezeDone / squeezeKeys, SqueezeInchSpeed * Time.deltaTime);
         eye = Vector2.Lerp(Center(squeezeFrom), Center(squeezeTo), squeezeShown);
-        bob = Mathf.Sin(Time.time * 9f) * 0.008f;   // straining
+        bob = Mathf.Sin(Time.time * 9f) * 0.008f;
 
         if (squeezeGrace > 0f)
         {
@@ -721,7 +652,6 @@ public class VentNetwork : MonoBehaviour
         }
         else if (pressed >= 0 || squeezeTimer <= 0f)
         {
-            // The wrong key, or too slow: the duct scrapes, and the player slips back a little.
             squeezeDone = Mathf.Max(0, squeezeDone - 1);
             Play(scrapeSound, 1f, Random.Range(0.9f, 1.1f));
             view.KeyMistake();
@@ -732,7 +662,6 @@ public class VentNetwork : MonoBehaviour
         view.ShowKey(SqueezeLetters[squeezeKey], squeezeTimer / squeezeKeyTime);
     }
 
-    // A different key from the last one, so every press is a fresh one to read.
     void NextSqueezeKey()
     {
         if (squeezeKey < 0)
@@ -762,11 +691,9 @@ public class VentNetwork : MonoBehaviour
         }
         eye = target;
         bob = 0f;
-        waitForRelease = true;  // the last key is probably still down
+        waitForRelease = true;
         state = State.Idle;
     }
-
-    // --- Noise ---
 
     void AddNoise(float amount, float kick)
     {
@@ -776,7 +703,6 @@ public class VentNetwork : MonoBehaviour
         quietTime = 0f;
         view.NoiseSpike(kick);
 
-        // A drone that's already out hears anything much and turns to look that way.
         if (drone != Drone.None)
         {
             if (amount > droneAlertNoise && drone == Drone.Looking) LookToward(cell);
@@ -785,8 +711,6 @@ public class VentNetwork : MonoBehaviour
         if (noise >= 1f && alarm == null) alarm = StartCoroutine(Stare());
     }
 
-    // The noise filled up: eyes look back out of the dark down the duct for a moment (right up against the wall, if
-    // that's all there is ahead), and then the drone is let out. The player can keep moving the whole time.
     IEnumerator Stare()
     {
         view.SetPanic(true);
@@ -810,10 +734,6 @@ public class VentNetwork : MonoBehaviour
         view.SetPanic(false);
     }
 
-    // --- The drone ---
-
-    // Out of the nearest hatch that isn't right on top of the player, or failing that the furthest. With no hatches on
-    // the map, out of the ceiling somewhere about that far away. It drops down looking the way the noise came from.
     void ReleaseDrone()
     {
         Flood(cell, playerDistances);
@@ -827,7 +747,6 @@ public class VentNetwork : MonoBehaviour
                 int away = playerDistances[x, y];
                 if (away < 0 || cells[x, y] != VentCell.Hatch) continue;
                 anyHatch = true;
-                // Far enough scores by nearness; too near always scores worse, and the furthest of those scores best.
                 int score = away >= droneMinReleaseDistance ? away : 10000 - away;
                 if (score >= bestScore) continue;
                 best = new Vector2Int(x, y);
@@ -878,7 +797,6 @@ public class VentNetwork : MonoBehaviour
         if (view != null) view.SetDrone(false, dronePosition);
     }
 
-    // Turns it to look down whichever duct leads toward this cell.
     void LookToward(Vector2Int goal)
     {
         Flood(goal, pathDistances);
@@ -948,7 +866,6 @@ public class VentNetwork : MonoBehaviour
             }
             else
             {
-                // Lost them: back to looking, a little longer than it would have.
                 drone = Drone.Looking;
                 droneLock = 0f;
                 view.SetPanic(false);
@@ -958,7 +875,6 @@ public class VentNetwork : MonoBehaviour
         }
     }
 
-    // Down another duct from its hatch, picked at random, never the one it's looking down already if there's another.
     void LookSomewhereElse()
     {
         choices.Clear();
@@ -972,7 +888,6 @@ public class VentNetwork : MonoBehaviour
         droneTurnTimer = droneLookEvery * Random.Range(0.8f, 1.3f);
     }
 
-    // Right under it, or straight down the duct its light is on (once it's turned that way), with nothing in between.
     bool DroneSees()
     {
         Vector2Int offset = cell - droneCell;
@@ -988,7 +903,6 @@ public class VentNetwork : MonoBehaviour
         return false;
     }
 
-    // One of the drone's sounds, from where it is (its hum's source, panned its way). Its pitch is the hum's to keep.
     void PlayDrone(string sound, float volume)
     {
         if (droneAudio == null) return;
@@ -997,7 +911,6 @@ public class VentNetwork : MonoBehaviour
         droneAudio.pitch = pitch;
     }
 
-    // How many cells along the ducts every cell is from this one. -1 where it can't be reached.
     void Flood(Vector2Int from, int[,] distances)
     {
         for (int x = 0; x < distances.GetLength(0); x++)
@@ -1021,8 +934,6 @@ public class VentNetwork : MonoBehaviour
         }
     }
 
-    // Its hum: louder the nearer it is along the ducts, not through walls, and from whichever side it's on. Pitched
-    // down and wavering, and dragged higher as it locks on.
     void UpdateDroneAudio()
     {
         if (drone == Drone.None || droneAudio == null) return;
@@ -1040,13 +951,11 @@ public class VentNetwork : MonoBehaviour
         droneAudio.panStereo = toDrone.sqrMagnitude > 0.01f ? Mathf.Clamp(Vector2.Dot(toDrone.normalized, right), -1f, 1f) * 0.8f : 0f;
     }
 
-    // --- The dark ---
-
     void StartDark()
     {
         StartLoop(ambience, ambienceSound, 1f);
         StartLoop(deepAudio, deepSound, 1f);
-        deepAudio.pitch *= 0.8f;       // a little slow, deeper
+        deepAudio.pitch *= 0.8f;
         StartLoop(heartAudio, heartbeatSound, 0f);
         if (haunting != null) StopCoroutine(haunting);
         haunting = StartCoroutine(Haunt());
@@ -1063,7 +972,6 @@ public class VentNetwork : MonoBehaviour
         if (view != null) view.SetRat(false, Vector2.zero);
     }
 
-    // Now and then, from one side or the other: something in the ducts that isn't them.
     IEnumerator Haunt()
     {
         yield return new WaitForSeconds(Random.Range(1.5f, 3f));
@@ -1082,7 +990,6 @@ public class VentNetwork : MonoBehaviour
         }
     }
 
-    // Louder and quicker the closer they are to being found.
     void UpdateHeartbeat()
     {
         if (heartAudio == null || heartAudio.clip == null) return;
@@ -1091,9 +998,6 @@ public class VentNetwork : MonoBehaviour
         heartAudio.pitch = 0.95f + 0.35f * fear;
     }
 
-    // --- The rat ---
-
-    // On one of its cells for the first time, looking down a duct with room for it to run.
     void TryRat()
     {
         if (ratDone || !ratSpots.Contains(cell) || OpenCellsAhead() < 2) return;
@@ -1101,7 +1005,6 @@ public class VentNetwork : MonoBehaviour
         StartCoroutine(Rat());
     }
 
-    // Out of the dark ahead, straight at them, squealing as it reaches the light, then under them and gone.
     IEnumerator Rat()
     {
         Vector2 way = Directions[direction];
@@ -1130,8 +1033,6 @@ public class VentNetwork : MonoBehaviour
         view.FlashHint("...Just a rat.", 1.8f);
     }
 
-    // It got them. The view whips round to it, it comes at the player, and it's the usual death, back at the last
-    // checkpoint. The screen stays black while they go down, until Sonny's monitor has come and gone.
     IEnumerator Caught()
     {
         state = State.Caught;
@@ -1177,8 +1078,6 @@ public class VentNetwork : MonoBehaviour
         yield return view.FadeTo(0f, 0.4f);
     }
 
-    // --- The map ---
-
     void ReadLayout()
     {
         var rows = new List<string>((layout ?? "").Replace("\r", "").Split('\n'));
@@ -1190,7 +1089,6 @@ public class VentNetwork : MonoBehaviour
         foreach (string row in rows)
             mapWidth = Mathf.Max(mapWidth, row.Length);
 
-        // Row 0 of the text is the top, so it's the highest y on the map.
         cells = new VentCell[mapWidth, mapHeight];
         ratSpots.Clear();
         grateNumbers = new int[mapWidth, mapHeight];
@@ -1238,7 +1136,6 @@ public class VentNetwork : MonoBehaviour
         return false;
     }
 
-    // The first way out of a cell, so climbing in faces down the duct instead of into a wall.
     int OpenDirection(Vector2Int at)
     {
         for (int i = 0; i < Directions.Length; i++)
@@ -1276,14 +1173,11 @@ public class VentNetwork : MonoBehaviour
         return source;
     }
 
-    // One of the scene's sounds (SoundManager), at this share of its volume and this pitch. The ones made in code
-    // (VentSounds) play even when the scene doesn't list them yet.
     void Play(string sound, float volume, float pitch = 1f)
     {
         SoundManager.PlayOneShot(sfx, sound, volume, pitch, VentSounds.Fallback(sound));
     }
 
-    // A loop on its own source, at this share of its volume.
     void StartLoop(AudioSource source, string sound, float volume)
     {
         SoundManager.Setup(source, sound, VentSounds.Fallback(sound));
@@ -1292,6 +1186,5 @@ public class VentNetwork : MonoBehaviour
         if (source.clip != null) source.Play();
     }
 
-    // Footsteps pitched down sound like hands and knees on sheet metal.
     void PlayCrawl(float volume) => Play(crawlSound, volume, Random.Range(0.6f, 0.75f));
 }

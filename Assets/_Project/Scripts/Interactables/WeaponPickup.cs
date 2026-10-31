@@ -1,12 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// A weapon lying about the station, found rather than made: walk up to it and press E to take it. It goes on the hotbar
-// and in hand, the technician says what it is, and Pip says what it's for. It glows a faint cold blue like the scrap,
-// so it catches the eye in the dark.
-// Taken once, it's gone for good, saves and all: it's counted as made (Inventory.Grant, by its id), and whatever gives
-// back what's been made on a save (Workshop) puts it back on the hotbar.
-// Made in code by Workshop for the crowbar, so there's nothing to set up; the picture is the weapon's own sprite.
+// weapon lying on the floor to pick up
 [RequireComponent(typeof(BoxCollider2D))]
 public class WeaponPickup : Terminal
 {
@@ -19,8 +14,7 @@ public class WeaponPickup : Terminal
     public Sprite picture;
     [Tooltip("What the technician says, picking it up.")]
     [TextArea] public string technicianLine = "";
-    [Tooltip("Pip, after. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipLines = new string[0];
+    [System.NonSerialized] public string[] pipLines = new string[0];
 
     public event System.Action Taken;
 
@@ -31,7 +25,6 @@ public class WeaponPickup : Terminal
     protected override string PromptText => $"TAKE {(weapon != null ? weapon.displayName : id).ToUpperInvariant()}";
     protected override Vector3 PromptPoint => transform.position + new Vector3(0f, 0.8f, 0f);
 
-    // Put down at a spot in the world, unless it's been taken already.
     public static WeaponPickup Place(Vector2 at, string id, WeaponData weapon, Sprite picture, string technicianLine, string[] pipLines)
     {
         var holder = new GameObject($"{id} Pickup");
@@ -56,7 +49,6 @@ public class WeaponPickup : Terminal
         Inventory.Changed += CheckTaken;
         art = new GameObject("Weapon").AddComponent<SpriteRenderer>();
         art.transform.SetParent(transform, false);
-        // Lying on the floor, on its side.
         art.transform.localRotation = Quaternion.Euler(0f, 0f, 70f);
         DepthSort.Group(gameObject);
 
@@ -70,7 +62,6 @@ public class WeaponPickup : Terminal
         glow.shadowsEnabled = false;
     }
 
-    // Listening the whole time it exists, hidden or not, so a load that puts it back on the floor brings it back.
     void OnDestroy() => Inventory.Changed -= CheckTaken;
 
     protected override void Start()
@@ -85,7 +76,6 @@ public class WeaponPickup : Terminal
         if (art != null) art.sprite = weapon != null && weapon.sprite != null ? weapon.sprite : picture;
     }
 
-    // Off the floor while it's in hand, and back if a save from before it was taken is loaded.
     void CheckTaken()
     {
         if (this != null && !string.IsNullOrEmpty(id)) gameObject.SetActive(!Inventory.Made(id));
@@ -95,7 +85,6 @@ public class WeaponPickup : Terminal
     {
         base.Update();
         glow.intensity = 0.35f + 0.12f * Mathf.Sin(Time.time * 3.1f);
-        // A glint now and then.
         if (Random.value < Time.deltaTime * 0.3f)
             HitEffects.Sparks((Vector2)transform.position + new Vector2(0.15f, 0.15f), Vector2.up, 2, 1.2f, 90f, Color.white, GlowColor);
     }
@@ -112,7 +101,7 @@ public class WeaponPickup : Terminal
         LightFlash.Spawn(transform.position, GlowColor, 1.2f, 0.8f, 0.2f);
         Taken?.Invoke();
         ControlHints.TeachSwitching(player.gameObject);
-        Inventory.Grant(id);     // takes it off the floor, through CheckTaken
+        Inventory.Grant(id);
         if (string.IsNullOrEmpty(id)) gameObject.SetActive(false);
     }
 }

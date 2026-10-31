@@ -4,39 +4,27 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The map in the technician's suit: M opens it once Pip has unlocked it (SuitFeatures.Map), and M, Tab, or Escape close
-// it. It's the floor's plan (StationMap) drawn as a blueprint on a dark blue screen: each room's floor with a bright edge,
-// the doorways between rooms, the ship entrance in red and the stairs striped, the room they're in lit up, and a
-// blinking dot where they are. The room they're headed for, if there is one (SetTarget), is picked out in amber with a
-// pin over it; with it on another floor, the stairs to take off this one are, the pin saying up or down.
-//
-// WASD or the arrow keys (or dragging with the mouse) look around, the scroll wheel (or Q and E) zooms in on the
-// pointer, and Space goes back to where they are. The game's paused while it's open. Everything runs on unscaled time.
-// It's on the suit's wrist unit, not the game's: opening it, the technician raises their forearm into view, the unit
-// tilting up from the bottom left corner with the station dimmed behind it, and only then does its screen switch on.
-// It runs on the suit's power (SuitDisplay), so in a blacked-out room it won't come on at all.
-// Built from code the first time it opens, so there's no canvas to set up. One per scene: MapScreen.Get(), made by the
-// scene's StationMap.
+// the suit map
 public class MapScreen : MonoBehaviour
 {
-    const int SortingOrder = 108;               // over the HUD, dialogue and prompts; under Pip (109), so Pip can talk it through
-    const float CellSize = 24f;                 // canvas units per cell of the plan, at a zoom of 1
+    const int SortingOrder = 108;
+    const float CellSize = 24f;
     const int PixelsPerCell = 4;
     const float DefaultZoom = 1.6f;
     const float MaxZoom = 3.5f;
-    const float PanSpeed = 1100f;               // canvas units a second, with the keys
-    const float OpenTime = 0.38f;               // the arm coming up, then the screen switching on
+    const float PanSpeed = 1100f;
+    const float OpenTime = 0.38f;
     const float CloseTime = 0.2f;
-    const float ScreenOnFrom = 0.55f;           // how far through opening the screen starts switching on
-    static readonly Vector2 Lowered = new Vector2(-260f, -760f);    // where the unit is, down by their side
+    const float ScreenOnFrom = 0.55f;
+    static readonly Vector2 Lowered = new Vector2(-260f, -760f);
     const float LoweredTilt = -14f;
-    const float NoPowerLineGap = 4f;            // seconds between the technician remarking the map's dead
-    const float GridMargin = 60f;               // cells of grid past the plan on every side
+    const float NoPowerLineGap = 4f;
+    const float GridMargin = 60f;
     const KeyCode MapKey = KeyCode.M;
 
-    static readonly Color Backdrop = new Color(0.01f, 0.02f, 0.05f, 0.82f);     // the station, dimmed, behind the arm
-    static readonly Color Casing = new Color(0.14f, 0.16f, 0.19f);              // the wrist unit
-    static readonly Color SuitWhite = new Color(0.84f, 0.86f, 0.88f);           // the sleeve it's strapped to
+    static readonly Color Backdrop = new Color(0.01f, 0.02f, 0.05f, 0.82f);
+    static readonly Color Casing = new Color(0.14f, 0.16f, 0.19f);
+    static readonly Color SuitWhite = new Color(0.84f, 0.86f, 0.88f);
     static readonly Color SuitShade = new Color(0.62f, 0.65f, 0.7f);
     static readonly Color SuitRed = new Color(0.78f, 0.2f, 0.18f);
     static readonly Color ScreenColor = new Color(0.02f, 0.05f, 0.11f, 1f);
@@ -73,8 +61,8 @@ public class MapScreen : MonoBehaviour
     private bool heldPlayer;
 
     private CanvasGroup group;
-    private RectTransform device;               // the wrist unit, sleeve and all
-    private Vector2 devicePlace;                // where it sits, raised
+    private RectTransform device;
+    private Vector2 devicePlace;
     private Image deviceLight;
     private float noPowerSaidAt = -10f;
     private RectTransform viewport;
@@ -88,7 +76,7 @@ public class MapScreen : MonoBehaviour
     private Image targetFill;
     private RectTransform targetPin;
     private TextMeshProUGUI targetText;
-    private float pinTop;                       // where the pin sits, over the top of the room or stairs picked out
+    private float pinTop;
     private RectTransform you;
     private RawImage youRing;
     private Image youDot;
@@ -96,7 +84,7 @@ public class MapScreen : MonoBehaviour
     private TextMeshProUGUI hereLabel;
     private StationMap drawnFrom;
 
-    private Vector2 look;                       // the plan point in the middle of the screen, in cells (y down)
+    private Vector2 look;
     private Vector2 youAt;
     private float zoom = DefaultZoom;
     private Vector2 lastMouse;
@@ -110,12 +98,11 @@ public class MapScreen : MonoBehaviour
         return instance;
     }
 
-    // The room to pick out, by its marker in the layout (FloorOneBuilder), with a word or two over it.
     public static void SetTarget(char marker, string label)
     {
         targetMarker = marker;
         targetLabel = label ?? "";
-        ObjectiveHighlight.Follow(marker);      // and the way there pointed out in the level
+        ObjectiveHighlight.Follow(marker);
         if (instance != null && instance.open) instance.Redraw();
     }
 
@@ -133,8 +120,6 @@ public class MapScreen : MonoBehaviour
         if (planTexture != null) Destroy(planTexture);
     }
 
-    // --- Opening and closing ---
-
     bool CanOpen()
     {
         if (!SuitFeatures.Has(SuitFeatures.Feature.Map) || StationMap.Current == null) return false;
@@ -150,7 +135,6 @@ public class MapScreen : MonoBehaviour
     public void Open()
     {
         if (open) return;
-        // No power, no map: the screen stays dead, and the technician says so (not every press).
         if (!SuitDisplay.Powered && SuitFeatures.Has(SuitFeatures.Feature.Map))
         {
             if (Time.unscaledTime - noPowerSaidAt > NoPowerLineGap)
@@ -193,7 +177,6 @@ public class MapScreen : MonoBehaviour
         Closed?.Invoke();
     }
 
-    // Time back as it was, and the player back in their own hands.
     void Release()
     {
         if (Time.timeScale == 0f) Time.timeScale = savedTimeScale;
@@ -209,9 +192,7 @@ public class MapScreen : MonoBehaviour
         {
             float p = Mathf.SmoothStep(0f, 1f, t / seconds);
             group.alpha = opening ? Mathf.Lerp(from, to, Mathf.Clamp01(p * 3f)) : Mathf.Lerp(from, to, Mathf.Clamp01((p - 0.4f) / 0.6f));
-            // The arm comes up into view and the unit tilts level; putting it away, it drops back down.
             Raise(opening ? TitleUI.EaseOut(Mathf.Clamp01(t / (seconds * ScreenOnFrom))) : 1f - p);
-            // Then the screen switches on like a screen: squashed to a line, then out to full height. Off, the other way.
             float screen = opening ? Mathf.InverseLerp(ScreenOnFrom, 1f, p) : 1f - Mathf.Clamp01(p * 2.5f);
             viewport.localScale = new Vector3(1f, Mathf.Lerp(0.02f, 1f, screen), 1f);
             yield return null;
@@ -221,14 +202,11 @@ public class MapScreen : MonoBehaviour
         viewport.localScale = Vector3.one;
     }
 
-    // How far the wrist unit's raised: 0 down by their side, 1 up in front of them.
     void Raise(float up)
     {
         device.anchoredPosition = devicePlace + Vector2.Lerp(Lowered, Vector2.zero, up);
         device.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(LoweredTilt, 0f, up));
     }
-
-    // --- Every frame ---
 
     void Update()
     {
@@ -243,7 +221,6 @@ public class MapScreen : MonoBehaviour
             Close();
             return;
         }
-        // Something else took over (a death, a cutscene): let go.
         if (TutorialHud.ScreenCovered)
         {
             Close();
@@ -252,7 +229,6 @@ public class MapScreen : MonoBehaviour
 
         float dt = Time.unscaledDeltaTime;
         float perCell = zoom * CellSize;
-        // The unit's status light, blinking away while it's on.
         deviceLight.color = TitleUI.Fade(GameUI.Green, Mathf.Repeat(Time.unscaledTime, 1.2f) < 0.8f ? 1f : 0.25f);
 
         var keys = new Vector2(
@@ -265,7 +241,6 @@ public class MapScreen : MonoBehaviour
             look += keys.normalized * speed * dt / perCell;
         }
 
-        // Dragging: the plan follows the pointer.
         Vector2 mouse = Input.mousePosition;
         if (Input.GetMouseButtonDown(0) && RectTransformUtility.RectangleContainsScreenPoint(viewport, mouse, null))
         {
@@ -296,7 +271,6 @@ public class MapScreen : MonoBehaviour
         Animate();
     }
 
-    // Zooms in or out, keeping the plan point under the pointer where it is (or the middle of the screen, without one).
     void ZoomAt(float wanted, Vector2? screenPoint)
     {
         float next = Mathf.Clamp(wanted, MinZoom(), MaxZoom);
@@ -326,7 +300,6 @@ public class MapScreen : MonoBehaviour
         recenter = null;
     }
 
-    // All of the plan fits on screen at the furthest out.
     float MinZoom()
     {
         StationMap map = StationMap.Current;
@@ -335,7 +308,6 @@ public class MapScreen : MonoBehaviour
         return Mathf.Min(size.x / (map.width * CellSize), size.y / (map.height * CellSize)) * 0.92f;
     }
 
-    // The middle of the screen stays over the plan.
     void ClampLook()
     {
         StationMap map = StationMap.Current;
@@ -349,7 +321,6 @@ public class MapScreen : MonoBehaviour
         return canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
     }
 
-    // Moves and scales the plan for look and zoom; the labels and markers stay the same size on screen.
     void Place()
     {
         content.localScale = new Vector3(zoom, zoom, 1f);
@@ -364,7 +335,6 @@ public class MapScreen : MonoBehaviour
     void Animate()
     {
         float time = Time.unscaledTime;
-        // The dot blinks, and a ring spreads out from it.
         float ring = Mathf.Repeat(time, 1.2f) / 1.2f;
         youRing.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.4f, 2.4f, ring);
         youRing.color = TitleUI.Fade(YouColor, 0.7f * (1f - ring));
@@ -378,9 +348,6 @@ public class MapScreen : MonoBehaviour
         }
     }
 
-    // --- Drawing the plan ---
-
-    // Draws the plan as it is now: where the player is, which room they're in, and where they're headed.
     void Redraw()
     {
         StationMap map = StationMap.Current;
@@ -394,7 +361,6 @@ public class MapScreen : MonoBehaviour
             here = inRoom;
         }
         StationMap.Room goal = targetMarker != '\0' ? map.RoomByMarker(targetMarker) : null;
-        // The room's on another floor: the stairs off this one on the way there, picked out the same way.
         RectInt? stairs = null;
         bool up = false;
         if (goal == null && targetMarker != '\0')
@@ -428,8 +394,6 @@ public class MapScreen : MonoBehaviour
         hereLabel.text = here != null ? "YOU ARE IN  <color=#ffffff>" + here.name.ToUpperInvariant() + "</color>" : "";
     }
 
-    // The stairs marked on the plan nearest a point on it, as the cells they cover, with a cell to spare round them so
-    // the highlight shows past the stripes. Null if the floor has none marked.
     static RectInt? StairsAround(StationMap map, Vector2 onPlan)
     {
         Vector2Int nearest = default;
@@ -443,7 +407,6 @@ public class MapScreen : MonoBehaviour
             }
         if (best == float.MaxValue) return null;
 
-        // Every stairs cell touching that one.
         var seen = new HashSet<Vector2Int> { nearest };
         var queue = new Queue<Vector2Int>();
         queue.Enqueue(nearest);
@@ -462,7 +425,6 @@ public class MapScreen : MonoBehaviour
         return new RectInt(xMin - 1, yMin - 1, xMax - xMin + 3, yMax - yMin + 3);
     }
 
-    // The room names, and the plan's size, for this floor.
     void BuildRooms(StationMap map)
     {
         drawnFrom = map;
@@ -487,7 +449,6 @@ public class MapScreen : MonoBehaviour
         }
     }
 
-    // "Common Grounds (Kitchen, Lounge, Bathroom)" is a lot to fit in a room on the map.
     static string ShortName(string name)
     {
         int bracket = name.IndexOf('(');
@@ -535,7 +496,6 @@ public class MapScreen : MonoBehaviour
                                 if (px >= 1 && px <= 2 && py >= 1 && py <= 2) color = SonnyColor;
                                 break;
                         }
-                        // An edge wherever the floor stops. py counts down the cell, as rows do.
                         bool edgeHere = (px == 0 && !Floor(x - 1, row)) || (px == PixelsPerCell - 1 && !Floor(x + 1, row)) ||
                                         (py == 0 && !Floor(x, row - 1)) || (py == PixelsPerCell - 1 && !Floor(x, row + 1));
                         if (edgeHere && mark != StationMap.Mark.Locked) color = edge;
@@ -550,8 +510,6 @@ public class MapScreen : MonoBehaviour
         planTexture.Apply(false);
         plan.texture = planTexture;
     }
-
-    // --- Building ---
 
     void Build()
     {
@@ -581,14 +539,10 @@ public class MapScreen : MonoBehaviour
         Raise(0f);
     }
 
-    // The wrist unit: a dark casing with a chunky bezel, screws in its corners and a status light, strapped to the
-    // suit's white sleeve, which runs off the bottom of the screen. It tilts up from its bottom left corner, the wrist.
     void BuildDevice()
     {
-        // The sleeve, under the unit and on down out of view: white, a shade down one side, a red stripe like the suit's.
         device = GameUI.Anchor(GameUI.NewRect("Wrist Unit", transform), 0f, 0f, 1f, 1f, 110f, 120f, 90f, 40f);
         device.pivot = Vector2.zero;
-        // From just behind the unit's bottom edge to well past the bottom of the screen.
         RectTransform sleeve = GameUI.Anchor(GameUI.NewRect("Sleeve", device), 0.2f, 0f, 0.8f, 0f, 0f, -520f, 0f, -30f);
         Image cloth = sleeve.gameObject.AddComponent<Image>();
         cloth.color = SuitWhite;
@@ -599,7 +553,6 @@ public class MapScreen : MonoBehaviour
         Image stripe = GameUI.Anchor(GameUI.NewRect("Stripe", sleeve), 0.12f, 0f, 0.17f, 1f).gameObject.AddComponent<Image>();
         stripe.color = SuitRed;
         stripe.raycastTarget = false;
-        // Two straps holding the unit on.
         foreach (float x in new[] { 0.28f, 0.66f })
         {
             Image strap = GameUI.Anchor(GameUI.NewRect("Strap", sleeve), x, 0f, x + 0.07f, 1f).gameObject.AddComponent<Image>();
@@ -610,7 +563,6 @@ public class MapScreen : MonoBehaviour
         Image casing = GameUI.Sliced("Casing", device, GameUI.PanelSprite, Casing);
         GameUI.Fill(casing.rectTransform, -24f);
         casing.raycastTarget = false;
-        // A screw in each corner of the bezel, out past the screen.
         foreach (Vector2 corner in new[] { Vector2.zero, Vector2.right, Vector2.up, Vector2.one })
         {
             RectTransform screw = GameUI.NewRect("Screw", device);
@@ -622,7 +574,6 @@ public class MapScreen : MonoBehaviour
             head.color = new Color(0.32f, 0.35f, 0.4f);
             head.raycastTarget = false;
         }
-        // Its status light, up in the top right of the bezel, with what it's called.
         RectTransform light = GameUI.NewRect("Status", device);
         light.anchorMin = light.anchorMax = light.pivot = Vector2.one;
         light.anchoredPosition = new Vector2(-34f, -14f);
@@ -687,7 +638,6 @@ public class MapScreen : MonoBehaviour
 
         labels = GameUI.Fill(GameUI.NewRect("Labels", content));
 
-        // The pin over where they're headed: a word on a tab, and an arrow down at the room.
         targetPin = GameUI.NewRect("Pin", content);
         targetPin.anchorMin = targetPin.anchorMax = new Vector2(0f, 1f);
         targetPin.pivot = new Vector2(0.5f, 0f);
@@ -712,7 +662,6 @@ public class MapScreen : MonoBehaviour
         targetText = GameUI.Label("Label", tab.transform, "", 20f, GameUI.Ink, TextAlignmentOptions.Center, GameUI.Heading);
         targetText.characterSpacing = 8f;
 
-        // Where they are: a blinking dot with a ring spreading out from it, and YOU under it.
         you = GameUI.NewRect("You", content);
         you.anchorMin = you.anchorMax = new Vector2(0f, 1f);
         you.sizeDelta = new Vector2(20f, 20f);
@@ -737,7 +686,6 @@ public class MapScreen : MonoBehaviour
         lines.color = new Color(1f, 1f, 1f, 0.6f);
         lines.raycastTarget = false;
 
-        // A thin bright edge round the screen, with heavier corners.
         foreach ((Vector2 min, Vector2 max, Vector2 size) in new[]
         {
             (new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 2f)),
@@ -767,7 +715,6 @@ public class MapScreen : MonoBehaviour
         }
     }
 
-    // Along the bottom: where they are on the left, and the keys on the right.
     void BuildFooter()
     {
         hereLabel = GameUI.Label("Here", device, "", 26f, LabelColor, TextAlignmentOptions.Left, GameUI.Heading);

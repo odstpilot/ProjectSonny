@@ -4,105 +4,82 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 
-// A first-person picture of the level from one spot, drawn into the UI. LockerView puts it behind the locker door, so
-// the gaps between the slats look out onto the real room.
-// Everything's drawn into one low-resolution texture, so it matches the pixel art, with a depth for every texel so
-// whatever's nearer covers what's behind it:
-//   The room is ray cast from the scene's tilemaps, Wolfenstein style: tiles on a tilemap with a collider are walls,
-//   other tiles are floor, and anywhere with no tiles counts as wall so the edge of the map never shows.
-//   Furniture (anything solid that isn't someone) stands in it as a box the size of its collider, as tall as its sprite
-//   shows it to be, its sprite folded over it: the top of the sprite on the top of the box, the rest down its front.
-//   So a table's a table from any side. The crew lying where they fell are flat on the floor.
-//   Things hung on the walls (screens, doors, lamps) are on the walls, at the height the art has them.
-//   Anyone up and about (robots, the crew) stands as a cut-out of their sprite, turned to face whichever way they're
-//   facing as seen from here. The camera spiders (CameraSpider) are drawn in the round: hub, legs, and eyes, each
-//   eye's beam sweeping the floor.
-//   It's lit by the scene's own lights: the station's light where the locker is (the global light, as DarkRooms leaves
-//   it), every lamp near enough (a lamp that's out, or flickering, is here too), the security cameras' cones
-//   (StationCamera.LightAt), and the spiders' eyes. In a dark room there's next to nothing to see but what glows.
-// The room and its furniture are drawn again whenever the light changes; whoever's moving about, every frame.
-// Assumes the usual Grid: square cells one world unit across, not rotated.
+// first-person view from one spot
 [RequireComponent(typeof(RawImage))]
 public class FirstPersonView : MonoBehaviour
 {
-    // Heights in world units. The player sprite is about 1.3 tall, so their eyes are near the top of it.
     const float EyeHeight = 1.15f;
     const float WallHeight = 2.4f;
     const float LampHeight = 2.1f;
     const float MaxDistance = 14f;
     const float NearClip = 0.3f;
-    const int MapRadius = 16;               // cells read from the tilemaps around the eye, a little past MaxDistance
-    const float TexelSize = 5f;             // canvas pixels per texel: chunky, like the rest of the art
-    const float RefreshInterval = 0.5f;     // how often to look again for what's about
-    const float RelightInterval = 0.2f;     // how often, at most, the room's drawn again for a change in the light
+    const int MapRadius = 16;
+    const float TexelSize = 5f;
+    const float RefreshInterval = 0.5f;
+    const float RelightInterval = 0.2f;
 
-    const float AmbientScale = 0.9f;        // how much the station's own light (the global light) lights things
-    const float LightScale = 1.1f;          // and each lamp
+    const float AmbientScale = 0.9f;
+    const float LightScale = 1.1f;
     const float FogDensity = 0.15f;
-    const float LightMapCell = 0.5f;        // world units between the points the light's worked out at
+    const float LightMapCell = 0.5f;
     const int LightMapSize = (MapRadius * 2 + 1) * 2;
     static readonly float[] LightMapHeights = { 0f, EyeHeight, WallHeight };
-    const float WallDecalBias = 0.04f;      // how far in front of its wall something hung on it is drawn
+    const float WallDecalBias = 0.04f;
 
     static readonly Color FloorColor = new Color32(70, 75, 82, 255);
     static readonly Color FloorAltColor = new Color32(63, 68, 75, 255);
     static readonly Color GroutColor = new Color32(34, 37, 42, 255);
     static readonly Color WallColor = new Color32(92, 100, 112, 255);
     static readonly Color WallSeamColor = new Color32(56, 62, 70, 255);
-    static readonly Color WallTrimColor = new Color32(150, 42, 38, 255);  // a red warning stripe at eye level
+    static readonly Color WallTrimColor = new Color32(150, 42, 38, 255);
     static readonly Color BaseboardColor = new Color32(38, 42, 48, 255);
     static readonly Color CeilingColor = new Color32(40, 44, 50, 255);
     static readonly Color LampColor = new Color32(214, 226, 236, 255);
     static readonly Color FogColor = new Color32(5, 6, 8, 255);
 
-    // The cameras: a dark housing up near the top of the wall, its lens lit.
     const float CameraHeight = 2f;
     const float HousingSize = 0.34f;
     const float LensSize = 0.1f;
     const float CameraLightStrength = 0.45f;
     static readonly Color HousingColor = new Color32(22, 24, 29, 255);
 
-    // The spiders.
     static readonly Color SpiderMetal = new Color32(46, 50, 58, 255);
     const float SpiderLegWidth = 0.05f;
     const float SpiderHubWidth = 0.34f, SpiderHubHeight = 0.2f;
     const float SpiderEyeSize = 0.075f;
     const float SpiderBeamStrength = 0.6f;
 
-    // Something solid standing in the room, drawn as a box with its art over it: a piece of furniture's made of a few
-    // sprites (a tile each), all of them together.
     class Prop
     {
         public GameObject owner;
         public List<SpriteRenderer> art;
-        public Bounds drawn;                 // all its art together
-        public Rect footprint;               // on the floor, world units
+        public Bounds drawn;
+        public Rect footprint;
         public float height;
-        public float topShare;               // how much of the sprite, from the top, is the top of it
+        public float topShare;
         public Color light;
-        public float enter, leave;           // this column: where the ray goes in and comes out, 0 if it misses
-        public int face;                     // which side it goes in by: 0 front (south), 1 back, 2 west, 3 east
+        public float enter, leave;
+        public int face;
     }
 
-    // Someone (or something) to draw as a cut-out: up and about, or hung on a wall.
     struct Standee
     {
         public SpriteRenderer sprite;
-        public Sprite art;                   // its sprite as seen from here
-        public Vector2 feet;                 // the bottom middle, on the floor (or on the foot of its wall)
-        public float lift;                   // height of its bottom edge
+        public Sprite art;
+        public Vector2 feet;
+        public float lift;
         public Vector2 size;
         public bool flip;
         public bool glows;
-        public float bias;                   // drawn this much nearer, so its wall doesn't cover it
+        public float bias;
     }
 
     struct PointLight
     {
         public Vector2 at;
         public float height, reach;
-        public Color color;                  // times its intensity
-        public bool lamp;                    // a station lamp: drawn as a panel on the ceiling while it's on
+        public Color color;
+        public bool lamp;
     }
 
     struct Pixels
@@ -120,14 +97,14 @@ public class FirstPersonView : MonoBehaviour
     private int width, height;
     private Color32[] pixels, basePixels;
     private float[] depth, baseDepth;
-    private Vector2[] floorAt;               // the world point of floor each texel shows (only the floor texels)
+    private Vector2[] floorAt;
     private readonly List<int> floorTexels = new List<int>();
 
     private bool[,] walls;
     private int mapMinX, mapMinY;
     private Vector2 eye, forward, right;
-    private float eyeLevel;                  // texel row
-    private float focal;                     // texels
+    private float eyeLevel;
+    private float focal;
     private int standingLayer;
     private Transform ignored;
 
@@ -143,7 +120,7 @@ public class FirstPersonView : MonoBehaviour
     private readonly List<Standee> standees = new List<Standee>();
     private readonly List<Prop> hits = new List<Prop>();
     private Color ambient;
-    private Color[] lightMap;                // LightAt over the floor around the eye, at a few heights, to look up quickly
+    private Color[] lightMap;
     private Vector2 lightMapCorner;
     private float lightSignature;
     private float refreshTimer, relightTimer, flickerTimer;
@@ -169,9 +146,6 @@ public class FirstPersonView : MonoBehaviour
         if (texture != null) Destroy(texture);
     }
 
-    // eyePosition and lookDirection are in world space. eyeLevel01 is where eye level falls, as a fraction of this
-    // rect's height, and focalPixels sets the field of view, in canvas pixels. Sprites on standingSortingLayer (the
-    // layer characters and props are on) are drawn, except ones under ignore.
     public void Show(Vector2 eyePosition, Vector2 lookDirection, float eyeLevel01, float focalPixels, int standingSortingLayer, Transform ignore)
     {
         eye = eyePosition;
@@ -237,7 +211,6 @@ public class FirstPersonView : MonoBehaviour
             refreshTimer = RefreshInterval;
             FindThings();
         }
-        // The light's changed (a lamp out, flickering, the room going dark): the room again, in the new light.
         relightTimer -= deltaTime;
         if (relightTimer <= 0f)
         {
@@ -250,9 +223,6 @@ public class FirstPersonView : MonoBehaviour
         UpdateFlicker(deltaTime);
     }
 
-    // --- What's there ---
-
-    // Reads which cells near the eye are walls.
     void ReadMap()
     {
         int size = MapRadius * 2 + 1;
@@ -260,8 +230,6 @@ public class FirstPersonView : MonoBehaviour
         System.Array.Clear(walls, 0, walls.Length);
         var floor = new bool[size, size];
 
-        // Cells one world unit across, counted from the world's origin. Each floor of the station has a grid of its own,
-        // so each tilemap's asked about the same spot through its own.
         mapMinX = Mathf.FloorToInt(eye.x) - MapRadius;
         mapMinY = Mathf.FloorToInt(eye.y) - MapRadius;
 
@@ -283,15 +251,12 @@ public class FirstPersonView : MonoBehaviour
                 }
         }
 
-        // With no floor tiles there's no map to go by, so leave it open. Otherwise, off the floor is wall.
         if (!anyFloor) return;
         for (int i = 0; i < size; i++)
             for (int j = 0; j < size; j++)
                 if (!floor[i, j]) walls[i, j] = true;
     }
 
-    // Sorts everything near enough on the characters' layer: furniture, the fallen, those up and about, and what's on
-    // the walls. And the cameras and spiders near enough to be seen, or for their light to reach.
     void FindThings()
     {
         props.Clear();
@@ -310,7 +275,7 @@ public class FirstPersonView : MonoBehaviour
             if (sprite.sortingLayerID != standingLayer || sprite.sprite == null) continue;
             if (ignored != null && sprite.transform.IsChildOf(ignored)) continue;
             if (((Vector2)sprite.transform.position - eye).sqrMagnitude > reach) continue;
-            if (sprite.GetComponentInParent<CameraSpider>() != null) continue;     // drawn in the round
+            if (sprite.GetComponentInParent<CameraSpider>() != null) continue;
             bool shadow = sprite.name == "Shadow";
 
             CrewMember crew = sprite.GetComponentInParent<CrewMember>();
@@ -322,11 +287,9 @@ public class FirstPersonView : MonoBehaviour
             if (crew != null || sprite.GetComponentInParent<PlaceholderRobot>() != null || sprite.GetComponentInParent<MaintenanceBot>() != null
                 || sprite.GetComponentInParent<WeepingAngel>() != null || sprite.GetComponentInParent<PlayerController>() != null)
             {
-                // Their shadows go about with them: here they stand on their own feet.
                 if (!shadow) about.Add(sprite);
                 continue;
             }
-            // A piece of furniture's shadow lies on the floor under it.
             if (shadow)
             {
                 lying.Add(sprite);
@@ -339,11 +302,9 @@ public class FirstPersonView : MonoBehaviour
                 art.Add(sprite);
                 continue;
             }
-            // Not solid: hung on a wall, if its foot's in one, otherwise standing loose about the room.
             if (IsWall(Cell(sprite.bounds.min))) hung.Add(sprite);
             else about.Add(sprite);
         }
-        // What's on the floor, by the cells it's over, so each point of floor only looks at what might be on it.
         lyingIn.Clear();
         foreach (SpriteRenderer flat in lying)
         {
@@ -356,7 +317,6 @@ public class FirstPersonView : MonoBehaviour
                     here.Add(flat);
                 }
         }
-        // A box for each of its solid parts (a console's two ends, either side of the knee space), its art over them all.
         foreach (KeyValuePair<GameObject, List<SpriteRenderer>> piece in furniture)
         {
             piece.Value.Sort((a, b) => b.sortingOrder.CompareTo(a.sortingOrder));
@@ -380,8 +340,6 @@ public class FirstPersonView : MonoBehaviour
         }
     }
 
-    // What a sprite's drawn for, if that's solid: the nearest object over it with a solid collider. Not the tilemaps
-    // (the walls), not triggers.
     static GameObject SolidOwner(SpriteRenderer sprite)
     {
         for (Transform at = sprite.transform; at != null; at = at.parent)
@@ -393,8 +351,6 @@ public class FirstPersonView : MonoBehaviour
     static bool Solid(Collider2D collider) =>
         collider.enabled && !collider.isTrigger && !(collider is TilemapCollider2D) && !(collider is CompositeCollider2D);
 
-    // In the top-down art the floor's seen at an angle: the top of a thing's art is its top, the rest its front. As tall
-    // as that front is.
     static Prop MakeProp(GameObject owner, List<SpriteRenderer> art, Bounds drawn, Bounds footprint)
     {
         float front = Mathf.Clamp(drawn.size.y - footprint.size.y, 0.25f, WallHeight);
@@ -409,10 +365,6 @@ public class FirstPersonView : MonoBehaviour
         };
     }
 
-    // --- The light ---
-
-    // The station's light here, and the lamps near enough to matter. Notes a sum of the light that matters, to tell when
-    // it's changed.
     void GatherLights()
     {
         if (sceneLights.Count == 0) sceneLights.AddRange(FindObjectsByType<Light2D>());
@@ -429,10 +381,8 @@ public class FirstPersonView : MonoBehaviour
                 signature += Mathf.Round(light.intensity * 50f) * 7f;
                 continue;
             }
-            // Point lights all the way round. The cameras' and spiders' cones are their own (DrawFrame).
             if (light.lightType != Light2D.LightType.Point || light.pointLightOuterAngle < 300f) continue;
             if (light.GetComponentInParent<StationCamera>() != null || light.GetComponentInParent<CameraSpider>() != null) continue;
-            // A station lamp as it is when it's on: its flicker's the dips in the picture (UpdateFlicker), not a new one.
             StationLight station = light.GetComponentInParent<StationLight>();
             float intensity = station != null ? station.SteadyIntensity(light) : light.intensity;
             if (intensity <= 0.01f) continue;
@@ -447,15 +397,12 @@ public class FirstPersonView : MonoBehaviour
                 color = light.color * intensity,
                 lamp = station != null
             });
-            // Only a lamp going on or off, or the station's light changing, is worth drawing the room again for: the rest
-            // (screens, glows) pulse all the while, and are lit as they were last time it was.
             if (station != null) signature += intensity * (at.x * 0.37f + at.y * 0.61f + 1f);
         }
         lightSignature = signature;
         foreach (Prop prop in props) prop.light = LightAt(new Vector2(prop.footprint.center.x, prop.footprint.yMin), prop.height * 0.5f);
     }
 
-    // How much light falls at a point, at a height off the floor.
     Color LightAt(Vector2 point, float atHeight)
     {
         Color total = ambient * AmbientScale;
@@ -471,8 +418,6 @@ public class FirstPersonView : MonoBehaviour
         return total;
     }
 
-    // The light around the eye worked out on a grid, at the floor, eye height, and the ceiling, for drawing the room:
-    // far quicker than every lamp for every texel.
     void BuildLightMap()
     {
         int bands = LightMapHeights.Length;
@@ -487,7 +432,6 @@ public class FirstPersonView : MonoBehaviour
                 }
     }
 
-    // The light at a point and height, from the grid.
     Color MappedLight(Vector2 point, float atHeight)
     {
         float fx = Mathf.Clamp((point.x - lightMapCorner.x) / LightMapCell - 0.5f, 0f, LightMapSize - 1.001f);
@@ -516,8 +460,6 @@ public class FirstPersonView : MonoBehaviour
         return lit;
     }
 
-    // --- The room, its furniture, and the fallen ---
-
     void Render()
     {
         BuildLightMap();
@@ -525,7 +467,6 @@ public class FirstPersonView : MonoBehaviour
 
         for (int x = 0; x < width; x++)
         {
-            // The ray moves one unit forward per unit along it, so distance along it is depth straight ahead: no fisheye.
             Vector2 ray = forward + right * ((x + 0.5f - width * 0.5f) / focal);
             float wallDepth = Cast(eye, ray, out Vector2 hit, out bool facesX);
             float wallTop = eyeLevel + (WallHeight - EyeHeight) / wallDepth * focal;
@@ -567,14 +508,12 @@ public class FirstPersonView : MonoBehaviour
 
             DrawProps(x, ray, wallDepth);
         }
-        // Only the floor left showing, round the furniture, takes the light sweeping over it.
         floorTexels.RemoveAll(i => depth[i] < Vector2.Dot(floorAt[i] - eye, forward) - 0.01f);
 
         System.Array.Copy(pixels, basePixels, pixels.Length);
         System.Array.Copy(depth, baseDepth, depth.Length);
     }
 
-    // Steps the ray from cell to cell until it enters a wall. Returns the depth, or MaxDistance if nothing is that close.
     float Cast(Vector2 from, Vector2 ray, out Vector2 hit, out bool facesX)
     {
         int cx = Mathf.FloorToInt(from.x);
@@ -637,7 +576,6 @@ public class FirstPersonView : MonoBehaviour
         float fv = world.y - cy;
         Color surface = fu < 0.05f || fv < 0.05f ? GroutColor : ((cx + cy) & 1) == 0 ? FloorColor : FloorAltColor;
 
-        // The fallen, and the furniture's shadows, flat on the floor as they lie in the top-down art.
         if (!lyingIn.TryGetValue(new Vector2Int(cx, cy), out List<SpriteRenderer> here)) return Lit(surface, MappedLight(world, 0f), distance);
         foreach (SpriteRenderer body in here)
         {
@@ -654,7 +592,6 @@ public class FirstPersonView : MonoBehaviour
 
     Color32 CeilingPixel(Vector2 world, float distance)
     {
-        // A panel glowing over each lamp that's on.
         foreach (PointLight light in lights)
         {
             if (!light.lamp) continue;
@@ -673,7 +610,7 @@ public class FirstPersonView : MonoBehaviour
 
     Color32 WallPixel(Vector2 hit, float atHeight, bool facesX, float distance)
     {
-        float along = facesX ? hit.y : hit.x; // position along the wall, for the panel seams
+        float along = facesX ? hit.y : hit.x;
         Color surface;
         if (atHeight < 0.16f || atHeight > WallHeight - 0.14f)
             surface = BaseboardColor;
@@ -684,12 +621,10 @@ public class FirstPersonView : MonoBehaviour
         else
             surface = WallColor;
 
-        // Walls facing along x are a little darker, so corners read.
         if (facesX) surface *= 0.8f;
         return Lit(surface, MappedLight(hit, atHeight), distance);
     }
 
-    // The furniture in this column, far to near: the side the ray goes in by, then, looking down on it, its top.
     void DrawProps(int x, Vector2 ray, float wallDepth)
     {
         hits.Clear();
@@ -716,7 +651,6 @@ public class FirstPersonView : MonoBehaviour
             }
             if (prop.height >= EyeHeight) continue;
 
-            // Its top, from the near edge to the far one (or the wall, if it's up against one).
             float far = Mathf.Min(prop.leave, wallDepth);
             float rowNear = eyeLevel - (EyeHeight - prop.height) / t * focal;
             float rowFar = eyeLevel - (EyeHeight - prop.height) / far * focal;
@@ -735,7 +669,6 @@ public class FirstPersonView : MonoBehaviour
         }
     }
 
-    // Where the ray goes into the box and out again, and by which side. False if it misses.
     bool Enter(Prop prop, Vector2 ray)
     {
         Rect f = prop.footprint;
@@ -754,8 +687,6 @@ public class FirstPersonView : MonoBehaviour
         return true;
     }
 
-    // The colour of a box's side at a point and height: the front of its sprite on the front, the same a shade darker
-    // round the back, and the edge of it along the ends.
     Color SideColor(Prop prop, Vector2 point, float h)
     {
         Bounds drawn = prop.drawn;
@@ -768,13 +699,10 @@ public class FirstPersonView : MonoBehaviour
             case 2: u = 0.06f; shade = 0.8f; break;
             default: u = 0.94f; shade = 0.8f; break;
         }
-        // Where the art's see-through (between a table's legs, say), a dark underside instead.
         Color surface = SampleArt(prop, u, v, out Color painted) ? painted : HousingColor;
         return surface * shade;
     }
 
-    // A point of a piece's art, u and v across all of it from its bottom left: from whichever of its sprites is on top
-    // there. False where it's see-through.
     static bool SampleArt(Prop prop, float u, float v, out Color painted)
     {
         Vector2 point = new Vector2(prop.drawn.min.x + Mathf.Clamp01(u) * prop.drawn.size.x, prop.drawn.min.y + Mathf.Clamp01(v) * prop.drawn.size.y);
@@ -801,8 +729,6 @@ public class FirstPersonView : MonoBehaviour
         pixels[i] = Lit(surface, light, at);
     }
 
-    // --- Every frame: the light that moves, and whoever's about ---
-
     void DrawFrame()
     {
         System.Array.Copy(basePixels, pixels, pixels.Length);
@@ -816,7 +742,6 @@ public class FirstPersonView : MonoBehaviour
         texture.Apply(false);
     }
 
-    // The cameras' cones and the spiders' eyes, sweeping the floor.
     void SweepingLight()
     {
         bool any = false;
@@ -880,7 +805,6 @@ public class FirstPersonView : MonoBehaviour
         {
             if (!Showing(sprite)) continue;
             Bounds b = sprite.bounds;
-            // Down the wall to the floor in front of it: that's how high up it hangs.
             Vector2Int cell = Cell(b.min);
             int steps = 0;
             while (IsWall(cell) && steps++ < 4) cell.y--;
@@ -905,10 +829,6 @@ public class FirstPersonView : MonoBehaviour
     bool Showing(SpriteRenderer sprite) =>
         sprite != null && sprite.enabled && sprite.sprite != null && sprite.gameObject.activeInHierarchy;
 
-    // Their sprite as seen from here, and whether it's drawn flipped. Someone with art for eight directions (the crew,
-    // through the player's own animator parameters, PlayerAnimParams) is shown facing the way they face from here, not
-    // the way they face on the map: their animator is asked for that frame, then put back as it was. Anyone else is
-    // turned the way they face (Turned).
     void AsSeen(SpriteRenderer sprite, out Sprite art, out bool flip)
     {
         art = sprite.sprite;
@@ -920,7 +840,6 @@ public class FirstPersonView : MonoBehaviour
         bool sided = Has(animator, PlayerAnimParams.FaceSide);
         float side = sided ? animator.GetFloat(PlayerAnimParams.FaceSide) : 0f;
 
-        // On the map, down is towards whoever's looking. Here, that's towards the locker.
         Vector2 seen = PlayerController.SnapToEightWay(new Vector2(Vector2.Dot(facing, right), Vector2.Dot(facing, forward)));
         animator.SetFloat(PlayerAnimParams.FaceX, seen.x);
         animator.SetFloat(PlayerAnimParams.FaceY, seen.y);
@@ -952,8 +871,6 @@ public class FirstPersonView : MonoBehaviour
         return known.Contains(parameter);
     }
 
-    // Which way round to draw them, seen from here: the art faces right, so whoever's facing to the right of the view
-    // faces right in it, whichever way that is in the room.
     bool Turned(SpriteRenderer sprite)
     {
         PlaceholderRobot robot = sprite.GetComponentInParent<PlaceholderRobot>();
@@ -997,7 +914,6 @@ public class FirstPersonView : MonoBehaviour
         }
     }
 
-    // A spider in the round: its legs, its hub with the red of its core through the middle, and its eyes, glowing.
     void DrawSpider(CameraSpider spider)
     {
         Vector3 hub = spider.Hub;
@@ -1013,14 +929,12 @@ public class FirstPersonView : MonoBehaviour
         for (int e = 0; e < spider.EyeTotal; e++)
         {
             spider.EyeAt(e, out Vector3 at, out Vector2 look, out Color color, out float beam);
-            // Looking this way, an eye flares.
             Vector2 toEye = eye - (Vector2)at;
             float facing = beam > 0f && Vector2.Angle(look, toEye) < spider.BeamHalfAngle * 1.5f ? 2.2f : 1f;
             Blob(at, SpiderEyeSize * facing, SpiderEyeSize * facing, color, Color.white, true);
         }
     }
 
-    // Where a point in the room lands in the picture: texel column and row, and how far ahead it is. False behind.
     bool Project(Vector3 point, out Vector2 screen, out float at)
     {
         Vector2 to = (Vector2)point - eye;
@@ -1053,7 +967,6 @@ public class FirstPersonView : MonoBehaviour
         Dot(at2, Mathf.Max(0.5f, across * focal / at * 0.5f), Mathf.Max(0.5f, tall * focal / at * 0.5f), at - (glows ? 0.02f : 0f), color);
     }
 
-    // A filled ellipse, depth tested.
     void Dot(Vector2 center, float rx, float ry, float at, Color32 color)
     {
         int x0 = Mathf.Max(0, Mathf.FloorToInt(center.x - rx)), x1 = Mathf.Min(width - 1, Mathf.FloorToInt(center.x + rx));
@@ -1070,7 +983,6 @@ public class FirstPersonView : MonoBehaviour
             }
     }
 
-    // The cameras: a dark housing up on the wall, its light on the front.
     void DrawCameras()
     {
         foreach (StationCamera watcher in cameras)
@@ -1084,10 +996,6 @@ public class FirstPersonView : MonoBehaviour
         }
     }
 
-    // --- Sprites' own pixels ---
-
-    // A texel of a sprite's art, u and v across it from its bottom left. Read once per texture: a texture that can't be
-    // read from the CPU is copied through the GPU first.
     static Color32 Sample(Sprite sprite, float u, float v)
     {
         Texture2D source = sprite.texture;
@@ -1122,9 +1030,6 @@ public class FirstPersonView : MonoBehaviour
         return read;
     }
 
-    // --- The lights stuttering ---
-
-    // The lights stutter now and then: a short dip, sometimes twice in a row.
     void UpdateFlicker(float deltaTime)
     {
         flickerTimer -= deltaTime;

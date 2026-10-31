@@ -1,12 +1,11 @@
 using UnityEngine;
 
-// A robot coming apart: pieces of it thrown out across the floor, spinning, skidding to a stop, and lying there a while
-// before they fade. DamageEffects sets one off when something is destroyed; the art comes from WreckageArt.
+// robot breaking into pieces
 public class ScrapBurst : MonoBehaviour
 {
-    const float Drag = 4.5f;            // how quickly a piece slides to a stop
+    const float Drag = 4.5f;
     const float SpinDrag = 3.5f;
-    const float RestSpeed = 0.35f;      // below this it has settled
+    const float RestSpeed = 0.35f;
     const float FadeTime = 1.2f;
 
     private Sprite sprite;
@@ -16,7 +15,6 @@ public class ScrapBurst : MonoBehaviour
     private float restingFor = -1f;
     private SpriteRenderer piece;
 
-    // count pieces thrown from point, flung hardest along away.
     public static void Burst(Vector2 point, int count, Vector2 away, float lifetime = 6f)
     {
         var dice = new System.Random(Random.Range(int.MinValue, int.MaxValue));
@@ -27,7 +25,6 @@ public class ScrapBurst : MonoBehaviour
             var scrap = new GameObject("Scrap").AddComponent<ScrapBurst>();
             scrap.transform.position = point + Random.insideUnitCircle * 0.2f;
             scrap.sprite = WreckageArt.RobotPart(dice).ToSprite(new Vector2(0.5f, 0.5f));
-            // Mostly the way the hit was going, some of it every which way.
             Vector2 direction = Vector2.Lerp(Random.insideUnitCircle.normalized, heading, Random.Range(0.1f, 0.75f)).normalized;
             scrap.velocity = direction * Random.Range(2.5f, 7f);
             scrap.spin = Random.Range(-720f, 720f);
@@ -39,7 +36,7 @@ public class ScrapBurst : MonoBehaviour
     {
         piece = gameObject.AddComponent<SpriteRenderer>();
         piece.sprite = sprite;
-        piece.sortingLayerName = "Top";     // in the air, over everything
+        piece.sortingLayerName = "Top";
         piece.sortingOrder = 12;
         transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
     }
@@ -56,7 +53,6 @@ public class ScrapBurst : MonoBehaviour
             spin = Mathf.MoveTowards(spin, 0f, SpinDrag * Mathf.Abs(spin) * Time.deltaTime);
 
             if (velocity.magnitude > RestSpeed) return;
-            // Settled: it lies on the floor with everything else that came down.
             restingFor = 0f;
             piece.sortingLayerName = "FloorObject";
             piece.sortingOrder = 7;

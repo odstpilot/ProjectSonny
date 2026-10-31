@@ -40,14 +40,12 @@ public class VitalsLine : MonoBehaviour
         else
             healthPercent = Mathf.Clamp01(current / max);
 
-        // Start the death animation.
         if (healthPercent <= 0f && !flatlining)
         {
             flatlining = true;
             flatlineProgress = 0f;
         }
 
-        // Reset if the player has health again.
         if (healthPercent > 0f)
         {
             flatlining = false;
@@ -100,7 +98,6 @@ public class VitalsLine : MonoBehaviour
         float spacing = width / (pattern.Length - 1);
         float time = Time.unscaledTime;
 
-        // Continue the flatline animation.
         if (flatlining)
         {
             flatlineProgress +=
@@ -110,7 +107,6 @@ public class VitalsLine : MonoBehaviour
                 Mathf.Clamp01(flatlineProgress);
         }
 
-        // While dying, keep the final frantic heartbeat.
         float visualHealth = healthPercent;
 
         if (flatlining)
@@ -178,10 +174,6 @@ public class VitalsLine : MonoBehaviour
                 + nextJitter
                 + nextExtraWave;
 
-            // -----------------------------------
-            // PROGRESSIVE FLATLINE
-            // -----------------------------------
-
             if (flatlining)
             {
                 float segmentPosition =
@@ -190,8 +182,6 @@ public class VitalsLine : MonoBehaviour
                 float nextSegmentPosition =
                     (float)(i + 1) / lines.Count;
 
-                // Everything behind the advancing
-                // flatline becomes completely flat.
                 if (segmentPosition < flatlineProgress)
                 {
                     y1 = 0f;

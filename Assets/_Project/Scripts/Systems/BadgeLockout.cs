@@ -1,13 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-// Chapter 2, at a badge door (Teleporter.credential) the technician can't open: the reactor core's, the only way left
-// down to the control room. Nobody's alive to badge them through, and their temp badge died with Sonny's takeover
-// (ChapterTwoDirector).
-// Any of its doors will do (doors).
-// The first time they walk up to one while they're looking for the control room (afterObjective), Pip says why (Sonny
-// cut every badge off), and sends them to the comms ring next door, whose relay can switch theirs back on (CommsRing). That's the objective after, pinned on the map.
-// Built by ChapterOneBuilder for ChapterTwoBuilder.
+// dead badge at the reactor door
 public class BadgeLockout : MonoBehaviour
 {
     public PlayerController player;
@@ -20,12 +14,6 @@ public class BadgeLockout : MonoBehaviour
 
     [Tooltip("The technician, at the door.")]
     [TextArea] public string[] technicianLines = { "My badge is dead, the reader won't even blink" };
-    [Tooltip("Pip, after that. ~ opens a line with static; ^ says it happily.")]
-    [TextArea] public string[] pipLines =
-    {
-        "~Sonny cut off every badge on the station, yours included",
-        "~But the comms ring's next door and its relay talks to every badge aboard, so if anything can switch yours back on, it's that",
-    };
     public string objective = "Reactivate your badge in the comms ring";
     [Tooltip("The room pinned on the map for it, by its marker in the layout (it's on floor 2), and what the pin says.")]
     public char targetRoom = 'g';
@@ -33,7 +21,6 @@ public class BadgeLockout : MonoBehaviour
     [Tooltip("Where the player stands for a tester's jump (CheckpointJump): a few steps from one of the doors.")]
     public Vector2 standAt;
 
-    // Picking up from a save after it's happened (ChapterTwoDirector): no waiting at the door, just where to go.
     public void ResumeLockedOut()
     {
         StopAllCoroutines();
@@ -41,7 +28,6 @@ public class BadgeLockout : MonoBehaviour
         MapScreen.SetTarget(targetRoom, targetLabel);
     }
 
-    // Close enough to one of the doors that won't open for them, while it matters.
     bool TriedOne()
     {
         if (!string.IsNullOrEmpty(afterObjective) && TutorialHud.Get().Objective != afterObjective) return false;
@@ -65,7 +51,7 @@ public class BadgeLockout : MonoBehaviour
 
         if (SuitHelper.Exists) SuitHelper.Get().Hush();
         yield return TechnicianVoice.Think(technicianLines);
-        if (SuitHelper.Exists) SuitHelper.Get().Tell(pipLines);
+        if (SuitHelper.Exists) SuitHelper.Get().Tell(PipManager.Lines.badgeLockout);
         TutorialHud.Get().SetObjective(objective);
         MapScreen.SetTarget(targetRoom, targetLabel);
     }

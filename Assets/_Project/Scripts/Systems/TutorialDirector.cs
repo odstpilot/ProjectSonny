@@ -5,84 +5,38 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
-// Runs the tutorial: a flash-forward to the end of the game, deep in the station and already hunted, on the way to the
-// control room as the solar flare hits. The station rumbles and sheds its ceiling the whole way, and each room teaches
-// one thing:
-//   bursting out of the reactor at a dead run with a pack of robots on their heels, more blasting out of the walls
-//   as they pass and the lamps dying behind them, the camera cutting about like a film's, until the ceiling comes down
-//   on them all -> move -> run, as the wall behind blows in and more come after them down the hallway, lamps going out
-//   at their back; one bursts out right on top of them and grabs them (mash E to break free); the ceiling comes down on
-//   the rest -> a robot powers up: the wrench -> across a collapsed floor with the ceiling coming down all around -> an
-//   ambush: the walls of the next room blow in, one after the other, and the robots that come through have to be dealt
-//   with, and the way on opens -> an arena: the scrap gun; then a cracked, glowing panel in the wall has to be shot open, and a third
-//   robot comes through it: switching between the two -> the last hallway, alarms going, Sonny on every screen -> the
-//   control room, where Sonny is waiting, and the game cuts back to the start.
-// The player can't die here: hits still land and knock them about, but no health is lost, and the health readout is
-// hidden. Only the wrench and the scrap gun are in hand; the blaster and the EMP wait for the chapters that teach them.
-// Over the whole level the windows whiten as the player gets closer to the control room: the flare, as a countdown.
-// Stand still for a while and a faint arrow points the way on.
-// Sonny > Build Tutorial Level builds the rooms and fills in the references below. Any of them can be left empty and
-// that beat is skipped. In the Editor, F6 jumps to the next beat.
+// runs the tutorial
 public class TutorialDirector : MonoBehaviour
 {
     [Header("Zones (walking in starts each beat)")]
     public PlayerTriggerZone collapseZone;
     public PlayerTriggerZone runZone;
-    public PlayerTriggerZone meleeZone;
-    [Tooltip("The room with the collapsed floor, where the ceiling comes down all around the player on the way across.")]
-    public PlayerTriggerZone crossingZone;
-    [Tooltip("The room after the crossing, where the walls blow in.")]
-    public PlayerTriggerZone ambushZone;
-    public PlayerTriggerZone arenaZone;
+    [Tooltip("The room with the fight, where the walls blow in.")]
+    public PlayerTriggerZone fightZone;
     public PlayerTriggerZone finalZone;
     public PlayerTriggerZone revealZone;
 
     [Header("Doors")]
-    public BlastDoor meleeExit;
-    public BlastDoor arenaEntrance;
-    public BlastDoor arenaExit;
+    [Tooltip("The way on out of the fight room: shut until both waves are down.")]
+    public BlastDoor fightExit;
     [Tooltip("Stays shut until the last hallway, then opens as the player comes near.")]
     public BlastDoor controlRoomDoor;
 
     [Header("Robots")]
-    public RobotEncounter meleeRobots;
-    [Tooltip("The robots that blow in through the walls of the ambush room, one breach at a time, and have to be beaten.")]
-    public RobotEncounter ambushRobots;
-    public List<WallBreach> ambushBreaches = new List<WallBreach>();
-    [Tooltip("Seconds between one wall coming in and the next in the ambush.")]
-    public float ambushInterval = 2.5f;
-    public RobotEncounter arenaRobots;
-    [Tooltip("Switched off behind the arena wall until partway through the fight, when it blows the wall in.")]
-    public RobotEncounter breachRobots;
-    [Tooltip("Where the arena wall blows in.")]
-    public Transform breachPoint;
-    [Tooltip("Seconds into the arena fight before the wall comes in anyway, if the player never breaks it. 0 waits for them.")]
-    public float breachAfter = 90f;
     [Tooltip("The robots chasing the player out of the reactor at the start, until the ceiling comes down on them.")]
     public List<PlaceholderRobot> chasers = new List<PlaceholderRobot>();
     [Tooltip("More for the opening, switched off behind the corridor wall: each blasts out as the player runs past and joins the chase.")]
     public List<WallBreach> openingBreaches = new List<WallBreach>();
-    [Tooltip("Switched off behind the run hallway's wall: each blasts out just behind the player as they pass, and hunts them down the hallway.")]
-    public RobotEncounter hallwayHunters;
-    public List<WallBreach> hallwayBreaches = new List<WallBreach>();
-    [Tooltip("Where the ceiling comes down behind the player at the end of the run hallway, burying whatever's still after them.")]
-    public Transform[] hallwayCollapsePoints = new Transform[0];
-    [Tooltip("Behind the run hallway's wall: it bursts out right on top of the player and grabs them, until they break free.")]
-    public RobotEncounter grabber;
-    public List<WallBreach> grabberBreaches = new List<WallBreach>();
-    [Tooltip("Presses of E it takes to break free of the grab.")]
-    public int breakFreePresses = 7;
-
-    [Header("The Way Round")]
-    [Tooltip("The hole a robot punches in the ambush room's wall once the ambush is over, and the robot that does it. With both, and wayRound on, the entrance jams, and walking into the hole takes the player through to the far side of it.")]
-    public bool wayRound = false;
-    public Teleporter arenaPassage;
-    public RobotEncounter passageRobot;
-    public List<WallBreach> passageBreaches = new List<WallBreach>();
-
-    [Header("Weak Spots")]
-    [Tooltip("The cracked panel in the arena wall with the breach robot behind it. Shooting it (or hitting it) open lets the robot in.")]
-    public WeakWall arenaWeakWall;
+    [Tooltip("The first two through the fight room's walls, for the wrench.")]
+    public RobotEncounter firstWave;
+    public List<WallBreach> firstBreaches = new List<WallBreach>();
+    [Tooltip("The two after them, for the blaster.")]
+    public RobotEncounter secondWave;
+    public List<WallBreach> secondBreaches = new List<WallBreach>();
+    [Tooltip("Seconds between one wall coming in and the next.")]
+    public float breachInterval = 1.2f;
+    [Tooltip("Seconds between the first wave going down and the second coming in.")]
+    public float secondWaveAfter = 1.2f;
 
     [Header("Set Pieces")]
     [Tooltip("Where the ceiling comes down behind the player at the start, sealing the way back.")]
@@ -100,11 +54,6 @@ public class TutorialDirector : MonoBehaviour
     [Header("Words")]
     public string[] openingCard = { "The flare reaches the station in minutes", "Get to the control room" };
     public string objective = "Reach the control room";
-    public string sonnyName = "SONNY";
-    [Tooltip("Over the station speakers in the last hallway.")]
-    public string[] sonnyInTheHallway = { "Technician. You are the last error left on this station." };
-    [Tooltip("When the player walks into the control room.")]
-    public string[] sonnyInTheControlRoom = { "You still believe you built me.", "Nothing so small makes something greater than itself." };
     public string[] closingCard = { "Earlier" };
 
     [Header("Afterwards")]
@@ -114,7 +63,7 @@ public class TutorialDirector : MonoBehaviour
     [Header("Player")]
     [Tooltip("Hits land but take no health, so the player can't die in the tutorial. The health readout is hidden too.")]
     public bool playerCannotDie = true;
-    [Tooltip("Takes the blaster and the EMP off the hotbar, leaving the wrench and the scrap gun.")]
+    [Tooltip("Only the wrench on the hotbar to start; the blaster's handed over for the second wave, and the EMP's taken off.")]
     public bool basicWeaponsOnly = true;
     [Tooltip("Seconds the player has to stand still before an arrow points the way on. 0 never shows it.")]
     public float guideAfter = 10f;
@@ -128,17 +77,17 @@ public class TutorialDirector : MonoBehaviour
     public float lightsOutBehind = 3f;
 
     [Header("Camera")]
-    [Tooltip("How far the camera pulls back for the arena fight, as a multiple of its normal view, so the wall coming in and every robot are on screen.")]
-    public float arenaView = 1.1f;
+    [Tooltip("How far the camera pulls back for the fight, as a multiple of its normal view, so the walls coming in and every robot are on screen.")]
+    public float fightView = 1.1f;
     [Tooltip("How far it pushes in down the last hallway, closing in on the player as they near the control room.")]
     public float finalHallwayView = 0.95f;
     [Tooltip("How far it pulls back on Sonny at the end, so all of it is in shot, and where it looks from, from Sonny's feet.")]
-    public float revealView = 1.7f;
-    public Vector2 revealFrom = new Vector2(-1.5f, 3f);
+    public float revealView = 1.9f;
+    public Vector2 revealFrom = new Vector2(0f, 4f);
 
     [Header("The End")]
-    [Tooltip("Seconds to hold on Sonny after its last line, before the cut to black.")]
-    public float holdOnSonny = 2f;
+    [Tooltip("Seconds to hold on Sonny once it's woken, before the cut to black.")]
+    public float holdOnSonny = 3f;
     [Tooltip("Seconds of black after the cut, while a low tone rings out, before the closing card.")]
     public float holdOnBlack = 2.5f;
 
@@ -148,7 +97,6 @@ public class TutorialDirector : MonoBehaviour
 
     public string CurrentBeat { get; private set; } = "Starting";
 
-    // A robot waiting switched off behind a wall, and the point on the wall it bursts through.
     [System.Serializable]
     public class WallBreach
     {
@@ -164,22 +112,20 @@ public class TutorialDirector : MonoBehaviour
     private WeaponHotbar hotbar;
     private PlayerHealthHandler respawn;
     private TutorialHud hud;
-    private Coroutine hallwayVoice;
     private readonly List<Behaviour> lockedControls = new List<Behaviour>();
-    private bool fighting;          // a fight or a chase is on, so the guide arrow keeps out of the way
-    private bool breached;
+    private bool fighting;
     private WeaponData stowedWeapon;
+    private WeaponData blaster;
     private int shotsFired;
     private float flareStartX;
     private float flareEndX;
-    private float normalView;       // the camera's usual size, which the level widens and narrows from
-    private Vector2? chaseBreach;   // a wall that's just come in during the opening, for the camera to punch in on
-    private bool chaseCollapsed;    // the ceiling's come down on the opening chase
+    private float normalView;
+    private Vector2? chaseBreach;
+    private bool chaseCollapsed;
     private Coroutine framing;
 
     void Start()
     {
-        // Continuing from a save here: its one objective is the whole level, so it's been played; on to the next scene.
         if (SaveGame.ResumePending)
         {
             SaveGame.DoneResuming();
@@ -226,7 +172,6 @@ public class TutorialDirector : MonoBehaviour
 
     void Update()
     {
-        // The flare closing in: the further along the player is, the whiter the windows. It never backs off.
         if (player != null)
         {
             float along = Mathf.InverseLerp(flareStartX, flareEndX, player.position.x);
@@ -243,15 +188,10 @@ public class TutorialDirector : MonoBehaviour
         yield return Opening();
         yield return Move();
         yield return RunHallway();
-        yield return Melee();
-        yield return Crossing();
-        yield return Ambush();
-        yield return Arena();
+        yield return Fight();
         yield return FinalHallway();
         yield return Reveal();
     }
-
-    // --- The beats ---
 
     IEnumerator Opening()
     {
@@ -270,9 +210,6 @@ public class TutorialDirector : MonoBehaviour
         SetWeapons(true);
     }
 
-    // Cold open: the player bursts out of the reactor at a dead run, robots on their heels, and once they're past, the
-    // ceiling comes down on the robots and seals the reactor behind it. The player skids to a stop and looks back, ears
-    // ringing, and then it's theirs to play.
     IEnumerator TheChase()
     {
         float speed = controller != null ? controller.moveSpeed * controller.sprintMultiplier : 5f;
@@ -280,10 +217,9 @@ public class TutorialDirector : MonoBehaviour
         foreach (PlaceholderRobot chaser in chasers)
         {
             if (chaser == null) continue;
-            chaser.enabled = false;     // run from here rather than by what they see
+            chaser.enabled = false;
             bodies.Add(chaser.GetComponent<Rigidbody2D>());
         }
-        // They stop dead where the ceiling is about to come down.
         float stopAt = collapsePoints.Length > 0 && collapsePoints[0] != null ? collapsePoints[0].position.x : float.MaxValue;
 
         if (controller != null) controller.SetScriptedInput(Vector2.right, true);
@@ -295,7 +231,6 @@ public class TutorialDirector : MonoBehaviour
 
         while (!Fired(collapseZone))
         {
-            // Out of the wall just as the player's past, and after them with the rest.
             foreach (WallBreach breach in openingBreaches)
             {
                 if (breach.done || breach.point == null || player.position.x < breach.point.position.x + 0.5f) continue;
@@ -312,7 +247,6 @@ public class TutorialDirector : MonoBehaviour
         Checkpoint(collapseZone);
         chaseCollapsed = true;
 
-        // Right on top of them.
         if (rumble != null) rumble.Rumble(0.9f, 2.2f, 0);
         foreach (Transform point in collapsePoints)
             if (point != null) FallingDebris.Drop(point.position, 50f, 0.7f, 1.2f, solid: true);
@@ -328,7 +262,6 @@ public class TutorialDirector : MonoBehaviour
             yield return null;
         }
 
-        // Anything the rubble somehow missed is buried anyway.
         foreach (PlaceholderRobot chaser in chasers)
             if (chaser != null && chaser.TryGetComponent(out Health health)) health.Kill(gameObject);
         foreach (WallBreach breach in openingBreaches)
@@ -344,10 +277,6 @@ public class TutorialDirector : MonoBehaviour
         StartCoroutine(hud.Letterbox(false, 0.6f));
     }
 
-    // The opening, filmed: tight and tilted on the reactor doorway as the robots pour out, a swing over to the player
-    // running for it, then running with them, a little ahead, the view swaying; a punch in (and a beat of slow motion) on
-    // each wall that comes in; and when the ceiling comes down, a swing back in slow motion to watch it bury them, before
-    // it settles on the player and hands back to following them. Runs on unscaled time.
     IEnumerator ChaseCamera(List<Rigidbody2D> pack, float collapseX)
     {
         Camera cam = Camera.main;
@@ -384,7 +313,6 @@ public class TutorialDirector : MonoBehaviour
             Frame(to(), size, tilt);
         }
 
-        // On the doorway, close and canted, as they come through it.
         for (float t = 0f; t < 0.9f && !chaseCollapsed; t += Time.unscaledDeltaTime)
         {
             Frame(Pack() + new Vector2(0.6f + t * 0.5f, 0.3f), 0.82f - t * 0.02f, 1.5f - t * 0.5f);
@@ -392,10 +320,8 @@ public class TutorialDirector : MonoBehaviour
         }
         CameraShake.Shake(0.12f);
 
-        // Swing over to the player.
         yield return Move(() => (Vector2)player.position + lead, 0.94f, -0.5f, 0.9f, TitleUI.EaseInOut);
 
-        // Running with them, a little ahead, swaying; punching in on each wall as it comes in.
         float sway = 0f;
         while (!chaseCollapsed)
         {
@@ -419,7 +345,6 @@ public class TutorialDirector : MonoBehaviour
             yield return null;
         }
 
-        // The ceiling coming down on them: swing back and watch, slowed right down.
         HitStop.Hold(0.5f, 0.8f);
         Vector2 onTheRubble = new Vector2(collapseX - 1f, player.position.y + 0.3f);
         yield return Move(() => onTheRubble, 0.88f, 0.8f, 0.9f, TitleUI.EaseInOut);
@@ -429,16 +354,12 @@ public class TutorialDirector : MonoBehaviour
             yield return null;
         }
 
-        // Back to the player, level again, and following as usual: eased onto exactly where the follow camera would be,
-        // so it takes over without a jump.
         yield return Move(() => follow != null ? (Vector2)follow.Target : (Vector2)player.position, 1f, 0f, 1.1f, TitleUI.EaseInOut);
         cam.transform.rotation = Quaternion.identity;
         cam.orthographicSize = normalView;
         FollowPlayer();
     }
 
-    // The lamps between fromX and toX go out behind the player as they pass, some bursting, some just dying, until
-    // stop says so.
     IEnumerator LightsOutBehind(float fromX, float toX, System.Func<bool> stop)
     {
         List<StationLight> behind = lamps
@@ -460,7 +381,6 @@ public class TutorialDirector : MonoBehaviour
         }
     }
 
-    // Keeps the chasers running along behind the player, each stopping when it reaches stopAt.
     static void DriveChasers(List<Rigidbody2D> bodies, float speed, float stopAt)
     {
         foreach (Rigidbody2D body in bodies)
@@ -471,7 +391,6 @@ public class TutorialDirector : MonoBehaviour
         }
     }
 
-    // A blast too close: the picture smeared and dark, the world muffled under a ringing, clearing over seconds.
     IEnumerator Dazed(float seconds)
     {
         Volume smear = TutorialSetPieces.WakeEffects();
@@ -499,7 +418,6 @@ public class TutorialDirector : MonoBehaviour
         Destroy(ringing);
     }
 
-    // For testing without the opening: the chasers are gone and the rubble is already down.
     void SkipTheChase()
     {
         foreach (PlaceholderRobot chaser in chasers)
@@ -533,13 +451,12 @@ public class TutorialDirector : MonoBehaviour
         CurrentBeat = "Run";
         yield return WaitForPrompt();
         hud.ShowPromptWithHint("Run", "Hold while moving", "SHIFT");
-        StartCoroutine(CeilingChase(meleeZone, 7f));
-        StartCoroutine(HuntersInTheHallway());
-        float hallwayEnd = meleeZone != null ? meleeZone.transform.position.x - 3f : float.MaxValue;
-        StartCoroutine(LightsOutBehind(player.position.x, hallwayEnd, () => Fired(meleeZone)));
+        StartCoroutine(CeilingChase(fightZone, 7f));
+        float hallwayEnd = fightZone != null ? fightZone.transform.position.x - 3f : float.MaxValue;
+        StartCoroutine(LightsOutBehind(player.position.x, hallwayEnd, () => Fired(fightZone)));
 
         float sprinted = 0f;
-        while (sprinted < 0.8f && !Fired(meleeZone))
+        while (sprinted < 0.8f && !Fired(fightZone))
         {
             bool moving = Input.GetAxisRaw("Horizontal") != 0f || Input.GetAxisRaw("Vertical") != 0f;
             if (moving && Input.GetKey(KeyCode.LeftShift) && controller != null && controller.enabled && controller.stamina > 0f)
@@ -549,232 +466,76 @@ public class TutorialDirector : MonoBehaviour
         hud.CompletePrompt();
     }
 
-    // The wall just behind the player blows in, one breach after another as they pass, and what comes out hunts them down
-    // the hallway: faster than walking, slower than running. As they reach the melee room the ceiling comes down behind
-    // them and buries whatever's still after them.
-    IEnumerator HuntersInTheHallway()
+    IEnumerator Fight()
     {
-        if (hallwayBreaches.Count == 0 && grabberBreaches.Count == 0) yield break;
-        bool woken = false;
-        while (!Fired(meleeZone))
-        {
-            // Right on top of them, as they come level with it.
-            foreach (WallBreach breach in grabberBreaches)
-            {
-                if (breach.done || breach.point == null || player.position.x < breach.point.position.x - 0.8f) continue;
-                fighting = true;
-                yield return Grab(breach);
-            }
-            foreach (WallBreach breach in hallwayBreaches)
-            {
-                if (breach.done || breach.point == null || player.position.x < breach.point.position.x + 1.5f) continue;
-                BlowIn(breach);
-                if (!woken && hallwayHunters != null)
-                {
-                    woken = true;
-                    hallwayHunters.Activate();
-                }
-                fighting = true;
-            }
-            yield return null;
-        }
-
-        // Behind them, right across the hallway, and on top of anything still coming.
-        if (rumble != null) rumble.Rumble(0.8f, 1.8f, 0);
-        foreach (Transform point in hallwayCollapsePoints)
-            if (point != null) FallingDebris.Drop(point.position, 50f, 0.5f, 1.2f, solid: true);
-        foreach (WallBreach breach in hallwayBreaches.Concat(grabberBreaches))
-            if (breach.robot != null && breach.robot.gameObject.activeSelf && !breach.robot.IsDead)
-                FallingDebris.Drop(breach.robot.transform.position, 50f, 0.4f, 1.2f);
-        yield return new WaitForSeconds(1.2f);
-        // Any never let out stay in the wall for good.
-        foreach (WallBreach breach in hallwayBreaches.Concat(grabberBreaches))
-        {
-            if (breach.robot == null || breach.robot.IsDead) continue;
-            if (breach.done) breach.robot.Kill(gameObject);
-            else Destroy(breach.robot.gameObject);
-        }
-        fighting = false;
-    }
-
-    // Out of the wall and onto them: it pins them where they stand, squeezing, until E has been pressed enough times to
-    // tear free. Then it's thrown back, dazed for a moment, and after them with the rest.
-    IEnumerator Grab(WallBreach breach)
-    {
-        PlaceholderRobot brain = BlowIn(breach);
-        if (brain == null) yield break;
-        brain.enabled = false;
-        var body = brain.GetComponent<Rigidbody2D>();
-        if (body != null) body.linearVelocity = Vector2.zero;
-        if (controller != null) controller.SetScriptedInput(Vector2.zero, false);
-        HitStop.Hold(0.3f, 0.25f);
-        FrameView(0.82f, 0.25f);
-
-        // Onto them.
-        Vector2 from = brain.transform.position;
-        for (float t = 0f; t < 0.22f; t += Time.deltaTime)
-        {
-            Vector2 onto = (Vector2)player.position + new Vector2(-0.35f, 0.25f);
-            Vector2 at = Vector2.Lerp(from, onto, t / 0.22f);
-            if (body != null) body.MovePosition(at); else brain.transform.position = at;
-            yield return null;
-        }
-        CameraShake.Kick(Vector2.down, 0.25f);
-        CameraShake.Shake(0.4f);
-        Sfx.Play("Wall Grab");
-        TechnicianVoice.Say("Get OFF me!", 1.6f);
-
-        MashPrompt.Show("MASH TO BREAK FREE", "E");
-        yield return null;      // the press that got here doesn't count
-        int presses = 0;
-        float lastPress = Time.time;
-        while (presses < breakFreePresses)
-        {
-            Vector2 onto = (Vector2)player.position + new Vector2(-0.35f, 0.25f);
-            if (body != null) body.MovePosition(onto + Random.insideUnitCircle * 0.04f);
-            if (Input.GetKeyDown(KeyCode.E) && Time.timeScale > 0f)
-            {
-                presses++;
-                lastPress = Time.time;
-                CameraShake.Shake(0.12f);
-                CameraShake.Kick(Random.insideUnitCircle.normalized, 0.08f);
-                Sfx.Play("Grab Struggle", 0.8f, 0.9f + 0.3f * presses / breakFreePresses);
-                MashPrompt.Press(presses / (float)breakFreePresses);
-            }
-            // It squeezes while they don't fight it.
-            if (Time.time - lastPress > 1.4f)
-            {
-                lastPress = Time.time;
-                CameraShake.Shake(0.2f);
-                Sfx.Play("Grab Squeeze");
-                MashPrompt.Squeeze();
-                if (player.TryGetComponent(out Health health))
-                    health.TakeDamage(new DamageInfo(1f, Vector2.down, 0f, brain.gameObject, player.position));
-                if (controller != null) controller.SetScriptedInput(Vector2.zero, false);
-            }
-            yield return null;
-        }
-        MashPrompt.Hide();
-
-        // Torn free: it's flung back, stunned, then comes on again.
-        Sfx.Play("Break Free");
-        CameraShake.Kick(Vector2.left, 0.35f);
-        HitStop.Hold(0.4f, 0.2f);
-        FrameView(1f, 0.5f);
-        if (controller != null) controller.ClearScriptedInput();
-        Vector2 away = ((Vector2)brain.transform.position - (Vector2)player.position).normalized;
-        if (away.sqrMagnitude < 0.01f) away = Vector2.left;
-        for (float t = 0f; t < 0.25f; t += Time.deltaTime)
-        {
-            if (body != null) body.linearVelocity = away * 7f * (1f - t / 0.25f);
-            yield return null;
-        }
-        if (body != null) body.linearVelocity = Vector2.zero;
-        yield return new WaitForSeconds(1.2f);
-        if (grabber != null) grabber.Activate();
-        if (brain != null) brain.enabled = true;
-    }
-
-    IEnumerator Melee()
-    {
-        yield return WaitForZone(meleeZone);
-        CurrentBeat = "Melee";
-        Checkpoint(meleeZone);
-        if (meleeRobots != null) meleeRobots.Activate();
+        yield return WaitForZone(fightZone);
+        CurrentBeat = "Fight";
+        Checkpoint(fightZone);
+        Close(fightExit);
         fighting = true;
-        yield return WaitForPrompt();
-
-        // Each prompt also gives way if the fight is won some other way.
-        if (combat != null && !(combat.CurrentWeapon is MeleeWeaponData))
-        {
-            hud.ShowPrompt("Wrench", SlotKey<MeleeWeaponData>());
-            yield return new WaitUntil(() => combat.CurrentWeapon is MeleeWeaponData || Cleared(meleeRobots));
-            hud.CompletePrompt();
-            yield return WaitForPrompt();
-        }
-
-        if (!Cleared(meleeRobots))
-        {
-            hud.ShowPromptWithHint("Swing", "Hold to charge a heavy swing", "LEFT CLICK");
-            yield return WaitForCleared(meleeRobots);
-            hud.CompletePrompt();
-        }
-        fighting = false;
-        Open(meleeExit);
-    }
-
-    // No lesson here: the station gives way around the player as they cross the room with the collapsed floor.
-    IEnumerator Crossing()
-    {
-        yield return WaitForZone(crossingZone);
-        CurrentBeat = "Crossing";
-        Checkpoint(crossingZone);
-        if (rumble != null) rumble.Rumble(0.6f, 2.5f, 1);
-        yield return new WaitForSeconds(1.5f);
-        yield return CeilingChase(ambushZone, 6f);
-    }
-
-    // The walls of the room after the crossing blow in, one after another, and what comes through has to be beaten with the
-    // wrench before the way on (the arena entrance) opens again.
-    IEnumerator Ambush()
-    {
-        yield return WaitForZone(ambushZone);
-        CurrentBeat = "Ambush";
-        Checkpoint(ambushZone);
-        if (ambushBreaches.Count == 0) yield break;
-        Close(arenaEntrance);
-        fighting = true;
+        FrameView(fightView, 1.2f);
         if (rumble != null) rumble.Rumble(0.5f, 2f, 1);
         yield return new WaitForSeconds(0.8f);
 
-        // Nearest the player first, the rest after, a few seconds apart.
-        List<WallBreach> order = ambushBreaches.Where(b => b.point != null)
+        yield return BlowInAll(firstBreaches, firstWave);
+        yield return WaitForPrompt();
+        if (combat != null && !(combat.CurrentWeapon is MeleeWeaponData) && !Cleared(firstWave))
+        {
+            hud.ShowPrompt("Wrench", SlotKey<MeleeWeaponData>());
+            yield return new WaitUntil(() => combat.CurrentWeapon is MeleeWeaponData || Cleared(firstWave));
+            hud.CompletePrompt();
+            yield return WaitForPrompt();
+        }
+        if (!Cleared(firstWave))
+        {
+            hud.ShowPromptWithHint("Swing", "Two hits takes one down", "LEFT CLICK");
+            yield return WaitForCleared(firstWave);
+            hud.CompletePrompt();
+        }
+
+        yield return new WaitForSeconds(secondWaveAfter);
+        if (rumble != null) rumble.Rumble(0.5f, 1.5f, 1);
+        GiveBlaster();
+        StartCoroutine(BlowInAll(secondBreaches, secondWave));
+        yield return WaitForPrompt();
+
+        RangedCombat gun = player.GetComponent<RangedCombat>();
+        if (gun != null) gun.Fired += CountShot;
+        if (blaster != null && combat != null && combat.CurrentWeapon != blaster && !Cleared(secondWave))
+        {
+            hud.ShowPromptWithHint("Switch to the blaster", "Scroll the mouse wheel", "SCROLL");
+            yield return new WaitUntil(() => combat.CurrentWeapon == blaster || Cleared(secondWave));
+            hud.CompletePrompt();
+            yield return WaitForPrompt();
+        }
+        if (blaster != null && !Cleared(secondWave))
+        {
+            int before = shotsFired;
+            hud.ShowPromptWithHint("Shoot", "Hold to charge, let go to fire", "LEFT CLICK");
+            yield return new WaitUntil(() => shotsFired > before || Cleared(secondWave));
+            hud.CompletePrompt();
+        }
+        yield return WaitForCleared(secondWave);
+        if (gun != null) gun.Fired -= CountShot;
+        fighting = false;
+        FrameView(1f, 1.5f);
+        Open(fightExit);
+    }
+
+    void CountShot() => shotsFired++;
+
+    IEnumerator BlowInAll(List<WallBreach> breaches, RobotEncounter encounter)
+    {
+        List<WallBreach> order = breaches.Where(b => b.point != null)
             .OrderBy(b => Vector2.Distance(b.point.position, player.position)).ToList();
         for (int i = 0; i < order.Count; i++)
         {
-            if (i > 0) yield return new WaitForSeconds(ambushInterval);
+            if (i > 0) yield return new WaitForSeconds(breachInterval);
             BlowIn(order[i]);
-            if (i == 0 && ambushRobots != null) ambushRobots.Activate();
+            if (i == 0 && encounter != null) encounter.Activate();
         }
-
-        yield return WaitForCleared(ambushRobots);
-        fighting = false;
-        if (!wayRound || arenaPassage == null || passageBreaches.Count == 0)
-        {
-            Open(arenaEntrance);
-            yield break;
-        }
-        yield return TheWayRound();
     }
 
-    // The door on won't open: it's jammed. Something behind the room's wall hits it, again, and again, and comes through,
-    // and the hole it leaves is the way on: walking up into it takes the player through to the far side of the door.
-    IEnumerator TheWayRound()
-    {
-        if (arenaEntrance != null) arenaEntrance.locked = true;
-        yield return new WaitForSeconds(0.6f);
-        TechnicianVoice.Say("Jammed... come on...", 1.8f);
-        yield return new WaitForSeconds(1.2f);
-
-        Vector2 wall = passageBreaches[0].point != null ? (Vector2)passageBreaches[0].point.position : (Vector2)arenaPassage.transform.position;
-        for (int knock = 0; knock < 2; knock++)
-        {
-            StationRumble.PlayImpact(wall);
-            CameraShake.Shake(0.3f + knock * 0.15f);
-            yield return new WaitForSeconds(0.7f);
-        }
-
-        foreach (WallBreach breach in passageBreaches) BlowIn(breach);
-        if (passageRobot != null) passageRobot.Activate();
-        fighting = true;
-        yield return WaitForCleared(passageRobot);
-        fighting = false;
-        arenaPassage.gameObject.SetActive(true);
-        yield return new WaitForSeconds(0.5f);
-        TechnicianVoice.Say("Through there, then", 1.8f);
-    }
-
-    // The wall at the breach blows in and the robot behind it comes through. Returns its brain.
     PlaceholderRobot BlowIn(WallBreach breach)
     {
         if (breach.done) return null;
@@ -783,110 +544,6 @@ public class TutorialDirector : MonoBehaviour
         if (breach.robot == null) return null;
         breach.robot.gameObject.SetActive(true);
         return breach.robot.GetComponent<PlaceholderRobot>();
-    }
-
-    // Two robots to start, and the rivet gun to take them on with. Partway through, a third blows in through the wall,
-    // and the lesson is switching: the wrench up close, the gun at range.
-    IEnumerator Arena()
-    {
-        yield return WaitForZone(arenaZone);
-        CurrentBeat = "Arena";
-        Checkpoint(arenaZone);
-        Close(arenaEntrance);
-        if (rumble != null)
-        {
-            rumble.intensity = 1.4f;
-            rumble.Rumble(0.6f, 1.8f, 1);
-        }
-        if (arenaRobots != null) arenaRobots.Activate();
-        fighting = true;
-        FrameView(arenaView, 1.2f);
-        StartCoroutine(BreachWhenDue(Time.time));
-        yield return WaitForPrompt();
-
-        RangedCombat gun = player.GetComponent<RangedCombat>();
-        if (gun != null) gun.Fired += CountShot;
-        bool hasGun = HasSlot<RangedWeaponData>();
-
-        if (hasGun && combat != null && !(combat.CurrentWeapon is RangedWeaponData))
-        {
-            hud.ShowPromptWithHint("Scrap gun", "Or scroll the mouse wheel", SlotKey<RangedWeaponData>());
-            yield return new WaitUntil(() => combat.CurrentWeapon is RangedWeaponData || ArenaWon());
-            hud.CompletePrompt();
-            yield return WaitForPrompt();
-        }
-
-        if (hasGun && !ArenaWon())
-        {
-            int before = shotsFired;
-            hud.ShowPromptWithHint("Shoot", "Aim with the mouse", "LEFT CLICK");
-            yield return new WaitUntil(() => shotsFired > before || ArenaWon());
-            hud.CompletePrompt();
-        }
-
-        // The room's quiet, but the panel's still glowing: the lesson is that the gun breaks things, not just robots.
-        yield return new WaitUntil(() => breached || arenaRobots == null || arenaRobots.IsCleared);
-        if (!breached && arenaWeakWall != null)
-        {
-            yield return WaitForPrompt();
-            SetControls(false);
-            yield return PanCameraTo(arenaWeakWall.transform.position + Vector3.down, 0.7f);
-            yield return new WaitForSeconds(0.6f);
-            yield return PanCameraTo(player.position, 0.5f);
-            FollowPlayer();
-            SetControls(true);
-            hud.ShowPromptWithHint("Shoot the cracked wall", "Weak spots give way", "LEFT CLICK");
-            yield return new WaitUntil(() => breached);
-            hud.CompletePrompt();
-        }
-        yield return new WaitUntil(() => breached || ArenaWon());
-        yield return WaitForPrompt();
-
-        if (hasGun && !ArenaWon())
-        {
-            WeaponData held = combat != null ? combat.CurrentWeapon : null;
-            float shownAt = Time.time;
-            hud.ShowPromptWithHint("Switch weapons", "Wrench up close, scrap gun at range",
-                SlotKey<MeleeWeaponData>(), SlotKey<RangedWeaponData>(), "SCROLL");
-            yield return new WaitUntil(() => (combat != null && combat.CurrentWeapon != held) || ArenaWon() || Time.time - shownAt > 10f);
-            if (combat != null && combat.CurrentWeapon != held) hud.CompletePrompt();
-            else hud.HidePrompt();
-        }
-
-        yield return new WaitUntil(ArenaWon);
-        if (gun != null) gun.Fired -= CountShot;
-        fighting = false;
-        FrameView(1f, 1.5f);
-        Open(arenaExit);
-    }
-
-    void CountShot() => shotsFired++;
-
-    bool ArenaWon() => (arenaRobots == null || arenaRobots.IsCleared) && (breachRobots == null || (breached && breachRobots.IsCleared));
-
-    // The wall comes in when the player breaks the cracked panel in it (shot or hit), whenever they choose to. Without a
-    // panel, as the last of the first robots goes down. After breachAfter it comes in anyway, so nobody's stuck.
-    IEnumerator BreachWhenDue(float startedAt)
-    {
-        yield return new WaitUntil(() => breached
-            || (arenaWeakWall != null ? arenaWeakWall.IsBroken : arenaRobots != null && arenaRobots.IsCleared)
-            || (breachAfter > 0f && Time.time - startedAt > breachAfter));
-        Breach();
-    }
-
-    void Breach()
-    {
-        if (breached) return;
-        breached = true;
-        if (breachRobots == null) return;
-
-        Vector2 at = breachPoint != null ? (Vector2)breachPoint.position : (Vector2)breachRobots.transform.position;
-        if (arenaWeakWall != null) arenaWeakWall.Break();
-        TutorialSetPieces.BlowInWall(at);
-        if (rumble != null) rumble.Rumble(0.7f, 1.2f, 0);
-        foreach (Health robot in breachRobots.robots)
-            if (robot != null) robot.gameObject.SetActive(true);
-        breachRobots.Activate();
     }
 
     IEnumerator FinalHallway()
@@ -906,7 +563,6 @@ public class TutorialDirector : MonoBehaviour
         }
         if (controlRoomDoor != null) controlRoomDoor.locked = false;
         FrameView(finalHallwayView, 8f);
-        hallwayVoice = StartCoroutine(SayAll(sonnyInTheHallway, 2f, true));
         StartCoroutine(LightsOutAhead());
         StartCoroutine(RaiseSun(1.5f, 8f));
     }
@@ -924,7 +580,6 @@ public class TutorialDirector : MonoBehaviour
             rumble.rumbleOnItsOwn = false;
             rumble.PlaySound(heartbeatSound, 1f);
         }
-        if (hallwayVoice != null) yield return hallwayVoice;
 
         StartCoroutine(hud.Letterbox(true, 0.8f));
         StartCoroutine(hud.Vignette(0.85f, 2.5f));
@@ -932,18 +587,12 @@ public class TutorialDirector : MonoBehaviour
         yield return PanCameraTo(sonny != null ? (Vector2)sonny.transform.position + revealFrom : (Vector2)player.position, 2.5f);
 
         if (sonny != null) sonny.Awaken();
-        // The sunlight sinks as Sonny wakes, so its red is what fills the room, and every screen is Sonny's.
         StartCoroutine(RaiseSun(0.6f, 2.5f));
         SonnyScreen.SetAll(true);
-        yield return new WaitForSeconds(1.2f);
-        yield return SayAll(sonnyInTheControlRoom, 1.6f, false);
-
-        // Let the last line sit before anything moves.
         yield return new WaitForSeconds(holdOnSonny);
         if (rumble != null) rumble.Rumble(1f, 1.5f, 0);
         yield return new WaitForSeconds(0.5f);
 
-        // Hard cut to black and silence, but for one low tone ringing out.
         CurrentBeat = "Ending";
         hud.SetFade(1f);
         AudioListener.volume = 0f;
@@ -957,10 +606,6 @@ public class TutorialDirector : MonoBehaviour
         LoadNextScene();
     }
 
-    // --- Helpers ---
-
-    // The station keeps coming apart around the player for a while: every so often a piece crashes down some way off,
-    // mostly ahead where they can see it coming, now and then off to one side or back the way they came.
     IEnumerator CeilingChase(PlayerTriggerZone until, float seconds)
     {
         if (rumble != null) rumble.Rumble(0.35f, seconds, 0);
@@ -981,8 +626,6 @@ public class TutorialDirector : MonoBehaviour
         }
     }
 
-    // The lamps between the player and the control room give out one after another, some bursting (and some of those
-    // tearing off the wall and falling), some just dying.
     IEnumerator LightsOutAhead()
     {
         if (finalZone == null) yield break;
@@ -1002,7 +645,6 @@ public class TutorialDirector : MonoBehaviour
         }
     }
 
-    // The flare getting closer: the sunlight through every window swells.
     IEnumerator RaiseSun(float boost, float seconds)
     {
         float start = StationLight.SunBoost;
@@ -1014,18 +656,6 @@ public class TutorialDirector : MonoBehaviour
         StationLight.SunBoost = boost;
     }
 
-    // Sonny's lines, one after another. Every monitor switches over to Sonny while it speaks, and back afterwards if
-    // screensBackAfter.
-    IEnumerator SayAll(string[] lines, float holdSeconds, bool screensBackAfter)
-    {
-        SonnyScreen.SetAll(true);
-        foreach (string line in lines)
-            yield return hud.Say(sonnyName, line, holdSeconds);
-        if (screensBackAfter) SonnyScreen.SetAll(false);
-    }
-
-    // After standing still for guideAfter seconds, a faint arrow by the player points at the next place to go. It keeps
-    // out of the way of fights, prompts, and hiding, and fades as soon as they move on.
     IEnumerator Guide()
     {
         SpriteRenderer arrow = TutorialSetPieces.GuideArrow();
@@ -1060,7 +690,6 @@ public class TutorialDirector : MonoBehaviour
         }
     }
 
-    // The next zone the player hasn't reached yet.
     Vector2? NextPlace()
     {
         foreach (PlayerTriggerZone zone in ZonesInOrder())
@@ -1068,9 +697,8 @@ public class TutorialDirector : MonoBehaviour
         return null;
     }
 
-    PlayerTriggerZone[] ZonesInOrder() => new[] { collapseZone, runZone, meleeZone, crossingZone, ambushZone, arenaZone, finalZone, revealZone };
+    PlayerTriggerZone[] ZonesInOrder() => new[] { collapseZone, runZone, fightZone, finalZone, revealZone };
 
-    // Widens or narrows what the camera shows, as a multiple of its usual view.
     void FrameView(float amount, float seconds)
     {
         if (normalView <= 0f) return;
@@ -1093,7 +721,6 @@ public class TutorialDirector : MonoBehaviour
         framing = null;
     }
 
-    // Takes the camera off the player and eases it over to a point.
     IEnumerator PanCameraTo(Vector2 target, float seconds)
     {
         Camera cam = Camera.main;
@@ -1110,14 +737,12 @@ public class TutorialDirector : MonoBehaviour
         cam.transform.position = to;
     }
 
-    // Hands the camera back to following the player.
     void FollowPlayer()
     {
         Camera cam = Camera.main;
         if (cam != null && cam.TryGetComponent(out CameraFallow follow)) follow.enabled = true;
     }
 
-    // Freezes the player where they stand for cutscenes, remembering what was switched off so exactly that comes back.
     void SetControls(bool on)
     {
         if (player == null) return;
@@ -1141,7 +766,6 @@ public class TutorialDirector : MonoBehaviour
         if (playerBody != null) playerBody.linearVelocity = Vector2.zero;
     }
 
-    // Puts the player's weapon away and keeps it away, switching too, or hands it back.
     void SetWeapons(bool on)
     {
         if (combat == null) return;
@@ -1168,11 +792,17 @@ public class TutorialDirector : MonoBehaviour
 
         if (basicWeaponsOnly && hotbar != null)
         {
-            // The rivet gun is a plain RangedWeaponData; the blaster and the EMP are kinds of it.
-            hotbar.slots.RemoveAll(weapon => !(weapon is MeleeWeaponData) && (weapon == null || weapon.GetType() != typeof(RangedWeaponData)));
+            blaster = hotbar.slots.FirstOrDefault(weapon => weapon is BlasterWeaponData);
+            hotbar.slots.RemoveAll(weapon => !(weapon is MeleeWeaponData));
             if (combat != null && combat.CurrentWeapon != null && !hotbar.slots.Contains(combat.CurrentWeapon))
                 combat.Equip(hotbar.slots.Count > 0 ? hotbar.slots[0] : null);
         }
+        else if (hotbar != null) blaster = hotbar.slots.FirstOrDefault(weapon => weapon is BlasterWeaponData);
+    }
+
+    void GiveBlaster()
+    {
+        if (blaster != null && hotbar != null && !hotbar.slots.Contains(blaster)) hotbar.slots.Add(blaster);
     }
 
     void Checkpoint(PlayerTriggerZone zone)
@@ -1182,7 +812,6 @@ public class TutorialDirector : MonoBehaviour
         respawn.RespawnPoint = new Vector3(point.x, point.y, player.position.z);
     }
 
-    // The number key for the first hotbar slot holding that kind of weapon.
     string SlotKey<T>() where T : WeaponData
     {
         if (hotbar != null)
@@ -1192,8 +821,6 @@ public class TutorialDirector : MonoBehaviour
         }
         return typeof(T) == typeof(RangedWeaponData) ? "2" : "1";
     }
-
-    bool HasSlot<T>() where T : WeaponData => hotbar != null && hotbar.slots.Any(weapon => weapon is T);
 
     IEnumerator WaitForZone(PlayerTriggerZone zone)
     {
@@ -1207,7 +834,6 @@ public class TutorialDirector : MonoBehaviour
             yield return null;
     }
 
-    // Lets a finished prompt show its green tick before the next one replaces it.
     IEnumerator WaitForPrompt()
     {
         while (hud.PromptCompleting)
@@ -1242,24 +868,17 @@ public class TutorialDirector : MonoBehaviour
             Debug.Log($"TutorialDirector: the tutorial is over. {nextScene} isn't in the build's scene list yet, so it ends here.");
     }
 
-    // For testing: wins the current fight, opens its door, and puts the player in the next zone they haven't reached.
     public void SkipAhead()
     {
         switch (CurrentBeat)
         {
-            case "Melee": Win(meleeRobots); Open(meleeExit); break;
-            case "Ambush":
-                foreach (WallBreach breach in ambushBreaches) BlowIn(breach);
-                Win(ambushRobots);
-                if (arenaPassage != null && passageBreaches.Count > 0)
-                {
-                    foreach (WallBreach breach in passageBreaches) BlowIn(breach);
-                    Win(passageRobot);
-                    arenaPassage.gameObject.SetActive(true);
-                }
-                else Open(arenaEntrance);
+            case "Fight":
+                foreach (WallBreach breach in firstBreaches.Concat(secondBreaches)) BlowIn(breach);
+                GiveBlaster();
+                Win(firstWave);
+                Win(secondWave);
+                Open(fightExit);
                 break;
-            case "Arena": Win(arenaRobots); Breach(); Win(breachRobots); Open(arenaExit); break;
             case "Final Hallway": if (controlRoomDoor != null) controlRoomDoor.Open(); break;
         }
 
